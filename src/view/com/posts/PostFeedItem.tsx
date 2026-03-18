@@ -94,10 +94,16 @@ export function PostFeedItem({
   isParentNotFound,
   rootPost,
   onShowLess,
+  feedItemIndex,
+  feedNavId,
+  isFocused,
 }: FeedItemProps & {
   post: AppBskyFeedDefs.PostView
   rootPost: AppBskyFeedDefs.PostView
   onShowLess?: (interaction: AppBskyFeedDefs.Interaction) => void
+  feedItemIndex?: number
+  feedNavId?: string
+  isFocused?: boolean
 }): React.ReactNode {
   const postShadowed = usePostShadow(post)
   const richText = useMemo(
@@ -133,6 +139,9 @@ export function PostFeedItem({
         isParentNotFound={isParentNotFound}
         rootPost={rootPost}
         onShowLess={onShowLess}
+        feedItemIndex={feedItemIndex}
+        feedNavId={feedNavId}
+        isFocused={isFocused}
       />
     )
   }
@@ -157,11 +166,17 @@ let FeedItemInner = ({
   isParentNotFound,
   rootPost,
   onShowLess,
+  feedItemIndex,
+  feedNavId,
+  isFocused,
 }: FeedItemProps & {
   richText: RichTextAPI
   post: Shadow<AppBskyFeedDefs.PostView>
   rootPost: AppBskyFeedDefs.PostView
   onShowLess?: (interaction: AppBskyFeedDefs.Interaction) => void
+  feedItemIndex?: number
+  feedNavId?: string
+  isFocused?: boolean
 }): React.ReactNode => {
   const ax = useAnalytics()
   const queryClient = useQueryClient()
@@ -332,14 +347,18 @@ let FeedItemInner = ({
         noFeedback
         accessible={false}
         onBeforePress={onBeforePress}
-        dataSet={{feedContext}}
+        dataSet={{
+          feedContext,
+          feedItemIndex: feedItemIndex?.toString(),
+          feedNavId,
+        }}
         onPointerEnter={() => {
           setHover(true)
         }}
         onPointerLeave={() => {
           setHover(false)
         }}>
-        <SubtleHover hover={hover} />
+        <SubtleHover hover={hover || !!isFocused} />
         <View style={{flexDirection: 'row', gap: 10, paddingLeft: 8}}>
           <View style={{width: 42}}>
             {isThreadChild && (

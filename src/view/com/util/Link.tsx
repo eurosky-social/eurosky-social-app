@@ -372,7 +372,7 @@ function onPressInner(
   navigation: DebouncedNavigationProp,
   href: string,
   navigationAction: 'push' | 'replace' | 'navigate' = 'push',
-  openLink: (href: string) => void,
+  openLink: (href: string) => void | Promise<void>,
   e?: Event,
 ) {
   let shouldHandle = false
@@ -406,7 +406,7 @@ function onPressInner(
       href.startsWith('mailto') ||
       EXEMPT_PATHS.some(path => href.startsWith(path))
     ) {
-      openLink(href)
+      void openLink(href)
     } else {
       closeModal() // close any active modals
 

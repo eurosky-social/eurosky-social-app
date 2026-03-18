@@ -1,3 +1,4 @@
+import {useCallback, useEffect, useId, useRef, useState} from 'react'
 import {useLingui} from '@lingui/react/macro'
 import {
   HotkeysProvider,
@@ -6,12 +7,25 @@ import {
 } from 'react-hotkeys-hook'
 
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
-import {emitFocusSearch} from '#/state/events'
+import {
+  emitFocusNextPost,
+  emitFocusPrevPost,
+  emitFocusSearch,
+  emitOpenFocusedPost,
+  listenFocusNextPost,
+  listenFocusPrevPost,
+  listenOpenFocusedPost,
+} from '#/state/events'
 import {useSession} from '#/state/session'
+
+const FEED_SCROLL_DEBOUNCE_MS = 250
 
 enum Hotkeys {
   OPEN_COMPOSER = 'n',
   FOCUS_SEARCH = 'slash',
+  PAGE_FORWARD = 'j',
+  PAGE_BACKWARD = 'k',
+  OPEN_POST = 'enter',
 }
 
 export function Provider({children}: React.PropsWithChildren<unknown>) {
@@ -38,7 +52,6 @@ function useKeyboardShortcuts() {
     if (requiresSession && !hasSession) {
       return true
     }
-
     return false
   }
 
@@ -52,6 +65,7 @@ function useKeyboardShortcuts() {
     callback()
   }
 
+  // Composer
   useHotkeys(
     Hotkeys.OPEN_COMPOSER,
     () =>
@@ -67,10 +81,139 @@ function useKeyboardShortcuts() {
     [openComposer],
   )
 
+  // Search
   useHotkeys(Hotkeys.FOCUS_SEARCH, () => handleKey(emitFocusSearch), {
     scopes: ['global'],
     preventDefault: true,
     description: l`Focus the search field`,
     useKey: true, // Support international and alternate keyboard layouts
   })
+
+  // Feed nav
+  useHotkeys(Hotkeys.PAGE_FORWARD, () => handleKey(emitFocusNextPost), {
+    scopes: ['feed'],
+    description: l`Focus the next post`,
+  })
+  useHotkeys(Hotkeys.PAGE_BACKWARD, () => handleKey(emitFocusPrevPost), {
+    scopes: ['feed'],
+    description: l`Focus the previous post`,
+  })
+  useHotkeys(Hotkeys.OPEN_POST, () => handleKey(emitOpenFocusedPost), {
+    scopes: ['feed'],
+    description: l`Open this post`,
+  })
+}
+
+/**
+ * Add keyboard navigation to a list of items.
+ */
+export function useFeedKeyboardNav({
+  focusableIndices,
+  active = true,
+}: {
+  /**
+   * Compute this based on item types (e.g. only root posts).
+   */
+  focusableIndices: number[]
+  /**
+   * Pass false when the list is in an inactive tab.
+   */
+  active?: boolean
+}) {
+  const navId = useId()
+  const [focusedIndex, setFocusedIndex] = useState(-1)
+  const scrollingRef = useRef(false)
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  const getItemEl = useCallback(
+    (index: number) =>
+      document.querySelector<HTMLElement>(
+        `[data-feed-nav-id="${navId}"][data-feed-item-index="${index}"]`,
+      ),
+    [navId],
+  )
+
+  const findTopVisibleIndex = useCallback(() => {
+    for (const idx of focusableIndices) {
+      const el = getItemEl(idx)
+      if (el) {
+        const rect = el.getBoundingClientRect()
+        if (rect.bottom > 0) {
+          return idx
+        }
+      }
+    }
+    return focusableIndices[0] ?? -1
+  }, [focusableIndices, getItemEl])
+
+  const isFocusedItemVisible = (index: number) => {
+    if (index < 0) return false
+    const el = getItemEl(index)
+    if (!el) return false
+    const rect = el.getBoundingClientRect()
+    return rect.bottom > 0 && rect.top < window.innerHeight
+  }
+
+  // Scroll focused item into view
+  useEffect(() => {
+    getItemEl(focusedIndex)?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    })
+    scrollingRef.current = true
+    clearTimeout(scrollTimeoutRef.current)
+    scrollTimeoutRef.current = setTimeout(() => {
+      scrollingRef.current = false
+    }, FEED_SCROLL_DEBOUNCE_MS)
+    return () => clearTimeout(scrollTimeoutRef.current)
+  }, [focusedIndex, getItemEl])
+
+  // Listen for keyboard events
+  useEffect(() => {
+    const unlistenNext = listenFocusNextPost(() => {
+      if (scrollingRef.current) return
+      setFocusedIndex(prev => {
+        if (prev === -1 || !isFocusedItemVisible(prev)) {
+          return findTopVisibleIndex()
+        }
+        const currentPos = focusableIndices.indexOf(prev)
+        if (currentPos < focusableIndices.length - 1) {
+          return focusableIndices[currentPos + 1]
+        }
+        return prev
+      })
+    })
+    const unlistenPrev = listenFocusPrevPost(() => {
+      if (scrollingRef.current) return
+      setFocusedIndex(prev => {
+        if (prev === -1 || !isFocusedItemVisible(prev)) {
+          return findTopVisibleIndex()
+        }
+        const currentPos = focusableIndices.indexOf(prev)
+        if (currentPos > 0) {
+          return focusableIndices[currentPos - 1]
+        }
+        return prev
+      })
+    })
+    const unlistenOpen = listenOpenFocusedPost(() => {
+      if (focusedIndex < 0) return
+      getItemEl(focusedIndex)?.click()
+    })
+    return () => {
+      unlistenNext()
+      unlistenPrev()
+      unlistenOpen()
+    }
+  }, [active, findTopVisibleIndex, focusableIndices, focusedIndex, getItemEl])
+
+  const getItemDataSet = useCallback(
+    (index: number) => ({
+      feedNavId: navId,
+      feedItemIndex: index.toString(),
+    }),
+    [navId],
+  )
+
+  return {focusedIndex, setFocusedIndex, navId, getItemDataSet}
 }
