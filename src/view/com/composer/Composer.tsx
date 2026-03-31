@@ -1329,7 +1329,7 @@ let ComposerPost = memo(function ComposerPost({
     ? isFirstPost
       ? _(msg`Write your reply`)
       : _(msg`Add another post`)
-    : _(msg`What's up?`)
+    : _(msg`What’s up?`)
   const discardPromptControl = Prompt.usePromptControl()
 
   const dispatchPost = useCallback(

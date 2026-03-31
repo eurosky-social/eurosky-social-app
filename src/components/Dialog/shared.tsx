@@ -8,7 +8,7 @@ import {
 
 import {atoms as a, useTheme} from '#/alf'
 import {Text} from '#/components/Typography'
-import {IS_LIQUID_GLASS} from '#/env'
+import {IS_IOS, IS_LIQUID_GLASS} from '#/env'
 
 export function Header({
   renderLeft,
@@ -40,8 +40,12 @@ export function Header({
         a.border_b,
         t.atoms.border_contrast_medium,
         t.atoms.bg,
-        {borderTopLeftRadius: a.rounded_md.borderRadius},
-        {borderTopRightRadius: a.rounded_md.borderRadius},
+        IS_IOS
+          ? null
+          : {
+              borderTopLeftRadius: a.rounded_md.borderRadius,
+              borderTopRightRadius: a.rounded_md.borderRadius,
+            },
         style,
       ]}>
       {renderLeft && (

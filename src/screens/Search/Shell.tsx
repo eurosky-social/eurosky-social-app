@@ -42,6 +42,7 @@ import {useAnalytics} from '#/analytics'
 import {IS_WEB} from '#/env'
 import {account, useStorage} from '#/storage'
 import type * as bsky from '#/types/bsky'
+import {AdvancedSearchDialog} from './components/AdvancedSearchDialog'
 import {AutocompleteResults} from './components/AutocompleteResults'
 import {SearchHistory} from './components/SearchHistory'
 import {SearchLanguageDropdown} from './components/SearchLanguageDropdown'
@@ -237,6 +238,18 @@ export function SearchScreenShell({
     [ax, navigateToItem, searchText],
   )
 
+  const onChangeAdvancedText = useCallback(
+    (text: string) => {
+      scrollToTopWeb()
+      setSearchText(text)
+      ax.metric('search:query', {
+        source: 'typed',
+      })
+      navigateToItem(text)
+    },
+    [ax, navigateToItem],
+  )
+
   const onAutocompleteResultPress = useCallback(() => {
     if (IS_WEB) {
       setShowAutocomplete(false)
@@ -355,10 +368,16 @@ export function SearchScreenShell({
                   </Layout.Header.TitleText>
                 </Layout.Header.Content>
                 {showFilters ? (
-                  <SearchLanguageDropdown
-                    value={params.lang}
-                    onChange={params.setLang}
-                  />
+                  <>
+                    <SearchLanguageDropdown
+                      value={params.lang}
+                      onChange={params.setLang}
+                    />
+                    <AdvancedSearchDialog
+                      searchText={searchText}
+                      onChangeSearchText={onChangeAdvancedText}
+                    />
+                  </>
                 ) : (
                   <Layout.Header.Slot />
                 )}
@@ -411,6 +430,10 @@ export function SearchScreenShell({
                   <SearchLanguageDropdown
                     value={params.lang}
                     onChange={params.setLang}
+                  />
+                  <AdvancedSearchDialog
+                    searchText={searchText}
+                    onChangeSearchText={onChangeAdvancedText}
                   />
                 </View>
               )}
