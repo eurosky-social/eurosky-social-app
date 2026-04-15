@@ -1,6 +1,11 @@
 import {forwardRef, memo, useContext, useMemo} from 'react'
-import {StyleSheet, View, type ViewProps, type ViewStyle} from 'react-native'
-import {type StyleProp} from 'react-native'
+import {
+  type StyleProp,
+  StyleSheet,
+  View,
+  type ViewProps,
+  type ViewStyle,
+} from 'react-native'
 import {
   KeyboardAwareScrollView,
   type KeyboardAwareScrollViewProps,
@@ -12,6 +17,7 @@ import Animated, {
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
 
 import {useShellLayout} from '#/state/shell/shell-layout'
+import {useIsWithinSplitView} from '#/screens/Messages/components/splitView/context'
 import {
   atoms as a,
   useBreakpoints,
@@ -41,9 +47,10 @@ export const Screen = memo(function Screen({
   ...props
 }: ScreenProps) {
   const {top} = useSafeAreaInsets()
+  const {isWithinSplitView} = useIsWithinSplitView()
   return (
     <>
-      {IS_WEB && <WebCenterBorders />}
+      {IS_WEB && !isWithinSplitView && <WebCenterBorders />}
       <View
         style={[a.util_screen_outer, {paddingTop: noInsetTop ? 0 : top}, style]}
         {...props}
@@ -163,28 +170,30 @@ export const Center = memo(function LayoutCenter({
   const {gtMobile} = useBreakpoints()
   const {centerColumnOffset} = useLayoutBreakpoints()
   const {isWithinDialog} = useDialogContext()
+  const {isWithinSplitView} = useIsWithinSplitView()
   const ctx = useMemo(() => ({isWithinOffsetView: true}), [])
   return (
     <View
       style={[
         a.w_full,
-        a.mx_auto,
+        !isWithinSplitView && a.mx_auto,
         gtMobile && {
           maxWidth: 600,
         },
-        !isWithinOffsetView && {
-          transform: [
-            {
-              translateX:
-                centerColumnOffset &&
-                !ignoreTabletLayoutOffset &&
-                !isWithinDialog
-                  ? CENTER_COLUMN_OFFSET
-                  : 0,
-            },
-            {translateX: web(SCROLLBAR_OFFSET) ?? 0},
-          ],
-        },
+        !isWithinOffsetView &&
+          !isWithinSplitView && {
+            transform: [
+              {
+                translateX:
+                  centerColumnOffset &&
+                  !ignoreTabletLayoutOffset &&
+                  !isWithinDialog
+                    ? CENTER_COLUMN_OFFSET
+                    : 0,
+              },
+              {translateX: web(SCROLLBAR_OFFSET) ?? 0},
+            ],
+          },
         style,
       ]}
       {...props}>

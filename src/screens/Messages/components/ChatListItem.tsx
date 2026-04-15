@@ -62,10 +62,12 @@ export const ChatListItemPortal = createPortalGroup()
 export function ChatListItem({
   convo: convoView,
   showMenu = true,
+  selected = false,
   children,
 }: {
   convo: ChatBskyConvoDefs.ConvoView
   showMenu?: boolean
+  selected?: boolean
   children?: React.ReactNode
 }) {
   const {currentAccount} = useSession()
@@ -83,7 +85,8 @@ export function ChatListItem({
         <DirectChatItem
           convo={convo}
           moderationOpts={moderationOpts}
-          showMenu={showMenu}>
+          showMenu={showMenu}
+          selected={selected}>
           {children}
         </DirectChatItem>
       )
@@ -94,6 +97,7 @@ export function ChatListItem({
           convo={convo}
           moderationOpts={moderationOpts}
           showMenu={showMenu}
+          selected={selected}
         />
       )
     }
@@ -107,11 +111,13 @@ function DirectChatItem({
   convo,
   moderationOpts,
   showMenu,
+  selected,
   children,
 }: {
   convo: Extract<ConvoWithDetails, {kind: 'direct'}>
   moderationOpts: ModerationOpts
   showMenu?: boolean
+  selected?: boolean
   children?: React.ReactNode
 }) {
   const {t: l} = useLingui()
@@ -149,6 +155,7 @@ function DirectChatItem({
           : l`This conversation is with a deleted or a deactivated account. Press for options`
       }
       showMenu={showMenu}
+      selected={selected}
       isDeletedAccount={isDeletedAccount}
       isBlockedAccount={moderation.blocked}
       showProfileBadges
@@ -168,11 +175,13 @@ function GroupChatItem({
   convo,
   moderationOpts,
   showMenu,
+  selected,
   children,
 }: {
   convo: Extract<ConvoWithDetails, {kind: 'group'}>
   moderationOpts: ModerationOpts
   showMenu?: boolean
+  selected?: boolean
   children?: React.ReactNode
 }) {
   const {t: l} = useLingui()
@@ -196,6 +205,7 @@ function GroupChatItem({
       isBlockedAccount={false}
       isDeletedAccount={false}
       showProfileBadges={false}
+      selected={selected}
       showMenu={showMenu}>
       {children}
     </BaseChatItem>
@@ -213,6 +223,7 @@ function BaseChatItem({
   primaryProfile,
   primaryProfileModeration,
   showMenu,
+  selected,
   showProfileBadges,
   postAlerts,
   children,
@@ -227,6 +238,7 @@ function BaseChatItem({
   primaryProfile: Shadow<bsky.profile.AnyProfileView>
   primaryProfileModeration: ModerationDecision
   showMenu?: boolean
+  selected?: boolean
   showProfileBadges: boolean
   postAlerts?: React.ReactNode
   children?: React.ReactNode
@@ -494,7 +506,8 @@ function BaseChatItem({
                   a.px_lg,
                   a.py_md,
                   a.gap_md,
-                  (hovered || pressed || focused) && t.atoms.bg_contrast_25,
+                  selected && t.atoms.bg_contrast_25,
+                  (hovered || pressed || focused) && t.atoms.bg_contrast_50,
                 ]}>
                 {/* Avatar goes here */}
                 <View style={{width: 52, height: 52}} />
