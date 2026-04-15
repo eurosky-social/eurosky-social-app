@@ -21,7 +21,7 @@ import {useSession} from '#/state/session'
 import {EmptyState} from '#/view/com/util/EmptyState'
 import {List, type ListRef} from '#/view/com/util/List'
 import {ChatListLoadingPlaceholder} from '#/view/com/util/LoadingPlaceholder'
-import {atoms as a, useBreakpoints, useTheme} from '#/alf'
+import {atoms as a, useBreakpoints, useTheme, web} from '#/alf'
 import {AgeRestrictedScreen} from '#/components/ageAssurance/AgeRestrictedScreen'
 import {useAgeAssuranceCopy} from '#/components/ageAssurance/useAgeAssuranceCopy'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
@@ -353,43 +353,14 @@ export function ChatList({selectedChat}: {selectedChat?: string}) {
   }
 
   return (
-<<<<<<< HEAD
-    <Layout.Screen testID="messagesScreen">
-      <Header newChatControl={newChatControl} />
-      <NewChat onNewChat={onNewChat} control={newChatControl} />
-      <List
-        ref={scrollElRef}
-        data={conversations}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        refreshing={isPTRing}
-        onRefresh={() => void onRefresh()}
-        onEndReached={() => void onEndReached()}
-        ListFooterComponent={
-          <ListFooter
-            isFetchingNextPage={isFetchingNextPage}
-            error={cleanError(error)}
-            onRetry={fetchNextPage}
-            style={{borderColor: 'transparent'}}
-            hasNextPage={hasNextPage}
-          />
-        }
-        onEndReachedThreshold={IS_NATIVE ? 1.5 : 0}
-        initialNumToRender={initialNumToRender}
-        windowSize={11}
-        desktopFixedHeight
-        sideBorders={false}
-      />
-    </Layout.Screen>
-=======
     <List
       ref={scrollElRef}
       data={conversations}
       renderItem={renderItem}
       keyExtractor={keyExtractor}
       refreshing={isPTRing}
-      onRefresh={onRefresh}
-      onEndReached={onEndReached}
+      onRefresh={() => void onRefresh()}
+      onEndReached={() => void onEndReached()}
       ListFooterComponent={
         <ListFooter
           isFetchingNextPage={isFetchingNextPage}
@@ -404,8 +375,17 @@ export function ChatList({selectedChat}: {selectedChat?: string}) {
       windowSize={11}
       desktopFixedHeight
       sideBorders={false}
+      disableFullWindowScroll={isWithinSplitView}
+      style={
+        isWithinSplitView && [
+          a.w_full,
+          web({
+            scrollbarWidth: 'thin',
+            scrollbarColor: `${t.palette.contrast_100} transparent`,
+          }),
+        ]
+      }
     />
->>>>>>> a6cb50120 (add split view layout to chat)
   )
 }
 

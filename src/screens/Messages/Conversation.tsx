@@ -16,12 +16,10 @@ import {Trans} from '@lingui/react/macro'
 import {
   type RouteProp,
   useFocusEffect,
-  useIsFocused,
   useNavigation,
   useRoute,
 } from '@react-navigation/native'
 import {type NativeStackScreenProps} from '@react-navigation/native-stack'
-import {RemoveScrollBar} from 'react-remove-scroll-bar'
 
 import {useNonReactiveCallback} from '#/lib/hooks/useNonReactiveCallback'
 import {
@@ -51,7 +49,7 @@ import {type ConvoWithDetails, parseConvoView} from '#/components/dms/util'
 import {Error} from '#/components/Error'
 import * as Layout from '#/components/Layout'
 import {Loader} from '#/components/Loader'
-import {IS_LIQUID_GLASS, IS_WEB} from '#/env'
+import {IS_LIQUID_GLASS} from '#/env'
 
 type Props = NativeStackScreenProps<
   CommonNavigatorParams,
@@ -107,7 +105,6 @@ function Inner() {
   const convoState = useConvo()
   const {_} = useLingui()
   const {currentAccount} = useSession()
-  const isFocused = useIsFocused()
   const {top: topInset} = useSafeAreaInsets()
 
   const convo = convoState.convo
@@ -172,8 +169,6 @@ function Inner() {
 
   return (
     <Layout.Center style={[a.flex_1]}>
-      {/* MessagesList does not use the body scroll */}
-      {isFocused && IS_WEB && <RemoveScrollBar />}
       {!readyToShow && (
         <View style={IS_LIQUID_GLASS && {paddingTop: topInset}}>
           {moderation ? (
