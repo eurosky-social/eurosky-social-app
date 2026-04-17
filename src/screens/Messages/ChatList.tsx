@@ -2,9 +2,7 @@ import {useCallback, useEffect, useMemo, useState} from 'react'
 import {View} from 'react-native'
 import {useAnimatedRef} from 'react-native-reanimated'
 import {type ChatBskyActorDefs, type ChatBskyConvoDefs} from '@atproto/api'
-import {msg} from '@lingui/core/macro'
-import {useLingui} from '@lingui/react'
-import {Trans} from '@lingui/react/macro'
+import {Trans, useLingui} from '@lingui/react/macro'
 import {useFocusEffect, useIsFocused} from '@react-navigation/native'
 import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 
@@ -70,19 +68,19 @@ function keyExtractor(item: ListItem) {
 type Props = NativeStackScreenProps<MessagesTabNavigatorParams, 'Messages'>
 
 export function MessagesScreen(props: Props) {
-  const {_} = useLingui()
+  const {t: l} = useLingui()
   const aaCopy = useAgeAssuranceCopy()
   const aa = useAgeAssurance()
 
   return (
     <AgeRestrictedScreen
-      screenTitle={_(msg`Chats`)}
+      screenTitle={l`Chats`}
       infoText={aaCopy.chatsInfoText}
       rightHeaderSlot={
         aa.flags.chatDisabled ? null : (
           <Link
             to="/messages/settings"
-            label={_(msg`Chat settings`)}
+            label={l`Chat settings`}
             size="small"
             color="secondary">
             <ButtonText>
@@ -97,7 +95,7 @@ export function MessagesScreen(props: Props) {
 }
 
 export function MessagesScreenInner({navigation, route}: Props) {
-  const {_} = useLingui()
+  const {t: l} = useLingui()
   const t = useTheme()
   const {currentAccount} = useSession()
   const newChatControl = useDialogControl()
@@ -287,12 +285,11 @@ export function MessagesScreenInner({navigation, route}: Props) {
                         t.atoms.text_contrast_medium,
                         {maxWidth: 360},
                       ]}>
-                      {cleanError(error) ||
-                        _(msg`Failed to load conversations`)}
+                      {cleanError(error) || l`Failed to load conversations`}
                     </Text>
 
                     <Button
-                      label={_(msg`Reload conversations`)}
+                      label={l`Reload conversations`}
                       size="small"
                       color="secondary_inverted"
                       variant="solid"
@@ -328,7 +325,6 @@ export function MessagesScreenInner({navigation, route}: Props) {
             </>
           )}
         </Layout.Center>
-
         {!isLoading && !isError && (
           <NewChat onNewChat={onNewChat} control={newChatControl} />
         )}
@@ -368,7 +364,7 @@ export function MessagesScreenInner({navigation, route}: Props) {
 }
 
 function Header({newChatControl}: {newChatControl: DialogControlProps}) {
-  const {_} = useLingui()
+  const {t: l} = useLingui()
   const {gtMobile} = useBreakpoints()
   const requireEmailVerification = useRequireEmailVerification()
 
@@ -386,7 +382,7 @@ function Header({newChatControl}: {newChatControl: DialogControlProps}) {
   const settingsLink = (
     <Link
       to="/messages/settings"
-      label={_(msg`Chat settings`)}
+      label={l`Chat settings`}
       size="small"
       variant="ghost"
       color="secondary"
@@ -409,7 +405,7 @@ function Header({newChatControl}: {newChatControl: DialogControlProps}) {
           <View style={[a.flex_row, a.align_center, a.gap_sm]}>
             {settingsLink}
             <Button
-              label={_(msg`New chat`)}
+              label={l`New chat`}
               color="primary"
               size="small"
               variant="solid"

@@ -1,9 +1,10 @@
 import {useMemo, useState} from 'react'
 import {Pressable, type StyleProp, View, type ViewStyle} from 'react-native'
-import {moderateProfile} from '@atproto/api'
+import {ChatBskyConvoDefs, moderateProfile} from '@atproto/api'
 import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {StackActions, useNavigation} from '@react-navigation/native'
+import {useQueryClient} from '@tanstack/react-query'
 
 import {useBottomBarOffset} from '#/lib/hooks/useBottomBarOffset'
 import {useInitialNumToRender} from '#/lib/hooks/useInitialNumToRender'
@@ -26,7 +27,10 @@ import {useGetConvoForMembers} from '#/state/queries/messages/get-convo-for-memb
 import {useLeaveConvo} from '#/state/queries/messages/leave-conversation'
 import {useListJoinRequestsQuery} from '#/state/queries/messages/list-join-requests'
 import {useMuteConvo} from '#/state/queries/messages/mute-conversation'
-import {useProfileBlockMutationQueue} from '#/state/queries/profile'
+import {
+  unstableCacheProfileView,
+  useProfileBlockMutationQueue,
+} from '#/state/queries/profile'
 import {useSession} from '#/state/session'
 import {List} from '#/view/com/util/List'
 import {PreviewableUserAvatar} from '#/view/com/util/UserAvatar'
@@ -35,6 +39,8 @@ import {AvatarBubbles} from '#/components/AvatarBubbles'
 import {Button, type ButtonColor, ButtonIcon} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
 import {AddMembersFlow} from '#/components/dms/AddMembersFlow'
+import {AfterReportDialog} from '#/components/dms/AfterReportDialog'
+import {ReportConversationPrompt} from '#/components/dms/ReportConversationPrompt'
 import {type ConvoWithDetails, parseConvoView} from '#/components/dms/util'
 import {Error} from '#/components/Error'
 import * as TextField from '#/components/forms/TextField'
@@ -61,6 +67,7 @@ import * as Layout from '#/components/Layout'
 import {InlineLinkText} from '#/components/Link'
 import * as Menu from '#/components/Menu'
 import {type TriggerChildProps} from '#/components/Menu/types'
+import {ReportDialog} from '#/components/moderation/ReportDialog'
 import * as Prompt from '#/components/Prompt'
 import {SubtleHover} from '#/components/SubtleHover'
 import * as Toast from '#/components/Toast'
@@ -744,9 +751,21 @@ function SettingsHeader({
   const {t: l} = useLingui()
 
   const navigation = useNavigation<NavigationProp>()
+  const queryClient = useQueryClient()
+  const {currentAccount} = useSession()
 
   const groupName = convo.kind === 'group' ? convo.details.name : ''
   const [newGroupName, setNewGroupName] = useState(groupName)
+
+  // TODO Is there a way to determine the last message that is NOT
+  // * a system message,
+  // * a deleted message, AND
+  // * from the current user? - dsb
+  const latestReportableMessage =
+    ChatBskyConvoDefs.isMessageView(convo.view.lastMessage) &&
+    convo.view.lastMessage.sender?.did !== currentAccount?.did
+      ? convo.view.lastMessage
+      : undefined
 
   const [isLocked, setIsLocked] = useState(false)
 
@@ -792,6 +811,8 @@ function SettingsHeader({
   const inviteLinkPrompt = Prompt.usePromptControl()
   const lockChatPrompt = Prompt.usePromptControl()
   const leaveChatPrompt = Prompt.usePromptControl()
+  const reportControl = Prompt.usePromptControl()
+  const blockOrDeleteControl = Prompt.usePromptControl()
 
   const handleToggleMute = () => {
     muteConvo({mute: !convo.view.muted})
@@ -801,7 +822,9 @@ function SettingsHeader({
     leaveChatPrompt.open()
   }
 
-  const handleReportChat = () => {}
+  const handleReportChat = () => {
+    reportControl.open()
+  }
 
   const handlePromptName = () => {
     editNamePrompt.open()
@@ -857,6 +880,7 @@ function SettingsHeader({
             a.px_xl,
             t.atoms.text_contrast_high,
           ]}>
+          {/* TODO This data is not currently available. -dsb */}
           Created April 2, 2026
         </Text>
         <View
@@ -906,6 +930,7 @@ function SettingsHeader({
           {isOwner ? null : (
             <SettingsButton
               color="secondary"
+              disabled={!latestReportableMessage}
               icon={FlagIcon}
               label={l`Report this group chat`}
               text={l`Report`}
@@ -939,6 +964,37 @@ function SettingsHeader({
         groupName={groupName}
         onConfirm={leaveConvo}
       />
+      {latestReportableMessage ? (
+        <>
+          <ReportDialog
+            control={reportControl}
+            subject={{
+              view: 'convo',
+              convoId: convo.view.id,
+              message: latestReportableMessage,
+            }}
+            onAfterSubmit={() => {
+              const sender = convo.members.find(
+                member => member.did === latestReportableMessage.sender.did,
+              )
+              if (sender) {
+                unstableCacheProfileView(queryClient, sender)
+              }
+              blockOrDeleteControl.open()
+            }}
+          />
+          <AfterReportDialog
+            control={blockOrDeleteControl}
+            currentScreen="conversation"
+            params={{
+              convoId: convo.view.id,
+              message: latestReportableMessage,
+            }}
+          />
+        </>
+      ) : (
+        <ReportConversationPrompt control={reportControl} />
+      )}
     </>
   )
 }
@@ -984,12 +1040,14 @@ function SettingsHeaderPlaceholder() {
 
 function SettingsButton({
   color = 'secondary',
+  disabled = false,
   icon,
   label,
   text,
   onPress,
 }: {
   color?: ButtonColor
+  disabled?: boolean
   icon: React.ComponentType<SVGIconProps>
   label: string
   text: string
@@ -1001,6 +1059,7 @@ function SettingsButton({
     <View>
       <Button
         color={color}
+        disabled={disabled}
         size="large"
         shape="round"
         label={label}
