@@ -50,6 +50,7 @@ import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {IS_NATIVE} from '#/env'
 import type * as bsky from '#/types/bsky'
+import {useIsWithinSplitView} from './splitView/context'
 
 export const ChatListItemPortal = createPortalGroup()
 
@@ -122,6 +123,7 @@ function DirectChatItem({
 }) {
   const {t: l} = useLingui()
   const profile = useProfileShadow(convo.primaryMember)
+  const {isWithinLeftPanel} = useIsWithinSplitView()
 
   const moderation = useMemo(
     () => moderateProfile(profile, moderationOpts),
@@ -160,11 +162,13 @@ function DirectChatItem({
       isBlockedAccount={moderation.blocked}
       showProfileBadges
       postAlerts={
-        <PostAlerts
-          modui={moderation.ui('contentList')}
-          size="lg"
-          style={[a.pt_xs]}
-        />
+        isWithinLeftPanel ? null : (
+          <PostAlerts
+            modui={moderation.ui('contentList')}
+            size="sm"
+            style={[a.pb_2xs, a.max_w_full, a.overflow_hidden]}
+          />
+        )
       }>
       {children}
     </BaseChatItem>
@@ -533,7 +537,7 @@ function BaseChatItem({
                     {showProfileBadges && (
                       <ProfileBadges
                         profile={primaryProfile}
-                        size="md"
+                        size="sm"
                         style={[a.pl_xs, a.self_center]}
                       />
                     )}
@@ -585,6 +589,8 @@ function BaseChatItem({
                     </Text>
                   )}
 
+                  {postAlerts}
+
                   <Text
                     emoji
                     numberOfLines={2}
@@ -596,8 +602,6 @@ function BaseChatItem({
                     ]}>
                     {lastMessage}
                   </Text>
-
-                  {postAlerts}
 
                   {children}
                 </View>
