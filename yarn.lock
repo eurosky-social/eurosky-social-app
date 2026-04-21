@@ -2439,6 +2439,11 @@
   resolved "https://registry.yarnpkg.com/@bsky.app/expo-translate-text/-/expo-translate-text-0.2.9.tgz#4ed4552cd50bca7d02d14e706e419bd728d4ab51"
   integrity sha512-VmqMhc/YavjgkGhxT/fB8mGSi+VZHJET1tsbpTg8peqKRXFSju2F294NsRxH/4aaMQFlt5oRfPCRnLm1H5o3lA==
 
+"@bsky.app/peek-menu@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@bsky.app/peek-menu/-/peek-menu-0.2.0.tgz#b6c7c119c73ed68f08a8da9ee571c2f0ee7b10cd"
+  integrity sha512-e6WLduzFd7kEX+47lxzm+wTol2gyMdb3uGm5N0IhMEYRSXv/kfBjHilu821nnTEtg4VRr4Xvc87c7MNCJYKfSw==
+
 "@bsky.app/react-native-mmkv@2.12.5":
   version "2.12.5"
   resolved "https://registry.yarnpkg.com/@bsky.app/react-native-mmkv/-/react-native-mmkv-2.12.5.tgz#eb17d31a6158c74393f617a1763ac223ff3f83a6"
