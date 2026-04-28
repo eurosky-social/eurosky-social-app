@@ -1,9 +1,12 @@
 import {createContext, useCallback, useContext, useEffect, useMemo} from 'react'
 
 import {useGetAndRegisterPushToken} from '#/lib/notifications/notifications'
+import {useAgent} from '#/state/session'
 import {Provider as RedirectOverlayProvider} from '#/ageAssurance/components/RedirectOverlay'
-import {AgeAssuranceDataProvider} from '#/ageAssurance/data'
-import {useAgeAssuranceDataContext} from '#/ageAssurance/data'
+import {
+  AgeAssuranceDataProvider,
+  useAgeAssuranceDataContext,
+} from '#/ageAssurance/data'
 import {logger} from '#/ageAssurance/logger'
 import {
   useAgeAssuranceState,
@@ -16,6 +19,7 @@ import {
 } from '#/ageAssurance/types'
 import {
   isUnderAge,
+  maybeRestrictChatSettings,
   MIN_ACCESS_AGE,
   useAgeAssuranceRegionConfigWithFallback,
 } from '#/ageAssurance/util'
@@ -76,6 +80,7 @@ export function Provider({children}: {children: React.ReactNode}) {
 }
 
 function InnerProvider({children}: {children: React.ReactNode}) {
+  const agent = useAgent()
   const state = useAgeAssuranceState()
   const {data} = useAgeAssuranceDataContext()
   const config = useAgeAssuranceRegionConfigWithFallback()
@@ -83,11 +88,13 @@ function InnerProvider({children}: {children: React.ReactNode}) {
 
   const handleAccessUpdate = useCallback(
     (s: AgeAssuranceState) => {
-      getAndRegisterPushToken({
-        isAgeRestricted: s.access !== AgeAssuranceAccess.Full,
-      })
+      const isAgeRestricted = s.access !== AgeAssuranceAccess.Full
+      if (isAgeRestricted) {
+        void getAndRegisterPushToken({isAgeRestricted})
+        maybeRestrictChatSettings({agent})
+      }
     },
-    [getAndRegisterPushToken],
+    [agent, getAndRegisterPushToken],
   )
   useOnAgeAssuranceAccessUpdate(handleAccessUpdate)
 

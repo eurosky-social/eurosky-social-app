@@ -4,6 +4,7 @@ import {useMutation, useQueryClient} from '@tanstack/react-query'
 import {preferencesQueryKey} from '#/state/queries/preferences'
 import {useAgent, useSession} from '#/state/session'
 import {usePatchAgeAssuranceOtherRequiredData} from '#/ageAssurance'
+import {isUnderAge, maybeRestrictChatSettings} from '#/ageAssurance/util'
 import {IS_DEV} from '#/env'
 import {account} from '#/storage'
 
@@ -14,7 +15,7 @@ const BIRTHDATE_DELAY_HOURS = IS_DEV ? 0.001 : 48
  * Stores the timestamp of the birthday update locally. This is used to
  * debounce birthday updates globally.
  *
- * Use {@link useIsBirthDateUpdateAllowed} to check if an update is allowed.
+ * Use {@link useIsBirthdateUpdateAllowed} to check if an update is allowed.
  */
 export function snoozeBirthdateUpdateAllowedForDid(did: string) {
   account.set([did, 'birthdateLastUpdatedAt'], new Date().toISOString())
@@ -43,6 +44,7 @@ export function useIsBirthdateUpdateAllowed() {
     ])
     if (!lastUpdated) return true
     const lastUpdatedDate = new Date(lastUpdated)
+    // eslint-disable-next-line react-hooks/purity
     const diffMs = Date.now() - lastUpdatedDate.getTime()
     const diffHours = diffMs / (1000 * 60 * 60)
     return diffHours >= BIRTHDATE_DELAY_HOURS
@@ -62,11 +64,16 @@ export function useBirthdateMutation() {
       await queryClient.invalidateQueries({
         queryKey: preferencesQueryKey,
       })
+
+      if (isUnderAge(birthDate.toISOString(), 18)) {
+        maybeRestrictChatSettings({agent})
+      }
+
       /**
        * Also patch the age assurance other required data with the new
        * birthdate, which may change the user's age assurance access level.
        */
-      patchOtherRequiredData({birthdate: bday})
+      void patchOtherRequiredData({birthdate: bday})
       snoozeBirthdateUpdateAllowedForDid(agent.sessionManager.did!)
     },
   })

@@ -3,15 +3,12 @@ import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {z} from 'zod'
 
 import {MAX_LABELERS} from '#/lib/constants'
-import {
-  PERSISTED_QUERY_GCTIME,
-  PERSISTED_QUERY_ROOT,
-  STALE,
-} from '#/state/queries'
+import {GCTIME, STALE} from '#/state/queries'
 import {
   preferencesQueryKey,
   usePreferencesQuery,
 } from '#/state/queries/preferences'
+import {createQueryKey} from '#/state/queries/util'
 import {useAgent} from '#/state/session'
 
 const labelerInfoQueryKeyRoot = 'labeler-info'
@@ -26,11 +23,8 @@ export const labelersInfoQueryKey = (dids: string[]) => [
   dids.slice().sort(),
 ]
 
-const persistedLabelersDetailedInfoQueryKey = (dids: string[]) => [
-  PERSISTED_QUERY_ROOT,
-  'labelers-detailed-info',
-  dids,
-]
+const createLabelersDetailedInfoQueryKey = (dids: string[]) =>
+  createQueryKey('labelers-detailed-info', {dids}, {persistedVersion: 1})
 
 export function useLabelerInfoQuery({
   did,
@@ -69,8 +63,8 @@ export function useLabelersDetailedInfoQuery({dids}: {dids: string[]}) {
   const agent = useAgent()
   return useQuery({
     enabled: !!dids.length,
-    queryKey: persistedLabelersDetailedInfoQueryKey(dids),
-    gcTime: PERSISTED_QUERY_GCTIME,
+    queryKey: createLabelersDetailedInfoQueryKey(dids),
+    gcTime: GCTIME.INFINITY,
     staleTime: STALE.MINUTES.ONE,
     queryFn: async () => {
       const res = await agent.app.bsky.labeler.getServices({
@@ -78,6 +72,22 @@ export function useLabelersDetailedInfoQuery({dids}: {dids: string[]}) {
         detailed: true,
       })
       return res.data.views as AppBskyLabelerDefs.LabelerViewDetailed[]
+    },
+  })
+}
+
+export function useRemoveLabelersMutation() {
+  const queryClient = useQueryClient()
+  const agent = useAgent()
+
+  return useMutation({
+    async mutationFn({dids}: {dids: string[]}) {
+      await Promise.all(dids.map(did => agent.removeLabeler(did)))
+    },
+    async onSuccess() {
+      await queryClient.invalidateQueries({
+        queryKey: preferencesQueryKey,
+      })
     },
   })
 }

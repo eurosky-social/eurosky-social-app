@@ -13,22 +13,26 @@ const getTrendingGifs = createTenorApi(GIF_FEATURED)
 
 const searchGifs = createTenorApi<{q: string}>(GIF_SEARCH)
 
-export function useFeaturedGifsQuery() {
+export function useTenorFeaturedGifsQuery(options?: {enabled?: boolean}) {
   return useInfiniteQuery({
     queryKey: RQKEY_FEATURED,
     queryFn: ({pageParam}) => getTrendingGifs({pos: pageParam}),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: lastPage => lastPage.next,
+    enabled: options?.enabled,
   })
 }
 
-export function useGifSearchQuery(query: string) {
+export function useTenorGifSearchQuery(
+  query: string,
+  options?: {enabled?: boolean},
+) {
   return useInfiniteQuery({
     queryKey: RQKEY_SEARCH(query),
     queryFn: ({pageParam}) => searchGifs({q: query, pos: pageParam}),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: lastPage => lastPage.next,
-    enabled: !!query,
+    enabled: !!query && options?.enabled !== false,
     placeholderData: keepPreviousData,
   })
 }
@@ -99,6 +103,29 @@ export function tenorUrlToBskyGifUrl(tenorUrl: string) {
   return url.href
 }
 
+/**
+ * Returns the appropriate URL for a GIF preview image.
+ * Tenor URLs (media.tenor.com) are routed through t.gifs.bsky.app;
+ * KLIPY URLs (static.klipy.com) are routed through k.gifs.bsky.app.
+ */
+export function gifPreviewUrl(gifUrl: string) {
+  try {
+    const url = new URL(gifUrl)
+    if (url.hostname === 'media.tenor.com') {
+      url.hostname = 't.gifs.bsky.app'
+      return url.href
+    }
+    if (url.hostname === 'static.klipy.com') {
+      url.hostname = 'k.gifs.bsky.app'
+      return url.href
+    }
+    return gifUrl
+  } catch (e) {
+    logger.debug('invalid url passed to gifPreviewUrl()')
+    return ''
+  }
+}
+
 export type Gif = {
   /**
    * A Unix timestamp that represents when this post was created.
@@ -116,7 +143,8 @@ export type Gif = {
   /**
    * A dictionary with a content format as the key and a Media Object as the value.
    */
-  media_formats: Record<ContentFormats, MediaObject>
+  media_formats: Record<BaseContentFormats, MediaObject> &
+    Partial<Record<VideoContentFormats, MediaObject>>
   /**
    * An array of tags for the post
    */
@@ -171,16 +199,20 @@ type MediaObject = {
   size: number
 }
 
-type ContentFormats =
+type BaseContentFormats =
   | 'preview'
   | 'gif'
   // | 'mediumgif'
   | 'tinygif'
 // | 'nanogif'
-// | 'mp4'
-// | 'loopedmp4'
-// | 'tinymp4'
-// | 'nanomp4'
-// | 'webm'
+
+type VideoContentFormats =
+  | 'mp4'
+  // | 'loopedmp4'
+  // | 'tinymp4'
+  // | 'nanomp4'
+  | 'webm'
 // | 'tinywebm'
 // | 'nanowebm'
+
+type ContentFormats = BaseContentFormats | VideoContentFormats

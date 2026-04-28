@@ -1,4 +1,4 @@
-import {createContext, useContext, useEffect, useMemo} from 'react'
+import {createContext, useContext, useMemo} from 'react'
 import {Platform} from 'react-native'
 
 import {Logger} from '#/logger'
@@ -24,7 +24,7 @@ import {
 import {type Metrics, metrics} from '#/analytics/metrics'
 import * as refParams from '#/analytics/misc/refParams'
 import * as env from '#/env'
-import {useGeolocation} from '#/geolocation'
+import {useGeolocationServiceResponse} from '#/geolocation/service'
 import {device} from '#/storage'
 
 export * as utils from '#/analytics/utils'
@@ -104,12 +104,13 @@ const Context = createContext<AnalyticsBaseContextType>({
       referrerSrc: refParams.src,
       referrerUrl: refParams.url,
     },
-    geolocation: device.get(['mergedGeolocation']) || {
+    geolocation: device.get(['geolocationServiceResponse']) || {
       countryCode: '',
       regionCode: '',
     },
   },
 })
+Context.displayName = 'AnalyticsContext'
 
 /**
  * Ensures that deviceId is set and migrated from legacy storage. Handled on
@@ -137,7 +138,7 @@ export function AnalyticsContext({
     }
   }
   const sessionId = useSessionId()
-  const geolocation = useGeolocation()
+  const geolocation = useGeolocationServiceResponse()
   const parentContext = useContext(Context)
   const childContext = useMemo(() => {
     const combinedMetadata = {
@@ -181,20 +182,25 @@ export function AnalyticsFeaturesContext({
   const parentContext = useContext(Context)
 
   /**
-   * Side-effect: we need to synchronously set this during the
-   * same render cycle. It does not trigger a re-render, it just
-   * sets properties on the singleton GrowthBook instance.
+   * Side-effects: we need to synchronously set these during the same render
+   * cycle. These calls do not trigger re-renders, they just set properties on
+   * the singleton GrowthBook instance.
    */
   setAttributes(parentContext.metadata)
-
-  useEffect(() => {
-    feats.setTrackingCallback((experiment, result) => {
-      parentContext.metric('experiment:viewed', {
-        experimentId: experiment.key,
-        variationId: result.key,
-      })
+  feats.setTrackingCallback((experiment, result) => {
+    parentContext.metric('experiment:viewed', {
+      experimentId: experiment.key,
+      variationId: result.key,
     })
-  }, [parentContext.metric])
+  })
+  feats.setFeatureUsageCallback((feature, result) => {
+    parentContext.metric('feature:viewed', {
+      featureId: feature,
+      featureResultValue: result.value,
+      experimentId: result.experiment?.key,
+      variationId: result.experimentResult?.key,
+    })
+  })
 
   const childContext = useMemo<AnalyticsContextType>(() => {
     return {

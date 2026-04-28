@@ -1,6 +1,11 @@
 import {useCallback} from 'react'
 import {type AppBskyActorDefs, type AppBskyFeedDefs, AtUri} from '@atproto/api'
-import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
+import {
+  type QueryClient,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 import {useToggleMutationQueue} from '#/lib/hooks/useToggleMutationQueue'
 import {updatePostShadow} from '#/state/cache/post-shadow'
@@ -19,8 +24,10 @@ export function usePostQuery(uri: string | undefined) {
   const agent = useAgent()
   return useQuery<AppBskyFeedDefs.PostView>({
     queryKey: RQKEY(uri || ''),
-    async queryFn() {
-      const urip = new AtUri(uri!)
+    queryFn: async () => {
+      if (!uri) throw new Error('[unreachable] No URI provided')
+
+      const urip = new AtUri(uri)
 
       if (!urip.host.startsWith('did:')) {
         const res = await agent.resolveHandle({
@@ -39,6 +46,14 @@ export function usePostQuery(uri: string | undefined) {
     },
     enabled: !!uri,
   })
+}
+
+export function precachePost(
+  queryClient: QueryClient,
+  uri: string,
+  post: AppBskyFeedDefs.PostView,
+) {
+  queryClient.setQueryData(RQKEY(uri), post)
 }
 
 export function useGetPost() {
@@ -158,7 +173,7 @@ export function usePostLikeMutationQueue(
     return queueToggle(false)
   }, [queryClient, postUri, queueToggle])
 
-  return [queueLike, queueUnlike]
+  return [queueLike, queueUnlike] as const
 }
 
 function usePostLikeMutation(
@@ -286,7 +301,7 @@ export function usePostRepostMutationQueue(
     return queueToggle(false)
   }, [queryClient, postUri, queueToggle])
 
-  return [queueRepost, queueUnrepost]
+  return [queueRepost, queueUnrepost] as const
 }
 
 function usePostRepostMutation(
