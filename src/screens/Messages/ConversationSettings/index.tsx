@@ -12,8 +12,8 @@ import {
   type NavigationProp,
 } from '#/lib/routes/types'
 import {logger} from '#/logger'
-import {ConvoProvider, isConvoActive, useConvo} from '#/state/messages/convo'
-import {ConvoStatus} from '#/state/messages/convo/types'
+import {ConvoProvider} from '#/state/messages/convo'
+import {useConvoQuery} from '#/state/queries/messages/conversation'
 import {useEditGroupChatName} from '#/state/queries/messages/edit-group-chat-name'
 import {useLeaveConvo} from '#/state/queries/messages/leave-conversation'
 import {useListConvoMembersQuery} from '#/state/queries/messages/list-convo-members'
@@ -29,6 +29,7 @@ import * as Dialog from '#/components/Dialog'
 import {
   type ConvoWithDetails,
   type GroupConvoMember,
+  parseConvoView,
 } from '#/components/dms/util'
 import {Error} from '#/components/Error'
 import {ArrowBoxLeft_Stroke2_Corner0_Rounded as ArrowBoxLeftIcon} from '#/components/icons/ArrowBoxLeft'
@@ -89,29 +90,34 @@ export function MessagesConversationSettingsScreen({route}: Props) {
         <Layout.Header.Slot />
       </Layout.Header.Outer>
       <ConvoProvider key={convoId} convoId={convoId}>
-        <SettingsInner />
+        <SettingsInner convoId={convoId} />
       </ConvoProvider>
     </Layout.Screen>
   )
 }
 
-function SettingsInner() {
+function SettingsInner({convoId}: {convoId: string}) {
   const {t: l} = useLingui()
-  const convoState = useConvo()
   const navigation = useNavigation<NavigationProp>()
+  const {currentAccount} = useSession()
+  const {data: convoData, error, refetch} = useConvoQuery({convoId})
 
-  if (convoState.status === ConvoStatus.Error) {
+  const convo = convoData
+    ? parseConvoView(convoData, currentAccount?.did)
+    : null
+
+  if (error) {
     return (
       <Error
         title={l`Something went wrong`}
         message={l`We couldn’t load this conversation’s settings`}
-        onRetry={() => convoState.error.retry()}
+        onRetry={() => refetch()}
         sideBorders={false}
       />
     )
   }
 
-  if (!isConvoActive(convoState)) {
+  if (!convo) {
     return (
       <View style={[a.flex_1, a.align_center, a.justify_center]}>
         <Loader size="xl" />
@@ -119,7 +125,7 @@ function SettingsInner() {
     )
   }
 
-  if (convoState.convo?.kind !== 'group') {
+  if (convo.kind !== 'group') {
     return (
       <Error
         title={l`Wrong kind of conversation`}
@@ -135,7 +141,7 @@ function SettingsInner() {
     )
   }
 
-  return <GroupSettings convo={convoState.convo} />
+  return <GroupSettings convo={convo} />
 }
 
 function keyExtractor(item: Item) {

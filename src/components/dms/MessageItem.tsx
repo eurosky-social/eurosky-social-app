@@ -90,9 +90,11 @@ function isWithinClusterBoundary({
 
 let MessageItem = ({
   item,
+  convoId,
   isGroupChat = false,
 }: {
   item: ConvoItem & {type: 'message' | 'pending-message'}
+  convoId: string
   isGroupChat?: boolean
 }): React.ReactNode => {
   const t = useTheme()
@@ -440,6 +442,7 @@ let MessageItem = ({
               hasReactions={hasReactions}
               isFromSelf={isFromSelf}
               message={message}
+              convoId={convoId}
               senderProfile={profile}
               onTap={() => {
                 if (reactionTapRef.current) return

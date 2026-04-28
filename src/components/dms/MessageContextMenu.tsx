@@ -31,11 +31,13 @@ import {hasReachedReactionLimit} from './util'
 
 export let MessageContextMenu = ({
   message,
+  convoId,
   senderProfile,
   children,
   onTap,
 }: {
   message: ChatBskyConvoDefs.MessageView
+  convoId: string
   senderProfile?: bsky.profile.AnyProfileView
   children: TriggerProps['children']
   onTap?: () => void
@@ -180,11 +182,12 @@ export let MessageContextMenu = ({
           )}
         </ContextMenu.Outer>
       </ContextMenu.Root>
+
       <ReportDialog
         control={reportControl}
         subject={{
           view: 'message',
-          convoId: convo.convo.view.id,
+          convoId,
           message,
         }}
         onAfterSubmit={() => {
@@ -198,7 +201,7 @@ export let MessageContextMenu = ({
         control={blockOrDeleteControl}
         currentScreen="conversation"
         params={{
-          convoId: convo.convo.view.id,
+          convoId,
           message,
         }}
       />

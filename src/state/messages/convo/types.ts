@@ -6,15 +6,18 @@ import {
 } from '@atproto/api'
 
 import {type MessagesEventBus} from '#/state/messages/events/agent'
-import {type ConvoWithDetails} from '#/components/dms/util'
 
 export type ConvoParams = {
   convoId: string
   agent: BskyAgent
   events: MessagesEventBus
-  placeholderData?: {
-    convo: ChatBskyConvoDefs.ConvoView
-  }
+  /**
+   * Returns the DIDs of the current user's conversation partners (every
+   * member other than self). Called lazily when the agent needs to invalidate
+   * block state after a send failure. Source of truth is the `useConvoQuery`
+   * cache — see `ConvoProvider`.
+   */
+  getRecipientDids: () => string[]
 }
 
 export enum ConvoStatus {
@@ -24,7 +27,6 @@ export enum ConvoStatus {
   Error = 'error',
   Backgrounded = 'backgrounded',
   Suspended = 'suspended',
-  Disabled = 'disabled',
 }
 
 export enum ConvoItemError {
@@ -55,7 +57,6 @@ export enum ConvoDispatchEvent {
   Background = 'background',
   Suspend = 'suspend',
   Error = 'error',
-  Disable = 'disable',
 }
 
 export type ConvoDispatch =
@@ -65,7 +66,6 @@ export type ConvoDispatch =
   | {event: ConvoDispatchEvent.Background}
   | {event: ConvoDispatchEvent.Suspend}
   | {event: ConvoDispatchEvent.Error; payload: ConvoError}
-  | {event: ConvoDispatchEvent.Disable}
 
 export type ConvoItem =
   | {
@@ -136,107 +136,80 @@ type SendMessage = (
   message: ChatBskyConvoSendMessage.InputSchema['message'],
 ) => void
 type FetchMessageHistory = () => Promise<void>
-type MarkConvoAccepted = () => void
 type AddReaction = (messageId: string, reaction: string) => Promise<void>
 type RemoveReaction = (messageId: string, reaction: string) => Promise<void>
 
 export type ConvoStateUninitialized = {
   status: ConvoStatus.Uninitialized
   items: []
-  convo: ConvoWithDetails | undefined
   error: undefined
   isFetchingHistory: false
   hasAllHistory: boolean
   deleteMessage: undefined
   sendMessage: undefined
   fetchMessageHistory: undefined
-  markConvoAccepted: undefined
   addReaction: undefined
   removeReaction: undefined
 }
 export type ConvoStateInitializing = {
   status: ConvoStatus.Initializing
   items: []
-  convo: ConvoWithDetails | undefined
   error: undefined
   isFetchingHistory: boolean
   hasAllHistory: boolean
   deleteMessage: undefined
   sendMessage: undefined
   fetchMessageHistory: undefined
-  markConvoAccepted: undefined
   addReaction: undefined
   removeReaction: undefined
 }
 export type ConvoStateReady = {
   status: ConvoStatus.Ready
   items: ConvoItem[]
-  convo: ConvoWithDetails
   error: undefined
   isFetchingHistory: boolean
   hasAllHistory: boolean
   deleteMessage: DeleteMessage
   sendMessage: SendMessage
   fetchMessageHistory: FetchMessageHistory
-  markConvoAccepted: MarkConvoAccepted
   addReaction: AddReaction
   removeReaction: RemoveReaction
 }
 export type ConvoStateBackgrounded = {
   status: ConvoStatus.Backgrounded
   items: ConvoItem[]
-  convo: ConvoWithDetails
   error: undefined
   isFetchingHistory: boolean
   hasAllHistory: boolean
   deleteMessage: DeleteMessage
   sendMessage: SendMessage
   fetchMessageHistory: FetchMessageHistory
-  markConvoAccepted: MarkConvoAccepted
   addReaction: AddReaction
   removeReaction: RemoveReaction
 }
 export type ConvoStateSuspended = {
   status: ConvoStatus.Suspended
   items: ConvoItem[]
-  convo: ConvoWithDetails
   error: undefined
   isFetchingHistory: boolean
   hasAllHistory: boolean
   deleteMessage: DeleteMessage
   sendMessage: SendMessage
   fetchMessageHistory: FetchMessageHistory
-  markConvoAccepted: MarkConvoAccepted
   addReaction: AddReaction
   removeReaction: RemoveReaction
 }
 export type ConvoStateError = {
   status: ConvoStatus.Error
   items: []
-  convo: undefined
   error: ConvoError
   isFetchingHistory: false
   hasAllHistory: false
   deleteMessage: undefined
   sendMessage: undefined
   fetchMessageHistory: undefined
-  markConvoAccepted: undefined
   addReaction: undefined
   removeReaction: undefined
-}
-export type ConvoStateDisabled = {
-  status: ConvoStatus.Disabled
-  items: ConvoItem[]
-  convo: ConvoWithDetails
-  error: undefined
-  isFetchingHistory: boolean
-  hasAllHistory: boolean
-  deleteMessage: DeleteMessage
-  sendMessage: SendMessage
-  fetchMessageHistory: FetchMessageHistory
-  markConvoAccepted: MarkConvoAccepted
-  addReaction: AddReaction
-  removeReaction: RemoveReaction
 }
 export type ConvoState =
   | ConvoStateUninitialized
@@ -245,9 +218,12 @@ export type ConvoState =
   | ConvoStateBackgrounded
   | ConvoStateSuspended
   | ConvoStateError
-  | ConvoStateDisabled
 
-export type ConvoEvent = {
-  type: 'invalidate-block-state'
-  accountDids: string[]
-}
+export type ConvoEvent =
+  | {
+      type: 'invalidate-block-state'
+      accountDids: string[]
+    }
+  | {
+      type: 'account-disabled'
+    }

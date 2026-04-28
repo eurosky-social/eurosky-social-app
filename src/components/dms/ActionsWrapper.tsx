@@ -8,12 +8,14 @@ import type * as bsky from '#/types/bsky'
 
 export function ActionsWrapper({
   message,
+  convoId,
   isFromSelf,
   senderProfile,
   children,
   onTap,
 }: {
   message: ChatBskyConvoDefs.MessageView
+  convoId: string
   hasReactions?: boolean
   isFromSelf: boolean
   senderProfile?: bsky.profile.AnyProfileView
@@ -25,6 +27,7 @@ export function ActionsWrapper({
   return (
     <MessageContextMenu
       message={message}
+      convoId={convoId}
       senderProfile={senderProfile}
       onTap={onTap}>
       {trigger =>
