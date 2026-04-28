@@ -36,7 +36,6 @@ import {
   convertBskyAppUrlIfNeeded,
   isBskyPostUrl,
 } from '#/lib/strings/url-helpers'
-import {logger} from '#/logger'
 import {
   type ActiveConvoStates,
   isConvoActive,
@@ -47,6 +46,7 @@ import {
   type ConvoState,
   ConvoStatus,
 } from '#/state/messages/convo/types'
+import {logger} from '#/state/messages/logger'
 import {useGetPost} from '#/state/queries/post'
 import {useAgent} from '#/state/session'
 import {List, type ListMethods} from '#/view/com/util/List'
@@ -192,10 +192,16 @@ export function MessagesList({
       if (!hasInitiallyScrolled.current && convoState.items.length > 0) {
         hasInitiallyScrolled.current = true
         flatListRef.current?.scrollToOffset({offset: height, animated: false})
+        logger.debug('onContentSizeChange: initial scroll', {
+          height,
+          itemCount: convoState.items.length,
+          isFetchingHistory: convoState.isFetchingHistory,
+        })
         // If history is already done loading, mark ready after a frame for the scroll to settle.
         // Otherwise, the footer sentinel's onLayout will handle it when history finishes.
         if (!convoState.isFetchingHistory) {
           requestAnimationFrame(() => {
+            logger.debug('setHasScrolled(true) via onContentSizeChange')
             setHasScrolled(true)
           })
         }
@@ -350,6 +356,7 @@ export function MessagesList({
       rt = stripInvalidMentions(rt)
 
       if (!hasScrolled) {
+        logger.debug('setHasScrolled(true) via onSendMessage')
         setHasScrolled(true)
       }
 
@@ -391,12 +398,18 @@ export function MessagesList({
   // Footer sentinel: when history is still loading during the initial scroll, the footer's onLayout fires each time
   // new items are prepended (shifting its position). Once history finishes, this triggers setHasScrolled.
   const onFooterLayout = useCallback(() => {
+    logger.debug('onFooterLayout', {
+      hasInitiallyScrolled: hasInitiallyScrolled.current,
+      hasScrolled,
+      isFetchingHistory: convoState.isFetchingHistory,
+    })
     if (
       hasInitiallyScrolled.current &&
       !hasScrolled &&
       !convoState.isFetchingHistory
     ) {
       requestAnimationFrame(() => {
+        logger.debug('setHasScrolled(true) via onFooterLayout')
         setHasScrolled(true)
       })
     }

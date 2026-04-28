@@ -16,7 +16,6 @@ import {
   isErrorMaybeAppPasswordPermissions,
   isNetworkError,
 } from '#/lib/strings/errors'
-import {Logger} from '#/logger'
 import {
   ACTIVE_POLL_INTERVAL,
   BACKGROUND_POLL_INTERVAL,
@@ -37,14 +36,13 @@ import {
 } from '#/state/messages/convo/types'
 import {type MessagesEventBus} from '#/state/messages/events/agent'
 import {type MessagesEventBusError} from '#/state/messages/events/types'
+import {logger} from '#/state/messages/logger'
 import {
   type ConvoWithDetails,
   type GroupConvoMember,
   parseConvoView,
 } from '#/components/dms/util'
 import {IS_NATIVE} from '#/env'
-
-const logger = Logger.create(Logger.Context.ConversationAgent)
 
 export function isConvoItemMessage(
   item: ConvoItem,
@@ -279,6 +277,7 @@ export class Convo {
 
   dispatch(action: ConvoDispatch) {
     const prevStatus = this.status
+    const dispatchStart = Date.now()
 
     switch (this.status) {
       case ConvoStatus.Uninitialized: {
@@ -461,8 +460,10 @@ export class Convo {
 
     logger.debug(`dispatch '${action.event}'`, {
       id: this.id,
+      convoId: this.convoId,
       prev: prevStatus,
       next: this.status,
+      dispatchMs: Date.now() - dispatchStart,
     })
 
     this.updateLastActiveTimestamp()
@@ -538,6 +539,8 @@ export class Convo {
   }
 
   private async setup() {
+    const setupStart = Date.now()
+    logger.debug('setup start', {id: this.id, convoId: this.convoId})
     try {
       const {convo} = await this.fetchConvo()
 
@@ -558,6 +561,13 @@ export class Convo {
 
       const userIsDisabled = Boolean(self.chatDisabled)
 
+      logger.debug('setup complete', {
+        id: this.id,
+        convoId: this.convoId,
+        setupMs: Date.now() - setupStart,
+        userIsDisabled,
+      })
+
       if (userIsDisabled) {
         this.dispatch({event: ConvoDispatchEvent.Disable})
       } else {
@@ -565,6 +575,12 @@ export class Convo {
       }
     } catch (err) {
       const e = err as Error
+      logger.debug('setup failed', {
+        id: this.id,
+        convoId: this.convoId,
+        setupMs: Date.now() - setupStart,
+        message: e.message,
+      })
       if (!isNetworkError(e) && !isErrorMaybeAppPasswordPermissions(e)) {
         logger.error('setup failed', {
           safeMessage: e.message,
@@ -633,6 +649,8 @@ export class Convo {
     // non-blocking
     void this.fetchMemberList()
 
+    const fetchStart = Date.now()
+    logger.debug('fetchConvo start', {id: this.id, convoId: this.convoId})
     this.pendingFetchConvo = (async () => {
       try {
         const response = await networkRetry(2, () => {
@@ -643,6 +661,12 @@ export class Convo {
         })
 
         const convo = response.data.convo
+
+        logger.debug('fetchConvo done', {
+          id: this.id,
+          convoId: this.convoId,
+          fetchMs: Date.now() - fetchStart,
+        })
 
         return {
           convo,
@@ -676,7 +700,14 @@ export class Convo {
   // use `useListConvoMembersQuery`
   // we shouldn't also block loading off of this - the UI should be resilient
   async fetchMemberList() {
+    const start = Date.now()
     let cursor: string | undefined
+    let pages = 0
+    let total = 0
+    logger.debug('fetchMemberList start', {
+      id: this.id,
+      convoId: this.convoId,
+    })
     do {
       const result = await networkRetry(2, () => {
         return this.agent.chat.bsky.convo.getConvoMembers(
@@ -689,16 +720,31 @@ export class Convo {
         )
       })
       cursor = result.data.cursor
+      pages++
+      total += result.data.members.length
 
       for (const member of result.data.members) {
         this.relatedProfiles.set(member.did, member)
       }
     } while (cursor)
+    logger.debug('fetchMemberList done', {
+      id: this.id,
+      convoId: this.convoId,
+      pages,
+      total,
+      fetchMs: Date.now() - start,
+    })
   }
 
   private fetchMessageHistoryError: {retry: () => void} | undefined
   async fetchMessageHistory() {
-    logger.debug('fetch message history', {})
+    logger.debug('fetchMessageHistory called', {
+      id: this.id,
+      convoId: this.convoId,
+      oldestRev: this.oldestRev,
+      isFetchingHistory: this.isFetchingHistory,
+      hasError: !!this.fetchMessageHistoryError,
+    })
 
     /*
      * If oldestRev is null, we've fetched all history.
@@ -717,6 +763,7 @@ export class Convo {
      */
     if (this.fetchMessageHistoryError) return
 
+    const start = Date.now()
     try {
       this.isFetchingHistory = true
       this.commit()
@@ -733,6 +780,15 @@ export class Convo {
         )
       })
       const {cursor, messages, relatedProfiles} = response.data
+
+      logger.debug('fetchMessageHistory done', {
+        id: this.id,
+        convoId: this.convoId,
+        fetchMs: Date.now() - start,
+        returnedMessages: messages.length,
+        returnedCursor: cursor,
+        prevCursor: nextCursor,
+      })
 
       this.oldestRev = cursor ?? null
 
@@ -769,6 +825,12 @@ export class Convo {
       }
     } catch (err) {
       const e = err as Error
+      logger.debug('fetchMessageHistory failed', {
+        id: this.id,
+        convoId: this.convoId,
+        fetchMs: Date.now() - start,
+        message: e.message,
+      })
       if (!isNetworkError(e) && !isErrorMaybeAppPasswordPermissions(e)) {
         logger.error('failed to fetch message history', {
           safeMessage: e.message,
@@ -831,6 +893,14 @@ export class Convo {
 
   ingestFirehose(events: ChatBskyConvoGetLog.OutputSchema['logs']) {
     let needsCommit = false
+    const hadHistory = this.oldestRev !== undefined
+    logger.debug('ingestFirehose', {
+      id: this.id,
+      convoId: this.convoId,
+      eventCount: events.length,
+      hadHistory,
+      latestRev: this.latestRev,
+    })
 
     for (const ev of events) {
       /*
