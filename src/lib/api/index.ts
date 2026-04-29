@@ -280,6 +280,26 @@ async function resolveEmbed(
     featureFlags,
   )
   if (resolvedMedia) {
+    if (resolvedMedia.$type === 'app.bsky.embed.external' && draft.embed.link) {
+      const resolvedLink = await fetchResolveLinkQuery(
+        queryClient,
+        agent,
+        draft.embed.link.uri,
+      )
+      if (resolvedLink.type === 'external' && resolvedLink.document?.cid) {
+        return {
+          $type: 'app.bsky.embed.recordWithMedia',
+          record: {
+            $type: 'app.bsky.embed.record',
+            record: {
+              uri: resolvedLink.document.uri,
+              cid: resolvedLink.document.cid,
+            },
+          },
+          media: resolvedMedia,
+        }
+      }
+    }
     return resolvedMedia
   }
   if (draft.embed.link) {
