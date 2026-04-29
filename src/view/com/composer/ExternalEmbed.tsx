@@ -94,6 +94,7 @@ export const ExternalEmbedLink = ({
               description: data.description,
               thumb: data.thumb?.source.path,
             }}
+            document={data.document}
             hideAlt
           />
         )

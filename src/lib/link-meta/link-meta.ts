@@ -22,6 +22,7 @@ export interface LinkMeta {
   title?: string
   description?: string
   image?: string
+  record?: string
 }
 
 export async function getLinkMeta(
@@ -89,6 +90,9 @@ export async function getLinkMeta(
     meta.description = body.description
     meta.image = body.image
     meta.title = body.title
+    // TODO: read from cardyb response once it returns it.
+    meta.record =
+      'at://did:plc:lysqukqdu6hsrhet5v2brjgo/site.standard.document/3mhiqbcymx223'
     if (shouldFollowRedirect) {
       meta.url = body.url
     }

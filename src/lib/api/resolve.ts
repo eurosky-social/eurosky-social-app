@@ -1,10 +1,10 @@
 import {
   type AppBskyFeedDefs,
   type AppBskyGraphDefs,
+  type BskyAgent,
   type ComAtprotoRepoStrongRef,
 } from '@atproto/api'
 import {AtUri} from '@atproto/api'
-import {type BskyAgent} from '@atproto/api'
 
 import {POST_IMG_MAX} from '#/lib/constants'
 import {getLinkMeta} from '#/lib/link-meta/link-meta'
@@ -15,18 +15,30 @@ import {
   parseStarterPackUri,
 } from '#/lib/strings/starter-pack'
 import {
+  convertBskyAppUrlIfNeeded,
   isBskyCustomFeedUrl,
   isBskyListUrl,
   isBskyPostUrl,
   isBskyStarterPackUrl,
   isBskyStartUrl,
   isShortLink,
+  makeRecordUri,
 } from '#/lib/strings/url-helpers'
 import {type ComposerImage} from '#/state/gallery'
 import {createComposerImage} from '#/state/gallery'
 import {type Gif} from '#/state/queries/tenor'
 import {createGIFDescription} from '../gif-alt-text'
-import {convertBskyAppUrlIfNeeded, makeRecordUri} from '../strings/url-helpers'
+
+export type ResolvedDocumentRecord = {
+  uri: string
+  cid: string | undefined
+  value: unknown
+  publication?: {
+    uri: string
+    cid: string | undefined
+    value: unknown
+  }
+}
 
 type ResolvedExternalLink = {
   type: 'external'
@@ -34,6 +46,7 @@ type ResolvedExternalLink = {
   title: string
   description: string
   thumb: ComposerImage | undefined
+  document?: ResolvedDocumentRecord
 }
 
 type ResolvedPostRecord = {
@@ -233,13 +246,84 @@ async function resolveExternal(
   uri: string,
 ): Promise<ResolvedExternalLink> {
   const result = await getLinkMeta(agent, uri)
+  const document = result.record
+    ? await resolveDocumentRecord(result.record)
+    : undefined
   return {
     type: 'external',
     uri: result.url,
     title: result.title ?? '',
     description: result.description ?? '',
     thumb: result.image ? await imageToThumb(result.image) : undefined,
+    document,
   }
+}
+
+async function resolveDocumentRecord(
+  recordUri: string,
+): Promise<ResolvedDocumentRecord | undefined> {
+  try {
+    const aturi = new AtUri(recordUri)
+    if (aturi.collection !== 'site.standard.document') return undefined
+    const pds = await resolvePdsEndpoint(aturi.host)
+    if (!pds) return undefined
+    const doc = await fetchAtprotoRecord(pds, aturi)
+    if (!doc) return undefined
+    const docValue = doc.value as Record<string, unknown> | null
+    const siteUri =
+      typeof docValue?.site === 'string' ? docValue.site : undefined
+    let publication: ResolvedDocumentRecord['publication']
+    if (siteUri) {
+      const siteAtUri = new AtUri(siteUri)
+      const sitePds =
+        siteAtUri.host === aturi.host
+          ? pds
+          : await resolvePdsEndpoint(siteAtUri.host)
+      if (sitePds) {
+        const pub = await fetchAtprotoRecord(sitePds, siteAtUri)
+        if (pub) {
+          publication = {uri: pub.uri, cid: pub.cid, value: pub.value}
+        }
+      }
+    }
+    return {uri: doc.uri, cid: doc.cid, value: doc.value, publication}
+  } catch {
+    return undefined
+  }
+}
+
+async function fetchAtprotoRecord(
+  pds: string,
+  aturi: AtUri,
+): Promise<{uri: string; cid?: string; value: unknown} | undefined> {
+  const url = new URL('/xrpc/com.atproto.repo.getRecord', pds)
+  url.searchParams.set('repo', aturi.host)
+  url.searchParams.set('collection', aturi.collection)
+  url.searchParams.set('rkey', aturi.rkey)
+  const res = await fetch(url.toString())
+  if (!res.ok) return undefined
+  return (await res.json()) as {uri: string; cid?: string; value: unknown}
+}
+
+async function resolvePdsEndpoint(did: string): Promise<string | undefined> {
+  let docUrl: string
+  if (did.startsWith('did:plc:')) {
+    docUrl = `https://plc.directory/${did}`
+  } else if (did.startsWith('did:web:')) {
+    const domain = did.slice('did:web:'.length).replace(/:/g, '/')
+    docUrl = `https://${domain}/.well-known/did.json`
+  } else {
+    return undefined
+  }
+  const res = await fetch(docUrl)
+  if (!res.ok) return undefined
+  const doc = (await res.json()) as {
+    service?: Array<{id: string; type: string; serviceEndpoint: string}>
+  }
+  const pds = doc.service?.find(
+    s => s.id === '#atproto_pds' || s.type === 'AtprotoPersonalDataServer',
+  )
+  return pds?.serviceEndpoint
 }
 
 export async function imageToThumb(
