@@ -2,6 +2,8 @@ import {useCallback, useMemo} from 'react'
 import {View} from 'react-native'
 import {
   type $Typed,
+  AppBskyEmbedExternal,
+  AppBskyEmbedRecordWithMedia,
   type AppBskyFeedDefs,
   AppBskyFeedPost,
   AtUri,
@@ -45,8 +47,8 @@ import {VideoEmbed} from './VideoEmbed'
 
 export {PostEmbedViewContext} from './types'
 
-export function Embed({embed: rawEmbed, ...rest}: EmbedProps) {
-  const embed = parseEmbed(rawEmbed)
+export function Embed({embed: viewEmbed, ...rest}: EmbedProps) {
+  const embed = parseEmbed(viewEmbed)
 
   switch (embed.type) {
     case 'images':
@@ -65,9 +67,16 @@ export function Embed({embed: rawEmbed, ...rest}: EmbedProps) {
       return <RecordEmbed embed={embed} {...rest} />
     }
     case 'post_with_media': {
+      const innerRawEmbed = AppBskyEmbedRecordWithMedia.isMain(rest.rawEmbed)
+        ? rest.rawEmbed.media
+        : undefined
       return (
         <View style={rest.style}>
-          <MediaEmbed embed={embed.media} {...rest} />
+          <MediaEmbed
+            embed={embed.media}
+            {...rest}
+            rawEmbed={innerRawEmbed}
+          />
           <RecordEmbed embed={embed.view} {...rest} />
         </View>
       )
@@ -95,12 +104,21 @@ function MediaEmbed({
       )
     }
     case 'link': {
+      const rawExternal = AppBskyEmbedExternal.isMain(rest.rawEmbed)
+        ? rest.rawEmbed.external
+        : undefined
+      console.log('DEBUG >>>', 'MediaEmbed link', {
+        rawEmbed: rest.rawEmbed,
+        isMain: AppBskyEmbedExternal.isMain(rest.rawEmbed),
+        rawExternal,
+      })
       return (
         <ContentHider
           modui={rest.moderation?.ui('contentMedia')}
           activeStyle={[a.mt_sm]}>
           <ExternalEmbed
             link={embed.view.external}
+            rawExternal={rawExternal}
             onOpen={rest.onOpen}
             style={[a.mt_sm, rest.style]}
           />

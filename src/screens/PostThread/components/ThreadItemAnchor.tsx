@@ -411,6 +411,9 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
                 <View style={[richText?.text ? a.py_xs : []]}>
                   <Embed
                     embed={post.embed}
+                    rawEmbed={
+                      record.embed as AppBskyFeedPost.Record['embed']
+                    }
                     moderation={moderation}
                     viewContext={PostEmbedViewContext.ThreadHighlighted}
                     onOpen={onOpenEmbed}

@@ -2,6 +2,7 @@ import {memo, useCallback, useMemo, useState} from 'react'
 import {View} from 'react-native'
 import {
   type AppBskyFeedDefs,
+  AppBskyFeedPost,
   type AppBskyFeedThreadgate,
   AtUri,
   RichText as RichTextAPI,
@@ -45,6 +46,7 @@ import {RichText} from '#/components/RichText'
 import * as Skele from '#/components/Skeleton'
 import {SubtleHover} from '#/components/SubtleHover'
 import {Text} from '#/components/Typography'
+import * as bsky from '#/types/bsky'
 
 /**
  * Mimic the space in PostMeta
@@ -369,6 +371,9 @@ const ThreadItemTreePostInner = memo(function ThreadItemTreePostInner({
                     <View style={[a.pb_xs]}>
                       <Embed
                         embed={post.embed}
+                        rawEmbed={
+                          record.embed as AppBskyFeedPost.Record['embed']
+                        }
                         moderation={moderation}
                         viewContext={PostEmbedViewContext.Feed}
                       />

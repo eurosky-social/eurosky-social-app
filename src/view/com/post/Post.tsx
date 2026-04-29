@@ -253,6 +253,9 @@ function PostInner({
                   })}>
                   <Embed
                     embed={post.embed}
+                    rawEmbed={
+                      post.record.embed as AppBskyFeedPost.Record['embed']
+                    }
                     moderation={moderation}
                     viewContext={PostEmbedViewContext.Feed}
                   />

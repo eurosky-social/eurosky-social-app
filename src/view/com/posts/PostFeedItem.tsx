@@ -525,6 +525,9 @@ let PostContent = ({
           ]}>
           <Embed
             embed={postEmbed}
+            rawEmbed={
+              post.record.embed as AppBskyFeedPost.Record['embed']
+            }
             moderation={moderation}
             onOpen={onOpenEmbed}
             viewContext={PostEmbedViewContext.Feed}

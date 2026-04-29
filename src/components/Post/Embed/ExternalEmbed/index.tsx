@@ -1,5 +1,6 @@
 import {useCallback, useMemo} from 'react'
-import {type StyleProp, View, type ViewStyle} from 'react-native'
+import {Pressable, type StyleProp, View, type ViewStyle} from 'react-native'
+import {BlurView} from 'expo-blur'
 import {Image} from 'expo-image'
 import {type AppBskyEmbedExternal, AtUri} from '@atproto/api'
 import {msg} from '@lingui/core/macro'
@@ -8,15 +9,15 @@ import {useLingui} from '@lingui/react'
 import {type ResolvedDocumentRecord} from '#/lib/api/resolve'
 import {parseAltFromGIFDescription} from '#/lib/gif-alt-text'
 import {useHaptics} from '#/lib/haptics'
-import {useGetTimeAgo} from '#/lib/hooks/useTimeAgo'
 import {shareUrl} from '#/lib/sharing'
 import {parseEmbedPlayerFromUrl} from '#/lib/strings/embed-player'
 import {toNiceDomain} from '#/lib/strings/url-helpers'
 import {useExternalEmbedsPrefs} from '#/state/preferences'
 import {atoms as a, useTheme} from '#/alf'
-import {Divider} from '#/components/Divider'
-import {GradientFill} from '#/components/GradientFill'
+import {ArrowShareRight_Stroke2_Corner2_Rounded as ArrowShareRightIcon} from '#/components/icons/ArrowShareRight'
+import {Clock_Stroke2_Corner0_Rounded as ClockIcon} from '#/components/icons/Clock'
 import {Earth_Stroke2_Corner0_Rounded as Globe} from '#/components/icons/Globe'
+import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/Plus'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {IS_NATIVE} from '#/env'
@@ -72,25 +73,49 @@ function nsidAuthority(nsid: string): string {
   return parts.slice(0, -1).reverse().join('.')
 }
 
+function parseInlineSiteData(source: unknown): StandardSiteData | null {
+  if (!source || typeof source !== 'object') return null
+  const e = source as Record<string, unknown>
+  const kind = typeof e.kind === 'string' ? e.kind : undefined
+  if (!kind) return null
+  const src =
+    e.source && typeof e.source === 'object'
+      ? (e.source as Record<string, unknown>)
+      : undefined
+  return {
+    publishedAt: typeof e.publishedAt === 'string' ? e.publishedAt : undefined,
+    source: nsidAuthority(kind),
+    publication: src
+      ? {
+          name: typeof src.name === 'string' ? src.name : undefined,
+          description:
+            typeof src.description === 'string' ? src.description : undefined,
+          icon: typeof src.icon === 'string' ? src.icon : undefined,
+        }
+      : undefined,
+  }
+}
+
 export const ExternalEmbed = ({
   link,
   document,
+  rawExternal,
   onOpen,
   style,
   hideAlt,
 }: {
   link: AppBskyEmbedExternal.ViewExternal
   document?: ResolvedDocumentRecord
+  rawExternal?: AppBskyEmbedExternal.External
   onOpen?: () => void
   style?: StyleProp<ViewStyle>
   hideAlt?: boolean
 }) => {
-  const {_} = useLingui()
+  const {_, i18n} = useLingui()
   const t = useTheme()
   const playHaptic = useHaptics()
   const externalEmbedPrefs = useExternalEmbedsPrefs()
   const niceUrl = toNiceDomain(link.uri)
-  const getTimeAgo = useGetTimeAgo()
   const imageUri = link.thumb
   const embedPlayerParams = useMemo(() => {
     const params = parseEmbedPlayerFromUrl(link.uri)
@@ -101,11 +126,11 @@ export const ExternalEmbed = ({
   }, [link.uri, externalEmbedPrefs])
   const hasMedia = Boolean(imageUri || embedPlayerParams)
 
-  const standardSiteData = document ? parseStandardSiteData(document) : null
+  const standardSiteData = document
+    ? parseStandardSiteData(document)
+    : parseInlineSiteData(rawExternal ?? link)
 
-  const timeAgo = standardSiteData?.publishedAt
-    ? getTimeAgo(standardSiteData.publishedAt, new Date())
-    : null
+  console.log('DEBUG >>>', 'standardSiteData', standardSiteData)
 
   const onPress = useCallback(() => {
     playHaptic('Light')
@@ -137,74 +162,6 @@ export const ExternalEmbed = ({
     )
   }
 
-  let heading: React.ReactNode = null
-  if (standardSiteData) {
-    const accentColor = standardSiteData.publication?.accentColor
-    const iconUri = standardSiteData.publication?.icon
-    heading = (
-      <>
-        <View
-          style={[
-            a.flex_row,
-            a.align_center,
-            a.p_sm,
-            accentColor ? {backgroundColor: accentColor} : undefined,
-          ]}>
-          {accentColor ? (
-            <GradientFill
-              gradient={{
-                values: [
-                  // @ts-expect-error Just for demonstration purposes.
-                  [0, '#fff'],
-                  // @ts-expect-error Just for demonstration purposes.
-                  [0.5, '#fff'],
-                  // @ts-expect-error Just for demonstration purposes.
-                  [1, accentColor],
-                ],
-                // @ts-expect-error Just for demonstration purposes.
-                hover_value: '#fff',
-              }}
-            />
-          ) : null}
-          {iconUri ? (
-            <Image
-              accessibilityIgnoresInvertColors
-              source={{uri: iconUri}}
-              style={[
-                a.rounded_full,
-                a.mr_xs,
-                {
-                  height: 24,
-                  width: 24,
-                },
-              ]}
-            />
-          ) : null}
-          <Text
-            numberOfLines={1}
-            style={[a.text_sm, a.font_semi_bold, a.leading_snug, t.atoms.text]}>
-            {standardSiteData.publication?.name || standardSiteData.title}
-          </Text>
-          {timeAgo ? (
-            <>
-              <Text> </Text>
-              <Text
-                numberOfLines={1}
-                style={[
-                  a.text_xs,
-                  a.leading_snug,
-                  t.atoms.text_contrast_medium,
-                ]}>
-                &middot; {timeAgo}
-              </Text>
-            </>
-          ) : null}
-        </View>
-        <Divider />
-      </>
-    )
-  }
-
   return (
     <Link
       label={link.title || _(msg`Open link to ${niceUrl}`)}
@@ -215,6 +172,7 @@ export const ExternalEmbed = ({
       {({hovered}) => (
         <View
           style={[
+            a.relative,
             a.transition_color,
             a.flex_col,
             a.rounded_md,
@@ -226,14 +184,66 @@ export const ExternalEmbed = ({
               ? t.atoms.border_contrast_high
               : t.atoms.border_contrast_low,
           ]}>
-          {heading}
           {imageUri && !embedPlayerParams ? (
-            <Image
-              style={[a.aspect_card]}
-              source={{uri: imageUri}}
-              accessibilityIgnoresInvertColors
-              loading="lazy"
-            />
+            <>
+              {standardSiteData ? (
+                <BlurView
+                  style={[
+                    a.absolute,
+                    a.z_50,
+                    a.flex_row,
+                    a.align_center,
+                    a.rounded_full,
+                    a.border,
+                    t.atoms.border_contrast_low,
+                    {
+                      left: 16,
+                      top: 16,
+                    },
+                  ]}>
+                  <View
+                    style={[
+                      a.flex_row,
+                      a.align_center,
+                      a.rounded_full,
+                      {
+                        backgroundColor: 'rgba(255,255,255,0.5)',
+                      },
+                    ]}>
+                    <View
+                      style={[
+                        a.p_xs,
+                        a.rounded_full,
+                        {
+                          backgroundColor: 'rgb(28, 31, 38',
+                        },
+                      ]}>
+                      <Globe style={[{color: 'black'}]} size="lg" />
+                    </View>
+                    <Text
+                      style={[
+                        a.pl_sm,
+                        a.pr_md,
+                        a.text_sm,
+                        a.font_semi_bold,
+                        {
+                          color: 'black',
+                        },
+                      ]}>
+                      Powered by {standardSiteData?.source}
+                    </Text>
+                  </View>
+                </BlurView>
+              ) : null}
+              <Image
+                style={[a.aspect_card]}
+                source={{
+                  uri: imageUri,
+                }}
+                accessibilityIgnoresInvertColors
+                loading="lazy"
+              />
+            </>
           ) : undefined}
 
           {embedPlayerParams?.isGif ? (
@@ -271,56 +281,103 @@ export const ExternalEmbed = ({
               ) : undefined}
             </View>
             <View style={[a.px_md]}>
-              <Divider />
-              <View
-                style={[
-                  a.flex_row,
-                  a.align_center,
-                  a.justify_between,
-                  a.gap_2xs,
-                  a.pb_sm,
-                  {
-                    paddingTop: 6, // off menu
-                  },
-                ]}>
-                <View style={[a.flex_row, a.align_center]}>
-                  <Globe
-                    size="xs"
+              {standardSiteData ? (
+                <View style={[a.flex_row, a.align_center, a.pb_md]}>
+                  <Text
                     style={[
-                      a.mr_2xs,
-                      a.transition_color,
-                      hovered
-                        ? t.atoms.text_contrast_medium
-                        : t.atoms.text_contrast_low,
-                    ]}
+                      a.text_xs,
+                      a.font_medium,
+                      t.atoms.text_contrast_medium,
+                    ]}>
+                    {i18n.date(standardSiteData?.publishedAt, {
+                      dateStyle: 'medium',
+                    })}
+                  </Text>
+                  <ArrowShareRightIcon
+                    style={[a.mx_xs, t.atoms.text_contrast_medium]}
+                    size="sm"
                   />
                   <Text
-                    numberOfLines={1}
                     style={[
-                      a.transition_color,
                       a.text_xs,
-                      a.leading_snug,
-                      hovered
-                        ? t.atoms.text_contrast_high
-                        : t.atoms.text_contrast_medium,
+                      a.font_medium,
+                      t.atoms.text_contrast_medium,
                     ]}>
-                    {toNiceDomain(link.uri)}
+                    12 shares
+                  </Text>
+                  <ClockIcon
+                    style={[a.mx_xs, t.atoms.text_contrast_medium]}
+                    size="sm"
+                  />
+                  <Text
+                    style={[
+                      a.text_xs,
+                      a.font_medium,
+                      t.atoms.text_contrast_medium,
+                    ]}>
+                    12 min
                   </Text>
                 </View>
-                {standardSiteData ? (
+              ) : null}
+              {standardSiteData ? (
+                <View
+                  style={[
+                    a.rounded_md,
+                    a.flex_row,
+                    a.align_center,
+                    a.justify_between,
+                    a.p_md,
+                    a.mb_md,
+                    {
+                      backgroundColor: '#63302e',
+                    },
+                  ]}>
+                  {standardSiteData?.publication?.icon ? (
+                    <Image
+                      accessibilityIgnoresInvertColors
+                      source={{uri: standardSiteData?.publication?.icon}}
+                      style={[
+                        a.rounded_sm,
+                        {
+                          height: 32,
+                          width: 32,
+                        },
+                      ]}
+                    />
+                  ) : null}
                   <View>
                     <Text
-                      numberOfLines={1}
                       style={[
-                        a.text_xs,
-                        a.leading_snug,
-                        t.atoms.text_contrast_medium,
+                        a.font_semi_bold,
+                        a.text_sm,
+                        t.atoms.text_inverted,
                       ]}>
-                      {standardSiteData.source}
+                      {standardSiteData?.publication?.name}
+                    </Text>
+                    <Text style={[a.mt_xs, a.text_xs, t.atoms.text_inverted]}>
+                      by @{toNiceDomain(link.uri)}
                     </Text>
                   </View>
-                ) : null}
-              </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    style={[
+                      a.flex_row,
+                      a.align_center,
+                      a.px_md,
+                      a.py_sm,
+                      a.rounded_sm,
+                      {
+                        backgroundColor: t.palette.contrast_50,
+                      },
+                    ]}
+                    onPress={() => {}}>
+                    <Text style={[a.font_semi_bold, a.text_sm, t.atoms.text]}>
+                      Subscribe
+                    </Text>
+                    <PlusIcon style={[a.ml_2xs, t.atoms.text]} size="sm" />
+                  </Pressable>
+                </View>
+              ) : null}
             </View>
           </View>
         </View>

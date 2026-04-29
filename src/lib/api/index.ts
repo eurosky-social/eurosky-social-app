@@ -435,6 +435,44 @@ async function resolveMedia(
         const response = await uploadBlob(agent, path, mime)
         blob = response.data.blob
       }
+      const docValue = resolvedLink.document?.value as
+        | Record<string, unknown>
+        | undefined
+      const pubValue = resolvedLink.document?.publication?.value as
+        | Record<string, unknown>
+        | undefined
+      const documentExtras = resolvedLink.document
+        ? {
+            kind: typeof docValue?.$type === 'string' ? docValue.$type : undefined,
+            publishedAt:
+              typeof docValue?.publishedAt === 'string'
+                ? docValue.publishedAt
+                : undefined,
+            associatedRecord: {
+              uri: resolvedLink.document.uri,
+              cid: resolvedLink.document.cid,
+            },
+            source: pubValue
+              ? {
+                  $type: 'app.bsky.embed.external#source',
+                  kind:
+                    typeof pubValue.$type === 'string'
+                      ? pubValue.$type
+                      : undefined,
+                  name:
+                    typeof pubValue.name === 'string'
+                      ? pubValue.name
+                      : undefined,
+                  description:
+                    typeof pubValue.description === 'string'
+                      ? pubValue.description
+                      : undefined,
+                  icon:
+                    typeof pubValue.icon === 'string' ? pubValue.icon : null,
+                }
+              : undefined,
+          }
+        : undefined
       return {
         $type: 'app.bsky.embed.external',
         external: {
@@ -442,7 +480,9 @@ async function resolveMedia(
           title: resolvedLink.title,
           description: resolvedLink.description,
           thumb: blob,
-        },
+          ...(documentExtras ?? {}),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any,
       }
     }
   }

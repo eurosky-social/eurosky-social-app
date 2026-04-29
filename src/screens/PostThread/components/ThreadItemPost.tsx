@@ -2,6 +2,7 @@ import {memo, type ReactNode, useCallback, useMemo, useState} from 'react'
 import {View} from 'react-native'
 import {
   type AppBskyFeedDefs,
+  AppBskyFeedPost,
   type AppBskyFeedThreadgate,
   AtUri,
   RichText as RichTextAPI,
@@ -18,6 +19,7 @@ import {
   usePostShadow,
 } from '#/state/cache/post-shadow'
 import {type ThreadItem} from '#/state/queries/usePostThread/types'
+import * as bsky from '#/types/bsky'
 import {useSession} from '#/state/session'
 import {type OnPostSuccessData} from '#/state/shell/composer'
 import {useMergedThreadgateHiddenReplies} from '#/state/threadgate-hidden-replies'
@@ -347,6 +349,9 @@ const ThreadItemPostInner = memo(function ThreadItemPostInner({
                   ]}>
                   <Embed
                     embed={post.embed}
+                    rawEmbed={
+                      record.embed as AppBskyFeedPost.Record['embed']
+                    }
                     moderation={moderation}
                     viewContext={PostEmbedViewContext.Feed}
                   />

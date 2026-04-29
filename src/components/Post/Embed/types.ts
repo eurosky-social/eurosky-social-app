@@ -1,5 +1,9 @@
 import {type StyleProp, type ViewStyle} from 'react-native'
-import {type AppBskyFeedDefs, type ModerationDecision} from '@atproto/api'
+import {
+  type AppBskyFeedDefs,
+  type AppBskyFeedPost,
+  type ModerationDecision,
+} from '@atproto/api'
 
 export enum PostEmbedViewContext {
   ThreadHighlighted = 'ThreadHighlighted',
@@ -15,6 +19,11 @@ export type CommonProps = {
   viewContext?: PostEmbedViewContext
   isWithinQuote?: boolean
   allowNestedQuotes?: boolean
+  /**
+   * Raw record-side embed; carries fields that AppView strips when serving
+   * the embed view (e.g. standard.site extras on external embeds).
+   */
+  rawEmbed?: AppBskyFeedPost.Record['embed']
 }
 
 export type EmbedProps = CommonProps & {
