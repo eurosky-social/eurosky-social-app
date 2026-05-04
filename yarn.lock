@@ -2431,10 +2431,10 @@
   dependencies:
     lande "^1.0.10"
 
-"@bsky.app/expo-image-crop-tool@^0.5.0":
-  version "0.5.0"
-  resolved "https://registry.yarnpkg.com/@bsky.app/expo-image-crop-tool/-/expo-image-crop-tool-0.5.0.tgz#4308fbde5c15e6be9122601797bc3d9549c95e31"
-  integrity sha512-gmhQr2HWTRFyPO00fn5OmtiEVtikXusHMrN5Zoq26pu1VZX3zVE+aoc668etTqrvsQcm2Qu8fo96k5F3Wu+6wg==
+"@bsky.app/expo-image-crop-tool@^0.5.1":
+  version "0.5.1"
+  resolved "https://registry.yarnpkg.com/@bsky.app/expo-image-crop-tool/-/expo-image-crop-tool-0.5.1.tgz#c3b0ab56917af541ee849765b9336b057f9d885c"
+  integrity sha512-3O5r0fgS7qQIjcF5tKIweUZkE1knRjA/0jh9TducjBg+eZyBRPHxCEKH+cma0MY5eGilo2P4iCxeNuaEv8wg1g==
 
 "@bsky.app/expo-scroll-edge-effect@^0.1.4":
   version "0.1.4"
