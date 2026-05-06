@@ -3,16 +3,13 @@ import {Pressable, View} from 'react-native'
 import {type ChatBskyConvoDefs} from '@atproto/api'
 import {useLingui} from '@lingui/react/macro'
 
-import {useConvoActive} from '#/state/messages/convo'
-import {useSession} from '#/state/session'
 import {atoms as a, useTheme} from '#/alf'
 import {MessageContextMenu} from '#/components/dms/MessageContextMenu'
 import {DotGrid3x1_Stroke2_Corner0_Rounded as DotsHorizontalIcon} from '#/components/icons/DotGrid'
 import {EmojiSmile_Stroke2_Corner0_Rounded as EmojiSmileIcon} from '#/components/icons/Emoji'
-import * as Toast from '#/components/Toast'
 import type * as bsky from '#/types/bsky'
 import {EmojiReactionPicker} from './EmojiReactionPicker'
-import {hasReachedReactionLimit} from './util'
+import {useToggleMessageReaction} from './useToggleMessageReaction'
 
 export function ActionsWrapper({
   message,
@@ -32,8 +29,7 @@ export function ActionsWrapper({
   const viewRef = useRef(null)
   const t = useTheme()
   const {t: l} = useLingui()
-  const convo = useConvoActive()
-  const {currentAccount} = useSession()
+  const onEmojiSelect = useToggleMessageReaction(message)
 
   const [showActions, setShowActions] = useState(false)
 
@@ -51,30 +47,6 @@ export function ActionsWrapper({
     if (e.nativeEvent.relatedTarget == null) return
     setShowActions(true)
   }, [])
-
-  const onEmojiSelect = useCallback(
-    (emoji: string) => {
-      if (
-        message.reactions?.find(
-          reaction =>
-            reaction.value === emoji &&
-            reaction.sender.did === currentAccount?.did,
-        )
-      ) {
-        convo
-          .removeReaction(message.id, emoji)
-          .catch(() => Toast.show(l`Failed to remove emoji reaction`))
-      } else {
-        if (hasReachedReactionLimit(message, currentAccount?.did)) return
-        convo.addReaction(message.id, emoji).catch(() =>
-          Toast.show(l`Failed to add emoji reaction`, {
-            type: 'error',
-          }),
-        )
-      }
-    },
-    [l, convo, message, currentAccount?.did],
-  )
 
   return (
     <View

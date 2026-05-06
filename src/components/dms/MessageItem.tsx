@@ -34,9 +34,9 @@ import {type ConvoItem} from '#/state/messages/convo/types'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {unstableCacheProfileView} from '#/state/queries/unstable-profile-cache'
 import {useSession} from '#/state/session'
+import {useMessageOverlays} from '#/screens/Messages/components/MessageOverlays'
 import {atoms as a, native, platform, useTheme} from '#/alf'
 import {isOnlyEmoji} from '#/alf/typography'
-import {useDialogControl} from '#/components/Dialog'
 import {ActionsWrapper} from '#/components/dms/ActionsWrapper'
 import {InlineLinkText, Link} from '#/components/Link'
 import * as ProfileCard from '#/components/ProfileCard'
@@ -45,7 +45,6 @@ import {Text} from '#/components/Typography'
 import {DateDivider} from './DateDivider'
 import {useDateDividerToggle} from './DateDividerToggle'
 import {MessageItemEmbed} from './MessageItemEmbed'
-import {ReactionsDialog} from './ReactionsDialog'
 
 const AVATAR_SIZE = 28
 const CLUSTERED_MESSAGE_GAP = 2
@@ -103,7 +102,7 @@ let MessageItem = ({
 
   const profile = item.relatedProfiles.get(item.message.sender.did)
 
-  const reactionsControl = useDialogControl()
+  const {openReactions} = useMessageOverlays()
   const reactionTapRef = useRef(false)
 
   const {message, nextMessage, prevMessage} = item
@@ -346,7 +345,17 @@ let MessageItem = ({
                 reactionTapRef.current = false
               }, TAP_AND_DRAG_DELAY_MS)
             }}
-            onPress={isGroupChat ? reactionsControl.open : undefined}>
+            onPress={
+              isGroupChat
+                ? () =>
+                    openReactions({
+                      message,
+                      relatedProfiles: item.relatedProfiles,
+                      reactions: message.reactions,
+                      groupedReactions,
+                    })
+                : undefined
+            }>
             {groupedReactions.map(group => (
               <Animated.View
                 entering={native(ZoomIn.springify(200).delay(400))}
@@ -388,13 +397,6 @@ let MessageItem = ({
           </Pressable>
         </View>
       ) : null}
-      <ReactionsDialog
-        control={reactionsControl}
-        relatedProfiles={item.relatedProfiles}
-        message={message}
-        reactions={message.reactions}
-        groupedReactions={groupedReactions}
-      />
     </LayoutAnimationConfig>
   )
 

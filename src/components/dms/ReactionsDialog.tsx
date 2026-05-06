@@ -24,7 +24,7 @@ import {Text} from '#/components/Typography'
 import {IS_NATIVE, IS_WEB} from '#/env'
 import type * as bsky from '#/types/bsky'
 
-type Reaction = {
+export type Reaction = {
   key: string
   value: string
   senders: ChatBskyConvoDefs.ReactionViewSender[]
