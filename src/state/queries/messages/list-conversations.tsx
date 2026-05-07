@@ -21,6 +21,8 @@ import {useAgent, useSession} from '#/state/session'
 import {parseConvoView} from '#/components/dms/util'
 import {useLeftConvos} from './leave-conversation'
 
+export const LIMIT = 20
+
 export const RQKEY_ROOT = 'convo-list'
 export const RQKEY = (
   status: 'accepted' | 'request' | 'all',
@@ -48,7 +50,7 @@ export function useListConvosQuery({
     queryFn: async ({pageParam}) => {
       const {data} = await agent.chat.bsky.convo.listConvos(
         {
-          limit: 20,
+          limit: LIMIT,
           cursor: pageParam,
           readState: readState === 'unread' ? 'unread' : undefined,
           kind: kind === 'all' ? undefined : kind,
