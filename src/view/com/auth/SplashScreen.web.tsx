@@ -7,7 +7,7 @@ import {Trans} from '@lingui/react/macro'
 import {useWebMediaQueries} from '#/lib/hooks/useWebMediaQueries'
 import {useKawaiiMode} from '#/state/preferences/kawaii'
 import {ErrorBoundary} from '#/view/com/util/ErrorBoundary'
-import {Logotype} from '#/view/icons/Logotype'
+import {Logo3D} from '#/view/icons/Logo3D'
 import {
   AppClipOverlay,
   postAppClipMessage,
@@ -82,7 +82,7 @@ export const SplashScreen = ({
             <View style={[a.justify_center, a.align_center]}>
               {!kawaii && (
                 <View style={[a.pb_sm, a.pt_5xl]}>
-                  <Logotype width={161} fill={t.atoms.text.color} />
+                  <Logo3D width={161} />
                 </View>
               )}
 
@@ -161,21 +161,14 @@ function Footer() {
         t.atoms.border_contrast_medium,
       ]}>
       <InlineLinkText
-        label={_(msg`Learn more about Bluesky`)}
-        to="https://bsky.social">
-        <Trans>Business</Trans>
+        label={_(msg`Terms of Service`)}
+        to="https://hello.mu.social/terms">
+        <Trans>Terms of Service</Trans>
       </InlineLinkText>
       <InlineLinkText
-        label={_(msg`Read the Bluesky blog`)}
-        to="https://bsky.social/about/blog">
-        <Trans>Blog</Trans>
-      </InlineLinkText>
-      <InlineLinkText
-        label={_(msg`See jobs at Bluesky`)}
-        to="https://bsky.social/about/join">
-        <Trans comment="Link to a page with job openings at Bluesky">
-          Jobs
-        </Trans>
+        label={_(msg`Privacy Policy`)}
+        to="https://hello.mu.social/privacy">
+        <Trans>Privacy Policy</Trans>
       </InlineLinkText>
 
       <View style={a.flex_1} />
