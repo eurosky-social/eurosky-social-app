@@ -511,6 +511,12 @@ export type AgeAssuranceData = {
         birthdate: string | undefined
       }
     | undefined
+  /**
+   * mu fork: true while the declared-age query (otherRequiredData) has not yet
+   * produced a result. Consumers use this to avoid flashing the age gate
+   * before the declared age has loaded. See computeAgeAssuranceState.
+   */
+  dataLoading: boolean
 }
 export const AgeAssuranceDataContext = createContext<AgeAssuranceData>({
   config: undefined,
@@ -520,6 +526,7 @@ export const AgeAssuranceDataContext = createContext<AgeAssuranceData>({
     declaredAge: undefined,
     birthdate: undefined,
   },
+  dataLoading: false,
 })
 export function useAgeAssuranceDataContext() {
   return useContext(AgeAssuranceDataContext)
@@ -532,7 +539,8 @@ export function AgeAssuranceDataProvider({
   const {data: config} = useConfigQuery()
   const serverState = useServerStateQuery()
   const {state, metadata} = serverState.data || {}
-  const {data} = useOtherRequiredDataQuery()
+  const otherRequiredData = useOtherRequiredDataQuery()
+  const {data} = otherRequiredData
   const ctx = useMemo(
     () => ({
       config,
@@ -544,8 +552,14 @@ export function AgeAssuranceDataProvider({
           : undefined,
         birthdate: data?.birthdate,
       },
+      /**
+       * `isPending` is true only until the query first produces data (from the
+       * persisted cache via initialData, or the network). Once it settles -
+       * even to "no declaration" - this flips to false and the gate can show.
+       */
+      dataLoading: otherRequiredData.isPending,
     }),
-    [config, state, data, metadata],
+    [config, state, data, metadata, otherRequiredData.isPending],
   )
   return (
     <AgeAssuranceDataContext.Provider value={ctx}>

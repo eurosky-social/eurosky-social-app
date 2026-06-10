@@ -36,12 +36,14 @@ export function computeAgeAssuranceState({
   geolocation,
   state,
   data,
+  dataLoading = false,
 }: {
   hasSession: boolean
   config: AgeAssuranceData['config']
   geolocation: Geolocation
   state: AgeAssuranceData['state']
   data: AgeAssuranceData['data']
+  dataLoading?: boolean
 }) {
   /**
    * This is where we control logged-out moderation prefs. It's all
@@ -76,6 +78,21 @@ export function computeAgeAssuranceState({
    * declared, `declaredAge` is set and we fall through to the region rules.
    */
   if (data?.declaredAge === undefined) {
+    /**
+     * mu fork: while the declared-age query is still loading we don't yet know
+     * whether the user has declared. Returning None here would flash the gate
+     * (NoAccessScreen) for users who already declared, until the query
+     * resolves a moment later. Fail open to Safe during the load window; once
+     * the query settles, either the real declaredAge arrives (and we fall
+     * through to the region rules) or it settles to "no declaration" and we
+     * gate with None below.
+     */
+    if (dataLoading) {
+      return {
+        status: AgeAssuranceStatus.Unknown,
+        access: AgeAssuranceAccess.Safe,
+      }
+    }
     return {
       status: AgeAssuranceStatus.Unknown,
       access: AgeAssuranceAccess.None,
@@ -171,7 +188,7 @@ export function getAndComputeAgeAssuranceState({did}: {did: string}) {
 export function useAgeAssuranceState(): AgeAssuranceState {
   const {hasSession} = useSession()
   const geolocation = useGeolocation()
-  const {config, state, data} = useAgeAssuranceDataContext()
+  const {config, state, data, dataLoading} = useAgeAssuranceDataContext()
 
   return useMemo(
     () =>
@@ -181,8 +198,9 @@ export function useAgeAssuranceState(): AgeAssuranceState {
         geolocation,
         state,
         data,
+        dataLoading,
       }),
-    [hasSession, geolocation, config, state, data],
+    [hasSession, geolocation, config, state, data, dataLoading],
   )
 }
 
