@@ -22,8 +22,11 @@ export interface PetClip {
 export interface PetBehavior {
   // Resting state, also used between actions and on reaction end.
   idle: string
-  // Looping "doing nothing" states with how long to hold each, in ms.
-  ambient: {state: string; min: number; max: number}[]
+  // Looping "doing nothing" states with how long to hold each, in ms. An
+  // optional `enter` is a one-shot intro played once before settling into the
+  // looping `state` (e.g. lie down, then sleep). `enter` must be a non-loop
+  // state; if it loops it is ignored and `state` plays directly.
+  ambient: {state: string; enter?: string; min: number; max: number}[]
   // Locomotion animation, played while walking between rest spots.
   walk: string
   // On-screen travel speed, px/second.
@@ -54,6 +57,13 @@ export interface Species {
   // Natural on-screen size, in pixels (cat: 88). Need not be a multiple of
   // `frame`; PetSprite renders at an integer scale and downsamples to fit.
   size: number
+  // Optional tap target, as the art's content bounds within a frame cell (in
+  // frame-space pixels, origin at the cell's top-left). When the art fills only
+  // part of its cell, this keeps the tap area on the body instead of the whole
+  // box. Omit to make the full `size` box tappable. Assumes a fixed vertical
+  // content position (i.e. pad 0 across states); the rect is mirrored
+  // horizontally when the pet faces left.
+  hitbox?: {x: number; y: number; w: number; h: number}
   // Selectable skins. A single-skin species lists one variant.
   variants: readonly string[]
   variantLabels: Record<string, MessageDescriptor>

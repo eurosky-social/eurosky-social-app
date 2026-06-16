@@ -3,12 +3,13 @@
 // the feature references a concrete species.
 
 import {cat} from './species/cat/catalog'
+import {fox} from './species/fox/catalog'
 import {type Species} from './types'
 
 export const DEFAULT_SPECIES_ID = 'cat'
 
 // Order here is the order shown in the settings picker.
-export const PET_LIST: readonly Species[] = [cat]
+export const PET_LIST: readonly Species[] = [cat, fox]
 
 export const PETS: Record<string, Species> = Object.fromEntries(
   PET_LIST.map(s => [s.id, s]),

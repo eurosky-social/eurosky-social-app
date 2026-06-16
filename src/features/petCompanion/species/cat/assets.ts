@@ -7,10 +7,10 @@ import {type ImageSourcePropType} from 'react-native'
 import {type CatVariant} from './catalog'
 
 export const CAT_SHEETS: Record<CatVariant, ImageSourcePropType> = {
-  cream: require('../../../../../assets/cats/cream.png'),
-  black: require('../../../../../assets/cats/black.png'),
-  grey: require('../../../../../assets/cats/grey.png'),
-  'grey-white': require('../../../../../assets/cats/grey-white.png'),
-  orange: require('../../../../../assets/cats/orange.png'),
-  white: require('../../../../../assets/cats/white.png'),
+  cream: require('../../../../../assets/pets/cats/cream.png'),
+  black: require('../../../../../assets/pets/cats/black.png'),
+  grey: require('../../../../../assets/pets/cats/grey.png'),
+  'grey-white': require('../../../../../assets/pets/cats/grey-white.png'),
+  orange: require('../../../../../assets/pets/cats/orange.png'),
+  white: require('../../../../../assets/pets/cats/white.png'),
 }

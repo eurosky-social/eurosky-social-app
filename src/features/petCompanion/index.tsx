@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'react'
-import {Pressable, useWindowDimensions} from 'react-native'
+import {Pressable, useWindowDimensions, View} from 'react-native'
 import Animated, {
   cancelAnimation,
   Easing,
@@ -95,6 +95,10 @@ function PetCompanionInner({
   const genRef = useRef(0)
   // The director loop, kept in a ref so event handlers can re-enter it.
   const startActionRef = useRef<() => void>(() => {})
+  // What to run when the current one-shot animation finishes (set just before
+  // triggering it): resume wandering after a reaction, or settle into a looping
+  // state after an ambient intro (e.g. lie down -> sleep).
+  const afterOneShotRef = useRef<() => void>(() => {})
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -143,8 +147,20 @@ function PetCompanionInner({
 
     const rest = () => {
       const next = pick(behavior.ambient)
-      setState(next.state)
-      timerRef.current = setTimeout(startAction, rand(next.min, next.max))
+      const holdThenAct = () => {
+        timerRef.current = setTimeout(startAction, rand(next.min, next.max))
+      }
+      if (next.enter && !species.loopStates.includes(next.enter)) {
+        // Play the one-shot intro, then settle into the looping state.
+        afterOneShotRef.current = () => {
+          setState(next.state)
+          holdThenAct()
+        }
+        setState(next.enter)
+      } else {
+        setState(next.state)
+        holdThenAct()
+      }
     }
 
     function startAction() {
@@ -193,19 +209,45 @@ function PetCompanionInner({
     setPlayToken(t => t + 1)
     setState(reaction)
     if (species.loopStates.includes(reaction)) {
+      // Looping reaction: hold it briefly, then resume here.
       timerRef.current = setTimeout(resumeWandering, 2600)
+    } else {
+      // One-shot reaction: resume once it finishes playing.
+      afterOneShotRef.current = resumeWandering
     }
   }
 
   const onAnimationEnd = () => {
-    // Only reactions are one-shots, so this means a reaction just finished.
-    resumeWandering()
+    // A one-shot animation finished; run whatever was queued for it.
+    afterOneShotRef.current()
   }
 
   const animatedStyle = useAnimatedStyle(() => ({
     bottom: footerHeight.value,
     transform: [{translateX: tx.value}],
   }))
+
+  // Tap target. When the species declares a hitbox (its art fills only part of
+  // the cell), shrink the Pressable to the body, mirroring it horizontally when
+  // the pet faces left; otherwise the whole size box is tappable.
+  const frame = species.frame
+  const scale = size / frame
+  const hb = species.hitbox
+  const hitArea = hb
+    ? {
+        position: 'absolute' as const,
+        top: hb.y * scale,
+        left: (facing === 1 ? hb.x : frame - hb.x - hb.w) * scale,
+        width: hb.w * scale,
+        height: hb.h * scale,
+      }
+    : {
+        position: 'absolute' as const,
+        top: 0,
+        left: 0,
+        width: size,
+        height: size,
+      }
 
   return (
     <Animated.View
@@ -221,11 +263,7 @@ function PetCompanionInner({
         },
         animatedStyle,
       ]}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={l`Pet your companion`}
-        accessibilityHint={l`Plays a happy reaction`}
-        onPress={onPet}>
+      <View pointerEvents="none">
         <PetSprite
           species={species}
           variant={variant}
@@ -235,7 +273,14 @@ function PetCompanionInner({
           playToken={playToken}
           onAnimationEnd={onAnimationEnd}
         />
-      </Pressable>
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={l`Pet your companion`}
+        accessibilityHint={l`Plays a happy reaction`}
+        onPress={onPet}
+        style={hitArea}
+      />
     </Animated.View>
   )
 }
