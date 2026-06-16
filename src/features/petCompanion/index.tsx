@@ -11,70 +11,77 @@ import Animated, {
 import {useLingui} from '@lingui/react/macro'
 
 import {useHaptics} from '#/lib/haptics'
-import {useCatCompanion} from '#/state/preferences/cat-companion'
+import {usePetCompanion} from '#/state/preferences/pet-companion'
 import {useSession} from '#/state/session'
 import {useShellLayout} from '#/state/shell/shell-layout'
 import {IS_WEB} from '#/env'
-import {type CatColor, type CatState, isLoopState} from './catalog'
-import {CatSprite} from './CatSprite'
+import {PetSprite} from './PetSprite'
+import {getSpecies, resolveVariant} from './registry'
+import {type Species} from './types'
 
-// On-screen size of the companion. This need not be a multiple of the 64px
-// sprite cell: CatSprite renders the art at an integer scale and downsamples
-// to fit, so non-integer sizes stay crisp instead of shimmering.
-const SIZE = 88
 // Horizontal padding kept clear of the screen edges while wandering.
 const EDGE_MARGIN = 6
-// Walking speed, in px/second of on-screen travel.
-const WALK_SPEED = 60
 const MIN_WALK_MS = 700
-// Chance the cat decides to wander rather than rest on any given decision.
+// Chance the pet decides to wander rather than rest on any given decision.
 const WALK_CHANCE = 0.45
-
-// Looping "doing nothing" states and how long to hold each, in ms.
-const AMBIENT: {state: CatState; min: number; max: number}[] = [
-  {state: 'Idle', min: 4000, max: 8000},
-  {state: 'Chilling', min: 6000, max: 12000},
-  {state: 'Happy', min: 6000, max: 12000}, // content loaf
-  {state: 'Sleeping', min: 12000, max: 22000},
-]
 
 const rand = (min: number, max: number) => min + Math.random() * (max - min)
 const pick = <T,>(arr: readonly T[]): T =>
   arr[Math.floor(Math.random() * arr.length)]
 
 /**
- * A small companion cat that wanders along the bottom of the screen (on top of
- * the bottom navbar on mobile) and reacts when you pet it. Gated behind the
- * `catCompanion` preference and an active session so it cleanly unmounts when
- * turned off.
+ * A small companion that wanders along the bottom of the screen (on top of the
+ * bottom navbar on mobile) and reacts when you tap it. The species, its art and
+ * its behaviour all come from the pet registry, so this director is agnostic to
+ * which animal is shown. Gated behind the `petCompanion` preference and an
+ * active session so it cleanly unmounts when turned off.
  */
-export function CatCompanion() {
-  const {enabled, color} = useCatCompanion()
+export function PetCompanion() {
+  const {enabled, species: speciesId, variant} = usePetCompanion()
   const {hasSession} = useSession()
 
   if (!enabled || !hasSession) return null
 
-  return <CatCompanionInner color={color} />
+  const species = getSpecies(speciesId)
+  return (
+    // Remount when the species changes so the director restarts cleanly with
+    // the new behaviour/geometry. Variant changes don't need a remount.
+    <PetCompanionInner
+      key={species.id}
+      species={species}
+      variant={resolveVariant(species, variant)}
+    />
+  )
 }
 
-function CatCompanionInner({color}: {color: CatColor}) {
+function PetCompanionInner({
+  species,
+  variant,
+}: {
+  species: Species
+  variant: string
+}) {
   const {t: l} = useLingui()
   const {width} = useWindowDimensions()
   // The shell measures the real tab-bar height into footerHeight (both native
-  // and BottomBarWeb), so the cat sits right on top of it. It's 0 on web
-  // desktop, where there's no bottom bar, so the cat rests at the very bottom.
+  // and BottomBarWeb), so the pet sits right on top of it. It's 0 on web
+  // desktop, where there's no bottom bar, so the pet rests at the very bottom.
   const {footerHeight} = useShellLayout()
   const haptics = useHaptics()
 
-  const [state, setState] = useState<CatState>('Idle')
+  const {behavior} = species
+  const size = species.size
+  const walkFacesRight = behavior.walkFacesRight ?? true
+
+  const [state, setState] = useState<string>(behavior.idle)
   const [facing, setFacing] = useState<1 | -1>(1)
-  // Bumped to replay one-shot reactions when petted repeatedly.
+  // Bumped to replay one-shot reactions when tapped repeatedly.
   const [playToken, setPlayToken] = useState(0)
 
   // Start roughly centered.
-  const startX = Math.max(EDGE_MARGIN, width / 2 - SIZE / 2)
+  const startX = Math.max(EDGE_MARGIN, width / 2 - size / 2)
   const tx = useSharedValue(startX)
-  // JS-thread mirror of the cat's resting x, used to plan the next walk.
+  // JS-thread mirror of the pet's resting x, used to plan the next walk.
   const posRef = useRef(startX)
   // Latest viewport width, read inside scheduled callbacks.
   const widthRef = useRef(width)
@@ -96,9 +103,15 @@ function CatCompanionInner({color}: {color: CatColor}) {
     }
   }
 
+  // Facing for a given travel direction, honouring the species' authored facing.
+  const faceFor = (goingRight: boolean): 1 | -1 => {
+    const base: 1 | -1 = goingRight ? 1 : -1
+    return walkFacesRight ? base : ((base * -1) as 1 | -1)
+  }
+
   useEffect(() => {
     const maxX = () =>
-      Math.max(EDGE_MARGIN, widthRef.current - SIZE - EDGE_MARGIN)
+      Math.max(EDGE_MARGIN, widthRef.current - size - EDGE_MARGIN)
 
     const onArrive = (target: number, myGen: number) => {
       if (myGen !== genRef.current) return
@@ -109,13 +122,14 @@ function CatCompanionInner({color}: {color: CatColor}) {
     const walk = () => {
       const target = rand(EDGE_MARGIN, maxX())
       const goingRight = target > posRef.current
-      // The running art gallops to the right as authored; mirror (facing -1)
-      // to walk left.
-      setFacing(goingRight ? 1 : -1)
-      setState('Running')
+      setFacing(faceFor(goingRight))
+      setState(behavior.walk)
 
       const distance = Math.abs(target - posRef.current)
-      const duration = Math.max(MIN_WALK_MS, (distance / WALK_SPEED) * 1000)
+      const duration = Math.max(
+        MIN_WALK_MS,
+        (distance / behavior.walkSpeed) * 1000,
+      )
       const myGen = ++genRef.current
       tx.value = withTiming(
         target,
@@ -128,7 +142,7 @@ function CatCompanionInner({color}: {color: CatColor}) {
     }
 
     const rest = () => {
-      const next = pick(AMBIENT)
+      const next = pick(behavior.ambient)
       setState(next.state)
       timerRef.current = setTimeout(startAction, rand(next.min, next.max))
     }
@@ -144,7 +158,7 @@ function CatCompanionInner({color}: {color: CatColor}) {
 
     startActionRef.current = startAction
 
-    // Kick things off after a short beat so the cat "arrives".
+    // Kick things off after a short beat so the pet "arrives".
     timerRef.current = setTimeout(startAction, 800)
 
     return () => {
@@ -152,12 +166,12 @@ function CatCompanionInner({color}: {color: CatColor}) {
       cancelAnimation(tx)
       genRef.current++
     }
-  }, [tx])
+  }, [tx, behavior, size, walkFacesRight])
 
   // Pause briefly after a reaction, then hand control back to the director.
   const resumeWandering = () => {
     clearTimer()
-    setState('Idle')
+    setState(behavior.idle)
     timerRef.current = setTimeout(
       () => startActionRef.current(),
       rand(900, 2000),
@@ -165,7 +179,7 @@ function CatCompanionInner({color}: {color: CatColor}) {
   }
 
   const onPet = () => {
-    // Stop whatever the cat was doing and freeze it in place.
+    // Stop whatever the pet was doing and freeze it in place.
     clearTimer()
     genRef.current++
     cancelAnimation(tx)
@@ -173,16 +187,14 @@ function CatCompanionInner({color}: {color: CatColor}) {
 
     haptics('Light')
 
-    // Petting makes the cat react: a quick "Excited" pop or the content
-    // "Happy" loaf, picked at random.
-    const reaction: CatState = Math.random() < 0.5 ? 'Excited' : 'Happy'
+    // Play a random reaction. Looping reactions are held briefly then resumed
+    // here; one-shots resume via PetSprite.onAnimationEnd.
+    const reaction = pick(behavior.reactions)
     setPlayToken(t => t + 1)
     setState(reaction)
-    if (isLoopState(reaction)) {
-      // Happy loops, so hold it briefly then resume on our own.
+    if (species.loopStates.includes(reaction)) {
       timerRef.current = setTimeout(resumeWandering, 2600)
     }
-    // Excited is a one-shot; CatSprite.onAnimationEnd resumes wandering.
   }
 
   const onAnimationEnd = () => {
@@ -200,25 +212,26 @@ function CatCompanionInner({color}: {color: CatColor}) {
       pointerEvents="box-none"
       style={[
         {
-          // Pin to the viewport on web so the cat doesn't scroll with content.
+          // Pin to the viewport on web so the pet doesn't scroll with content.
           // 'fixed' is web-only; cast keeps the RN ViewStyle type happy.
           position: (IS_WEB ? 'fixed' : 'absolute') as 'absolute',
           left: 0,
-          width: SIZE,
-          height: SIZE,
+          width: size,
+          height: size,
         },
         animatedStyle,
       ]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={l`Pet the cat`}
+        accessibilityLabel={l`Pet your companion`}
         accessibilityHint={l`Plays a happy reaction`}
         onPress={onPet}>
-        <CatSprite
-          color={color}
+        <PetSprite
+          species={species}
+          variant={variant}
           state={state}
           facing={facing}
-          size={SIZE}
+          size={size}
           playToken={playToken}
           onAnimationEnd={onAnimationEnd}
         />

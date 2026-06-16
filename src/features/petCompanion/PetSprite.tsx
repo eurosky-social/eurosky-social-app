@@ -3,38 +3,39 @@ import {View} from 'react-native'
 import {Image} from 'expo-image'
 
 import {atoms as a, web} from '#/alf'
-import {CAT_SHEETS} from './assets'
-import {
-  type CatColor,
-  type CatState,
-  CLIPS,
-  COLS,
-  FRAME,
-  isLoopState,
-  ROWS,
-} from './catalog'
+import {resolveVariant} from './registry'
+import {type Species} from './types'
 
-const DEFAULT_SIZE = 88
-
-export function CatSprite({
-  color,
+/**
+ * Renders one animation frame of a companion species' spritesheet, advancing
+ * frames on a timer. Species-agnostic: all geometry (frame size, grid) and the
+ * animation catalog come from the passed `species`, so the same renderer drives
+ * a 64px cat or any other pack, including sheets whose animations start at an
+ * arbitrary column and wrap across rows.
+ */
+export function PetSprite({
+  species,
+  variant,
   state,
-  size = DEFAULT_SIZE,
+  size = species.size,
   facing = 1,
   // Bump to replay a one-shot animation even when `state` is unchanged.
   playToken = 0,
   onAnimationEnd,
 }: {
-  color: CatColor
-  state: CatState
+  species: Species
+  variant: string
+  state: string
   size?: number
   facing?: 1 | -1
   playToken?: number
   onAnimationEnd?: () => void
 }) {
-  const clip = CLIPS[state]
-  const loop = isLoopState(state)
-  const [frame, setFrame] = useState(0)
+  const {frame, cols, rows} = species
+  const clip = species.clips[state] ?? species.clips[species.behavior.idle]
+  const loop = species.loopStates.includes(state)
+  const sheet = species.sheets[resolveVariant(species, variant)]
+  const [frameIdx, setFrameIdx] = useState(0)
 
   // Reset to the first frame whenever the animation changes (or a one-shot is
   // replayed via playToken). Adjusting state during render is the React-
@@ -43,7 +44,7 @@ export function CatSprite({
   const [prevAnimationKey, setPrevAnimationKey] = useState(animationKey)
   if (animationKey !== prevAnimationKey) {
     setPrevAnimationKey(animationKey)
-    setFrame(0)
+    setFrameIdx(0)
   }
 
   // Keep the latest callback without restarting the timer.
@@ -66,34 +67,40 @@ export function CatSprite({
           f = 0
         } else {
           // Hold the last frame and report completion.
-          setFrame(clip.frames - 1)
+          setFrameIdx(clip.frames - 1)
           clearInterval(id)
           onEndRef.current?.()
           return
         }
       }
-      setFrame(f)
+      setFrameIdx(f)
     }, 1000 / clip.fps)
 
     return () => clearInterval(id)
     // playToken forces a restart for repeated one-shots.
   }, [state, playToken, clip.frames, clip.fps, loop])
 
-  // Render the sheet at an integer multiple of the 64px cell (FRAME), then
-  // uniformly downsample to `size`. `imageRendering: pixelated` does
-  // nearest-neighbour scaling, which only stays even at integer ratios; at a
-  // fractional ratio (e.g. 88/64 = 1.375) some source pixels span 1 device
-  // pixel and others 2, which reads as a shimmering, misaligned sprite on the
-  // web (notably desktop Firefox at devicePixelRatio 1). Drawing at the nearest
-  // whole multiple keeps nearest-neighbour even, and the final downscale is a
-  // single uniform transform, so every pixel shrinks by the same factor.
-  const renderScale = Math.max(1, Math.ceil(size / FRAME))
-  const renderPx = FRAME * renderScale
+  // Frames read left-to-right from (row, col), wrapping at `cols`, so a clip can
+  // start mid-row or span rows.
+  const cell = clip.row * cols + (clip.col ?? 0) + frameIdx
+  const cx = cell % cols
+  const cy = Math.floor(cell / cols)
+
+  // Render the sheet at an integer multiple of the cell (FRAME), then uniformly
+  // downsample to `size`. `imageRendering: pixelated` does nearest-neighbour
+  // scaling, which only stays even at integer ratios; at a fractional ratio
+  // (e.g. 88/64) some source pixels span 1 device pixel and others 2, which
+  // reads as a shimmering, misaligned sprite on the web (notably desktop
+  // Firefox at devicePixelRatio 1). Drawing at the nearest whole multiple keeps
+  // nearest-neighbour even, and the final downscale is one uniform transform.
+  const renderScale = Math.max(1, Math.ceil(size / frame))
+  const renderPx = frame * renderScale
   const downsample = size / renderPx
   // Drop the sprite by its transparent bottom padding so every state's feet
-  // land on the same ground line (the bottom of the view). Expressed in the
-  // render-scale space; the outer downsample brings it back to `size` space.
+  // land on the same ground line. Expressed in render-scale space; the outer
+  // downsample brings it back to `size` space.
   const dropY = clip.pad * renderScale
+
   return (
     <View style={{width: size, height: size, overflow: 'hidden'}}>
       {/* Uniformly shrink the integer-scaled sprite into the layout box. */}
@@ -115,16 +122,16 @@ export function CatSprite({
                 : [{translateY: dropY}],
           }}>
           <Image
-            source={CAT_SHEETS[color]}
+            source={sheet}
             accessibilityIgnoresInvertColors
             contentFit="fill"
             style={[
               a.absolute,
               {
-                width: COLS * renderPx,
-                height: ROWS * renderPx,
-                left: -frame * renderPx,
-                top: -clip.row * renderPx,
+                width: cols * renderPx,
+                height: rows * renderPx,
+                left: -cx * renderPx,
+                top: -cy * renderPx,
               },
               // Crisp pixel-art scaling on web; native ignores this.
               web({
