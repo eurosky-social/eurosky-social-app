@@ -27,6 +27,7 @@ export const embedPlayerSources = [
   'klipy',
   'flickr',
   'bandcamp',
+  'podcloud',
 ] as const
 
 export type EmbedPlayerSource = (typeof embedPlayerSources)[number]
@@ -50,6 +51,8 @@ export type EmbedPlayerType =
   | 'flickr_album'
   | 'bandcamp_album'
   | 'bandcamp_track'
+  | 'podcloud_podcast'
+  | 'podcloud_episode'
 
 export const externalEmbedLabels: Record<EmbedPlayerSource, string> = {
   youtube: 'YouTube',
@@ -64,6 +67,7 @@ export const externalEmbedLabels: Record<EmbedPlayerSource, string> = {
   soundcloud: 'SoundCloud',
   flickr: 'Flickr',
   bandcamp: 'Bandcamp',
+  podcloud: 'Podcloud',
 }
 
 /**
@@ -525,6 +529,47 @@ export function parseEmbedPlayerFromUrl(
         return undefined
     }
   }
+
+  // podcloud - canonical domain
+  if (urlp.hostname === 'podcloud.fr' || urlp.hostname === 'www.podcloud.fr') {
+    const pathname = urlp.pathname.replace(/\/$/, '')
+    const parts = pathname.split('/')
+    // parts: ['', 'podcast', '<slug>'] or ['', 'podcast', '<slug>', 'episode', '<slug>']
+    if (parts[1] === 'podcast' && parts[2]) {
+      const canonicalBase = `https://podcloud.fr${pathname}`
+      if (parts[3] === 'episode' && parts[4]) {
+        return {
+          type: 'podcloud_episode',
+          source: 'podcloud',
+          playerUri: `${canonicalBase}/player`,
+        }
+      }
+      if (!parts[3]) {
+        return {
+          type: 'podcloud_podcast',
+          source: 'podcloud',
+          playerUri: `${canonicalBase}/player`,
+        }
+      }
+    }
+  }
+
+  // podcloud - custom domains (*.lepodcast.fr)
+  if (urlp.hostname.endsWith('.lepodcast.fr')) {
+    const subdomain = urlp.hostname.slice(0, -'.lepodcast.fr'.length)
+    // Require a single non-empty subdomain (no dots) that looks like a slug
+    if (
+      subdomain &&
+      !subdomain.includes('.') &&
+      /^[a-z\d][a-z\d-]*$/i.test(subdomain)
+    ) {
+      return {
+        type: 'podcloud_podcast',
+        source: 'podcloud',
+        playerUri: `https://podcloud.fr/podcast/${subdomain}/player`,
+      }
+    }
+  }
 }
 
 export function getPlayerAspect({
@@ -567,6 +612,10 @@ export function getPlayerAspect({
     case 'bandcamp_album':
     case 'bandcamp_track':
       return {aspectRatio: 1}
+    case 'podcloud_podcast':
+      return {height: 380}
+    case 'podcloud_episode':
+      return {height: 320}
     default:
       return {aspectRatio: 16 / 9}
   }
