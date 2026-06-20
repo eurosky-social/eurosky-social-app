@@ -39,6 +39,16 @@ export const OAUTH_SCOPE: string = shared.scope
  * OAUTH_SCOPE. Trim this back once those old bundles have aged out of caches.
  */
 export const OAUTH_DECLARED_SCOPE: string = shared.declaredScope
+
+/**
+ * Granular scope that authorizes `com.atproto.identity.updateHandle`. Not in
+ * OAUTH_SCOPE (initial logins stay transitional-only); acquired on demand by
+ * the handle step-up. Must remain within OAUTH_DECLARED_SCOPE.
+ */
+export const OAUTH_HANDLE_GRANT_SCOPE = 'identity:handle'
+/** Scope a handle step-up requests: the transitional base plus the handle grant. */
+export const OAUTH_HANDLE_SCOPE = `${OAUTH_SCOPE} ${OAUTH_HANDLE_GRANT_SCOPE}`
+
 export const OAUTH_HANDLE_RESOLVER: string = shared.handleResolver
 /** PDS the "Create account" flow sends the user to (prompt: 'create'). */
 export const OAUTH_SIGNUP_PDS_HOST: string = shared.signupPdsHost
@@ -54,7 +64,7 @@ export const OAUTH_PUBLIC_JWKS: {keys: Record<string, unknown>[]} = publicJwks
 /**
  * Stateless edge script that signs the `private_key_jwt` client assertion
  * (confidential client; the private key never reaches the browser). Deployed
- * as a Bunny Edge Script - see ../../oauth-worker. Prod-only; loopback/dev
+ * as a Bunny Edge Script - see ../../services/oauth. Prod-only; loopback/dev
  * stays a public client and never calls this. Override per deployment with
  * EXPO_PUBLIC_OAUTH_ASSERTION_URL (Expo inlines EXPO_PUBLIC_* at build).
  * Default points at a conventional subdomain route - set it to wherever the

@@ -1,7 +1,7 @@
 import {type AtpAgent} from '@atproto/api'
 
 import {logger} from '#/ageAssurance/logger'
-import {EUROSKY} from '#/config/eurosky'
+import {BRAND} from '#/config/brand'
 
 /**
  * Client for the mu age-assurance backend (`mu-age-service`).
@@ -36,11 +36,23 @@ export function birthdateFromFlags(flags: MuAgeFlags): string {
   ).toISOString()
 }
 
+/**
+ * How far in the future to set the service-auth token expiry. The PDS validates
+ * `exp` against its own clock with no skew tolerance (rejecting a past `exp`
+ * outright and capping it at an hour out), and we derive it from the local
+ * clock - so a desktop whose clock drifts behind real time would mint an
+ * already-expired token and fail age verification, while phones (auto-synced)
+ * work. Targeting the middle of the allowed [now, now+1h] window lets the call
+ * tolerate roughly +/-30 min of client clock skew. The token stays short-lived
+ * and single-use against the age service.
+ */
+const TOKEN_EXP_SECONDS = 30 * 60
+
 async function bearer(agent: AtpAgent, lxm: string): Promise<string> {
   const {data} = await agent.com.atproto.server.getServiceAuth({
-    aud: EUROSKY.ageAssurance.serviceDid,
+    aud: BRAND.ageAssurance.serviceDid,
     lxm,
-    exp: Math.floor(Date.now() / 1000) + 60,
+    exp: Math.floor(Date.now() / 1000) + TOKEN_EXP_SECONDS,
   })
   return `Bearer ${data.token}`
 }
@@ -55,7 +67,7 @@ const REQUEST_TIMEOUT = 8000
 export async function getMuAgeStatus(agent: AtpAgent): Promise<MuAgeStatus> {
   const authorization = await bearer(agent, GET_STATUS)
   const res = await fetch(
-    `${EUROSKY.ageAssurance.serviceUrl}/xrpc/${GET_STATUS}`,
+    `${BRAND.ageAssurance.serviceUrl}/xrpc/${GET_STATUS}`,
     {headers: {authorization}, signal: AbortSignal.timeout(REQUEST_TIMEOUT)},
   )
   if (!res.ok) {
@@ -70,7 +82,7 @@ export async function setMuAgeStatus(
 ): Promise<void> {
   const authorization = await bearer(agent, SET_STATUS)
   const res = await fetch(
-    `${EUROSKY.ageAssurance.serviceUrl}/xrpc/${SET_STATUS}`,
+    `${BRAND.ageAssurance.serviceUrl}/xrpc/${SET_STATUS}`,
     {
       method: 'POST',
       headers: {authorization, 'content-type': 'application/json'},
