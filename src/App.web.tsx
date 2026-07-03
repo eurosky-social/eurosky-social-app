@@ -45,7 +45,10 @@ import {Provider as ShellStateProvider} from '#/state/shell'
 import {Provider as ComposerProvider} from '#/state/shell/composer'
 import {Provider as LandingProvider} from '#/state/shell/landing'
 import {Provider as LoggedOutViewProvider} from '#/state/shell/logged-out'
-import {Provider as OnboardingProvider} from '#/state/shell/onboarding'
+import {
+  Provider as OnboardingProvider,
+  useOnboardingDispatch,
+} from '#/state/shell/onboarding'
 import {Provider as ProgressGuideProvider} from '#/state/shell/progress-guide'
 import {Provider as SelectedFeedProvider} from '#/state/shell/selected-feed'
 import {Provider as HiddenRepliesProvider} from '#/state/threadgate-hidden-replies'
@@ -97,6 +100,7 @@ function InnerApp() {
   const [isReady, setIsReady] = useState(false)
   const {currentAccount} = useSession()
   const {resumeSession, login} = useSessionApi()
+  const onboardingDispatch = useOnboardingDispatch()
   const theme = useColorModeTheme()
   const themesOverride = useThemesOverride() // Eurosky: per-user accent
   const {t: l} = useLingui()
@@ -108,7 +112,11 @@ function InnerApp() {
       try {
         // Finish an OAuth sign-in if we returned to the site root with
         // callback params; otherwise resume the stored session as usual.
-        if (await tryFinishWebOAuthSignIn(login)) {
+        if (
+          await tryFinishWebOAuthSignIn(login, () =>
+            onboardingDispatch({type: 'start'}),
+          )
+        ) {
           return
         }
         if (account) {
@@ -124,7 +132,7 @@ function InnerApp() {
     }
     const account = readLastActiveAccount()
     void onLaunch(account)
-  }, [resumeSession, login])
+  }, [resumeSession, login, onboardingDispatch])
 
   useEffect(() => {
     return listenSessionDropped(() => {
