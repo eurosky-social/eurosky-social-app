@@ -70,6 +70,7 @@ function Inner({state}: {state: ComposerOpts}) {
             onPostSuccess={state.onPostSuccess}
             mention={state.mention}
             text={state.text}
+            externalUri={state.externalUri}
             imageUris={state.imageUris}
             openGallery={state.openGallery}
             editPost={state.editPost}

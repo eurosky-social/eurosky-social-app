@@ -65,6 +65,7 @@ export type FeedDescriptor =
   | `list|${ListUri}`
   | `posts|${PostsUriList}`
   | `newsfeed|${string}`
+  | `curated|${string}`
   | 'demo'
 export interface FeedParams {
   mergeFeedEnabled?: boolean
@@ -490,6 +491,11 @@ function createApi({
     const [__, uriList] = feedDesc.split('|')
     return new PostListFeedAPI({agent, feedParams: {uris: uriList.split(',')}})
   } else if (feedDesc.startsWith('newsfeed')) {
+    const [__, dids] = feedDesc.split('|')
+    return new NewsFeedAPI({agent, dids: dids ? dids.split(',') : []})
+  } else if (feedDesc.startsWith('curated')) {
+    // A curated publisher page merges its account and reporters the same way
+    // the news feed merges its sources: round-robin across author feeds.
     const [__, dids] = feedDesc.split('|')
     return new NewsFeedAPI({agent, dids: dids ? dids.split(',') : []})
   } else if (feedDesc === 'demo') {

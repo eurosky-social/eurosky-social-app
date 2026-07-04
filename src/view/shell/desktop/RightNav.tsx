@@ -1,4 +1,4 @@
-import {View} from 'react-native'
+import {ScrollView, View} from 'react-native'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
@@ -20,6 +20,7 @@ import {CENTER_COLUMN_OFFSET} from '#/components/Layout'
 import {InlineLinkText, Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
+import {CuratedRightRail} from '#/features/curatedPages/components/CuratedRightRail'
 
 export function DesktopRightNav({routeName}: {routeName: string}) {
   const t = useTheme()
@@ -37,6 +38,35 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
   }
 
   const width = centerColumnOffset ? 250 : 300
+
+  // On the curated hub, the right column becomes the cross-network rail (news,
+  // live sports, podcasts) instead of the default search/feeds.
+  if (routeName === 'CuratedPage') {
+    return (
+      <View
+        style={[
+          gutters,
+          a.pr_2xs,
+          web({
+            position: 'fixed',
+            left: '50%',
+            transform: [
+              {
+                translateX:
+                  300 + (centerColumnOffset ? CENTER_COLUMN_OFFSET : 0),
+              },
+              ...a.scrollbar_offset.transform,
+            ],
+            width: width + gutters.paddingLeft + 2,
+            maxHeight: '100vh',
+          }),
+        ]}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <CuratedRightRail />
+        </ScrollView>
+      </View>
+    )
+  }
 
   return (
     <View

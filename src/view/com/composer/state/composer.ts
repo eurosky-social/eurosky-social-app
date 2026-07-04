@@ -332,6 +332,7 @@ export function composerReducer(
     case 'clear': {
       return createComposerState({
         initText: undefined,
+        initExternalUri: undefined,
         initMention: undefined,
         initImageUris: [],
         initQuoteUri: undefined,
@@ -616,6 +617,7 @@ function postReducer(state: PostDraft, action: PostAction): PostDraft {
 
 export function createComposerState({
   initText,
+  initExternalUri,
   initMention,
   initImageUris,
   initQuoteUri,
@@ -623,6 +625,7 @@ export function createComposerState({
   initEditPost,
 }: {
   initText: string | undefined
+  initExternalUri: string | undefined
   initMention: string | undefined
   initImageUris: ComposerOpts['imageUris']
   initQuoteUri: string | undefined
@@ -725,6 +728,15 @@ export function createComposerState({
   } else if (initEditPost) {
     // highlight the existing mentions and links
     initRichText.detectFacetsWithoutResolution()
+  }
+
+  // A directly-seeded external embed (e.g. "share an article") attaches the link
+  // card without putting the URL in the text input, leaving a blank message.
+  if (!link && initExternalUri) {
+    link = {
+      type: 'link',
+      uri: initExternalUri,
+    }
   }
 
   return {
