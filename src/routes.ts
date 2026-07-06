@@ -52,6 +52,7 @@ export const router = new Router<AllNavigatableRoutes>({
   AccessibilitySettings: '/settings/accessibility',
   AppearanceSettings: '/settings/appearance',
   CatCompanionSettings: '/settings/cat-companion',
+  DecorationsSettings: '/settings/decorations',
   SavedFeeds: '/settings/saved-feeds',
   AccountSettings: '/settings/account',
   AutomationLabelSettings: '/settings/automation-label',

@@ -45,6 +45,7 @@ import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {IS_IOS, IS_NATIVE} from '#/env'
+import {useNameStyle} from '#/features/avatarDecorations'
 import {InviteFriendsDialog} from '#/features/inviteFriends'
 import {useActorStatus} from '#/features/liveNow'
 import {GermButton} from '../components/GermButton'
@@ -75,6 +76,7 @@ let ProfileHeaderStandard = ({
     useProfileShadow<AppBskyActorDefs.ProfileViewDetailed>(profileUnshadowed)
   const {currentAccount} = useSession()
   const {_} = useLingui()
+  const nameStyle = useNameStyle(profile.did)
   const moderation = useMemo(
     () => moderateProfile(profile, moderationOpts),
     [profile, moderationOpts],
@@ -154,6 +156,7 @@ let ProfileHeaderStandard = ({
                   a.self_start,
                   a.font_bold,
                   a.leading_tight,
+                  nameStyle,
                 ]}>
                 {sanitizeDisplayName(
                   profile.displayName || sanitizeHandle(profile.handle),

@@ -33,6 +33,10 @@ export const BRAND = {
   links: brand.links,
   services: brand.services,
   verification: brand.verification,
+  decorations: {
+    /** Deco-grant issuers that count (see brand.schema.json); empty = off. */
+    issuerDids: brand.decorations.issuerDids,
+  },
   ageAssurance: {
     serviceUrl:
       process.env.EXPO_PUBLIC_AGE_SERVICE_URL || brand.ageAssurance.serviceUrl,

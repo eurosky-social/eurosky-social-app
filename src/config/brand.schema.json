@@ -107,6 +107,16 @@
         "serviceUrl": {"type": "string"},
         "serviceDid": {"type": "string"}
       }
+    },
+    "decorations": {
+      "type": "object",
+      "description": "Avatar decoration (Eurosky+) trust root: grant records issued by these DIDs entitle their subject to render a decoration frame. Empty list disables the feature.",
+      "properties": {
+        "issuerDids": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
     }
   },
   "$defs": {
