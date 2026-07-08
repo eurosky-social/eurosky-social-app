@@ -4,7 +4,11 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
-import {interests, useInterestsDisplayNames} from '#/lib/interests'
+import {
+  interests,
+  MIN_ONBOARDING_INTERESTS,
+  useInterestsDisplayNames,
+} from '#/lib/interests'
 import {capitalize} from '#/lib/strings/capitalize'
 import {logger} from '#/logger'
 import {
@@ -59,7 +63,10 @@ export function StepInterests() {
         <Trans>What are your interests?</Trans>
       </OnboardingTitleText>
       <OnboardingDescriptionText>
-        <Trans>We'll use this to help customize your experience.</Trans>
+        <Trans>
+          Choose at least {MIN_ONBOARDING_INTERESTS} to help personalize your
+          feed.
+        </Trans>
       </OnboardingDescriptionText>
 
       <View style={[a.w_full, a.pt_lg]}>
@@ -82,7 +89,9 @@ export function StepInterests() {
 
       <OnboardingControls.Portal>
         <Button
-          disabled={saving}
+          disabled={
+            saving || selectedInterests.length < MIN_ONBOARDING_INTERESTS
+          }
           testID="onboardingContinue"
           variant="solid"
           color="primary"

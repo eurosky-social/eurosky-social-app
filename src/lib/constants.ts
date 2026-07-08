@@ -173,6 +173,20 @@ export const VIDEO_SAVED_FEED = {
   pinned: true,
 }
 
+/**
+ * Eurosky "fu feed" personalized feed generator. Intended to become the default
+ * home feed for new users once interest-post-seeded personalization is validated
+ * (see StepFinished onboarding). Publisher DID + rkey `fu` are fixed by the
+ * feedgen deployment (feed1.eurosky.network).
+ */
+export const FU_FEED_URI =
+  'at://did:plc:ooensn4mr5mhznzypvxelfa3/app.bsky.feed.generator/fu'
+export const FU_SAVED_FEED = {
+  type: 'feed',
+  value: FU_FEED_URI,
+  pinned: true,
+}
+
 export const RECOMMENDED_SAVED_FEEDS: Pick<
   AppBskyActorDefs.SavedFeed,
   'type' | 'value' | 'pinned'
