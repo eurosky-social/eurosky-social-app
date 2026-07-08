@@ -41,7 +41,13 @@ export function BluvyButton({
 
   let url: string
   try {
-    url = new URL(messageMeUrl).toString()
+    const urlp = new URL(messageMeUrl)
+    // some declarations omit the did hash (e.g. a bare "https://bluvy.app/message")
+    // -> point it at this profile
+    if (!urlp.hash) {
+      urlp.hash = profile.did
+    }
+    url = urlp.toString()
   } catch {
     return null
   }

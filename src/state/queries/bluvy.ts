@@ -1,6 +1,6 @@
 import {useQuery} from '@tanstack/react-query'
 
-import {STALE} from '#/state/queries'
+import {GCTIME, STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
 import {useAgent} from '#/state/session'
 
@@ -20,14 +20,15 @@ export type BluvyDeclaration = {
 const bluvyDeclarationQueryKeyRoot = 'bluvy-declaration'
 
 export const createBluvyDeclarationQueryKey = (did: string) =>
-  createQueryKey(bluvyDeclarationQueryKeyRoot, {did})
+  createQueryKey(bluvyDeclarationQueryKeyRoot, {did}, {persistedVersion: 1})
 
 export function useBluvyDeclarationQuery({did}: {did: string | undefined}) {
   const agent = useAgent()
   return useQuery<BluvyDeclaration | null>({
     queryKey: createBluvyDeclarationQueryKey(did ?? ''),
     enabled: !!did,
-    staleTime: STALE.MINUTES.FIVE,
+    staleTime: STALE.HOURS.ONE,
+    gcTime: GCTIME.INFINITY,
     retry: false,
     queryFn: async () => {
       try {
