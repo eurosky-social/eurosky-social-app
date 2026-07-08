@@ -16,6 +16,7 @@ import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeWebsiteUrl, toShortUrl} from '#/lib/strings/url-helpers'
 import {logger} from '#/logger'
 import {type Shadow, useProfileShadow} from '#/state/cache/profile-shadow'
+import {useBluvyDeclarationQuery} from '#/state/queries/bluvy'
 import {
   useProfileBlockMutationQueue,
   useProfileFollowMutationQueue,
@@ -45,6 +46,7 @@ import {useAnalytics} from '#/analytics'
 import {IS_IOS, IS_NATIVE} from '#/env'
 import {InviteFriendsDialog} from '#/features/inviteFriends'
 import {useActorStatus} from '#/features/liveNow'
+import {BluvyButton} from '../components/BluvyButton'
 import {GermButton} from '../components/GermButton'
 import {ProfileHeaderDisplayName} from './DisplayName'
 import {EditProfileDialog} from './EditProfileDialog'
@@ -73,6 +75,9 @@ let ProfileHeaderStandard = ({
   const {currentAccount} = useSession()
   const {_} = useLingui()
   const t = useTheme()
+  const {data: bluvyDeclaration} = useBluvyDeclarationQuery({
+    did: profile.did,
+  })
   const moderation = useMemo(
     () => moderateProfile(profile, moderationOpts),
     [profile, moderationOpts],
@@ -165,7 +170,7 @@ let ProfileHeaderStandard = ({
                 </View>
               ) : undefined}
 
-              {showWebsite || profile.associated?.germ ? (
+              {showWebsite || profile.associated?.germ || bluvyDeclaration ? (
                 <View
                   style={[a.flex_row, a.align_center, a.gap_sm, a.flex_wrap]}
                   pointerEvents="auto">
@@ -203,6 +208,13 @@ let ProfileHeaderStandard = ({
                   {profile.associated?.germ && (
                     <GermButton
                       germ={profile.associated.germ}
+                      profile={profile}
+                    />
+                  )}
+
+                  {bluvyDeclaration && (
+                    <BluvyButton
+                      declaration={bluvyDeclaration}
                       profile={profile}
                     />
                   )}
