@@ -1,20 +1,15 @@
 // @ts-check
 const pkg = require('./package.json')
 /**
- * Brand colours, shared with the in-app theme (src/config/brand-theme.ts) and
- * the web pre-boot codegen (scripts/sync-brand-web.mjs). Native chrome renders
- * before any per-user accent preference is known, so it always uses the org's
- * shipped default accent.
- * @type {{accents: Record<string, Record<string, string>>, defaultAccent: string}}
+ * Single brand config (src/config/brand.json; see brand.schema.json). Shared
+ * with the in-app adapters, the web codegen and the Workers. Native chrome
+ * renders before any per-user accent is known, so it uses the shipped default
+ * accent.
+ * @type {{name: string, hosts: string[], socialHandle: string, colors: {accents: Record<string, Record<string, string>>, defaultAccent: string}}}
  */
-const brandColors = require('./src/config/brand-colors.json')
-const BRAND_ACCENT = brandColors.accents[brandColors.defaultAccent]
-/**
- * Brand text identity, shared with brand.ts (BRAND.name / web.hosts) and the
- * web codegen, so the display name / host never drift across runtimes.
- * @type {{name: string, hosts: string[], socialHandle: string}}
- */
-const brandMeta = require('./src/config/brand-meta.json')
+const brand = require('./src/config/brand.json')
+const brandMeta = brand
+const BRAND_ACCENT = brand.colors.accents[brand.colors.defaultAccent]
 
 /**
  * @param {import('@expo/config-types').ExpoConfig} _config
@@ -78,6 +73,7 @@ module.exports = function (_config) {
       ios: {
         supportsTablet: false,
         bundleIdentifier: 'xyz.blueskyweb.app',
+        appleTeamId: process.env.EXPO_APPLE_TEAM_ID,
         config: {
           usesNonExemptEncryption: false,
         },
@@ -100,6 +96,7 @@ module.exports = function (_config) {
             'an',
             'ast',
             'ca',
+            'cs',
             'cy',
             'da',
             'de',
@@ -145,6 +142,7 @@ module.exports = function (_config) {
           'com.apple.security.application-groups': 'group.app.bsky',
           'com.apple.developer.usernotifications.communication': true,
           // 'com.apple.developer.device-information.user-assigned-device-name': true,
+          'com.apple.developer.declared-age-range': true,
         },
         privacyManifests: {
           NSPrivacyCollectedDataTypes: [
@@ -246,7 +244,7 @@ module.exports = function (_config) {
         // dark browser themes. Standard Expo mechanism, same as upstream, so
         // no custom <link> wiring and minimal merge surface.
         favicon: './assets/favicon.png',
-        // Brand default-accent primary_500 (from src/config/brand-colors.json).
+        // Brand default-accent primary_500 (from src/config/brand.json).
         // Drives the PWA manifest theme_color and the <meta name="theme-color">,
         // i.e. the Chrome Custom Tab toolbar when opening links from the
         // installed PWA on Android. Web-only override; native keeps primaryColor

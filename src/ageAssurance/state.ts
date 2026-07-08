@@ -1,4 +1,5 @@
 import {useEffect, useMemo, useState} from 'react'
+import type * as AgeRange from 'expo-age-range'
 import {
   type AppBskyAgeassuranceDefs,
   computeAgeAssuranceRegionAccess,
@@ -9,6 +10,7 @@ import {useSession} from '#/state/session'
 import {MIN_ACCESS_AGE} from '#/ageAssurance/const'
 import {
   getConfigFromCache,
+  getDeviceSignalsFromCacheForRegion,
   getOtherRequiredDataFromCache,
   getServerStateFromCache,
   useAgeAssuranceServerDataContext,
@@ -24,6 +26,8 @@ import {
 } from '#/ageAssurance/types'
 import {
   computeAgeAssuranceFlags,
+  getAgeAssuranceDataFromDeviceSignals,
+  getAgeAssuranceRegionConfigForGeolocation,
   getAgeAssuranceRegionConfigWithFallback,
 } from '#/ageAssurance/util'
 import {type Geolocation, useGeolocation} from '#/geolocation'
@@ -41,6 +45,8 @@ function computeAgeAssuranceState({
   state,
   metadata,
   metadataLoading = false,
+  metadataError = false,
+  deviceSignals,
 }: {
   hasSession: boolean
   geolocation: Geolocation
@@ -48,6 +54,8 @@ function computeAgeAssuranceState({
   state?: AppBskyAgeassuranceDefs.State
   metadata?: AgeAssuranceMetadata
   metadataLoading?: boolean
+  metadataError?: boolean
+  deviceSignals?: AgeRange.AgeRangeResponse
 }) {
   /**
    * This is where we control logged-out moderation prefs. It's all
@@ -97,6 +105,25 @@ function computeAgeAssuranceState({
         access: AgeAssuranceAccess.Safe,
       }
     }
+    /**
+     * mu fork: the declared-age query settled in an error state (e.g. the
+     * mu-age-service call failed), so we genuinely don't know whether the user
+     * has declared. Gating with None here would trap them: the NoAccessScreen
+     * prompt writes back through the same failing backend, so they can never
+     * clear it and just re-prompt in a loop. Fail open to Safe instead (same
+     * policy as a missing config above); the query keeps retrying, and once it
+     * succeeds the real declared age takes over.
+     */
+    if (metadataError) {
+      logger.warn(
+        'useAgeAssuranceState: declared-age query failed, failing open',
+      )
+      return {
+        status: AgeAssuranceStatus.Unknown,
+        access: AgeAssuranceAccess.Safe,
+        error: 'metadata' as const,
+      }
+    }
     return {
       status: AgeAssuranceStatus.Unknown,
       access: AgeAssuranceAccess.None,
@@ -135,10 +162,19 @@ function computeAgeAssuranceState({
    * Otherwise, we need to compute the access based on the latest data. For
    * accounts with an accurate birthdate, our default fallback rules should
    * ensure correct access.
+   *
+   * In regions that permit on-device verification, the OS-provided age range
+   * is treated as an assured age and fed into the rule engine, where it
+   * matches `IfAssuredOverAge`/`IfAssuredUnderAge` rules.
    */
+  const {assuredAge} = getAgeAssuranceDataFromDeviceSignals(
+    region,
+    deviceSignals,
+  )
   const result = computeAgeAssuranceRegionAccess(region, {
     accountCreatedAt: metadata?.accountCreatedAt,
     declaredAge: metadata?.declaredAge,
+    assuredAge,
   })
   const computed = {
     lastInitiatedAt: state?.lastInitiatedAt,
@@ -180,6 +216,19 @@ export function unsafeGetAndComputeAgeAssurance({did}: {did: string}) {
   }
 
   const region = getAgeAssuranceRegionConfigWithFallback(config, geolocation)
+  /*
+   * Device signals are keyed off the matched config region (no fallback): if
+   * geolocation matches no AA region there's no device grant to read, so we
+   * skip the lookup rather than keying off FALLBACK_REGION_CONFIG. This keeps
+   * the read key symmetric with the write (see `setDeviceSignalsForRegion`).
+   */
+  const deviceRegion = getAgeAssuranceRegionConfigForGeolocation(
+    config,
+    geolocation,
+  )
+  const deviceSignals = deviceRegion
+    ? getDeviceSignalsFromCacheForRegion({did, region: deviceRegion})
+    : undefined
   const metadata: AgeAssuranceMetadata = {
     accountCreatedAt: state.metadata?.accountCreatedAt,
     declaredAge: requiredData?.birthdate
@@ -193,6 +242,7 @@ export function unsafeGetAndComputeAgeAssurance({did}: {did: string}) {
     geolocation,
     state: state.state,
     metadata,
+    deviceSignals,
   })
 
   return {
@@ -201,6 +251,7 @@ export function unsafeGetAndComputeAgeAssurance({did}: {did: string}) {
       state: computed,
       regionConfig: region,
       metadata,
+      deviceSignals,
     }),
   }
 }
@@ -208,8 +259,14 @@ export function unsafeGetAndComputeAgeAssurance({did}: {did: string}) {
 export function useAgeAssuranceState(): AgeAssuranceState {
   const {hasSession} = useSession()
   const geolocation = useGeolocation()
-  const {config, state, metadata, metadataLoading} =
-    useAgeAssuranceServerDataContext()
+  const {
+    config,
+    state,
+    metadata,
+    metadataLoading,
+    metadataError,
+    deviceSignals,
+  } = useAgeAssuranceServerDataContext()
 
   return useMemo(
     () =>
@@ -220,8 +277,19 @@ export function useAgeAssuranceState(): AgeAssuranceState {
         state,
         metadata,
         metadataLoading,
+        metadataError,
+        deviceSignals,
       }),
-    [hasSession, geolocation, config, state, metadata, metadataLoading],
+    [
+      hasSession,
+      geolocation,
+      config,
+      state,
+      metadata,
+      metadataLoading,
+      metadataError,
+      deviceSignals,
+    ],
   )
 }
 

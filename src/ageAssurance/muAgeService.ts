@@ -36,11 +36,20 @@ export function birthdateFromFlags(flags: MuAgeFlags): string {
   ).toISOString()
 }
 
+/**
+ * We intentionally do NOT pass `exp`. The PDS then derives both `iat` and `exp`
+ * from its own clock (a short default lifetime), so the token is immune to
+ * client clock skew. Deriving `exp` from the local clock was fragile in both
+ * directions: a client running behind real time minted an already-expired
+ * token (rejected by the PDS as a past `exp`), while a client running ahead
+ * minted a long-lived token that the age service rejected with "jwt exceeds
+ * maximum age (300s)". A PDS-clock-relative short token avoids both, since
+ * `bearer` is called immediately before each request.
+ */
 async function bearer(agent: AtpAgent, lxm: string): Promise<string> {
   const {data} = await agent.com.atproto.server.getServiceAuth({
     aud: BRAND.ageAssurance.serviceDid,
     lxm,
-    exp: Math.floor(Date.now() / 1000) + 60,
   })
   return `Bearer ${data.token}`
 }

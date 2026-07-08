@@ -142,6 +142,33 @@ export function getTranslatorLink(
   )}`
 }
 
+export function getTranslatorLinkDeepL(
+  text: string,
+  targetLangCode: string,
+  sourceLanguage: string,
+): string {
+  // DeepL's web deep-link expects bare two-letter codes in the URL fragment,
+  // e.g. `#en/de/<text>`. It needs a concrete source language - "auto" is
+  // ignored and leaves the text box empty - and the region subtag must be
+  // stripped (pt-BR -> pt) for the link to resolve.
+  const target = targetLangCode.split('-')[0].toLowerCase()
+  const source = sourceLanguage.split('-')[0].toLowerCase()
+  return `https://www.deepl.com/translator#${source}/${target}/${encodeURIComponent(
+    text,
+  )}`
+}
+
+export function getTranslatorLinkLibreTranslate(
+  text: string,
+  targetLangCode: string,
+  sourceLanguage: string | undefined,
+  instance: string,
+): string {
+  return `${instance}?source=${sourceLanguage ?? 'auto'}&target=${targetLangCode}&q=${encodeURIComponent(
+    text,
+  )}`
+}
+
 /**
  * Returns a valid `appLanguage` value from an arbitrary string.
  *
@@ -169,6 +196,8 @@ export function sanitizeAppLanguageSetting(appLanguage: string): AppLanguage {
         return AppLanguage.ast
       case 'ca':
         return AppLanguage.ca
+      case 'cs':
+        return AppLanguage.cs
       case 'cy':
         return AppLanguage.cy
       case 'da':
