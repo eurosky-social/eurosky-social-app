@@ -49,6 +49,10 @@ export interface Species {
   // extract for translation while living in a data table).
   label: MessageDescriptor
   description: MessageDescriptor
+  // Species sharing a family collapse into one entry in the settings' animal
+  // picker (labelled with the family's label), with the members offered in a
+  // second-level "breed" picker. A species without a family stands alone.
+  family?: {id: string; label: MessageDescriptor}
   // Square frame side, in pixels (cat: 64).
   frame: number
   // Sheet grid dimensions.

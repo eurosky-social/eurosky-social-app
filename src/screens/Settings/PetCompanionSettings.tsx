@@ -1,4 +1,5 @@
 import {Pressable, View} from 'react-native'
+import {type MessageDescriptor} from '@lingui/core'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 
@@ -41,6 +42,42 @@ export function PetCompanionSettingsScreen({}: Props) {
   const onSelectSpecies = (s: Species) =>
     setPetCompanion({species: s.id, variant: resolveVariant(s, variant)})
 
+  // The animal picker collapses each family into a single entry: the family's
+  // currently selected member when active, otherwise its first member.
+  type AnimalOption = {
+    key: string
+    label: MessageDescriptor
+    species: Species
+    selected: boolean
+  }
+  const animalOptions: AnimalOption[] = []
+  const seenFamilies = new Set<string>()
+  for (const s of PET_LIST) {
+    if (s.family) {
+      if (seenFamilies.has(s.family.id)) continue
+      seenFamilies.add(s.family.id)
+      const selected = species.family?.id === s.family.id
+      animalOptions.push({
+        key: `family:${s.family.id}`,
+        label: s.family.label,
+        species: selected ? species : s,
+        selected,
+      })
+    } else {
+      animalOptions.push({
+        key: s.id,
+        label: s.label,
+        species: s,
+        selected: s.id === species.id,
+      })
+    }
+  }
+
+  // Members of the selected species' family, offered as breeds.
+  const breeds = species.family
+    ? PET_LIST.filter(s => s.family?.id === species.family?.id)
+    : []
+
   return (
     <Layout.Screen>
       <Layout.Header.Outer>
@@ -81,7 +118,7 @@ export function PetCompanionSettingsScreen({}: Props) {
             </Toggle.Item>
           </SettingsList.Group>
 
-          {enabled && PET_LIST.length > 1 && (
+          {enabled && animalOptions.length > 1 && (
             <>
               <SettingsList.Divider />
               <View style={[a.px_xl, a.py_md, a.gap_md]}>
@@ -89,7 +126,43 @@ export function PetCompanionSettingsScreen({}: Props) {
                   <Trans>Animal</Trans>
                 </Text>
                 <View style={[a.flex_row, a.flex_wrap, a.gap_md]}>
-                  {PET_LIST.map(s => {
+                  {animalOptions.map(o => {
+                    const label = i18n._(o.label)
+                    return (
+                      <Pressable
+                        key={o.key}
+                        accessibilityRole="button"
+                        accessibilityState={{selected: o.selected}}
+                        accessibilityLabel={label}
+                        accessibilityHint={l`Selects this animal`}
+                        onPress={() => onSelectSpecies(o.species)}
+                        style={[a.align_center, a.gap_xs]}>
+                        <Swatch selected={o.selected}>
+                          <PetSprite
+                            species={o.species}
+                            variant={resolveVariant(o.species, variant)}
+                            state={o.species.behavior.idle}
+                            size={SWATCH_SIZE}
+                          />
+                        </Swatch>
+                        <SwatchLabel selected={o.selected}>{label}</SwatchLabel>
+                      </Pressable>
+                    )
+                  })}
+                </View>
+              </View>
+            </>
+          )}
+
+          {enabled && breeds.length > 1 && (
+            <>
+              <SettingsList.Divider />
+              <View style={[a.px_xl, a.py_md, a.gap_md]}>
+                <Text style={[a.text_md, a.font_bold, t.atoms.text]}>
+                  <Trans>Breed</Trans>
+                </Text>
+                <View style={[a.flex_row, a.flex_wrap, a.gap_md]}>
+                  {breeds.map(s => {
                     const selected = s.id === species.id
                     const label = i18n._(s.label)
                     return (
@@ -98,7 +171,7 @@ export function PetCompanionSettingsScreen({}: Props) {
                         accessibilityRole="button"
                         accessibilityState={{selected}}
                         accessibilityLabel={label}
-                        accessibilityHint={l`Selects this animal`}
+                        accessibilityHint={l`Selects this breed`}
                         onPress={() => onSelectSpecies(s)}
                         style={[a.align_center, a.gap_xs]}>
                         <Swatch selected={selected}>
