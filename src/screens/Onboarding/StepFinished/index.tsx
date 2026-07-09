@@ -17,6 +17,7 @@ import {uploadBlob} from '#/lib/api'
 import {
   BSKY_APP_ACCOUNT_DID,
   DISCOVER_SAVED_FEED,
+  FU_SAVED_FEED,
   TIMELINE_SAVED_FEED,
   VIDEO_SAVED_FEED,
 } from '#/lib/constants'
@@ -118,8 +119,14 @@ export function StepFinished() {
           // Interests need to get saved first, then we can write the feeds to prefs
           await agent.setInterestsPref({tags: selectedInterests})
 
-          // Default feeds that every user should have pinned when landing in the app
+          // Default feeds that every user should have pinned when landing in the app.
+          // fu is first so it's the default (leftmost) feed a new user lands on;
+          // it's seeded by the interest-post likes written above.
           const feedsToSave: AppBskyActorDefs.SavedFeed[] = [
+            {
+              ...FU_SAVED_FEED,
+              id: TID.nextStr(),
+            },
             {
               ...DISCOVER_SAVED_FEED,
               id: TID.nextStr(),
