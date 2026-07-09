@@ -6,7 +6,7 @@ import {enUS as defaultLocale} from 'date-fns/locale/en-US'
 import {sanitizeAppLanguageSetting} from '#/locale/helpers'
 import {AppLanguage} from '#/locale/languages'
 import {useLanguagePrefs} from '#/state/preferences'
-import {installRebrand} from '#/config/euroskyStrings'
+import {installRebrand} from '#/config/brandStrings'
 
 // Eurosky fork: single chokepoint for the "Bluesky" -> "mu" brand swap.
 installRebrand(i18n)
@@ -37,6 +37,13 @@ export async function dynamicActivate(locale: AppLanguage) {
       ;[messages, dateLocale] = await Promise.all([
         import(`./locales/ca/messages`).then(m => m.messages),
         import('date-fns/locale/ca').then(m => m.ca),
+      ])
+      break
+    }
+    case AppLanguage.cs: {
+      ;[messages, dateLocale] = await Promise.all([
+        import(`./locales/cs/messages`).then(m => m.messages),
+        import('date-fns/locale/cs').then(m => m.cs),
       ])
       break
     }

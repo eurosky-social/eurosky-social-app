@@ -1,6 +1,6 @@
 {
   "name": "bsky.app",
-  "version": "1.124.0",
+  "version": "1.127.0",
   "private": true,
   "engines": {
     "node": ">=24.15.0"
@@ -8,7 +8,7 @@
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "11.5.2",
+      "version": "11.9.0",
       "onFail": "warn"
     },
     "runtime": {
@@ -48,6 +48,7 @@
     "use-build-number": "./scripts/useBuildNumberEnv.sh",
     "use-build-number-with-bump": "./scripts/useBuildNumberEnvWithBump.sh",
     "build-web": "expo export:web && node ./scripts/post-web-build.js && node ./scripts/gen-oauth-metadata.js",
+    "deploy:cloudflare": "bash scripts/deploy-cloudflare.sh",
     "build-all": "pnpm intl:build && pnpm use-build-number-with-bump eas build --platform all",
     "build-ios": "pnpm use-build-number-with-bump eas build -p ios",
     "build-android": "pnpm use-build-number-with-bump eas build -p android",
@@ -63,6 +64,14 @@
     "lint-native": "swiftlint ./modules && ktlint ./modules",
     "lint-native:fix": "swiftlint --fix ./modules && ktlint --format ./modules",
     "typecheck": "tsgo --project ./tsconfig.check.json",
+    "brand:gen-logo": "node scripts/gen-logo.mjs",
+    "brand:check-logo": "node scripts/gen-logo.mjs --check",
+    "brand:sync-web": "node scripts/sync-brand-web.mjs",
+    "brand:check-web": "node scripts/sync-brand-web.mjs --check",
+    "brand:gen-favicons": "node scripts/gen-brand-favicons.mjs",
+    "brand:gen-raster": "node scripts/gen-raster.mjs",
+    "brand": "node scripts/gen-logo.mjs && node scripts/sync-brand-web.mjs && node scripts/gen-brand-favicons.mjs",
+    "brand:check": "node scripts/gen-logo.mjs --check && node scripts/sync-brand-web.mjs --check",
     "e2e:mock-server": "cd dev-env && pnpm start",
     "e2e:build": "EXPO_PUBLIC_ENV=e2e NODE_ENV=test RN_SRC_EXT=e2e.ts,e2e.tsx expo run:ios",
     "e2e:build-android": "EXPO_PUBLIC_ENV=e2e NODE_ENV=test RN_SRC_EXT=e2e.ts,e2e.tsx expo run:android",
@@ -82,6 +91,7 @@
     "intl:push": "crowdin push translations --verbose -b main",
     "intl:push-sources": "crowdin push sources --verbose -b main",
     "intl:release": "pnpm intl:pull && pnpm intl:extract:all",
+    "intl:resync": "bash scripts/intl-resync.sh",
     "nuke": "rm -rf ./node_modules && rm -rf ./ios && rm -rf ./android",
     "update-extensions": "bash scripts/updateExtensions.sh",
     "export": "expo export --dump-sourcemap && pnpm upload-native-sourcemaps",
@@ -93,13 +103,13 @@
     "prettier": "prettier --check ."
   },
   "dependencies": {
-    "@atproto/api": "0.20.12",
+    "@atproto/api": "0.20.25",
     "@atproto/jwk": "0.6.0",
     "@atproto/jwk-jose": "0.1.11",
     "@atproto/jwk-webcrypto": "0.2.0",
     "@atproto/oauth-client": "0.5.14",
     "@atproto/oauth-client-browser": "0.3.40",
-    "@atproto/syntax": "0.6.1",
+    "@atproto/syntax": "0.6.4",
     "@bitdrift/react-native": "^0.6.8",
     "@braintree/sanitize-url": "^6.0.2",
     "@bsky.app/alf": "^0.1.14",
@@ -108,12 +118,11 @@
     "@bsky.app/expo-image-crop-tool": "^0.5.1",
     "@bsky.app/expo-scroll-edge-effect": "^0.1.4",
     "@bsky.app/expo-translate-text": "^0.2.9",
-    "@bsky.app/peek-menu": "^0.3.0",
+    "@bsky.app/peek-menu": "^0.3.1",
     "@bsky.app/react-native-mmkv": "2.12.5",
-    "@bsky.app/sift": "^0.3.8",
-    "@bsky.app/tapper": "^0.5.7",
+    "@bsky.app/sift": "^0.3.9",
+    "@bsky.app/tapper": "^0.6.1",
     "@bsky.app/video": "0.3.6",
-    "@discord/bottom-sheet": "bluesky-social/react-native-bottom-sheet",
     "@emoji-mart/data": "^1.2.1",
     "@emoji-mart/react": "^1.1.1",
     "@expo/html-elements": "^0.12.5",
@@ -163,6 +172,7 @@
     "emoji-regex": "^10.4.0",
     "eventemitter3": "^5.0.1",
     "expo": "54.0.34",
+    "expo-age-range": "0.2.18",
     "expo-application": "~7.0.8",
     "expo-blur": "~15.0.8",
     "expo-build-properties": "~1.0.10",
@@ -211,6 +221,7 @@
     "lodash.shuffle": "^4.2.0",
     "lodash.throttle": "^4.1.1",
     "lowlight": "^3.3.0",
+    "mediabunny": "^1.25.3",
     "multiformats": "^13.4.2",
     "nanoid": "^5.0.5",
     "normalize-url": "^8.0.0",
@@ -302,7 +313,6 @@
     "jest-junit": "^16.0.0",
     "lint-staged": "^13.2.3",
     "prettier": "^3.8.3",
-    "react-native-dotenv": "^3.4.11",
     "react-refresh": "^0.14.0",
     "svgo": "^3.3.2",
     "ts-plugin-sort-import-suggestions": "^1.0.4",
@@ -338,7 +348,7 @@
       "^await-lock$": "<rootDir>/node_modules/await-lock/build/AwaitLock.js"
     },
     "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|@discord|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|nanoid|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|normalize-url|react-native-svg|@sentry/.*|sentry-expo|bcp-47-match|@atproto/.*|multiformats|uint8arrays|@ipld/.*|cborg|await-lock|lowlight|devlop)"
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|nanoid|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|normalize-url|react-native-svg|@sentry/.*|sentry-expo|bcp-47-match|@atproto/.*|multiformats|uint8arrays|@ipld/.*|cborg|await-lock|lowlight|devlop)"
     ],
     "modulePathIgnorePatterns": [
       "__tests__/.*/__mocks__",

@@ -9,6 +9,7 @@ import {Provider as LanguagesProvider} from './languages'
 import {Provider as LargeAltBadgeProvider} from './large-alt-badge'
 import {Provider as PetCompanionProvider} from './pet-companion'
 import {Provider as SubtitlesProvider} from './subtitles'
+import {Provider as TranslationProviderProvider} from './translation-provider'
 import {Provider as TrendingSettingsProvider} from './trending'
 import {Provider as UsedStarterPacksProvider} from './used-starter-packs'
 
@@ -27,6 +28,12 @@ export {useLabelDefinitions} from './label-defs'
 export {useLanguagePrefs, useLanguagePrefsApi} from './languages'
 export {usePetCompanion, useSetPetCompanion} from './pet-companion'
 export {useSetSubtitlesEnabled, useSubtitlesEnabled} from './subtitles'
+export {
+  useLibreTranslateInstance,
+  useSetLibreTranslateInstance,
+  useSetTranslationProvider,
+  useTranslationProvider,
+} from './translation-provider'
 
 export function Provider({children}: React.PropsWithChildren<{}>) {
   return (
@@ -43,7 +50,9 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
                         <TrendingSettingsProvider>
                           <KawaiiProvider>
                             <PetCompanionProvider>
-                              {children}
+                              <TranslationProviderProvider>
+                                {children}
+                              </TranslationProviderProvider>
                             </PetCompanionProvider>
                           </KawaiiProvider>
                         </TrendingSettingsProvider>

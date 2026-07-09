@@ -36,24 +36,21 @@ export default defineConfig(
       'bskyweb/**',
       'bskyembed/**',
       'bskyogcard/**',
-      // Eurosky fork: the OAuth client-assertion worker is a separate sub-project
-      // (Bunny Edge Scripting / Deno runtime + URL imports) - not app code,
-      // same rationale as the Plausible script below.
-      'oauth-worker/**',
-      // Eurosky fork: the Plausible analytics proxy is a Bunny Edge Script
-      // (Deno runtime + URL imports), not app code - same rationale as above.
-      'plausible-worker/**',
-      // Eurosky fork: the IP geolocation endpoint is a Bunny Edge Script
-      // (Deno runtime + URL imports), not app code - same rationale as above.
-      'geolocation-worker/**',
-      // Eurosky fork: the per-route Open Graph metadata injector is a Bunny Edge
-      // Script (Deno runtime + URL imports), not app code - same rationale as above.
-      'og-worker/**',
+      // Eurosky fork: first-party edge services (OAuth client-assertion,
+      // Plausible proxy, IP geolocation, per-route Open Graph injector,
+      // football-data.org proxy for the live sports widget) live under
+      // services/. They are Bunny/Cloudflare Edge Scripts (Deno runtime + URL
+      // imports), not app code, so the whole tree is excluded.
+      'services/**',
       'src/locale/locales/_build/**',
       'src/locale/locales/**/*.js',
       '*.e2e.ts',
       '*.e2e.tsx',
       'eslint.config.mjs',
+      // Eurosky fork: build config, inherently `any`-typed webpack plumbing
+      // (the @expo/webpack-config return type is untyped), so the type-aware
+      // rules can't be satisfied. Mirrors the eslint.config.mjs ignore above.
+      'webpack.config.js',
       '.jscodeshift/**',
     ],
   },

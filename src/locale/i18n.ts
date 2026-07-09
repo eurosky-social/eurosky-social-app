@@ -17,6 +17,7 @@ import {AppLanguage} from '#/locale/languages'
 import {messages as messagesAn} from '#/locale/locales/an/messages'
 import {messages as messagesAst} from '#/locale/locales/ast/messages'
 import {messages as messagesCa} from '#/locale/locales/ca/messages'
+import {messages as messagesCs} from '#/locale/locales/cs/messages'
 import {messages as messagesCy} from '#/locale/locales/cy/messages'
 import {messages as messagesDa} from '#/locale/locales/da/messages'
 import {messages as messagesDe} from '#/locale/locales/de/messages'
@@ -56,7 +57,7 @@ import {messages as messagesZh_CN} from '#/locale/locales/zh-CN/messages'
 import {messages as messagesZh_HK} from '#/locale/locales/zh-HK/messages'
 import {messages as messagesZh_TW} from '#/locale/locales/zh-TW/messages'
 import {useLanguagePrefs} from '#/state/preferences'
-import {installRebrand} from '#/config/euroskyStrings'
+import {installRebrand} from '#/config/brandStrings'
 
 // Eurosky fork: single chokepoint for the "Bluesky" -> "mu" brand swap.
 installRebrand(i18n)
@@ -93,6 +94,16 @@ export async function dynamicActivate(locale: AppLanguage) {
         import('@formatjs/intl-pluralrules/locale-data/ca.js'),
         import('@formatjs/intl-numberformat/locale-data/ca.js'),
         import('@formatjs/intl-displaynames/locale-data/ca.js'),
+      ])
+      return dateLocale
+    }
+    case AppLanguage.cs: {
+      i18n.loadAndActivate({locale, messages: messagesCs})
+      const [dateLocale] = await Promise.all([
+        import('date-fns/locale/cs').then(m => m.cs),
+        import('@formatjs/intl-pluralrules/locale-data/cs.js'),
+        import('@formatjs/intl-numberformat/locale-data/cs.js'),
+        import('@formatjs/intl-displaynames/locale-data/cs.js'),
       ])
       return dateLocale
     }

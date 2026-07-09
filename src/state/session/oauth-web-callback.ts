@@ -6,9 +6,12 @@
  * provider returns the user to `/` with params, and we finish sign-in at
  * app startup here.
  */
-import * as persisted from '#/state/persisted'
 import {type SessionApiContext} from '#/state/session/types'
-import {getWebOAuthClient, OAUTH_SIGNUP_STATE} from './oauth-web-client'
+import {
+  getWebOAuthClient,
+  OAUTH_HANDLE_STEPUP_STATE,
+  OAUTH_SIGNUP_STATE,
+} from './oauth-web-client'
 
 /**
  * The OAuth loopback spec requires an IP-based origin (127.0.0.1), not
@@ -42,17 +45,14 @@ function hasOAuthCallbackParams(): boolean {
  */
 export async function tryFinishWebOAuthSignIn(
   login: SessionApiContext['login'],
+  startOnboarding: () => void,
 ): Promise<boolean> {
   if (!hasOAuthCallbackParams()) return false
   const client = getWebOAuthClient()
   const result = await client.init()
   if (result?.session) {
-    // A fresh signup (prompt=create) is created on the external PDS page, which
-    // never runs our in-app signup wizard - so start onboarding here, the same
-    // way that wizard does. Plain sign-ins carry no state and are untouched.
-    if (result.state === OAUTH_SIGNUP_STATE) {
-      await persisted.write('onboarding', {step: 'Welcome'})
-    }
+    // For a handle step-up the DID is unchanged, so login() replaces the
+    // existing session in place with the upgraded (identity:handle) tokens.
     await login(
       {
         service: '',
@@ -62,8 +62,29 @@ export async function tryFinishWebOAuthSignIn(
       },
       'LoginForm',
     )
-    // Drop the callback params from the URL.
-    window.history.replaceState(null, '', window.location.pathname)
+    // A fresh signup (prompt=create) is created on the external PDS page, which
+    // never runs our in-app signup wizard - so start onboarding here, the same
+    // way that wizard does. Plain sign-ins carry no state and are untouched.
+    //
+    // We drive the in-memory onboarding reducer (startOnboarding) rather than
+    // only writing persisted state. OnboardingProvider is mounted above the
+    // session, so login() never remounts it, and on web persisted.write() does
+    // not fire onUpdate listeners in the same tab (its cross-tab
+    // BroadcastChannel never echoes back to the sender). A bare write would
+    // leave the onboarding context stale and the wizard would not appear until
+    // a manual reload. The reducer's 'start' action persists the step itself.
+    if (result.state === OAUTH_SIGNUP_STATE) {
+      startOnboarding()
+    }
+    if (result.state === OAUTH_HANDLE_STEPUP_STATE) {
+      // The redirect lands at the site root; rewrite the path before the
+      // navigator reads it so web linking resolves to account settings, where
+      // the reopen flag reopens the change-handle dialog.
+      window.history.replaceState(null, '', '/settings/account')
+    } else {
+      // Drop the callback params from the URL.
+      window.history.replaceState(null, '', window.location.pathname)
+    }
     return true
   }
   return false

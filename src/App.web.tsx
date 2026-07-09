@@ -24,7 +24,6 @@ import {Provider as EmailVerificationProvider} from '#/state/email-verification'
 import {listenSessionDropped} from '#/state/events'
 import {Provider as HomeBadgeProvider} from '#/state/home-badge'
 import {MessagesProvider} from '#/state/messages'
-import {Provider as ModalStateProvider} from '#/state/modals'
 import {init as initPersistedState} from '#/state/persisted'
 import {Provider as PrefsStateProvider} from '#/state/preferences'
 import {Provider as LabelDefsProvider} from '#/state/preferences/label-defs'
@@ -46,13 +45,17 @@ import {Provider as ShellStateProvider} from '#/state/shell'
 import {Provider as ComposerProvider} from '#/state/shell/composer'
 import {Provider as LandingProvider} from '#/state/shell/landing'
 import {Provider as LoggedOutViewProvider} from '#/state/shell/logged-out'
-import {Provider as OnboardingProvider} from '#/state/shell/onboarding'
+import {
+  Provider as OnboardingProvider,
+  useOnboardingDispatch,
+} from '#/state/shell/onboarding'
 import {Provider as ProgressGuideProvider} from '#/state/shell/progress-guide'
 import {Provider as SelectedFeedProvider} from '#/state/shell/selected-feed'
 import {Provider as HiddenRepliesProvider} from '#/state/threadgate-hidden-replies'
 import {Shell} from '#/view/shell/index'
 import {ThemeProvider as Alf} from '#/alf'
 import {useColorModeTheme} from '#/alf/util/useColorModeTheme'
+import {useThemesOverride} from '#/alf/util/useThemesOverride'
 import {Provider as ContextMenuProvider} from '#/components/ContextMenu'
 import {useLandingEntry} from '#/components/hooks/useLandingEntry'
 import {Provider as IntentDialogProvider} from '#/components/intents/IntentDialogs'
@@ -97,7 +100,9 @@ function InnerApp() {
   const [isReady, setIsReady] = useState(false)
   const {currentAccount} = useSession()
   const {resumeSession, login} = useSessionApi()
+  const onboardingDispatch = useOnboardingDispatch()
   const theme = useColorModeTheme()
+  const themesOverride = useThemesOverride() // Eurosky: per-user accent
   const {t: l} = useLingui()
   const hasCheckedLanding = useLandingEntry()
 
@@ -107,7 +112,11 @@ function InnerApp() {
       try {
         // Finish an OAuth sign-in if we returned to the site root with
         // callback params; otherwise resume the stored session as usual.
-        if (await tryFinishWebOAuthSignIn(login)) {
+        if (
+          await tryFinishWebOAuthSignIn(login, () =>
+            onboardingDispatch({type: 'start'}),
+          )
+        ) {
           return
         }
         if (account) {
@@ -116,14 +125,14 @@ function InnerApp() {
           await features.init
         }
       } catch (e) {
-        logger.error('session: resumeSession failed', {message: e})
+        logger.warn('session: resumeSession failed', {message: e})
       } finally {
         setIsReady(true)
       }
     }
     const account = readLastActiveAccount()
     void onLaunch(account)
-  }, [resumeSession, login])
+  }, [resumeSession, login, onboardingDispatch])
 
   useEffect(() => {
     return listenSessionDropped(() => {
@@ -134,7 +143,7 @@ function InnerApp() {
   }, [l])
 
   return (
-    <Alf theme={theme}>
+    <Alf theme={theme} themesOverride={themesOverride}>
       <ThemeProvider theme={theme}>
         <ContextMenuProvider>
           <Splash isReady={isReady && hasCheckedLanding}>
@@ -232,17 +241,15 @@ function App() {
                   <PrefsStateProvider>
                     <I18nProvider>
                       <ShellStateProvider>
-                        <ModalStateProvider>
-                          <DialogStateProvider>
-                            <LightboxStateProvider>
-                              <PortalProvider>
-                                <LandingProvider>
-                                  <InnerApp />
-                                </LandingProvider>
-                              </PortalProvider>
-                            </LightboxStateProvider>
-                          </DialogStateProvider>
-                        </ModalStateProvider>
+                        <DialogStateProvider>
+                          <LightboxStateProvider>
+                            <PortalProvider>
+                              <LandingProvider>
+                                <InnerApp />
+                              </LandingProvider>
+                            </PortalProvider>
+                          </LightboxStateProvider>
+                        </DialogStateProvider>
                       </ShellStateProvider>
                     </I18nProvider>
                   </PrefsStateProvider>

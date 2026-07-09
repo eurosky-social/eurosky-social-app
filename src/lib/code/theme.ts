@@ -3,11 +3,15 @@
  * keyed by highlight.js scope, and the embed panel background. Used by the
  * tangled string embed's `CodeBlock` and by inline/fenced code in post text.
  */
-import {Platform} from 'react-native'
+import {useAlf} from '#/alf'
+import {MONOSPACE_FONT_FAMILY} from '#/alf/fonts'
 
-import {useThemeName} from '#/alf/util/useColorModeTheme'
-
-export const MONO_FONT = Platform.OS === 'android' ? 'monospace' : 'Courier New'
+/**
+ * Monospace family for rendered code. Re-exported from ALF so it stays the
+ * exact constant `applyFonts` checks against (otherwise the Inter UI font would
+ * override it). See src/alf/fonts.ts.
+ */
+export const MONO_FONT = MONOSPACE_FONT_FAMILY
 
 // Fixed per-line height for rendered code. CodeBlock also relies on it being
 // exact for its vertical viewport cap (`maxHeightLines`).
@@ -22,9 +26,17 @@ const PANEL_BG: Record<string, string> = {
   dark: '#141414', // dark base is pure black, so go a touch lighter instead
 }
 
-/** Shared panel color for the embed card and its code area. */
+/**
+ * Shared panel color for the embed card and its code area.
+ *
+ * Reads `themeName` from the ALF context (the same source `useTheme()` uses)
+ * rather than the standalone `useThemeName()`. The latter subscribes to
+ * useColorScheme/useThemePrefs directly and does not re-render these code
+ * components on a live light/dark toggle, so the panel background stayed stale
+ * until reload.
+ */
 export function useCodePanelColor(): string {
-  const themeName = useThemeName()
+  const {themeName} = useAlf()
   return PANEL_BG[themeName] ?? PANEL_BG.dark
 }
 
@@ -79,7 +91,9 @@ const LIGHT_COLORS: Record<string, string> = {
 
 /** Returns the token palette for the active theme (light vs dark/dim). */
 export function useCodeColors(): Record<string, string> {
-  const themeName = useThemeName()
+  // ALF context (not the standalone useThemeName) so token colors update on a
+  // live theme toggle - see the note on useCodePanelColor.
+  const {themeName} = useAlf()
   return themeName === 'light' ? LIGHT_COLORS : DARK_COLORS
 }
 
