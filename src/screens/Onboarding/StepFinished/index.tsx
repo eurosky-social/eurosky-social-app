@@ -33,6 +33,7 @@ import {
   useSetActiveStarterPack,
 } from '#/state/shell/landing'
 import {useProgressGuideControls} from '#/state/shell/progress-guide'
+import {interestPostRefsFor} from '#/screens/Onboarding/euroskyInterestPosts'
 import {
   OnboardingControls,
   OnboardingHeaderSlot,
@@ -41,7 +42,7 @@ import {
   type OnboardingState,
   useOnboardingInternalState,
 } from '#/screens/Onboarding/state'
-import {bulkWriteFollows} from '#/screens/Onboarding/util'
+import {bulkWriteFollows, bulkWriteLikes} from '#/screens/Onboarding/util'
 import {atoms as a, useBreakpoints} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {ArrowRight_Stroke2_Corner0_Rounded as ArrowRight} from '#/components/icons/Arrow'
@@ -104,6 +105,15 @@ export function StepFinished() {
             ? {uri: starterPack.uri, cid: starterPack.cid}
             : undefined,
         ),
+        // Like the picker-account interest post for each selected interest, to
+        // seed the fu feed's personalization. Interest posts are discovered
+        // at runtime (see euroskyInterestPosts); this is a no-op when the picker
+        // account is unset/unreachable. Errors are swallowed by the surrounding
+        // try/catch so this never blocks onboarding.
+        (async () => {
+          const refs = await interestPostRefsFor(agent, selectedInterests)
+          await bulkWriteLikes(agent, refs)
+        })(),
         (async () => {
           // Interests need to get saved first, then we can write the feeds to prefs
           await agent.setInterestsPref({tags: selectedInterests})

@@ -230,11 +230,11 @@ export function SettingsScreen({}: Props) {
             </SettingsList.ItemText>
           </SettingsList.LinkItem>
           <SettingsList.LinkItem
-            to="/settings/cat-companion"
-            label={l`Companion cat`}>
+            to="/settings/pet-companion"
+            label={l`Companion`}>
             <SettingsList.ItemIcon icon={HeartIcon} />
             <SettingsList.ItemText>
-              <Trans>Companion cat</Trans>
+              <Trans>Companion</Trans>
             </SettingsList.ItemText>
           </SettingsList.LinkItem>
           <SettingsList.LinkItem

@@ -122,5 +122,8 @@
   "ageAssurance": {
     "serviceUrl": "https://age.mu.social",
     "serviceDid": "did:web:age.mu.social"
+  },
+  "fu": {
+    "pickerDid": "did:plc:qycn7lwmbl5ije4jkvwksgm3"
   }
 }

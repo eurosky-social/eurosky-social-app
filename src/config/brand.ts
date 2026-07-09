@@ -39,4 +39,11 @@ export const BRAND = {
     serviceDid:
       process.env.EXPO_PUBLIC_AGE_SERVICE_DID || brand.ageAssurance.serviceDid,
   },
+  fu: {
+    /**
+     * DID of the account hosting the onboarding interest posts (liked during
+     * onboarding to seed the fu feed). Empty disables interest-post likes.
+     */
+    pickerDid: process.env.EXPO_PUBLIC_PICKER_DID || brand.fu.pickerDid,
+  },
 } as const
