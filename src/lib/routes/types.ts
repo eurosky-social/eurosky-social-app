@@ -64,7 +64,7 @@ export type CommonNavigatorParams = {
   PreferencesExternalEmbeds: undefined
   AccessibilitySettings: undefined
   AppearanceSettings: undefined
-  CatCompanionSettings: undefined
+  PetCompanionSettings: undefined
   AccountSettings: undefined
   AutomationLabelSettings: undefined
   PrivacyAndSecuritySettings: undefined

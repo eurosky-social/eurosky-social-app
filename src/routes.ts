@@ -51,7 +51,7 @@ export const router = new Router<AllNavigatableRoutes>({
   PreferencesExternalEmbeds: '/settings/external-embeds',
   AccessibilitySettings: '/settings/accessibility',
   AppearanceSettings: '/settings/appearance',
-  CatCompanionSettings: '/settings/cat-companion',
+  PetCompanionSettings: '/settings/pet-companion',
   SavedFeeds: '/settings/saved-feeds',
   AccountSettings: '/settings/account',
   AutomationLabelSettings: '/settings/automation-label',
