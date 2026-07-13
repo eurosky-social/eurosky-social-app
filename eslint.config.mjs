@@ -52,6 +52,11 @@ export default defineConfig(
       // rules can't be satisfied. Mirrors the eslint.config.mjs ignore above.
       'webpack.config.js',
       '.jscodeshift/**',
+      // Expo config plugins are untyped Node build tooling (fs/path imports,
+      // untyped xcode/plist internals), not app code. `pnpm lint` already only
+      // covers `src modules`; ignore here so lint-staged does not lint them
+      // either. Mirrors the bskyweb/** and services/** tooling ignores.
+      'plugins/**',
     ],
   },
 
