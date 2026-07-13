@@ -14,31 +14,26 @@ steps require external accounts and cannot be done from the repo alone.
 | Android package | `social.mu.app` |
 | App Group (iOS) | `group.social.mu.app` |
 | Expo owner (org slug) | `eurosky` (`app.config.js` `expo.owner`) |
-| EAS project id | **placeholder** `REPLACE_WITH_EUROSKY_EAS_PROJECT_ID` |
+| EAS project | `@eurosky/mu-social` (slug `mu-social`, id `52e14cdd-ab10-4b16-a0f4-fc918a9fa323`) |
 | Sentry org | `eurosky` (only used when `SENTRY_AUTH_TOKEN` is set) |
 
 Placeholders that still need real values (search the repo for `REPLACE_WITH_`):
-`eas.json` submit block (`ascAppId`, `appleTeamId`, ASC API key id/issuer),
-`app.config.js` `projectId`.
+`eas.json` submit block (`ascAppId`, `appleTeamId`, ASC API key id/issuer).
 
 ## Prerequisites
 
 - Apple Developer Program membership (have it) + admin access to App Store Connect.
 - Google Play Console developer account (have it).
-- An Expo account, and a **Eurosky Expo organization** (does not exist yet).
+- An Expo account with the **`eurosky`** organization (exists).
 - `eas-cli` locally: `pnpm dlx eas-cli@latest --version` or `npm i -g eas-cli`.
 
-## 1. Expo / EAS project
+## 1. Expo / EAS project (DONE)
 
-1. Create the org at https://expo.dev/accounts → new organization. The slug must
-   match `expo.owner` in `app.config.js` (currently `eurosky`) — or change that
-   field to whatever slug you pick.
-2. From the repo: `eas login`, then `eas init`. Choose the Eurosky org. This
-   creates the EAS project and prints a **project id**.
-3. Paste that id into `app.config.js` → `extra.eas.projectId` (replacing
-   `REPLACE_WITH_EUROSKY_EAS_PROJECT_ID`). Note: because the config is a JS file,
-   `eas init` may not edit it for you — set it manually.
-4. Confirm: `eas project:info`.
+The project is created and linked: `@eurosky/mu-social`
+(`extra.eas.projectId` in `app.config.js`, `expo.slug: 'mu-social'`,
+`expo.owner: 'eurosky'`). Verify anytime with `eas project:info`. The
+config `slug` must always equal the server project's slug (`mu-social`),
+or EAS commands error with a slug-mismatch.
 
 ## 2. Apple (iOS)
 

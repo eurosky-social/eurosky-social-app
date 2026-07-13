@@ -56,7 +56,7 @@ module.exports = function (_config) {
     expo: {
       version: VERSION,
       name: 'mu',
-      slug: 'mu',
+      slug: 'mu-social',
       scheme: 'bluesky',
       // Expo org slug (the developer org, not the app's store brand). Must match
       // the account/org that owns the EAS project (created via `eas init`).
@@ -492,7 +492,7 @@ module.exports = function (_config) {
           },
           // PLACEHOLDER: replaced by `eas init` (or paste the id from the
           // Eurosky EAS project). Builds will fail until this is a real id.
-          projectId: 'REPLACE_WITH_EUROSKY_EAS_PROJECT_ID',
+          projectId: '52e14cdd-ab10-4b16-a0f4-fc918a9fa323',
         },
       },
     },
