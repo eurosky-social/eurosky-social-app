@@ -6,8 +6,10 @@
 # New file (not in upstream) -> no merge surface.
 #
 # Staging differs from prod only in build-time env (see the Build step):
-# its own OAuth client identity + assertion worker, and a throwaway Plausible
-# domain. Search noindexing is handled at the Bunny pull zone (Edge Rule adds
+# its own OAuth client identity (assertions come from the shared non-prod
+# worker at oauth-staging.mu.social, which accepts any *.mu.social subdomain -
+# see services/oauth/bunny/staging.ts), and a throwaway Plausible domain.
+# Search noindexing is handled at the Bunny pull zone (Edge Rule adds
 # X-Robots-Tag: noindex, nofollow), not in the build.
 #
 # Required repo secrets (Settings -> Secrets and variables -> Actions):
@@ -52,12 +54,16 @@ jobs:
       - name: Build web
         run: bash ./scripts/bunny_build.sh
         env:
+          # Non-prod: ship the disallow-all robots.txt so staging stays out of
+          # search (paired with the zone's noindex X-Robots-Tag edge rule).
+          ROBOTS_MODE: disallow-all
           # Staging is its own atproto OAuth client: client_id derives from this
           # base URL (gen-oauth-metadata.js emits the metadata into the build,
-          # so staging self-publishes it at /oauth-client-metadata.json), and
-          # client assertions are signed by the staging worker instance - the
-          # prod worker pins prod's CLIENT_ID/ALLOWED_ORIGIN and would reject
-          # staging's requests. Same services/oauth/ script, second deployment.
+          # so staging self-publishes it at /oauth-client-metadata.json).
+          # Client assertions come from the shared non-prod worker
+          # (services/oauth/bunny/staging.ts): one instance serves EVERY
+          # *.mu.social environment by deriving the client_id from the request
+          # Origin. Prod stays on its own pinned worker at oauth.mu.social.
           EXPO_PUBLIC_OAUTH_BASE_URL: https://staging.mu.social
           EXPO_PUBLIC_OAUTH_ASSERTION_URL: https://oauth-staging.mu.social/client-assertion
           # Geolocation: same first-party endpoint as prod (services/geolocation/
@@ -85,5 +91,14 @@ jobs:
         env:
           BUNNY_STORAGE_ZONE: ${{ secrets.STAGING_BUNNY_STORAGE_ZONE }}
           BUNNY_STORAGE_PASSWORD: ${{ secrets.STAGING_BUNNY_STORAGE_PASSWORD }}
+          BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+          BUNNY_PULLZONE_ID: ${{ secrets.STAGING_BUNNY_PULLZONE_ID }}
+      # Bot-mitigation config (network limits + cache/block edge rules), applied
+      # to the STAGING pull zone. Idempotent - matches existing rules by
+      # description and updates in place, so it is safe to run every deploy. The
+      # noindex X-Robots-Tag edge rule on this zone is untouched (additive).
+      - name: Apply Bunny edge config (limits + rules)
+        run: bash ./scripts/bunny_edge_setup.sh
+        env:
           BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
           BUNNY_PULLZONE_ID: ${{ secrets.STAGING_BUNNY_PULLZONE_ID }}

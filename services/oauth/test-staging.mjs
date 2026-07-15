@@ -1,21 +1,24 @@
 /**
- * Sanity check for the assertion Edge Script (bunny/index.ts).
+ * Sanity check for the STAGING/DEV assertion Edge Script (bunny/staging.ts).
  *
  * Run it against any running instance of the script - a local Deno run, a
- * Bunny preview, or staging:
+ * Bunny preview, or the deployed staging worker:
  *
- *   WORKER_URL=http://localhost:8000 node test.mjs
+ *   ALLOWED_PARENT_DOMAIN=mu.social OAUTH_PRIVATE_JWK=... \
+ *     deno run --allow-net --allow-env bunny/staging.ts &
+ *   WORKER_URL=http://localhost:8080 node test-staging.mjs
  *
- * Validates the signing path (the returned JWS verifies against the committed
- * PUBLIC JWK) and the minter guardrails (Origin lock, bad iss/sub, malformed
- * aud, missing jti, wrong alg, injected-header/claim stripping). No
- * authorization server is involved, and no private key is needed locally - the
- * script signs server-side with its configured OAUTH_PRIVATE_JWK secret.
+ * Covers everything test.mjs covers for the prod minter, PLUS the wildcard
+ * origin gate: arbitrary https subdomains of PARENT_DOMAIN are accepted and
+ * each mints its OWN derived client_id; the apex, lookalike domains
+ * (evilmu.social, mu.social.evil.com), http, explicit ports, and cross-
+ * environment identities are all rejected. Signature verification uses the
+ * committed PUBLIC JWK; no private key is needed locally.
  *
- * Config (env, with mu.social defaults to match the deployed config):
- *   WORKER_URL       target instance (default http://localhost:8000)
- *   CLIENT_ID        expected iss/sub
- *   ALLOWED_ORIGIN   expected browser Origin
+ * Config (env):
+ *   WORKER_URL     target instance (default http://localhost:8080)
+ *   PARENT_DOMAIN  apex whose subdomains the instance allows
+ *                  (default mu.social; must match ALLOWED_PARENT_DOMAIN)
  *
  * Note: the script stamps iat/exp from its own clock and ignores whatever the
  * caller sends, so there are no iat/exp guardrail cases here - instead we
@@ -26,12 +29,14 @@ import {dirname, join} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const WORKER_URL = process.env.WORKER_URL || 'http://localhost:8000'
-const CLIENT_ID =
-  process.env.CLIENT_ID || 'https://mu.social/oauth-client-metadata.json'
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://mu.social'
+const WORKER_URL = process.env.WORKER_URL || 'http://localhost:8080'
+const PARENT_DOMAIN = process.env.PARENT_DOMAIN || 'mu.social'
 
-// Must mirror IAT_BACKDATE_S / ASSERTION_LIFETIME_S in bunny/index.ts.
+/** Primary test origin; any subdomain works, staging is the canonical one. */
+const ORIGIN = `https://staging.${PARENT_DOMAIN}`
+const CLIENT_ID = `${ORIGIN}/oauth-client-metadata.json`
+
+// Must mirror IAT_BACKDATE_S / ASSERTION_LIFETIME_S in bunny/staging.ts.
 const IAT_BACKDATE_S = 30
 const ASSERTION_LIFETIME_S = 120
 
@@ -64,8 +69,17 @@ function validPayload(over = {}) {
     ...over,
   }
 }
+function validPayloadEnvelope() {
+  return {header: validHeader(), payload: validPayload()}
+}
 
-async function call(body, {origin = ALLOWED_ORIGIN, method = 'POST'} = {}) {
+/** Envelope with iss/sub matching the given origin's derived client_id. */
+function envelopeFor(origin) {
+  const id = `${origin}/oauth-client-metadata.json`
+  return {header: validHeader(), payload: validPayload({iss: id, sub: id})}
+}
+
+async function call(body, {origin = ORIGIN, method = 'POST'} = {}) {
   const headers = {'content-type': 'application/json'}
   if (origin !== null) headers['Origin'] = origin
   const res = await fetch(WORKER_URL, {
@@ -124,10 +138,10 @@ function bad(name, detail) {
 
 async function main() {
   console.log(`Target: ${WORKER_URL}`)
-  console.log(`CLIENT_ID: ${CLIENT_ID}`)
+  console.log(`Parent domain: ${PARENT_DOMAIN} (primary origin ${ORIGIN})`)
   console.log(`kid: ${KID}\n`)
 
-  // Reachability + origin lock (works even without the secret).
+  // Reachability + origin gate (works even without the secret).
   let reach
   try {
     reach = await call(validPayloadEnvelope(), {origin: null})
@@ -140,20 +154,48 @@ async function main() {
   if (reach.status === 403) ok('no Origin -> 403')
   else bad('no Origin -> 403', `got ${reach.status} ${reach.text}`)
 
-  const wrongOrigin = await call(validPayloadEnvelope(), {
-    origin: 'https://evil.example',
-  })
-  if (wrongOrigin.status === 403) ok('wrong Origin -> 403')
-  else bad('wrong Origin -> 403', `got ${wrongOrigin.status}`)
+  // The wildcard gate: only https subdomains of the parent pass.
+  const rejectedOrigins = [
+    [`https://${PARENT_DOMAIN}`, 'apex (prod uses the pinned instance)'],
+    [`https://evil${PARENT_DOMAIN.replace('.', '')}.social`, 'lookalike'],
+    [`https://evil-${PARENT_DOMAIN}`, 'lookalike suffix'],
+    [`https://${PARENT_DOMAIN}.evil.com`, 'parent as sub of attacker domain'],
+    [`http://staging.${PARENT_DOMAIN}`, 'http'],
+    [`https://staging.${PARENT_DOMAIN}:8443`, 'explicit port'],
+    [`https://staging.${PARENT_DOMAIN}/path`, 'non-origin Origin value'],
+    ['https://evil.example', 'unrelated domain'],
+  ]
+  for (const [o, why] of rejectedOrigins) {
+    const r = await call(envelopeFor(o), {origin: o})
+    if (r.status === 403) ok(`reject ${why}: ${o} -> 403`)
+    else bad(`reject ${why}: ${o} -> 403`, `got ${r.status} ${r.text}`)
+  }
 
   const preflight = await call(undefined, {method: 'OPTIONS'})
   if (
     preflight.status === 204 &&
-    preflight.res.headers.get('access-control-allow-origin') === ALLOWED_ORIGIN
+    preflight.res.headers.get('access-control-allow-origin') === ORIGIN
   ) {
     ok('OPTIONS preflight -> 204 + CORS')
   } else {
     bad('OPTIONS preflight -> 204 + CORS', `got ${preflight.status}`)
+  }
+
+  // Denied preflight must not grant CORS.
+  const badPreflight = await call(undefined, {
+    method: 'OPTIONS',
+    origin: 'https://evil.example',
+  })
+  if (
+    badPreflight.status === 204 &&
+    !badPreflight.res.headers.get('access-control-allow-origin')
+  ) {
+    ok('OPTIONS from bad origin -> no allow-origin grant')
+  } else {
+    bad(
+      'OPTIONS from bad origin -> no allow-origin grant',
+      `got ${badPreflight.status} acao=${badPreflight.res.headers.get('access-control-allow-origin')}`,
+    )
   }
 
   // Happy path (needs the secret configured on the instance).
@@ -180,6 +222,47 @@ async function main() {
     }
   } else {
     bad('valid request -> 200', `got ${good.status} ${good.text}`)
+  }
+
+  /*
+   * Derived identity: any other subdomain mints under its OWN client_id
+   * (including nested subdomains), and no environment can mint under another
+   * environment's identity.
+   */
+  for (const o of [
+    `https://dev.${PARENT_DOMAIN}`,
+    `https://v10.${PARENT_DOMAIN}`,
+    `https://a.b.${PARENT_DOMAIN}`,
+  ]) {
+    const oid = `${o}/oauth-client-metadata.json`
+    const own = await call(envelopeFor(o), {origin: o})
+    if (own.status === 200 && own.json?.jws) {
+      try {
+        const {payload} = await verifyJws(own.json.jws)
+        if (payload.iss === oid && payload.sub === oid) {
+          ok(`origin ${o} -> mints its own derived client_id`)
+        } else {
+          bad(`origin ${o} identity`, `iss=${payload.iss}`)
+        }
+      } catch (e) {
+        bad(`origin ${o} identity`, String(e))
+      }
+    } else {
+      bad(`origin ${o} identity`, `got ${own.status} ${own.text}`)
+    }
+  }
+
+  // Cross-environment: dev origin with staging's iss/sub must be rejected.
+  const cross = await call(validPayloadEnvelope(), {
+    origin: `https://dev.${PARENT_DOMAIN}`,
+  })
+  if (cross.status === 400) {
+    ok(`dev origin + ${ORIGIN} identity -> 400`)
+  } else {
+    bad(
+      `dev origin + ${ORIGIN} identity -> 400`,
+      `got ${cross.status} ${cross.text}`,
+    )
   }
 
   // iat/exp are stamped from the server clock and ignore caller input. Send
@@ -279,10 +362,6 @@ async function main() {
   }
 
   summarize(false)
-}
-
-function validPayloadEnvelope() {
-  return {header: validHeader(), payload: validPayload()}
 }
 
 function summarize(skipped) {
