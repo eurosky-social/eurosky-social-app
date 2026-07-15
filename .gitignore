@@ -77,6 +77,12 @@ dist/
 *.key
 *.mobileprovision
 *.orig.*
+
+# EAS submit credentials (Google Play service account, ASC API key, etc.)
+credentials/
+# Local build artifacts (EAS --local output)
+build-*.aab
+build-*.apk
 web-build/
 stats.json
 
