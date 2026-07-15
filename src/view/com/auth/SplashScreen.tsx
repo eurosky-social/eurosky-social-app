@@ -1,6 +1,6 @@
-import {Image as RNImage, View} from 'react-native'
+import {View} from 'react-native'
 import Animated, {FadeIn, FadeOut} from 'react-native-reanimated'
-import {Image} from 'expo-image'
+import {LinearGradient} from 'expo-linear-gradient'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
@@ -10,14 +10,6 @@ import {LogoHero} from '#/view/icons/LogoHero'
 import {atoms as a, useTheme} from '#/alf'
 import {BetaTag} from '#/components/BetaTag'
 import {Button, ButtonText} from '#/components/Button'
-// @ts-ignore
-import splashImagePointer from '../../../../assets/splash/illustration-mobile.png'
-// @ts-ignore
-import darkSplashImagePointer from '../../../../assets/splash/illustration-mobile-dark.png'
-const splashImageUri = RNImage.resolveAssetSource(splashImagePointer).uri
-const darkSplashImageUri = RNImage.resolveAssetSource(
-  darkSplashImagePointer,
-).uri
 
 export const SplashScreen = ({
   onPressSignin,
@@ -34,9 +26,19 @@ export const SplashScreen = ({
 
   return (
     <>
-      <Image
-        accessibilityIgnoresInvertColors
-        source={{uri: isDarkMode ? darkSplashImageUri : splashImageUri}}
+      {/*
+       * mu fork: brand-accent gradient in place of the upstream Bluesky
+       * illustration. Colours come from the theme palette so it follows the
+       * active accent and dark mode.
+       */}
+      <LinearGradient
+        colors={
+          isDarkMode
+            ? [t.palette.primary_800, t.palette.primary_975]
+            : [t.palette.primary_400, t.palette.primary_600]
+        }
+        start={{x: 0, y: 0}}
+        end={{x: 0, y: 1}}
         style={[a.absolute, a.inset_0]}
       />
 
