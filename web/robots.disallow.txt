@@ -1,0 +1,6 @@
+# Non-production build (staging.mu.social, dev.mu.social). These environments
+# must never be crawled or indexed. Disallow everything for every crawler.
+# (The pull zone also sends X-Robots-Tag: noindex as a second layer, but a
+# blanket Disallow keeps well-behaved crawlers out entirely.)
+User-Agent: *
+Disallow: /

@@ -53,6 +53,9 @@ jobs:
       - name: Build web
         run: bash ./scripts/bunny_build.sh
         env:
+          # Non-prod: ship the disallow-all robots.txt so dev stays out of
+          # search (paired with the zone's noindex X-Robots-Tag edge rule).
+          ROBOTS_MODE: disallow-all
           # Dev is its own atproto OAuth client: client_id derives from this
           # base URL (gen-oauth-metadata.js emits the metadata into the build,
           # so dev self-publishes it at /oauth-client-metadata.json).
@@ -97,5 +100,14 @@ jobs:
         env:
           BUNNY_STORAGE_ZONE: ${{ secrets.DEV_BUNNY_STORAGE_ZONE }}
           BUNNY_STORAGE_PASSWORD: ${{ secrets.DEV_BUNNY_STORAGE_PASSWORD }}
+          BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+          BUNNY_PULLZONE_ID: ${{ secrets.DEV_BUNNY_PULLZONE_ID }}
+      # Bot-mitigation config (network limits + cache/block edge rules), applied
+      # to the DEV pull zone. Idempotent - matches existing rules by description
+      # and updates in place, so it is safe to run every deploy. The noindex
+      # X-Robots-Tag edge rule on this zone is untouched (additive).
+      - name: Apply Bunny edge config (limits + rules)
+        run: bash ./scripts/bunny_edge_setup.sh
+        env:
           BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
           BUNNY_PULLZONE_ID: ${{ secrets.DEV_BUNNY_PULLZONE_ID }}
