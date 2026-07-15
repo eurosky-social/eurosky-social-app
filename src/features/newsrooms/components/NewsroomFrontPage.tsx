@@ -1,5 +1,6 @@
 import {View} from 'react-native'
 import {Image} from 'expo-image'
+import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
@@ -10,12 +11,16 @@ import {EditBig_Stroke2_Corner2_Rounded as ComposeIcon} from '#/components/icons
 import {Link} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
-import {type CuratedPublisher, getPublisherRssUrls} from '../publishers'
-import {useOgImageQuery, useRssArticlesQuery} from '../queries'
+import {getPublisherRssUrls, type NewsroomPublisher} from '../publishers'
+import {
+  useArticleDiscussionQuery,
+  useOgImageQuery,
+  useRssArticlesQuery,
+} from '../queries'
 import {type RssItem} from '../rss/types'
 import {ArticleDiscussion} from './ArticleDiscussion'
 
-export function CuratedFrontPage({publisher}: {publisher: CuratedPublisher}) {
+export function NewsroomFrontPage({publisher}: {publisher: NewsroomPublisher}) {
   const urls = getPublisherRssUrls(publisher)
   const {data: articles, isLoading} = useRssArticlesQuery({urls})
 
@@ -37,15 +42,19 @@ export function CuratedFrontPage({publisher}: {publisher: CuratedPublisher}) {
 
   return (
     <View style={[a.px_lg, a.pt_sm, a.pb_lg, a.gap_md]}>
-      <HeroArticle item={hero} />
+      <HeroArticle item={hero} publisher={publisher} />
       {/* The anchor: real in-network discussion of the lead story. */}
-      <ArticleDiscussion url={hero.link} />
+      <ArticleDiscussion url={hero.link} publisherDid={publisher.did} />
       {rest.length > 0 && (
         <>
           <Divider />
           <View style={[a.gap_md]}>
             {rest.map(item => (
-              <SecondaryArticle key={item.id} item={item} />
+              <SecondaryArticle
+                key={item.id}
+                item={item}
+                publisher={publisher}
+              />
             ))}
           </View>
         </>
@@ -54,7 +63,13 @@ export function CuratedFrontPage({publisher}: {publisher: CuratedPublisher}) {
   )
 }
 
-function HeroArticle({item}: {item: RssItem}) {
+function HeroArticle({
+  item,
+  publisher,
+}: {
+  item: RssItem
+  publisher: NewsroomPublisher
+}) {
   const t = useTheme()
   // Upgrade the prominent hero image to the article's full-res og:image; the
   // feed thumbnail shows immediately as a fallback while it loads.
@@ -85,15 +100,31 @@ function HeroArticle({item}: {item: RssItem}) {
         )}
         <ArticleMeta item={item} />
       </Link>
-      <ArticleShareButton item={item} prominent />
+      <ArticleShareButton
+        item={item}
+        publisherDid={publisher.did}
+        accent={publisher.accent}
+        prominent
+      />
     </View>
   )
 }
 
-function SecondaryArticle({item}: {item: RssItem}) {
+function SecondaryArticle({
+  item,
+  publisher,
+}: {
+  item: RssItem
+  publisher: NewsroomPublisher
+}) {
   const t = useTheme()
-  const {data: ogImage} = useOgImageQuery({url: item.link})
-  const image = ogImage || item.imageUrl
+  const {data: discussion} = useArticleDiscussionQuery({
+    url: item.link,
+    publisherDid: publisher.did,
+  })
+  // The feed thumbnail is plenty at 96px; only the hero pays for an og:image
+  // scrape (a full page fetch per article).
+  const image = item.imageUrl
 
   return (
     <View style={[a.flex_row, a.gap_md, a.align_start]}>
@@ -123,30 +154,47 @@ function SecondaryArticle({item}: {item: RssItem}) {
               {item.description}
             </Text>
           )}
-          <ArticleMeta item={item} />
+          <ArticleMeta item={item} discussionCount={discussion?.total} />
         </View>
       </Link>
-      <ArticleShareButton item={item} compact />
+      <ArticleShareButton item={item} publisherDid={publisher.did} compact />
     </View>
   )
 }
 
 function ArticleShareButton({
   item,
+  publisherDid,
+  accent,
   compact = false,
   prominent = false,
 }: {
   item: RssItem
+  publisherDid?: string
+  /** Publisher brand color; tints the prominent CTA to match the masthead's
+   * follow button. */
+  accent?: string
   compact?: boolean
   prominent?: boolean
 }) {
   const {t: l} = useLingui()
   const {openComposer} = useOpenComposer()
+  // Cache-shared with the article's discussion block: one search per article.
+  const {data: discussion} = useArticleDiscussionQuery({
+    url: item.link,
+    publisherDid,
+  })
 
-  // Seeding `externalUri` attaches the article as a link-card embed while
+  // When the publisher posted the article itself, sharing quotes that post so
+  // every share grows the article's one canonical conversation. Otherwise seed
+  // `externalUri`, which attaches the article as a link-card embed while
   // leaving the text input blank to start typing.
   function onShare() {
-    openComposer({externalUri: item.link, logContext: 'Other'})
+    if (discussion?.anchor) {
+      openComposer({quote: discussion.anchor, logContext: 'Other'})
+    } else {
+      openComposer({externalUri: item.link, logContext: 'Other'})
+    }
   }
 
   // The hero's call to action: a full-width primary button to post the lead
@@ -158,7 +206,7 @@ function ArticleShareButton({
         size="large"
         color="primary"
         onPress={onShare}
-        style={[a.w_full]}>
+        style={[a.w_full, !!accent && {backgroundColor: accent}]}>
         <ButtonIcon icon={ComposeIcon} />
         <ButtonText>
           <Trans>Share this story</Trans>
@@ -185,7 +233,13 @@ function ArticleShareButton({
   )
 }
 
-function ArticleMeta({item}: {item: RssItem}) {
+function ArticleMeta({
+  item,
+  discussionCount,
+}: {
+  item: RssItem
+  discussionCount?: number
+}) {
   const t = useTheme()
   const {i18n} = useLingui()
   const hostname = safeHostname(item.link)
@@ -197,6 +251,12 @@ function ArticleMeta({item}: {item: RssItem}) {
         <>
           {' · '}
           {i18n.date(new Date(item.publishedAt), {dateStyle: 'medium'})}
+        </>
+      )}
+      {!!discussionCount && (
+        <>
+          {' · '}
+          {plural(discussionCount, {one: '# post', other: '# posts'})}
         </>
       )}
     </Text>

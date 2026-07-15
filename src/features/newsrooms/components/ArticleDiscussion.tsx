@@ -2,7 +2,7 @@ import {Fragment} from 'react'
 import {View} from 'react-native'
 import {type AppBskyFeedDefs, type AppBskyFeedPost} from '@atproto/api'
 import {plural} from '@lingui/core/macro'
-import {Trans} from '@lingui/react/macro'
+import {Trans, useLingui} from '@lingui/react/macro'
 
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {postUriToRelativePath} from '#/lib/strings/url-helpers'
@@ -23,15 +23,29 @@ const SHOWN = 3
  * shown beneath the hero. Tapping through lands in the live thread. This is the
  * connection the home feed and the publisher's own site don't make.
  */
-export function ArticleDiscussion({url}: {url: string}) {
+export function ArticleDiscussion({
+  url,
+  publisherDid,
+}: {
+  url: string
+  publisherDid?: string
+}) {
   const t = useTheme()
-  const {data, isLoading} = useArticleDiscussionQuery({url})
+  const {t: l} = useLingui()
+  const {data, isLoading} = useArticleDiscussionQuery({url, publisherDid})
 
   // Stay quiet until there's something real to show - no loaders or empty shells
   // cluttering the front page.
   if (isLoading || !data?.posts.length) return null
 
   const posts = data.posts.slice(0, SHOWN)
+  // The publisher's own post of the article is its canonical thread; "see all"
+  // lands there rather than on a search page.
+  const anchorPath = data.anchor
+    ? postUriToRelativePath(data.anchor.uri, {
+        handle: data.anchor.author.handle,
+      })
+    : undefined
 
   return (
     <View
@@ -56,11 +70,17 @@ export function ArticleDiscussion({url}: {url: string}) {
       ))}
 
       <Link
-        to={`/search?q=${encodeURIComponent(url)}`}
-        label={`See all posts about this article`}
+        to={anchorPath ?? `/search?q=${encodeURIComponent(url)}`}
+        label={
+          anchorPath
+            ? l`Open the discussion thread`
+            : l`See all posts about this article`
+        }
         style={[a.self_start]}>
         <Text style={[a.text_sm, a.font_bold, {color: t.palette.primary_500}]}>
-          {data.total > SHOWN ? (
+          {anchorPath ? (
+            <Trans>Join the conversation</Trans>
+          ) : data.total > SHOWN ? (
             <Trans>
               See all {plural(data.total, {one: '# post', other: '# posts'})}
             </Trans>
@@ -129,13 +149,14 @@ function Stat({
   value?: number
 }) {
   const t = useTheme()
+  const {i18n} = useLingui()
   // Skip stats with no count so a post shows only the engagement it actually has.
   if (!value) return null
   return (
     <View style={[a.flex_row, a.align_center, a.gap_xs]}>
       <Icon size="xs" fill={t.atoms.text_contrast_low.color} />
       <Text style={[a.text_xs, t.atoms.text_contrast_low]}>
-        {value.toLocaleString()}
+        {i18n.number(value)}
       </Text>
     </View>
   )

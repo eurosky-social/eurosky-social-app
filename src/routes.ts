@@ -16,7 +16,7 @@ export const router = new Router<AllNavigatableRoutes>({
   Settings: '/settings',
   Lists: '/lists',
   NewsFeed: '/news',
-  CuratedPage: ['/newsroom/:name', '/newsroom'],
+  Newsroom: ['/newsroom/:name', '/newsroom'],
   // moderation
   Moderation: '/moderation',
   ModerationModlists: '/moderation/modlists',

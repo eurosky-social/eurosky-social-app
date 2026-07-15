@@ -15,7 +15,7 @@ import {type RssItem} from './rss/types'
 const RSS_ARTICLES_TOTAL = 7
 
 export const createRssArticlesQueryKey = (args: {urls: string[]}) =>
-  createQueryKey('curatedRssArticles', args)
+  createQueryKey('newsroomRssArticles', args)
 
 /**
  * The publisher's latest real articles, merged across its RSS/Atom feeds and
@@ -63,8 +63,10 @@ export function useRssArticlesQuery({urls}: {urls: string[]}) {
   })
 }
 
-export const createArticleDiscussionQueryKey = (args: {url: string}) =>
-  createQueryKey('curatedArticleDiscussion', args)
+export const createArticleDiscussionQueryKey = (args: {
+  url: string
+  publisherDid?: string
+}) => createQueryKey('newsroomArticleDiscussion', args)
 
 /**
  * The in-network conversation about a specific article: posts across the network
@@ -74,18 +76,24 @@ export const createArticleDiscussionQueryKey = (args: {url: string}) =>
  * `searchPosts` indexes link facets, so a URL query surfaces posts that shared
  * it; we then keep only posts that genuinely reference the URL (rather than
  * merely matching its tokens) and rank by engagement.
+ *
+ * When the publisher itself posted the article, that post is the article's
+ * canonical thread: it is pinned first and returned as `anchor`, so sharing can
+ * quote it (growing one conversation) instead of starting a parallel one.
  */
 export function useArticleDiscussionQuery({
   url,
+  publisherDid,
   enabled = true,
 }: {
   url: string
+  publisherDid?: string
   enabled?: boolean
 }) {
   const agent = useAgent()
 
   return useQuery({
-    queryKey: createArticleDiscussionQueryKey({url}),
+    queryKey: createArticleDiscussionQueryKey({url, publisherDid}),
     staleTime: STALE.MINUTES.FIVE,
     enabled: enabled && !!url,
     queryFn: async () => {
@@ -95,7 +103,13 @@ export function useArticleDiscussionQuery({
         limit: 25,
       })
       const posts = res.data.posts.filter(post => postReferencesUrl(post, url))
-      return {posts, total: posts.length}
+      const anchor = publisherDid
+        ? (posts.find(post => post.author.did === publisherDid) ?? null)
+        : null
+      const ordered = anchor
+        ? [anchor, ...posts.filter(post => post !== anchor)]
+        : posts
+      return {posts: ordered, total: posts.length, anchor}
     },
   })
 }
@@ -148,12 +162,12 @@ function normalizeUrl(url: string): string {
 }
 
 export const createOgImageQueryKey = (args: {url: string}) =>
-  createQueryKey('curatedOgImage', args)
+  createQueryKey('newsroomOgImage', args)
 
 /**
- * The full-resolution og:image scraped from an article page, used to replace the
- * small, soft feed thumbnails. Scraping the HTML is comparatively heavy (one
- * page fetch per article), so results are cached for an hour and React Query
+ * The full-resolution og:image scraped from an article page, used to replace
+ * the small, soft feed thumbnail on the hero (only - scraping the HTML costs a
+ * full page fetch per article). Results are cached for an hour and React Query
  * dedupes concurrent requests for the same URL.
  */
 export function useOgImageQuery({

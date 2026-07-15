@@ -136,9 +136,9 @@ import {useAnalytics} from '#/analytics'
 import {setNavigationMetadata} from '#/analytics/metadata'
 import {BRAND} from '#/config/brand'
 import {IS_LIQUID_GLASS, IS_NATIVE, IS_WEB} from '#/env'
-import {CuratedPageScreen} from '#/features/curatedPages/CuratedPageScreen'
 import {InviteScannerScreen} from '#/features/inviteFriends'
 import {NewsFeedScreen} from '#/features/newsFeed/NewsFeedScreen'
+import {NewsroomScreen} from '#/features/newsrooms/NewsroomScreen'
 import {router} from '#/routes'
 import {Referrer} from '../modules/expo-bluesky-swiss-army'
 import {renderMessagesSplitViewLayout} from './screens/Messages/components/splitView/MessagesSplitViewLayout'
@@ -181,8 +181,8 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         options={{title: title(msg`News`), requireAuth: true}}
       />
       <Stack.Screen
-        name="CuratedPage"
-        getComponent={() => CuratedPageScreen}
+        name="Newsroom"
+        getComponent={() => NewsroomScreen}
         options={{title: title(msg`Mu Newsrooms`), requireAuth: true}}
       />
       <Stack.Screen

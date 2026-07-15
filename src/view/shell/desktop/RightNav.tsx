@@ -9,6 +9,7 @@ import {DesktopFeeds} from '#/view/shell/desktop/Feeds'
 import {DesktopSearch} from '#/view/shell/desktop/Search'
 import {
   atoms as a,
+  tokens,
   useGutters,
   useLayoutBreakpoints,
   useTheme,
@@ -20,7 +21,8 @@ import {CENTER_COLUMN_OFFSET} from '#/components/Layout'
 import {InlineLinkText, Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
-import {CuratedRightRail} from '#/features/curatedPages/components/CuratedRightRail'
+import {NewsFeedRightRail} from '#/features/newsFeed/components/NewsFeedRightRail'
+import {NewsroomRightRail} from '#/features/newsrooms/components/NewsroomRightRail'
 
 export function DesktopRightNav({routeName}: {routeName: string}) {
   const t = useTheme()
@@ -39,13 +41,28 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
 
   const width = centerColumnOffset ? 250 : 300
 
-  // On the curated hub, the right column becomes the cross-network rail (news,
-  // live sports, podcasts) instead of the default search/feeds.
-  if (routeName === 'CuratedPage') {
+  // The news surfaces swap the default search/feeds column for their own
+  // rails, each cross-linking the other.
+  const railContent =
+    routeName === 'Newsroom' ? (
+      <NewsroomRightRail />
+    ) : routeName === 'NewsFeed' ? (
+      <NewsFeedRightRail />
+    ) : null
+
+  if (railContent) {
     return (
       <View
         style={[
-          gutters,
+          {
+            // The rail's modules carry their own px_lg edge padding and 2xl
+            // top padding (they are shared with the Explore screen), so back
+            // those out of the shell gutters to keep the rail's content
+            // aligned with the other right columns.
+            paddingTop: 0,
+            paddingBottom: gutters.paddingBottom,
+            paddingLeft: gutters.paddingLeft - tokens.space.lg,
+          },
           a.pr_2xs,
           web({
             position: 'fixed',
@@ -62,7 +79,7 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
           }),
         ]}>
         <ScrollView showsVerticalScrollIndicator={false}>
-          <CuratedRightRail />
+          {railContent}
         </ScrollView>
       </View>
     )

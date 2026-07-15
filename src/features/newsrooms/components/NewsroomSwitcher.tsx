@@ -6,22 +6,22 @@ import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
 import {Text} from '#/components/Typography'
-import {type CuratedPublisher} from '../publishers'
+import {type NewsroomPublisher} from '../publishers'
 
 /**
- * The top of the curated hub: a horizontal rail of the registered publishers.
+ * The top of the newsroom hub: a horizontal rail of the registered publishers.
  * Selecting a tab focuses that org and re-themes the page in its accent. This is
  * the page's primary navigation, so it reads as switching between branded spaces
  * rather than filtering a list.
  */
-export function CuratedOrgSwitcher({
+export function NewsroomSwitcher({
   publishers,
   selectedId,
   onSelect,
 }: {
-  publishers: CuratedPublisher[]
+  publishers: NewsroomPublisher[]
   selectedId: string
-  onSelect: (publisher: CuratedPublisher) => void
+  onSelect: (publisher: NewsroomPublisher) => void
 }) {
   const t = useTheme()
   // Real org avatars keep the rail recognizable at a glance.
@@ -33,7 +33,7 @@ export function CuratedOrgSwitcher({
   return (
     <View
       style={[a.border_b, t.atoms.border_contrast_low, t.atoms.bg]}
-      testID="curatedOrgSwitcher">
+      testID="newsroomSwitcher">
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -58,7 +58,7 @@ function OrgTab({
   active,
   onPress,
 }: {
-  publisher: CuratedPublisher
+  publisher: NewsroomPublisher
   avatar?: string
   active: boolean
   onPress: () => void

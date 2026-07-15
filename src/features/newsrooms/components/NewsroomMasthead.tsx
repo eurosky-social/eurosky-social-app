@@ -1,29 +1,22 @@
 import {View} from 'react-native'
 import {type AppBskyActorDefs} from '@atproto/api'
-import {Trans, useLingui} from '@lingui/react/macro'
+import {useLingui} from '@lingui/react/macro'
 
 import {makeProfileLink} from '#/lib/routes/links'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useProfileShadow} from '#/state/cache/profile-shadow'
+import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {useProfileQuery} from '#/state/queries/profile'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useBreakpoints, useTheme} from '#/alf'
-import {Button, ButtonText} from '#/components/Button'
 import {Divider} from '#/components/Divider'
 import {Link} from '#/components/Link'
+import * as ProfileCard from '#/components/ProfileCard'
 import {Text} from '#/components/Typography'
 import {VerificationCheckButton} from '#/components/verification/VerificationCheckButton'
-import {type CuratedPublisher} from '../publishers'
+import {type NewsroomPublisher} from '../publishers'
 
-export function CuratedPageMasthead({
-  publisher,
-  isSubscribed,
-  onToggleSubscribe,
-}: {
-  publisher: CuratedPublisher
-  isSubscribed: boolean
-  onToggleSubscribe: () => void
-}) {
+export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
   const t = useTheme()
   const {t: l} = useLingui()
   const {gtMobile} = useBreakpoints()
@@ -102,25 +95,9 @@ export function CuratedPageMasthead({
               </Text>
             </Link>
 
-            <Button
-              label={
-                isSubscribed
-                  ? l`Unfollow ${publisher.displayName}`
-                  : l`Follow ${publisher.displayName}`
-              }
-              size="small"
-              color={isSubscribed ? 'secondary' : 'primary'}
-              shape="default"
-              style={isSubscribed ? undefined : {backgroundColor: accent}}
-              onPress={onToggleSubscribe}>
-              <ButtonText>
-                {isSubscribed ? (
-                  <Trans>Following</Trans>
-                ) : (
-                  <Trans>Follow</Trans>
-                )}
-              </ButtonText>
-            </Button>
+            {profile && (
+              <PublisherFollowButton profile={profile} accent={accent} />
+            )}
           </View>
 
           <Text
@@ -145,6 +122,32 @@ export function CuratedPageMasthead({
 
       <Divider />
     </View>
+  )
+}
+
+/**
+ * A regular Bluesky account follow (the standard mutation, toasts, and
+ * follow-back handling), tinted in the publisher's accent while unfollowed.
+ * The local shadow only drives the tint; FollowButton tracks its own state.
+ */
+function PublisherFollowButton({
+  profile,
+  accent,
+}: {
+  profile: AppBskyActorDefs.ProfileViewDetailed
+  accent: string
+}) {
+  const moderationOpts = useModerationOpts()
+  const shadowed = useProfileShadow(profile)
+  if (!moderationOpts) return null
+  return (
+    <ProfileCard.FollowButton
+      profile={profile}
+      moderationOpts={moderationOpts}
+      logContext="ProfileCard"
+      size="small"
+      style={shadowed.viewer?.following ? undefined : {backgroundColor: accent}}
+    />
   )
 }
 

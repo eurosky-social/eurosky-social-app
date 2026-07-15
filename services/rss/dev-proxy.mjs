@@ -1,5 +1,5 @@
 /**
- * Local dev proxy for curated page RSS feeds.
+ * Local dev proxy for newsroom page RSS feeds.
  *
  * Most news feeds send no CORS headers, so a web build's fetch is blocked. This
  * zero-dependency proxy fetches the upstream feed named in the `url` query param
@@ -12,7 +12,7 @@
  * Then point the app at it:
  *   EXPO_PUBLIC_RSS_PROXY_URL=http://localhost:8788
  *
- * The app appends `?url=<feed>` itself (see src/features/curatedPages/rss).
+ * The app appends `?url=<feed>` itself (see src/features/newsrooms/rss).
  */
 import http from 'node:http'
 

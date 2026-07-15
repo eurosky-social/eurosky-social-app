@@ -9,7 +9,7 @@ export type CommonNavigatorParams = {
   NotFound: undefined
   Lists: undefined
   NewsFeed: undefined
-  CuratedPage: {name?: string}
+  Newsroom: {name?: string}
   Moderation: undefined
   ModerationModlists: undefined
   ModerationMutedAccounts: undefined

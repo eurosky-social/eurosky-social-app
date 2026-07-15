@@ -32,7 +32,7 @@ import {MessageProfileButton} from '#/components/dms/MessageProfileButton'
 import {ArrowTopRight_Stroke2_Corner0_Rounded as ArrowTopRightIcon} from '#/components/icons/Arrow'
 import {ArrowShareRight_Stroke2_Corner2_Rounded as ArrowShareRight} from '#/components/icons/ArrowShareRight'
 import {Globe_Stroke2_Corner0_Rounded as Globe} from '#/components/icons/Globe'
-import {Newspaper_Stroke2_Corner2_Rounded as NewspaperIcon} from '#/components/icons/Newspaper'
+import {Newspaper2_Stroke2_Corner2_Rounded as NewsroomIcon} from '#/components/icons/Newspaper2'
 import {PlusLarge_Stroke2_Corner0_Rounded as Plus} from '#/components/icons/Plus'
 import {
   KnownFollowers,
@@ -46,9 +46,9 @@ import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {IS_IOS, IS_NATIVE} from '#/env'
-import {getCuratedPublisherByDidOrHandle} from '#/features/curatedPages/publishers'
 import {InviteFriendsDialog} from '#/features/inviteFriends'
 import {useActorStatus} from '#/features/liveNow'
+import {getNewsroomPublisherByDidOrHandle} from '#/features/newsrooms/publishers'
 import {GermButton} from '../components/GermButton'
 import {EditProfileDialog} from './EditProfileDialog'
 import {ProfileHeaderHandle} from './Handle'
@@ -306,7 +306,7 @@ export function HeaderStandardButtons({
 
   // Featured publishers get a shortcut from their profile to their curated
   // "newsroom" page (the RSS front page plus their conversation).
-  const curatedPublisher = getCuratedPublisherByDidOrHandle(profile.did)
+  const curatedPublisher = getNewsroomPublisherByDidOrHandle(profile.did)
 
   const onPressFollow = () => {
     playHaptic()
@@ -396,7 +396,7 @@ export function HeaderStandardButtons({
           label={_(msg`Visit the ${curatedPublisher.displayName} newsroom`)}
           size="small"
           color="secondary">
-          <ButtonIcon icon={NewspaperIcon} />
+          <ButtonIcon icon={NewsroomIcon} />
           <ButtonText>
             <Trans>Newsroom</Trans>
           </ButtonText>
