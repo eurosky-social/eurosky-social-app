@@ -58,4 +58,11 @@ sed -i'' -E 's#"static/#"/static/#g' web-build/index.html
 # Clean up the BSD sed backup file if any
 rm -f web-build/index.html-E
 
+# robots.txt: disallow the high-cardinality, JS-only routes (profiles, posts,
+# hashtags, search, ...) so crawlers stop treating every federated permalink
+# as a unique page and re-downloading the JS bundles per URL. Expo does not
+# reliably copy arbitrary files out of web/, so copy it explicitly. See
+# web/robots.txt for the rationale.
+cp web/robots.txt web-build/robots.txt
+
 echo "Build complete. Output: web-build/"
