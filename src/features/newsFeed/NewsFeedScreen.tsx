@@ -39,8 +39,9 @@ export function NewsFeedScreen({}: Props) {
   const effective = prefs ?? savedPrefs
   const isConfigured = !!effective && effective.topics.length > 0
 
-  // Stable default draft for the implicit first-time setup session.
-  const freshDraft = useMemo(() => makeDefaultNewsFeedPrefs(), [])
+  // Stable draft for the implicit first-time setup session, seeded from the
+  // record if one exists so setup never silently drops saved data.
+  const freshDraft = useMemo(() => prefs ?? makeDefaultNewsFeedPrefs(), [prefs])
 
   // With no welcome screen, an unconfigured feed drops straight into step 1.
   const activeSetup: SetupState | null =
@@ -67,9 +68,9 @@ export function NewsFeedScreen({}: Props) {
   }
 
   const resetSetup = () => {
-    // For a saved feed, Reset deletes the published record, so confirm first.
-    // An unsaved draft just clears in place.
-    if (isConfigured) {
+    // Reset deletes the published record whenever one exists, so confirm
+    // first. With no record, an unsaved draft just clears in place.
+    if (effective) {
       resetPromptControl.open()
     } else {
       clearDraft()
