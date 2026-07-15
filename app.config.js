@@ -1,5 +1,25 @@
 // @ts-check
 const pkg = require('./package.json')
+
+/**
+ * FCM config for Android push. Gitignored (see .gitignore) and provisioned
+ * out-of-band - present for credentialed local/EAS builds, absent otherwise.
+ * When absent we omit the key entirely so prebuild doesn't fail trying to copy
+ * a missing file; Android remote push just isn't configured on that build. We
+ * probe with `require.resolve` (module-relative, like the requires above) to
+ * avoid importing the `fs`/`path` builtins, which the lint config forbids here.
+ */
+const GOOGLE_SERVICES_FILE = (() => {
+  try {
+    require.resolve('./google-services.json')
+    return './google-services.json'
+  } catch {
+    console.warn(
+      '[app.config] google-services.json not found - building without Android FCM config.',
+    )
+    return undefined
+  }
+})()
 /**
  * Single brand config (src/config/brand.json; see brand.schema.json). Shared
  * with the in-app adapters, the web codegen and the Workers. Native chrome
@@ -212,7 +232,7 @@ module.exports = function (_config) {
           monochromeImage: './assets/icon-android-monochrome.png',
           backgroundColor: BRAND_ACCENT.primary_500,
         },
-        googleServicesFile: './google-services.json',
+        googleServicesFile: GOOGLE_SERVICES_FILE,
         package: 'social.mu.app',
         intentFilters: [
           {
