@@ -28,6 +28,7 @@ import {usePreferencesQuery} from '#/state/queries/preferences'
 import {createQueryKey} from '#/state/queries/util'
 import {useAgent, useSession} from '#/state/session'
 import {router} from '#/routes'
+import {account} from '#/storage'
 import {useModerationOpts} from '../preferences/moderation-opts'
 import {type FeedDescriptor} from './post-feed'
 import {precacheResolvedUri} from './resolve-uri'
@@ -443,10 +444,33 @@ const createPinnedFeedInfosQueryKey = (
   )
 
 export function usePinnedFeedsInfos() {
-  const {hasSession} = useSession()
+  const {hasSession, currentAccount} = useSession()
   const agent = useAgent()
   const {data: preferences, isLoading: isLoadingPrefs} = usePreferencesQuery()
-  const pinnedItems = preferences?.savedFeeds.filter(feed => feed.pinned) ?? []
+  let pinnedItems = preferences?.savedFeeds.filter(feed => feed.pinned) ?? []
+
+  // Local-only default feed: the first time an account opens mu on this device
+  // we adopt the "fu" feed as a pinned tab (see the selected-feed provider),
+  // without ever writing it to the account's server-side saved feeds. Prepend it
+  // here so it is the first tab and the default landing feed, unless the account
+  // has already pinned it server-side.
+  const localDefaultFeed = currentAccount?.did
+    ? account.get([currentAccount.did, 'localDefaultFeed'])
+    : undefined
+  if (
+    localDefaultFeed &&
+    !pinnedItems.some(feed => feed.value === localDefaultFeed)
+  ) {
+    pinnedItems = [
+      {
+        type: 'feed',
+        value: localDefaultFeed,
+        pinned: true,
+        id: 'local-default-feed',
+      },
+      ...pinnedItems,
+    ]
+  }
 
   return useQuery({
     queryKey: createPinnedFeedInfosQueryKey(

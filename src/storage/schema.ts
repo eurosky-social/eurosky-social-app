@@ -88,6 +88,14 @@ export type Account = {
   lastSelectedHomeFeed?: string
 
   /**
+   * Local-only default home feed for this account on this device. Set once, the
+   * first time the account opens the app with no previously selected home feed,
+   * to the Eurosky "fu" feed (see FU_FEED_URI) so new-to-mu users land on it.
+   * This is never synced to the account's server-side saved feeds.
+   */
+  localDefaultFeed?: string
+
+  /**
    * Recently selected GIFs in the GIF picker. Most recent first, capped at 20.
    */
   recentGifs?: Gif[]

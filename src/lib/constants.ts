@@ -152,6 +152,11 @@ export const BSKY_FEED_OWNER_DIDS = [
 
 export const DISCOVER_FEED_URI =
   'at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.generator/whats-hot'
+// Eurosky "fu" (For EU) personalized feed. Injected as a local-only default feed
+// the first time an account opens mu on a device (see usePinnedFeedsInfos and the
+// selected-feed provider). Never written to the account's server-side saved feeds.
+export const FU_FEED_URI =
+  'at://did:plc:ooensn4mr5mhznzypvxelfa3/app.bsky.feed.generator/fu'
 export const VIDEO_FEED_URI =
   'at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.generator/thevids'
 export const STAGING_VIDEO_FEED_URI =
