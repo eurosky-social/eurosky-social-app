@@ -19,6 +19,12 @@
  */
 import brand from '#/config/brand.json'
 
+const decorationEnabledOverride = process.env.EXPO_PUBLIC_DECO_ENABLED as
+  | string
+  | undefined
+const decorationListUrisOverride = process.env
+  .EXPO_PUBLIC_DECO_SUBSCRIBER_LIST_URIS as string | undefined
+
 export const BRAND = {
   /** Display name used in page/tab titles and in-app brand text. */
   name: brand.name,
@@ -34,8 +40,16 @@ export const BRAND = {
   services: brand.services,
   verification: brand.verification,
   decorations: {
-    /** Deco-grant issuers that count (see brand.schema.json); empty = off. */
-    issuerDids: brand.decorations.issuerDids,
+    enabled:
+      decorationEnabledOverride === undefined
+        ? brand.decorations.enabled
+        : decorationEnabledOverride === 'true',
+    subscriberListUris: decorationListUrisOverride
+      ? decorationListUrisOverride
+          .split(',')
+          .map((uri: string) => uri.trim())
+          .filter(Boolean)
+      : brand.decorations.subscriberListUris,
     serviceUrl:
       process.env.EXPO_PUBLIC_DECO_SERVICE_URL || brand.decorations.serviceUrl,
     serviceDid:

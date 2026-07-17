@@ -1,22 +1,24 @@
+import {AtUri} from '@atproto/api'
+
 import {CONSTELLATION_SERVICE, SLINGSHOT_SERVICE} from '#/lib/constants'
 
 /**
- * Entitlement grant, one record per active subscriber, living in the repo of
- * an allowlisted issuer account (BRAND.decorations.issuerDids). Its existence
- * is the whole signal - the deco service creates it on payment and deletes it
- * on lapse. Discovered via the Constellation backlink index, mirroring
- * src/lib/verification/constellation.ts.
+ * Paid entitlement is membership in an exact configured Bluesky list. A
+ * listitem links to both its list and its member, so Constellation's
+ * getManyToMany endpoint can verify both links in one query without fetching
+ * the record body. Standard list items added manually work exactly like ones
+ * created by the deco service.
  */
-export const GRANT_COLLECTION = 'social.mu.deco.grant'
-// The JSON path within a grant record to the link we index on. Records look
-// like `{subject: <did>, ...}`, so the link to the subject lives at `subject`.
-const GRANT_SUBJECT_SOURCE = `${GRANT_COLLECTION}:subject`
+export const SUBSCRIBER_LIST_COLLECTION = 'app.bsky.graph.list'
+export const SUBSCRIBER_LIST_ITEM_COLLECTION = 'app.bsky.graph.listitem'
+const LIST_ITEM_SUBJECT_SOURCE = `${SUBSCRIBER_LIST_ITEM_COLLECTION}:subject`
+const LIST_ITEM_LIST_PATH = 'list'
 
 /**
  * Cosmetic choices, a self-record in the subscriber's own PDS, written
  * directly by the app with the user's session. One record holds every slot
- * (avatar frame, name gradient, ...); the single grant gates all of them.
- * Survives a lapsed subscription dormant (no grant = nothing renders) so the
+ * (avatar frame, name gradient, ...); list membership gates all of them.
+ * Survives a lapsed subscription dormant (no membership = nothing renders) so the
  * choices restore on resubscribe.
  */
 export const SETTINGS_COLLECTION = 'social.mu.deco.settings'
@@ -32,52 +34,70 @@ export type DecorationSettings = {
   nameOutline?: boolean
 }
 
-type GetBacklinksResponse = {
-  total: number
-  records: {did: string; collection: string; rkey: string}[]
-  cursor?: string
+type GetManyToManyResponse = {
+  items?: {
+    linkRecord: {did: string; collection: string; rkey: string}
+    otherSubject: string
+  }[]
+  cursor?: string | null
 }
 
 /**
- * Returns the DIDs of every account with a `social.mu.deco.grant` record
- * naming `subjectDid`. Network-wide and unfiltered, like verification
- * backlinks: anyone can write records in this collection, so callers must
- * intersect with the issuer allowlist to decide what counts.
+ * Whether `subjectDid` belongs to any exact configured subscriber list.
+ *
+ * `did` restricts the linking record to the list owner, while the many-to-many
+ * join verifies BOTH links in the same listitem: `list` points to the exact
+ * configured list URI and `subject` points to this profile DID. This supports
+ * ordinary list items created by Bluesky clients and needs no body fetch.
  */
-export async function getDecorationGrantIssuers(
+export async function hasDecorationEntitlement(
   subjectDid: string,
-): Promise<Set<string>> {
-  const issuers = new Set<string>()
-  let cursor: string | undefined
-
-  // Bound pagination; grants from allowlisted issuers are few and land early.
-  for (let page = 0; page < 3; page++) {
-    const url = new URL(
-      `/xrpc/blue.microcosm.links.getBacklinks`,
-      CONSTELLATION_SERVICE,
-    )
-    url.searchParams.set('subject', subjectDid)
-    url.searchParams.set('source', GRANT_SUBJECT_SOURCE)
-    url.searchParams.set('limit', '100')
-    if (cursor) url.searchParams.set('cursor', cursor)
-
-    const res = await fetch(url.toString(), {
-      headers: {accept: 'application/json'},
-    })
-    if (!res.ok) {
-      throw new Error(`Constellation getBacklinks failed: ${res.status}`)
+  subscriberListUris: readonly string[],
+): Promise<boolean> {
+  const lists = new Map<string, string>()
+  for (const configuredUri of subscriberListUris) {
+    try {
+      const parsed = new AtUri(configuredUri)
+      if (
+        parsed.collection === SUBSCRIBER_LIST_COLLECTION &&
+        parsed.rkey &&
+        parsed.host.startsWith('did:')
+      ) {
+        lists.set(parsed.toString(), parsed.host)
+      }
+    } catch {
+      // Invalid brand entries cannot grant access.
     }
-    const json = (await res.json()) as GetBacklinksResponse
+  }
+  if (lists.size === 0) return false
 
-    for (const r of json.records ?? []) {
-      issuers.add(r.did)
-    }
-
-    if (!json.cursor || (json.records ?? []).length === 0) break
-    cursor = json.cursor
+  const url = new URL(
+    `/xrpc/blue.microcosm.links.getManyToMany`,
+    CONSTELLATION_SERVICE,
+  )
+  url.searchParams.set('subject', subjectDid)
+  url.searchParams.set('source', LIST_ITEM_SUBJECT_SOURCE)
+  url.searchParams.set('pathToOther', LIST_ITEM_LIST_PATH)
+  url.searchParams.set('limit', '100')
+  for (const listUri of lists.keys()) {
+    url.searchParams.append('otherSubject', listUri)
+  }
+  for (const ownerDid of new Set(lists.values())) {
+    url.searchParams.append('did', ownerDid)
   }
 
-  return issuers
+  const res = await fetch(url.toString(), {
+    headers: {accept: 'application/json'},
+  })
+  if (!res.ok) {
+    throw new Error(`Constellation getManyToMany failed: ${res.status}`)
+  }
+  const json = (await res.json()) as GetManyToManyResponse
+  return !!json.items?.some(
+    item =>
+      item.linkRecord.collection === SUBSCRIBER_LIST_ITEM_COLLECTION &&
+      lists.get(item.otherSubject) === item.linkRecord.did,
+  )
 }
 
 /**

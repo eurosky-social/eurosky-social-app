@@ -414,14 +414,16 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
           requireAuth: true,
         }}
       />
-      <Stack.Screen
-        name="DecorationsSettings"
-        getComponent={() => DecorationsSettingsScreen}
-        options={{
-          title: title(msg`Profile decorations`),
-          requireAuth: true,
-        }}
-      />
+      {BRAND.decorations.enabled && (
+        <Stack.Screen
+          name="DecorationsSettings"
+          getComponent={() => DecorationsSettingsScreen}
+          options={{
+            title: title(msg`Profile decorations`),
+            requireAuth: true,
+          }}
+        />
+      )}
       <Stack.Screen
         name="AccountSettings"
         getComponent={() => AccountSettingsScreen}

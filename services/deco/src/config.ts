@@ -14,6 +14,7 @@ export type DecoConfig = {
   issuerIdentifier: string
   issuerAppPassword: string
   issuerDid: string
+  subscriberListUri: string
   sweepSecret: string
   graceDays: number
 }
@@ -64,6 +65,17 @@ export function loadConfig(): DecoConfig {
   if (!/^\d+\.\d{2}$/.test(mollieAmount) || Number(mollieAmount) <= 0) {
     throw new Error('MOLLIE_AMOUNT must be a positive decimal such as 3.00')
   }
+  const issuerDid = required('DECO_ISSUER_DID')
+  const subscriberListUri = required('DECO_SUBSCRIBER_LIST_URI')
+  if (
+    !subscriberListUri.startsWith(
+      `at://${issuerDid}/app.bsky.graph.list/`,
+    )
+  ) {
+    throw new Error(
+      'DECO_SUBSCRIBER_LIST_URI must be an app.bsky.graph.list owned by DECO_ISSUER_DID',
+    )
+  }
 
   return {
     serviceDid,
@@ -83,7 +95,8 @@ export function loadConfig(): DecoConfig {
     issuerPdsUrl: cleanUrl('DECO_ISSUER_PDS_URL'),
     issuerIdentifier: required('DECO_ISSUER_IDENTIFIER'),
     issuerAppPassword: required('DECO_ISSUER_APP_PASSWORD'),
-    issuerDid: required('DECO_ISSUER_DID'),
+    issuerDid,
+    subscriberListUri,
     sweepSecret: required('SWEEP_SECRET'),
     graceDays: positiveInteger('GRACE_DAYS', 5, 30),
   }

@@ -1,5 +1,5 @@
 import { type DecoConfig } from './config.ts'
-import { grantRkey } from './grants.ts'
+import { stableRkey } from './grants.ts'
 import {
   type CallerVerifier,
   type DecoDb,
@@ -74,7 +74,7 @@ function safeEqual(left: string, right: string): boolean {
 }
 
 async function idempotencyKey(prefix: string, value: string): Promise<string> {
-  return `${prefix}-${await grantRkey(value)}`
+  return `${prefix}-${await stableRkey(value)}`
 }
 
 export function createDecoService(deps: ServiceDependencies) {
@@ -232,7 +232,7 @@ export function createDecoService(deps: ServiceDependencies) {
     )
     if (payment.status !== 'paid' || reversedAmount > 0) {
       // Failed/reversed payments never extend entitlement. Existing paid time
-      // is left untouched and the sweep removes its grant after expiry.
+      // is left untouched and the sweep removes its membership after expiry.
       return json({ received: true })
     }
     if (
@@ -329,7 +329,7 @@ export function createDecoService(deps: ServiceDependencies) {
         swept++
       } catch (error) {
         failures.push(subscriber.did)
-        console.error('[deco] failed to revoke expired grant', {
+        console.error('[deco] failed to remove expired membership', {
           did: subscriber.did,
           error,
         })

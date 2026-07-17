@@ -1,7 +1,7 @@
 import { type DecoConfig } from './config.ts'
 import { type GrantClient } from './types.ts'
 
-const GRANT_COLLECTION = 'social.mu.deco.grant'
+const SUBSCRIBER_LIST_ITEM_COLLECTION = 'app.bsky.graph.listitem'
 
 type Session = { did: string; accessJwt: string; refreshJwt: string }
 
@@ -15,15 +15,22 @@ class PdsError extends Error {
   }
 }
 
-export async function grantRkey(subjectDid: string): Promise<string> {
+export async function stableRkey(value: string): Promise<string> {
   const digest = await crypto.subtle.digest(
     'SHA-256',
-    new TextEncoder().encode(subjectDid),
+    new TextEncoder().encode(value),
   )
   const hex = [...new Uint8Array(digest)]
     .map((value) => value.toString(16).padStart(2, '0'))
     .join('')
   return `sub-${hex}`
+}
+
+export function grantRkey(
+  subscriberListUri: string,
+  subjectDid: string,
+): Promise<string> {
+  return stableRkey(`${subscriberListUri}\n${subjectDid}`)
 }
 
 export function createGrantClient(config: DecoConfig): GrantClient {
@@ -112,17 +119,17 @@ export function createGrantClient(config: DecoConfig): GrantClient {
 
   return {
     async put(subjectDid) {
-      const rkey = await grantRkey(subjectDid)
+      const rkey = await grantRkey(config.subscriberListUri, subjectDid)
       const result = await authed<{ uri: string }>(
         'com.atproto.repo.putRecord',
         {
           repo: config.issuerDid,
-          collection: GRANT_COLLECTION,
+          collection: SUBSCRIBER_LIST_ITEM_COLLECTION,
           rkey,
-          validate: false,
           record: {
-            $type: GRANT_COLLECTION,
+            $type: SUBSCRIBER_LIST_ITEM_COLLECTION,
             subject: subjectDid,
+            list: config.subscriberListUri,
             createdAt: new Date().toISOString(),
           },
         },
@@ -130,15 +137,16 @@ export function createGrantClient(config: DecoConfig): GrantClient {
       return {
         rkey,
         uri: result.uri ||
-          `at://${config.issuerDid}/${GRANT_COLLECTION}/${rkey}`,
+          `at://${config.issuerDid}/${SUBSCRIBER_LIST_ITEM_COLLECTION}/${rkey}`,
       }
     },
     async remove(subjectDid, knownRkey) {
-      const rkey = knownRkey || (await grantRkey(subjectDid))
+      const rkey = knownRkey ||
+        (await grantRkey(config.subscriberListUri, subjectDid))
       try {
         await authed('com.atproto.repo.deleteRecord', {
           repo: config.issuerDid,
-          collection: GRANT_COLLECTION,
+          collection: SUBSCRIBER_LIST_ITEM_COLLECTION,
           rkey,
         })
       } catch (error) {

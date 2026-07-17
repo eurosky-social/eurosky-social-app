@@ -2,13 +2,14 @@
 
 Mollie subscription backend for paid profile decorations in
 `src/features/avatarDecorations/`. It runs as a Bunny Edge Script, stores
-subscription state in Bunny Database/libSQL, and publishes entitlement grants
-from the official Eurosky+ atproto account.
+subscription state in Bunny Database/libSQL, and manages membership in an
+exact Bluesky subscriber list owned by the Eurosky+ atproto account.
 
 Decoration selection never passes through this service. The app writes the
 subscriber's `social.mu.deco.settings/self` record directly with that user's
-session. This service only manages the paid entitlement represented by a
-`social.mu.deco.grant` record in the issuer account.
+session. Paid entitlement is a standard `app.bsky.graph.listitem` pointing to
+the exact `DECO_SUBSCRIBER_LIST_URI`. Memberships added manually through an
+ordinary Bluesky client are valid too.
 
 ## Endpoints
 
@@ -25,38 +26,40 @@ Other routes:
 
 - `POST /mollie/webhook` - Mollie sends a payment ID as form data. The service
   re-fetches the payment with its Mollie API key before trusting anything.
-- `GET /sweep` - revokes grants whose `paidUntil + GRACE_DAYS` has passed.
+- `GET /sweep` - removes service-owned memberships whose
+  `paidUntil + GRACE_DAYS` has passed.
   Requires `Authorization: Bearer <SWEEP_SECRET>`.
 - `GET /.well-known/did.json` - did:web service identity.
 - `GET /xrpc/_health` - uptime check.
 
 Lexicon definitions are under `lexicons/social/mu/deco/`.
 
-## Payment and grant lifecycle
+## Payment and membership lifecycle
 
 1. `createCheckout` creates or reuses a Mollie customer and first payment.
    Checkout attempts and Mollie requests use idempotency keys, so retries reuse
    an existing hosted checkout instead of charging twice.
 2. Mollie calls the webhook. A paid first payment with a valid mandate creates
    the recurring subscription beginning when the first paid period ends.
-3. A successful first or recurring payment advances `paidUntil` and writes a
-   grant record from the issuer account.
+3. A successful first or recurring payment advances `paidUntil` and writes an
+   `app.bsky.graph.listitem` into the configured subscriber list.
 4. `cancel` deletes the Mollie subscription immediately, preventing another
-   charge, but keeps the grant through `paidUntil`.
+   charge, but keeps membership through `paidUntil`.
 5. Failed, expired, canceled, or charged-back payment notifications do not
-   extend entitlement. The daily sweep removes the grant after the grace
-   period.
+   extend entitlement. The daily sweep removes the service-owned membership
+   after the grace period.
 
-Grant rkeys are deterministic (`sub-` plus SHA-256 of the subject DID). This
-makes grant writes idempotent and guarantees at most one service-owned grant per
-subscriber even if a webhook is retried after a partial failure.
+Service-created list-item rkeys are deterministic (`sub-` plus SHA-256 of the
+list URI and subject DID). This makes webhook writes idempotent and permits the
+same account to own separate test and production lists. The client does not rely
+on that rkey: manually created list items use normal TIDs and count equally.
 
 ## Storage
 
 The service creates these tables automatically:
 
 - `deco_subscribers` - one row per DID with Mollie IDs, checkout state,
-  `paidUntil`, grant identity, and cancellation state.
+  `paidUntil`, service-owned list-item identity, and cancellation state.
 - `deco_processed_payments` - payment IDs observed by the service for auditing
   and idempotency.
 
@@ -66,7 +69,9 @@ persistent database.
 
 ## Configuration
 
-Copy `env.example` and set the values as Bunny environment variables/secrets.
+Copy `env.example` for production or `env.test.example` for the isolated
+`test.deco.mu.social` Mollie test deployment, then set the values as Bunny
+environment variables/secrets.
 Required production secrets are:
 
 - `MOLLIE_API_KEY`
@@ -75,9 +80,10 @@ Required production secrets are:
 - `SWEEP_SECRET`
 
 Required non-secret identity settings include `DECO_ISSUER_DID`,
-`DECO_ISSUER_IDENTIFIER`, and `DECO_ISSUER_PDS_URL`. The issuer DID must also be
-present in `src/config/brand.json` under `decorations.issuerDids`, or clients
-will deliberately ignore its grants.
+`DECO_ISSUER_IDENTIFIER`, `DECO_ISSUER_PDS_URL`, and the exact
+`DECO_SUBSCRIBER_LIST_URI`. The app accepts exact list URIs from
+`src/config/brand.json` under `decorations.subscriberListUris`. A test build can
+override that array without allowing the test list in production.
 
 `BILLING_MONTHS` supports 1 through 12. `MOLLIE_AMOUNT` must use two decimal
 places. Start in Mollie test mode with a `test_...` API key.
@@ -103,7 +109,7 @@ To run locally, load `env.example` values, use a Mollie test key, leave
 DEV_TRUST_DID_HEADER=1 deno task dev
 ```
 
-The lifecycle test uses fake Mollie and grant clients. It covers checkout reuse,
+The lifecycle test uses fake Mollie and list-membership clients. It covers checkout reuse,
 first-payment activation, duplicate webhook handling, cancellation, and expiry
 sweeping without contacting Mollie or a PDS.
 
@@ -113,8 +119,9 @@ without any payment flow.
 ## Deploy to Bunny
 
 1. Create a Bunny Database and inject its URL/token into the Edge Script.
-2. Create an app password on the dedicated issuer account. Do not use a personal
-   account in production.
+2. Create the subscriber list and an app password on the issuer account. The
+   same account may own separate test and production lists; configure each
+   deployment with its own exact list URI.
 3. Create a Bunny Edge Script from `src/index.ts` with this directory's
    `deno.json` import map and local modules.
 4. Attach `deco.mu.social` (or the configured host) and verify

@@ -110,10 +110,15 @@
     },
     "decorations": {
       "type": "object",
-      "description": "Avatar decoration (Eurosky+) trust root: grant records issued by these DIDs entitle their subject to render a decoration frame. Empty list disables the feature.",
+      "description": "Eurosky+ profile decorations and Mollie subscription service.",
       "properties": {
-        "issuerDids": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Master switch. False disables decoration queries, rendering, and settings UI."
+        },
+        "subscriberListUris": {
           "type": "array",
+          "description": "Exact app.bsky.graph.list AT-URIs whose members receive decoration access.",
           "items": {"type": "string"}
         },
         "serviceUrl": {"type": "string"},

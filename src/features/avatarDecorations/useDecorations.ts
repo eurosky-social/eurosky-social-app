@@ -10,8 +10,8 @@ import {getNameGradient, type NameGradient} from './nameGradients'
 import {nameGradientTextStyle} from './nameGradientStyle'
 import {
   type DecorationSettings,
-  getDecorationGrantIssuers,
   getDecorationSettings,
+  hasDecorationEntitlement,
   SETTINGS_COLLECTION,
   SETTINGS_RKEY,
 } from './records'
@@ -22,26 +22,25 @@ export const createDecorationsQueryKey = (did: string) =>
 
 /**
  * Resolves a DID's *active* decoration slots: the settings record, but only
- * when an allowlisted grant exists (returns null otherwise). Both slot hooks
+ * when the DID belongs to a configured subscriber list (null otherwise). Both slot hooks
  * share this one query - react-query dedupes by key, so a DID is resolved
  * once per staleTime no matter how many avatars/names reference it.
  *
  * Same per-DID shape and hot-path volume as useMuVerificationQuery (which runs
  * for every feed item via ProfileBadges), but lazier - cosmetics tolerate
- * staleness better than verification. Disabled when the issuer allowlist is
- * empty (feature off).
+ * staleness better than verification. Disabled by the brand master switch or
+ * when no subscriber lists are configured.
  */
 function useActiveDecorations(
   did: string | undefined,
 ): DecorationSettings | null {
-  const issuerDids = BRAND.decorations.issuerDids
+  const listUris = BRAND.decorations.subscriberListUris
   const {data} = useQuery<DecorationSettings | null>({
     queryKey: createDecorationsQueryKey(did ?? ''),
-    enabled: !!did && issuerDids.length > 0,
+    enabled: BRAND.decorations.enabled && !!did && listUris.length > 0,
     staleTime: STALE.MINUTES.THIRTY,
     queryFn: async () => {
-      const issuers = await getDecorationGrantIssuers(did!)
-      if (!issuerDids.some(issuer => issuers.has(issuer))) return null
+      if (!(await hasDecorationEntitlement(did!, listUris))) return null
       return await getDecorationSettings(did!)
     },
   })
@@ -77,9 +76,9 @@ export function useNameStyle(did: string | undefined): TextStyle | undefined {
 const myDecorationSettingsQueryKeyRoot = 'my-decoration-settings'
 
 /**
- * The current account's own settings record, ungated by any grant - used by
- * the settings screen so you can pick and preview choices whether or not your
- * subscription is currently active (the choices are inert without a grant, but
+ * The current account's own settings record, ungated by list membership - used
+ * by the settings screen so you can pick and preview choices whether or not your
+ * subscription is currently active (the choices are inert without membership, but
  * still yours to set). Returns {} until loaded.
  */
 export function useMyDecorationSettings(): DecorationSettings {

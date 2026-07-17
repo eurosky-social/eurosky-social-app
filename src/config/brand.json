@@ -124,10 +124,9 @@
     "serviceDid": "did:web:age.mu.social"
   },
   "decorations": {
-    "$comment": "Eurosky+ profile decorations. issuerDids are trusted social.mu.deco.grant issuers (empty = rendering off); serviceUrl/serviceDid identify the Mollie subscription backend. See src/features/avatarDecorations/ and services/deco/.",
-    "issuerDids": [
-      "did:plc:257wekqxg4hyapkq6k47igmp"
-    ],
+    "$comment": "Eurosky+ profile decorations. Set enabled=false to remove the UI and read path completely. subscriberListUris are exact app.bsky.graph.list records whose members get access. Test builds override these values with EXPO_PUBLIC_DECO_* variables.",
+    "enabled": false,
+    "subscriberListUris": [],
     "serviceUrl": "https://deco.mu.social",
     "serviceDid": "did:web:deco.mu.social"
   },

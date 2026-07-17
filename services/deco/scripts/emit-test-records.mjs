@@ -1,61 +1,57 @@
 #!/usr/bin/env node
 /**
- * Phase-1 helper: hand-write test decoration records so the client read path
- * (src/features/avatarDecorations/) can be exercised before the deco service
- * exists.
- *
- * Writes, as the logged-in account:
- *   - a `social.mu.deco.grant` record {subject} (issuer role)
- *   - a `social.mu.deco.settings` self-record {frame} (subject role,
- *     only when the subject IS the logged-in account)
+ * Hand-write a standard Bluesky list membership for testing the decoration
+ * entitlement read path without Mollie or the deco service.
  *
  * Usage:
- *   HANDLE=you.example APP_PASSWORD=xxxx-xxxx-xxxx-xxxx \
+ *   HANDLE=issuer.example APP_PASSWORD=xxxx-xxxx-xxxx-xxxx \
+ *   LIST_URI=at://did:plc:issuer/app.bsky.graph.list/rkey \
  *     node services/deco/scripts/emit-test-records.mjs
  *
  * Env options:
- *   PDS_URL      PDS to log into (default https://bsky.social)
- *   FRAME        avatar frame id for the settings record (default gold-ring;
- *                see src/features/avatarDecorations/catalog.ts)
- *   GRADIENT     display-name gradient id (optional; see nameGradients.ts,
- *                e.g. sunset, ocean, aurora, rose, ember, violet, rainbow)
+ *   PDS_URL      issuer account PDS (default https://bsky.social)
+ *   LIST_URI     exact subscriber list AT-URI owned by the logged-in issuer
+ *                account (required)
+ *   SUBJECT_DID  member DID (default: logged-in issuer DID)
+ *   FRAME        avatar frame id (default gold-ring)
+ *   GRADIENT     optional display-name gradient id
  *   OUTLINE=1    add a dark outline around the gradient name
- *   SUBJECT_DID  grant subject (default: the logged-in account's own DID)
- *   MODE=revoke  delete all grant records naming SUBJECT_DID instead; the
- *                settings record is left in place - that IS the lapse
- *                behavior (frame goes dormant, restores on re-grant)
+ *   MODE=revoke  remove every matching membership; leave settings dormant
  *
- * Running emit twice creates a duplicate grant; harmless (existence-only),
- * clean up with MODE=revoke which deletes all of them.
+ * The list item uses a normal PDS-generated rkey, deliberately proving that
+ * manually managed Bluesky list members work and no service-specific rkey is
+ * required by the client.
  */
 
+import process from 'node:process'
+
 const PDS_URL = process.env.PDS_URL || 'https://bsky.social'
-const {HANDLE, APP_PASSWORD} = process.env
+const { HANDLE, APP_PASSWORD, LIST_URI } = process.env
 const FRAME = process.env.FRAME || 'gold-ring'
 const GRADIENT = process.env.GRADIENT
 const OUTLINE = process.env.OUTLINE === '1'
 const MODE = process.env.MODE || 'emit'
 
-const GRANT_COLLECTION = 'social.mu.deco.grant'
+const LIST_ITEM_COLLECTION = 'app.bsky.graph.listitem'
 const SETTINGS_COLLECTION = 'social.mu.deco.settings'
 
-if (!HANDLE || !APP_PASSWORD) {
+if (!HANDLE || !APP_PASSWORD || !LIST_URI) {
   console.error(
-    'Usage: HANDLE=you.example APP_PASSWORD=... node emit-test-records.mjs',
+    'Usage: HANDLE=issuer.example APP_PASSWORD=... LIST_URI=at://.../app.bsky.graph.list/... node emit-test-records.mjs',
   )
   process.exit(1)
 }
 
-async function xrpc(path, {method = 'GET', token, body, params} = {}) {
+async function xrpc(path, { method = 'GET', token, body, params } = {}) {
   const url = new URL(`/xrpc/${path}`, PDS_URL)
-  for (const [k, v] of Object.entries(params ?? {})) {
-    url.searchParams.set(k, v)
+  for (const [key, value] of Object.entries(params ?? {})) {
+    url.searchParams.set(key, value)
   }
   const res = await fetch(url, {
     method,
     headers: {
-      ...(token ? {authorization: `Bearer ${token}`} : {}),
-      ...(body ? {'content-type': 'application/json'} : {}),
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
+      ...(body ? { 'content-type': 'application/json' } : {}),
     },
     body: body ? JSON.stringify(body) : undefined,
   })
@@ -68,11 +64,15 @@ async function xrpc(path, {method = 'GET', token, body, params} = {}) {
 
 const session = await xrpc('com.atproto.server.createSession', {
   method: 'POST',
-  body: {identifier: HANDLE, password: APP_PASSWORD},
+  body: { identifier: HANDLE, password: APP_PASSWORD },
 })
-const {did, accessJwt} = session
+const { did, accessJwt } = session
 const subject = process.env.SUBJECT_DID || did
 const now = new Date().toISOString()
+
+if (!LIST_URI.startsWith(`at://${did}/app.bsky.graph.list/`)) {
+  throw new Error(`LIST_URI must be an app.bsky.graph.list owned by ${did}`)
+}
 
 if (MODE === 'revoke') {
   const toDelete = []
@@ -82,13 +82,18 @@ if (MODE === 'revoke') {
       token: accessJwt,
       params: {
         repo: did,
-        collection: GRANT_COLLECTION,
+        collection: LIST_ITEM_COLLECTION,
         limit: '100',
-        ...(cursor ? {cursor} : {}),
+        ...(cursor ? { cursor } : {}),
       },
     })
-    for (const r of page.records ?? []) {
-      if (r.value?.subject === subject) toDelete.push(r.uri)
+    for (const record of page.records ?? []) {
+      if (
+        record.value?.list === LIST_URI &&
+        record.value?.subject === subject
+      ) {
+        toDelete.push(record.uri)
+      }
     }
     cursor = page.cursor
   } while (cursor)
@@ -97,24 +102,33 @@ if (MODE === 'revoke') {
     await xrpc('com.atproto.repo.deleteRecord', {
       method: 'POST',
       token: accessJwt,
-      body: {repo: did, collection: GRANT_COLLECTION, rkey: uri.split('/').pop()},
+      body: {
+        repo: did,
+        collection: LIST_ITEM_COLLECTION,
+        rkey: uri.split('/').pop(),
+      },
     })
     console.log(`deleted ${uri}`)
   }
   console.log(
-    `revoked ${toDelete.length} grant(s) for ${subject}; settings record left dormant`,
+    `removed ${toDelete.length} membership(s) for ${subject}; settings left dormant`,
   )
 } else {
-  const grant = await xrpc('com.atproto.repo.createRecord', {
+  const membership = await xrpc('com.atproto.repo.createRecord', {
     method: 'POST',
     token: accessJwt,
     body: {
       repo: did,
-      collection: GRANT_COLLECTION,
-      record: {$type: GRANT_COLLECTION, subject, createdAt: now},
+      collection: LIST_ITEM_COLLECTION,
+      record: {
+        $type: LIST_ITEM_COLLECTION,
+        list: LIST_URI,
+        subject,
+        createdAt: now,
+      },
     },
   })
-  console.log(`grant:    ${grant.uri}`)
+  console.log(`membership: ${membership.uri}`)
 
   if (subject === did) {
     const settings = await xrpc('com.atproto.repo.putRecord', {
@@ -127,26 +141,33 @@ if (MODE === 'revoke') {
         record: {
           $type: SETTINGS_COLLECTION,
           avatar: FRAME,
-          ...(GRADIENT ? {name: GRADIENT} : {}),
-          ...(GRADIENT && OUTLINE ? {nameOutline: true} : {}),
+          ...(GRADIENT ? { name: GRADIENT } : {}),
+          ...(GRADIENT && OUTLINE ? { nameOutline: true } : {}),
           updatedAt: now,
         },
       },
     })
     console.log(
-      `settings: ${settings.uri} (avatar: ${FRAME}${GRADIENT ? `, name: ${GRADIENT}` : ''})`,
+      `settings: ${settings.uri} (avatar: ${FRAME}${
+        GRADIENT ? `, name: ${GRADIENT}` : ''
+      })`,
     )
   } else {
     console.log(
-      `subject ${subject} differs from issuer; write the settings record from the subject's own account`,
+      `subject ${subject} differs from issuer; write settings from the subject account`,
     )
   }
 
-  console.log(`\nissuer DID: ${did}`)
-  console.log(
-    `-> add it to src/config/brand.json decorations.issuerDids, then give Constellation ~a minute to index.`,
+  console.log('\nAdd this exact URI to decorations.subscriberListUris:')
+  console.log(LIST_URI)
+  const check = new URL(
+    'https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getManyToMany',
   )
-  console.log(
-    `   check: https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getBacklinks?subject=${subject}&source=${GRANT_COLLECTION}:subject`,
-  )
+  check.searchParams.set('subject', subject)
+  check.searchParams.set('source', `${LIST_ITEM_COLLECTION}:subject`)
+  check.searchParams.set('pathToOther', 'list')
+  check.searchParams.set('otherSubject', LIST_URI)
+  check.searchParams.set('did', did)
+  check.searchParams.set('limit', '1')
+  console.log(`Constellation check: ${check}`)
 }

@@ -1,5 +1,6 @@
 import { type DecoConfig } from './config.ts'
 import { createMemoryDb } from './db.ts'
+import { grantRkey } from './grants.ts'
 import {
   CANCEL,
   CREATE_CHECKOUT,
@@ -42,9 +43,23 @@ const config: DecoConfig = {
   issuerIdentifier: 'issuer.example.com',
   issuerAppPassword: 'xxxx-xxxx-xxxx-xxxx',
   issuerDid: 'did:plc:issuer',
+  subscriberListUri: 'at://did:plc:issuer/app.bsky.graph.list/subscribers',
   sweepSecret: 'sweep-secret',
   graceDays: 5,
 }
+
+Deno.test('service list-item rkeys are isolated by list', async () => {
+  const subject = 'did:plc:subscriber'
+  const production = await grantRkey(
+    'at://did:plc:issuer/app.bsky.graph.list/prod',
+    subject,
+  )
+  const test = await grantRkey(
+    'at://did:plc:issuer/app.bsky.graph.list/test',
+    subject,
+  )
+  assert(production !== test)
+})
 
 Deno.test('paidUntilFor handles month ends', () => {
   assertEquals(
@@ -109,7 +124,7 @@ Deno.test('checkout, paid webhook, cancellation, and expiry lifecycle', async ()
       grantsPut.push(subjectDid)
       return {
         rkey: 'sub-hash',
-        uri: `at://did:plc:issuer/social.mu.deco.grant/sub-hash`,
+        uri: `at://did:plc:issuer/app.bsky.graph.listitem/sub-hash`,
       }
     },
     async remove(subjectDid) {
