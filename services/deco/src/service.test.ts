@@ -193,6 +193,7 @@ Deno.test('checkout, paid webhook, cancellation, and expiry lifecycle', async ()
     active: true,
     paidUntil: '2026-02-28T12:00:00.000Z',
     cancelAtPeriodEnd: false,
+    plan: { amount: '3.00', currency: 'EUR', billingMonths: 1 },
   })
 
   const canceled = await app(

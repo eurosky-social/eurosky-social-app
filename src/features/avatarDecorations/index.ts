@@ -13,6 +13,14 @@ export {
   SUBSCRIBER_LIST_ITEM_COLLECTION,
 } from './records'
 export {
+  createDecorationSubscriptionQueryKey,
+  DecorationSubscriptionError,
+  type DecorationSubscriptionStatus,
+  useCancelDecorationSubscriptionMutation,
+  useCreateDecorationCheckoutMutation,
+  useDecorationSubscriptionQuery,
+} from './subscription'
+export {
   createDecorationsQueryKey,
   useAvatarDecoration,
   useMyDecorationSettings,

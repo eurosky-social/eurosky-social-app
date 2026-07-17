@@ -18,7 +18,7 @@ DID as `aud` and the method NSID as `lxm`:
 
 | Method | Endpoint | Result |
 | --- | --- | --- |
-| GET | `/xrpc/social.mu.deco.getStatus` | `{active, paidUntil?, cancelAtPeriodEnd}` |
+| GET | `/xrpc/social.mu.deco.getStatus` | Status plus the current plan price |
 | POST | `/xrpc/social.mu.deco.createCheckout` | `{checkoutUrl}` for Mollie's hosted checkout |
 | POST | `/xrpc/social.mu.deco.cancel` | Cancels renewal while preserving the paid period |
 

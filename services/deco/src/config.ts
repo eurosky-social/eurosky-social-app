@@ -90,7 +90,7 @@ export function loadConfig(): DecoConfig {
     billingMonths: positiveInteger('BILLING_MONTHS', 1, 12),
     checkoutRedirectUrl: cleanUrl(
       'CHECKOUT_REDIRECT_URL',
-      'https://mu.social/settings/decorations',
+      'https://mu.social/settings/decorations?checkout=return',
     ),
     issuerPdsUrl: cleanUrl('DECO_ISSUER_PDS_URL'),
     issuerIdentifier: required('DECO_ISSUER_IDENTIFIER'),

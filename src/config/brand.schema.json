@@ -122,7 +122,11 @@
           "items": {"type": "string"}
         },
         "serviceUrl": {"type": "string"},
-        "serviceDid": {"type": "string"}
+        "serviceDid": {"type": "string"},
+        "manageUrl": {
+          "type": "string",
+          "description": "Web settings URL opened from native builds to purchase or manage the subscription."
+        }
       }
     },
     "fu": {

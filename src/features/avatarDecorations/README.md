@@ -45,10 +45,12 @@ avatars/names reference it:
 ## The settings screen
 
 `src/screens/Settings/DecorationsSettings.tsx` (Settings -> Profile
-decorations). Previews your name live, offers the gradient swatches + None, and
-on Save writes the merged settings record via `useSetDecorations`
-(read-modify-write, since putRecord replaces the whole record). Editable whether
-or not a subscription is active - the choice is inert without membership.
+decorations) shows subscription status and the current service-provided price.
+On web it starts Mollie's hosted checkout, polls status after the redirect, and
+supports cancellation; native builds direct users to the web settings page
+rather than selling digital access in-app. It also previews your name, offers the gradient
+swatches + None, and writes the merged settings record via `useSetDecorations`.
+Choices remain editable without a subscription but are inert without membership.
 
 ## Testing without the service
 

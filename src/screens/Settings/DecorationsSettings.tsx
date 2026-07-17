@@ -1,25 +1,36 @@
-import {useState} from 'react'
+import {useEffect, useState} from 'react'
 import {Pressable, View} from 'react-native'
 import {LinearGradient} from 'expo-linear-gradient'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {type NativeStackScreenProps} from '@react-navigation/native-stack'
+import {useQueryClient} from '@tanstack/react-query'
 
 import {type CommonNavigatorParams} from '#/lib/routes/types'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useCurrentAccountProfile} from '#/state/queries/useCurrentAccountProfile'
+import {useSession} from '#/state/session'
 import * as SettingsList from '#/screens/Settings/components/SettingsList'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
 import * as Toggle from '#/components/forms/Toggle'
 import {Check_Stroke2_Corner0_Rounded as CheckIcon} from '#/components/icons/Check'
+import {Sparkle_Stroke2_Corner0_Rounded as SparkleIcon} from '#/components/icons/Sparkle'
 import * as Layout from '#/components/Layout'
+import {Loader} from '#/components/Loader'
+import * as Prompt from '#/components/Prompt'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
+import {BRAND} from '#/config/brand'
+import {IS_NATIVE, IS_WEB} from '#/env'
 import {
+  createDecorationsQueryKey,
   NAME_GRADIENTS,
   type NameGradient,
   nameGradientTextStyle,
+  useCancelDecorationSubscriptionMutation,
+  useCreateDecorationCheckoutMutation,
+  useDecorationSubscriptionQuery,
   useMyDecorationSettings,
   useSetDecorations,
 } from '#/features/avatarDecorations'
@@ -88,6 +99,8 @@ export function DecorationsSettingsScreen({}: Props) {
       </Layout.Header.Outer>
       <Layout.Content>
         <SettingsList.Container>
+          <SubscriptionSection />
+          <SettingsList.Divider />
           <Text
             style={[
               a.text_sm,
@@ -181,6 +194,203 @@ export function DecorationsSettingsScreen({}: Props) {
         </SettingsList.Container>
       </Layout.Content>
     </Layout.Screen>
+  )
+}
+
+function SubscriptionSection() {
+  const {i18n, t: l} = useLingui()
+  const t = useTheme()
+  const queryClient = useQueryClient()
+  const {currentAccount} = useSession()
+  const cancelPrompt = Prompt.usePromptControl()
+  const [awaitingActivation, setAwaitingActivation] = useState(
+    () =>
+      IS_WEB &&
+      new URL(window.location.href).searchParams.get('checkout') === 'return',
+  )
+  const subscription = useDecorationSubscriptionQuery({
+    pollUntilActive: awaitingActivation,
+  })
+  const createCheckout = useCreateDecorationCheckoutMutation()
+  const cancelSubscription = useCancelDecorationSubscriptionMutation()
+  const status = subscription.data
+
+  useEffect(() => {
+    if (!awaitingActivation || status?.active) return
+    const timeout = setTimeout(() => {
+      setAwaitingActivation(false)
+      Toast.show(l`Payment is still processing. Check again shortly.`)
+    }, 60_000)
+    return () => clearTimeout(timeout)
+  }, [awaitingActivation, l, status?.active])
+
+  useEffect(() => {
+    if (!awaitingActivation || !status?.active) return
+    if (IS_WEB) {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('checkout')
+      window.history.replaceState({}, '', url.toString())
+    }
+    Toast.show(l`Your subscription is active`)
+
+    if (currentAccount) {
+      const queryKey = createDecorationsQueryKey(currentAccount.did)
+      void queryClient.invalidateQueries({queryKey})
+      // Constellation needs a moment to index the new list item.
+      setTimeout(() => void queryClient.invalidateQueries({queryKey}), 8_000)
+      setTimeout(() => void queryClient.invalidateQueries({queryKey}), 30_000)
+    }
+  }, [awaitingActivation, currentAccount, l, queryClient, status?.active])
+
+  function onSubscribe() {
+    createCheckout.mutate(undefined, {
+      onSuccess: ({checkoutUrl}) => {
+        if (IS_WEB) window.location.assign(checkoutUrl)
+      },
+      onError: () => Toast.show(l`Could not start checkout. Try again.`),
+    })
+  }
+
+  function onCancel() {
+    cancelSubscription.mutate(undefined, {
+      onSuccess: () => Toast.show(l`Your subscription will not renew`),
+      onError: () => Toast.show(l`Could not cancel. Try again.`),
+    })
+  }
+
+  const paidUntil = status?.paidUntil
+    ? i18n.date(new Date(status.paidUntil), {dateStyle: 'medium'})
+    : undefined
+  const price = status
+    ? i18n.number(Number(status.plan.amount), {
+        style: 'currency',
+        currency: status.plan.currency,
+      })
+    : undefined
+
+  return (
+    <SettingsList.Group contentContainerStyle={[a.gap_md]}>
+      <View style={[a.flex_row, a.align_center, a.gap_sm, a.w_full]}>
+        <SettingsList.ItemIcon icon={SparkleIcon} />
+        <View style={[a.flex_1, a.gap_xs]}>
+          <Text style={[a.text_md, a.font_bold, t.atoms.text]}>Eurosky+</Text>
+          {status?.active ? (
+            <Text style={[a.text_sm, {color: t.palette.positive_700}]}>
+              <Trans>Subscription active</Trans>
+            </Text>
+          ) : (
+            <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+              <Trans>Unlock profile decorations</Trans>
+            </Text>
+          )}
+        </View>
+      </View>
+
+      {subscription.isPending ? (
+        <View style={[a.py_md, a.align_center]}>
+          <Loader />
+        </View>
+      ) : subscription.isError && !status ? (
+        <View style={[a.gap_sm, a.w_full]}>
+          <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+            <Trans>Could not load your subscription status.</Trans>
+          </Text>
+          <Button
+            label={l`Try again`}
+            color="secondary"
+            size="small"
+            onPress={() => void subscription.refetch()}>
+            <ButtonText>
+              <Trans>Try again</Trans>
+            </ButtonText>
+          </Button>
+        </View>
+      ) : (
+        <View style={[a.gap_md, a.w_full]}>
+          {awaitingActivation && !status?.active ? (
+            <View style={[a.flex_row, a.align_center, a.gap_sm]}>
+              <Loader />
+              <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+                <Trans>Confirming your payment…</Trans>
+              </Text>
+            </View>
+          ) : status?.active ? (
+            <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+              {status.cancelAtPeriodEnd && paidUntil ? (
+                <Trans>Your subscription ends on {paidUntil}.</Trans>
+              ) : paidUntil ? (
+                <Trans>Your next billing date is {paidUntil}.</Trans>
+              ) : (
+                <Trans>Your decorations are active.</Trans>
+              )}
+            </Text>
+          ) : (
+            <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+              {status && price && status.plan.billingMonths === 1 ? (
+                <Trans>{price} per month. Cancel anytime.</Trans>
+              ) : status && price ? (
+                <Trans>
+                  {price} every {status.plan.billingMonths} months. Cancel
+                  anytime.
+                </Trans>
+              ) : (
+                <Trans>Subscribe to use profile decorations.</Trans>
+              )}
+            </Text>
+          )}
+
+          {IS_NATIVE ? (
+            <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+              <Trans>
+                To subscribe or manage your subscription, open{' '}
+                {BRAND.decorations.manageUrl} in a web browser.
+              </Trans>
+            </Text>
+          ) : status?.active ? (
+            !status.cancelAtPeriodEnd && (
+              <Button
+                label={l`Cancel subscription`}
+                color="secondary"
+                size="small"
+                disabled={cancelSubscription.isPending}
+                onPress={() => cancelPrompt.open()}>
+                <ButtonText>
+                  {cancelSubscription.isPending ? (
+                    <Trans>Canceling…</Trans>
+                  ) : (
+                    <Trans>Cancel subscription</Trans>
+                  )}
+                </ButtonText>
+              </Button>
+            )
+          ) : (
+            <Button
+              label={l`Subscribe to Eurosky+`}
+              color="primary"
+              size="large"
+              disabled={createCheckout.isPending || awaitingActivation}
+              onPress={onSubscribe}>
+              <ButtonText>
+                {createCheckout.isPending ? (
+                  <Trans>Opening checkout…</Trans>
+                ) : (
+                  <Trans>Subscribe</Trans>
+                )}
+              </ButtonText>
+            </Button>
+          )}
+        </View>
+      )}
+
+      <Prompt.Basic
+        control={cancelPrompt}
+        title={l`Cancel subscription?`}
+        description={l`Your decorations will remain active until the end of your paid period.`}
+        onConfirm={onCancel}
+        confirmButtonCta={l`Cancel subscription`}
+        confirmButtonColor="negative"
+      />
+    </SettingsList.Group>
   )
 }
 

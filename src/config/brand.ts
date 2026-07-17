@@ -54,6 +54,8 @@ export const BRAND = {
       process.env.EXPO_PUBLIC_DECO_SERVICE_URL || brand.decorations.serviceUrl,
     serviceDid:
       process.env.EXPO_PUBLIC_DECO_SERVICE_DID || brand.decorations.serviceDid,
+    manageUrl:
+      process.env.EXPO_PUBLIC_DECO_MANAGE_URL || brand.decorations.manageUrl,
   },
   ageAssurance: {
     serviceUrl:

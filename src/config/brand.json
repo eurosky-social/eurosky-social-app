@@ -128,7 +128,8 @@
     "enabled": false,
     "subscriberListUris": [],
     "serviceUrl": "https://deco.mu.social",
-    "serviceDid": "did:web:deco.mu.social"
+    "serviceDid": "did:web:deco.mu.social",
+    "manageUrl": "https://mu.social/settings/decorations"
   },
   "fu": {
     "pickerDid": "did:plc:qycn7lwmbl5ije4jkvwksgm3"

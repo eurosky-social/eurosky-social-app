@@ -104,6 +104,11 @@ export function createDecoService(deps: ServiceDependencies) {
       active: !!paidUntil && paidUntil > now().toISOString(),
       ...(paidUntil ? { paidUntil } : {}),
       cancelAtPeriodEnd: !!subscriber?.cancelAtPeriodEnd,
+      plan: {
+        amount: deps.config.mollieAmount,
+        currency: deps.config.mollieCurrency,
+        billingMonths: deps.config.billingMonths,
+      },
     }
   }
 
