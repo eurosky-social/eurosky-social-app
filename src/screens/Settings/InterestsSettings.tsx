@@ -24,6 +24,7 @@ import {createGetSuggestedUsersForExploreQueryKey} from '#/state/queries/trendin
 import {createGetSuggestedUsersForSeeMoreQueryKey} from '#/state/queries/trending/useGetSuggestedUsersForSeeMoreQuery'
 import {createSuggestedStarterPacksQueryKey} from '#/state/queries/useSuggestedStarterPacksQuery'
 import {useAgent} from '#/state/session'
+import {getPdsAgent} from '#/state/session/pds-agent'
 import {atoms as a, useGutters, useTheme} from '#/alf'
 import {Admonition} from '#/components/Admonition'
 import {Divider} from '#/components/Divider'
@@ -110,7 +111,7 @@ function Inner({
       setIsSaving(true)
 
       try {
-        await agent.setInterestsPref({tags: interests})
+        await getPdsAgent(agent).setInterestsPref({tags: interests})
         qc.setQueriesData(
           {queryKey: preferencesQueryKey},
           (old?: UsePreferencesQueryResponse) => {

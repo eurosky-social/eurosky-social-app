@@ -27,6 +27,7 @@ import {getAllListMembers} from '#/state/queries/list-members'
 import {preferencesQueryKey} from '#/state/queries/preferences'
 import {RQKEY as profileRQKey} from '#/state/queries/profile'
 import {useAgent} from '#/state/session'
+import {getPdsAgent} from '#/state/session/pds-agent'
 import {useOnboardingDispatch} from '#/state/shell'
 import {
   useActiveStarterPack,
@@ -116,7 +117,7 @@ export function StepFinished() {
         })(),
         (async () => {
           // Interests need to get saved first, then we can write the feeds to prefs
-          await agent.setInterestsPref({tags: selectedInterests})
+          await getPdsAgent(agent).setInterestsPref({tags: selectedInterests})
 
           // Default feeds that every user should have pinned when landing in the app
           const feedsToSave: AppBskyActorDefs.SavedFeed[] = [
@@ -146,7 +147,7 @@ export function StepFinished() {
             )
           }
 
-          await agent.overwriteSavedFeeds(feedsToSave)
+          await getPdsAgent(agent).overwriteSavedFeeds(feedsToSave)
         })(),
         (async () => {
           const {imageUri, imageMime} = profileStepResults

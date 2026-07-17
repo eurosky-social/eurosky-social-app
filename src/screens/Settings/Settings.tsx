@@ -21,8 +21,13 @@ import {clearStorage} from '#/state/persisted'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {useDeleteActorDeclaration} from '#/state/queries/messages/actor-declaration'
 import {useProfileQuery, useProfilesQuery} from '#/state/queries/profile'
-import {useAgent} from '#/state/session'
-import {type SessionAccount, useSession, useSessionApi} from '#/state/session'
+import {
+  type SessionAccount,
+  useAgent,
+  useSession,
+  useSessionApi,
+} from '#/state/session'
+import {getPdsAgent} from '#/state/session/pds-agent'
 import {useOnboardingDispatch} from '#/state/shell'
 import {useLoggedOutViewControls} from '#/state/shell/logged-out'
 import {useCloseAllActiveElements} from '#/state/util'
@@ -550,7 +555,7 @@ function DevOptions() {
           <Button
             onPress={() => {
               device.set([PolicyUpdate202508], false)
-              void agent.bskyAppRemoveNuxs([PolicyUpdate202508])
+              void getPdsAgent(agent).bskyAppRemoveNuxs([PolicyUpdate202508])
               Toast.show(`Done`, {
                 type: 'info',
               })

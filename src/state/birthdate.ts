@@ -4,6 +4,7 @@ import {useMutation, useQueryClient} from '@tanstack/react-query'
 import {restrictChatSettings} from '#/state/queries/messages/restrictChatSettings'
 import {preferencesQueryKey} from '#/state/queries/preferences'
 import {useAgent, useSession} from '#/state/session'
+import {getPdsAgent} from '#/state/session/pds-agent'
 import {usePatchAgeAssuranceOtherRequiredData} from '#/ageAssurance'
 import {isUnderAge} from '#/ageAssurance/util'
 import {IS_DEV} from '#/env'
@@ -60,7 +61,7 @@ export function useBirthdateMutation() {
   return useMutation<void, unknown, {birthDate: Date}>({
     mutationFn: async ({birthDate}: {birthDate: Date}) => {
       const bday = birthDate.toISOString()
-      await agent.setPersonalDetails({birthDate: bday})
+      await getPdsAgent(agent).setPersonalDetails({birthDate: bday})
       // triggers a refetch
       await queryClient.invalidateQueries({
         queryKey: preferencesQueryKey,

@@ -10,6 +10,7 @@ import {
 } from '#/state/queries/preferences'
 import {createQueryKey} from '#/state/queries/util'
 import {useAgent} from '#/state/session'
+import {getPdsAgent} from '#/state/session/pds-agent'
 
 const labelerInfoQueryKeyRoot = 'labeler-info'
 export const labelerInfoQueryKey = (did: string) => [
@@ -82,7 +83,8 @@ export function useRemoveLabelersMutation() {
 
   return useMutation({
     async mutationFn({dids}: {dids: string[]}) {
-      await Promise.all(dids.map(did => agent.removeLabeler(did)))
+      const pdsAgent = getPdsAgent(agent)
+      await Promise.all(dids.map(did => pdsAgent.removeLabeler(did)))
     },
     async onSuccess() {
       await queryClient.invalidateQueries({
@@ -136,7 +138,10 @@ export function useLabelerSubscriptionMutation() {
         }
       }
       if (invalidLabelers.length) {
-        await Promise.all(invalidLabelers.map(did => agent.removeLabeler(did)))
+        const pdsAgent = getPdsAgent(agent)
+        await Promise.all(
+          invalidLabelers.map(did => pdsAgent.removeLabeler(did)),
+        )
       }
 
       if (subscribe) {
@@ -144,9 +149,9 @@ export function useLabelerSubscriptionMutation() {
         if (labelerCount >= MAX_LABELERS) {
           throw new Error('MAX_LABELERS')
         }
-        await agent.addLabeler(did)
+        await getPdsAgent(agent).addLabeler(did)
       } else {
-        await agent.removeLabeler(did)
+        await getPdsAgent(agent).removeLabeler(did)
       }
     },
     async onSuccess() {
