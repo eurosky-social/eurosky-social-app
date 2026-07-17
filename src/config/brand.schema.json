@@ -115,7 +115,9 @@
         "issuerDids": {
           "type": "array",
           "items": {"type": "string"}
-        }
+        },
+        "serviceUrl": {"type": "string"},
+        "serviceDid": {"type": "string"}
       }
     },
     "fu": {

@@ -124,10 +124,12 @@
     "serviceDid": "did:web:age.mu.social"
   },
   "decorations": {
-    "$comment": "Eurosky+ avatar decorations. issuerDids = accounts whose social.mu.deco.grant records entitle their subject to render a frame (empty = feature off). See src/features/avatarDecorations/ and services/deco/.",
+    "$comment": "Eurosky+ profile decorations. issuerDids are trusted social.mu.deco.grant issuers (empty = rendering off); serviceUrl/serviceDid identify the Mollie subscription backend. See src/features/avatarDecorations/ and services/deco/.",
     "issuerDids": [
       "did:plc:257wekqxg4hyapkq6k47igmp"
-    ]
+    ],
+    "serviceUrl": "https://deco.mu.social",
+    "serviceDid": "did:web:deco.mu.social"
   },
   "fu": {
     "pickerDid": "did:plc:qycn7lwmbl5ije4jkvwksgm3"

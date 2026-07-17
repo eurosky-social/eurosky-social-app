@@ -1,0 +1,23 @@
+{
+  "lexicon": 1,
+  "id": "social.mu.deco.cancel",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Cancels renewal while preserving decorations through the paid period.",
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["active", "cancelAtPeriodEnd"],
+          "properties": {
+            "active": { "type": "boolean" },
+            "paidUntil": { "type": "string", "format": "datetime" },
+            "cancelAtPeriodEnd": { "type": "boolean" }
+          }
+        }
+      },
+      "errors": [{ "name": "SubscriptionInactive" }]
+    }
+  }
+}

@@ -1,33 +1,129 @@
-# deco - Eurosky+ subscription service
+# Eurosky+ decoration service
 
-Backend for paid avatar decorations (`src/features/avatarDecorations/`).
-Architecture and phase plan: `DECORATIONS_PLAN.md` in the workspace root.
+Mollie subscription backend for paid profile decorations in
+`src/features/avatarDecorations/`. It runs as a Bunny Edge Script, stores
+subscription state in Bunny Database/libSQL, and publishes entitlement grants
+from the official Eurosky+ atproto account.
 
-## Status
+Decoration selection never passes through this service. The app writes the
+subscriber's `social.mu.deco.settings/self` record directly with that user's
+session. This service only manages the paid entitlement represented by a
+`social.mu.deco.grant` record in the issuer account.
 
-Phase 1: only `scripts/emit-test-records.mjs` exists, for hand-writing test
-records so the client read path can be exercised before this service is
-built.
+## Endpoints
 
-## Planned shape (phase 2)
+The three XRPC methods require an atproto service-auth JWT with this service's
+DID as `aud` and the method NSID as `lxm`:
 
-Bunny Edge Script (like `services/geolocation` and `services/og`), cloning
-the mu-age-service patterns: `@atcute/xrpc-server` router, atproto
-service-auth JWT verification (aud = this service's did:web, per-method lxm,
-with the 3900s maxAge allowance for OAuth-session tokens), Bunny SQLite via
-`@libsql/client/web` with an in-memory dev fallback.
+| Method | Endpoint | Result |
+| --- | --- | --- |
+| GET | `/xrpc/social.mu.deco.getStatus` | `{active, paidUntil?, cancelAtPeriodEnd}` |
+| POST | `/xrpc/social.mu.deco.createCheckout` | `{checkoutUrl}` for Mollie's hosted checkout |
+| POST | `/xrpc/social.mu.deco.cancel` | Cancels renewal while preserving the paid period |
 
-- XRPC `social.mu.deco.getStatus` - subscription state for the caller
-- XRPC `social.mu.deco.createCheckout` - Mollie customer + first
-  payment (mandate), returns hosted-checkout URL
-- XRPC `social.mu.deco.cancel` - cancel at period end
-- `POST /mollie/webhook` - plain HTTP; Mollie sends only an object id, so
-  authenticity = re-fetch from the Mollie API. Paid first payment => create
-  subscription + `putRecord` a `social.mu.deco.grant` from the issuer
-  account; recurring paid => extend; failures => let expire.
-- `GET /sweep` (secret token, external cron ping) - delete grants past
-  `paid_until` + grace.
+Other routes:
 
-Frame *selection* never goes through this service - the app writes the
-user's `social.mu.deco.settings` self-record with their own session.
-This service only ever touches grant records in the issuer account's repo.
+- `POST /mollie/webhook` - Mollie sends a payment ID as form data. The service
+  re-fetches the payment with its Mollie API key before trusting anything.
+- `GET /sweep` - revokes grants whose `paidUntil + GRACE_DAYS` has passed.
+  Requires `Authorization: Bearer <SWEEP_SECRET>`.
+- `GET /.well-known/did.json` - did:web service identity.
+- `GET /xrpc/_health` - uptime check.
+
+Lexicon definitions are under `lexicons/social/mu/deco/`.
+
+## Payment and grant lifecycle
+
+1. `createCheckout` creates or reuses a Mollie customer and first payment.
+   Checkout attempts and Mollie requests use idempotency keys, so retries reuse
+   an existing hosted checkout instead of charging twice.
+2. Mollie calls the webhook. A paid first payment with a valid mandate creates
+   the recurring subscription beginning when the first paid period ends.
+3. A successful first or recurring payment advances `paidUntil` and writes a
+   grant record from the issuer account.
+4. `cancel` deletes the Mollie subscription immediately, preventing another
+   charge, but keeps the grant through `paidUntil`.
+5. Failed, expired, canceled, or charged-back payment notifications do not
+   extend entitlement. The daily sweep removes the grant after the grace
+   period.
+
+Grant rkeys are deterministic (`sub-` plus SHA-256 of the subject DID). This
+makes grant writes idempotent and guarantees at most one service-owned grant per
+subscriber even if a webhook is retried after a partial failure.
+
+## Storage
+
+The service creates these tables automatically:
+
+- `deco_subscribers` - one row per DID with Mollie IDs, checkout state,
+  `paidUntil`, grant identity, and cancellation state.
+- `deco_processed_payments` - payment IDs observed by the service for auditing
+  and idempotency.
+
+`DB_URL` and `DB_TOKEN` point to Bunny Database/libSQL. With no `DB_URL`, local
+dev uses an ephemeral in-memory implementation. Production must always set a
+persistent database.
+
+## Configuration
+
+Copy `env.example` and set the values as Bunny environment variables/secrets.
+Required production secrets are:
+
+- `MOLLIE_API_KEY`
+- `DECO_ISSUER_APP_PASSWORD`
+- `DB_TOKEN`
+- `SWEEP_SECRET`
+
+Required non-secret identity settings include `DECO_ISSUER_DID`,
+`DECO_ISSUER_IDENTIFIER`, and `DECO_ISSUER_PDS_URL`. The issuer DID must also be
+present in `src/config/brand.json` under `decorations.issuerDids`, or clients
+will deliberately ignore its grants.
+
+`BILLING_MONTHS` supports 1 through 12. `MOLLIE_AMOUNT` must use two decimal
+places. Start in Mollie test mode with a `test_...` API key.
+
+`DEV_TRUST_DID_HEADER=1` allows local requests to identify a caller using
+`x-did`. It bypasses service-auth and must never be enabled in production.
+
+## Develop and test
+
+Deno 2 is required:
+
+```sh
+cd services/deco
+deno task check
+deno lint src
+deno task test
+```
+
+To run locally, load `env.example` values, use a Mollie test key, leave
+`DB_URL` unset if ephemeral storage is acceptable, and then:
+
+```sh
+DEV_TRUST_DID_HEADER=1 deno task dev
+```
+
+The lifecycle test uses fake Mollie and grant clients. It covers checkout reuse,
+first-payment activation, duplicate webhook handling, cancellation, and expiry
+sweeping without contacting Mollie or a PDS.
+
+`./scripts/emit-test-records.mjs` remains available for testing client rendering
+without any payment flow.
+
+## Deploy to Bunny
+
+1. Create a Bunny Database and inject its URL/token into the Edge Script.
+2. Create an app password on the dedicated issuer account. Do not use a personal
+   account in production.
+3. Create a Bunny Edge Script from `src/index.ts` with this directory's
+   `deno.json` import map and local modules.
+4. Attach `deco.mu.social` (or the configured host) and verify
+   `/.well-known/did.json` resolves to the exact `SERVICE_DID`.
+5. Add every setting from `env.example`; leave `DEV_TRUST_DID_HEADER` unset.
+6. Configure a daily external cron request to `/sweep` with the bearer secret.
+7. Test the entire lifecycle using Mollie test mode before installing a live API
+   key.
+
+Operational checks should monitor `/xrpc/_health`, failed webhook responses,
+and sweep failures. Payment and subscription records contain account DIDs, so
+the privacy policy and retention policy must cover this processing.

@@ -1,0 +1,22 @@
+{
+  "lexicon": 1,
+  "id": "social.mu.deco.getStatus",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Returns the calling account's Eurosky+ decoration subscription status.",
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["active", "cancelAtPeriodEnd"],
+          "properties": {
+            "active": { "type": "boolean" },
+            "paidUntil": { "type": "string", "format": "datetime" },
+            "cancelAtPeriodEnd": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

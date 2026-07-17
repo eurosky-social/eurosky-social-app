@@ -1,0 +1,20 @@
+{
+  "imports": {
+    "@atcute/identity-resolver": "https://esm.sh/@atcute/identity-resolver@2.0.1",
+    "@bunny.net/edgescript-sdk": "https://esm.sh/@bunny.net/edgescript-sdk@0.12.1",
+    "@libsql/client/web": "https://esm.sh/@libsql/client@0.17.4/web"
+  },
+  "tasks": {
+    "check": "deno check src/index.ts",
+    "dev": "deno run --allow-env --allow-net src/dev.ts",
+    "test": "deno test --allow-env --allow-net"
+  },
+  "lint": {
+    "rules": { "exclude": ["require-await"] }
+  },
+  "fmt": {
+    "lineWidth": 80,
+    "semiColons": false,
+    "singleQuote": true
+  }
+}
