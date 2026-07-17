@@ -48,7 +48,7 @@ import {useAnalytics} from '#/analytics'
 import {IS_IOS, IS_NATIVE} from '#/env'
 import {InviteFriendsDialog} from '#/features/inviteFriends'
 import {useActorStatus} from '#/features/liveNow'
-import {getNewsroomPublisherByDidOrHandle} from '#/features/newsrooms/publishers'
+import {getNewsroomPublisherByDid} from '#/features/newsrooms/publishers'
 import {GermButton} from '../components/GermButton'
 import {EditProfileDialog} from './EditProfileDialog'
 import {ProfileHeaderHandle} from './Handle'
@@ -304,9 +304,7 @@ export function HeaderStandardButtons({
 
   const isMe = currentAccount?.did === profile.did
 
-  // Featured publishers get a shortcut from their profile to their curated
-  // "newsroom" page (the RSS front page plus their conversation).
-  const curatedPublisher = getNewsroomPublisherByDidOrHandle(profile.did)
+  const newsroomPublisher = getNewsroomPublisherByDid(profile.did)
 
   const onPressFollow = () => {
     playHaptic()
@@ -389,11 +387,13 @@ export function HeaderStandardButtons({
 
   return (
     <>
-      {curatedPublisher && (
+      {newsroomPublisher && (
         <Link
           testID="profileHeaderNewsroomButton"
           to={`/newsroom/${profile.did}`}
-          label={_(msg`Visit the ${curatedPublisher.displayName} newsroom`)}
+          label={_(
+            msg`Visit the ${profile.displayName || sanitizeHandle(profile.handle)} newsroom`,
+          )}
           size="small"
           color="secondary">
           <ButtonIcon icon={NewsroomIcon} />

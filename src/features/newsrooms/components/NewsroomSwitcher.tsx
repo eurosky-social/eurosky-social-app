@@ -1,4 +1,5 @@
 import {ScrollView, View} from 'react-native'
+import {type AppBskyActorDefs} from '@atproto/api'
 import {useLingui} from '@lingui/react/macro'
 
 import {useProfilesQuery} from '#/state/queries/profile'
@@ -6,7 +7,7 @@ import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
 import {Text} from '#/components/Typography'
-import {type NewsroomPublisher} from '../publishers'
+import {getPublisherName, type NewsroomPublisher} from '../publishers'
 
 /**
  * The top of the newsroom hub: a horizontal rail of the registered publishers.
@@ -24,10 +25,10 @@ export function NewsroomSwitcher({
   onSelect: (publisher: NewsroomPublisher) => void
 }) {
   const t = useTheme()
-  // Real org avatars keep the rail recognizable at a glance.
+  // Live org profiles: avatar and display name both come from the network.
   const {data} = useProfilesQuery({handles: publishers.map(p => p.did)})
-  const avatarByDid = new Map(
-    data?.profiles.map(profile => [profile.did, profile.avatar]) ?? [],
+  const profileByDid = new Map(
+    data?.profiles.map(profile => [profile.did, profile]) ?? [],
   )
 
   return (
@@ -42,7 +43,7 @@ export function NewsroomSwitcher({
           <OrgTab
             key={publisher.id}
             publisher={publisher}
-            avatar={avatarByDid.get(publisher.did)}
+            profile={profileByDid.get(publisher.did)}
             active={publisher.id === selectedId}
             onPress={() => onSelect(publisher)}
           />
@@ -54,22 +55,23 @@ export function NewsroomSwitcher({
 
 function OrgTab({
   publisher,
-  avatar,
+  profile,
   active,
   onPress,
 }: {
   publisher: NewsroomPublisher
-  avatar?: string
+  profile?: AppBskyActorDefs.ProfileViewDetailed
   active: boolean
   onPress: () => void
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
   const accent = publisher.accent ?? t.palette.primary_500
+  const name = getPublisherName(profile)
 
   return (
     <Button
-      label={l`Focus ${publisher.displayName}`}
+      label={l`Focus ${name}`}
       onPress={onPress}
       style={[
         a.flex_row,
@@ -83,7 +85,7 @@ function OrgTab({
           ? {borderColor: accent, backgroundColor: accent + '1A'}
           : [t.atoms.border_contrast_low, t.atoms.bg_contrast_25],
       ]}>
-      <UserAvatar type="user" size={24} avatar={avatar} />
+      <UserAvatar type="user" size={24} avatar={profile?.avatar} />
       <Text
         emoji
         numberOfLines={1}
@@ -92,7 +94,7 @@ function OrgTab({
           a.font_bold,
           active ? {color: accent} : t.atoms.text_contrast_medium,
         ]}>
-        {publisher.displayName}
+        {name}
       </Text>
     </Button>
   )

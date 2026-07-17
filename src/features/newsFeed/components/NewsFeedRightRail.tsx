@@ -1,4 +1,5 @@
 import {View} from 'react-native'
+import {type AppBskyActorDefs} from '@atproto/api'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {useProfilesQuery} from '#/state/queries/profile'
@@ -11,11 +12,12 @@ import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {ExploreLiveSportsWidget} from '#/features/liveSports/components/ExploreLiveSportsWidget'
 import {
+  getPublisherName,
   NEWSROOM_PUBLISHERS,
   type NewsroomPublisher,
 } from '#/features/newsrooms/publishers'
-
-const FEATURED_SHOWN = 4
+import {selectSources} from '../sources'
+import {useNewsFeedPrefsQuery} from '../state/prefs'
 
 /**
  * The news feed's right column: the mirror of the newsroom rail's "Your News"
@@ -34,11 +36,32 @@ export function NewsFeedRightRail() {
 function NewsroomsModule() {
   const t = useTheme()
   const {t: l} = useLingui()
-  const publishers = NEWSROOM_PUBLISHERS.slice(0, FEATURED_SHOWN)
-  // Real org avatars, same as the newsroom's own org switcher.
-  const {data} = useProfilesQuery({handles: publishers.map(p => p.did)})
-  const avatarByDid = new Map(
-    data?.profiles.map(profile => [profile.did, profile.avatar]) ?? [],
+  const {data: prefs} = useNewsFeedPrefsQuery()
+
+  // With a configured feed, feature the newsrooms already among its sources;
+  // without one (or when none of its sources have a newsroom), fall back to
+  // the full directory.
+  const sourceDids =
+    prefs && prefs.topics.length > 0
+      ? new Set(
+          selectSources({
+            topics: prefs.topics,
+            regions: prefs.regions,
+            excludedDids: prefs.excludedDids,
+          }).map(source => source.did),
+        )
+      : null
+  const fromFeed = sourceDids
+    ? NEWSROOM_PUBLISHERS.filter(p => sourceDids.has(p.did))
+    : []
+  const publishers = fromFeed.length > 0 ? fromFeed : NEWSROOM_PUBLISHERS
+
+  // Live org profiles, same as the newsroom's own org switcher.
+  const {data} = useProfilesQuery({
+    handles: publishers.map(p => p.did),
+  })
+  const profileByDid = new Map(
+    data?.profiles.map(profile => [profile.did, profile]) ?? [],
   )
 
   return (
@@ -49,14 +72,18 @@ function NewsroomsModule() {
       </ModuleHeader.Container>
       <View style={[a.px_lg, a.gap_md]}>
         <Text style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
-          <Trans>Explore the newsrooms of our featured publishers</Trans>
+          {fromFeed.length > 0 ? (
+            <Trans>Newsrooms from the sources in your news feed</Trans>
+          ) : (
+            <Trans>Explore the newsrooms of our featured publishers</Trans>
+          )}
         </Text>
         <View style={[a.gap_md]}>
           {publishers.map(publisher => (
             <FeaturedNewsroom
               key={publisher.id}
               publisher={publisher}
-              avatar={avatarByDid.get(publisher.did)}
+              profile={profileByDid.get(publisher.did)}
             />
           ))}
         </View>
@@ -77,30 +104,23 @@ function NewsroomsModule() {
 
 function FeaturedNewsroom({
   publisher,
-  avatar,
+  profile,
 }: {
   publisher: NewsroomPublisher
-  avatar?: string
+  profile?: AppBskyActorDefs.ProfileViewDetailed
 }) {
-  const t = useTheme()
   const {t: l} = useLingui()
+  const name = getPublisherName(profile)
 
   return (
     <Link
       to={`/newsroom/${publisher.did}`}
-      label={l`Open the ${publisher.displayName} newsroom`}
+      label={l`Open the ${name} newsroom`}
       style={[a.flex_row, a.align_center, a.gap_sm]}>
-      <UserAvatar type="user" size={32} avatar={avatar} />
-      <View style={[a.flex_1]}>
-        <Text emoji numberOfLines={1} style={[a.text_sm, a.font_bold]}>
-          {publisher.displayName}
-        </Text>
-        <Text
-          numberOfLines={1}
-          style={[a.text_xs, t.atoms.text_contrast_medium]}>
-          {publisher.tagline}
-        </Text>
-      </View>
+      <UserAvatar type="user" size={28} avatar={profile?.avatar} />
+      <Text emoji numberOfLines={1} style={[a.flex_1, a.text_sm, a.font_bold]}>
+        {name}
+      </Text>
     </Link>
   )
 }

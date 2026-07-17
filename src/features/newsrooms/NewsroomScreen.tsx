@@ -7,7 +7,7 @@ import {
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
 import {type FeedDescriptor} from '#/state/queries/post-feed'
-import {useProfilesQuery} from '#/state/queries/profile'
+import {useProfileQuery, useProfilesQuery} from '#/state/queries/profile'
 import {PostFeed} from '#/view/com/posts/PostFeed'
 import {type ListMethods} from '#/view/com/util/List'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
@@ -15,6 +15,7 @@ import {atoms as a, useLayoutBreakpoints, useTheme} from '#/alf'
 import {Button, ButtonIcon} from '#/components/Button'
 import {Newspaper2_Stroke2_Corner2_Rounded as NewsroomsIcon} from '#/components/icons/Newspaper2'
 import * as Layout from '#/components/Layout'
+import {Loader} from '#/components/Loader'
 import * as Menu from '#/components/Menu'
 import {Text} from '#/components/Typography'
 import {NewsroomFrontPage} from './components/NewsroomFrontPage'
@@ -23,8 +24,9 @@ import {NewsroomRightRail} from './components/NewsroomRightRail'
 import {NewsroomSwitcher} from './components/NewsroomSwitcher'
 import {
   getDefaultNewsroomPublisher,
-  getNewsroomPublisherByDidOrHandle,
+  getNewsroomPublisherByDid,
   getPublisherFeedDids,
+  getPublisherName,
   NEWSROOM_PUBLISHERS,
   type NewsroomPublisher,
 } from './publishers'
@@ -37,22 +39,32 @@ export function NewsroomScreen({route, navigation}: Props) {
   // The URL is the single source of truth for the focused org, so navigating
   // here from anywhere (org switcher, profile shortcut, shared link) always
   // lands on the right publisher, including when the screen is already mounted.
-  const publisher =
-    (name && getNewsroomPublisherByDidOrHandle(name)) ||
-    getDefaultNewsroomPublisher()
+  // A DID param matches the registry directly; a handle param resolves through
+  // the live profile first (getProfile accepts any actor identifier).
+  const direct = name ? getNewsroomPublisherByDid(name) : undefined
+  const {data: namedProfile, isLoading: isResolvingName} = useProfileQuery({
+    did: direct ? undefined : name,
+  })
+  const resolved = namedProfile
+    ? getNewsroomPublisherByDid(namedProfile.did)
+    : undefined
+  const publisher = direct ?? resolved ?? getDefaultNewsroomPublisher()
+  const resolvingName = !direct && !!name && isResolvingName
 
   const t = useTheme()
   const {t: l} = useLingui()
   const {rightNavVisible} = useLayoutBreakpoints()
   const scrollElRef = useRef<ListMethods>(null)
 
-  // Org avatars for the switcher menu; shares the cache with the switcher rail.
+  // Org profiles for the switcher menu and section header; shares the cache
+  // with the switcher rail.
   const {data: profiles} = useProfilesQuery({
     handles: NEWSROOM_PUBLISHERS.map(p => p.did),
   })
-  const avatarByDid = new Map(
-    profiles?.profiles.map(profile => [profile.did, profile.avatar]) ?? [],
+  const profileByDid = new Map(
+    profiles?.profiles.map(profile => [profile.did, profile]) ?? [],
   )
+  const publisherName = getPublisherName(profileByDid.get(publisher.did))
 
   function onSelectPublisher(next: NewsroomPublisher) {
     navigation.setParams({name: next.did})
@@ -61,19 +73,30 @@ export function NewsroomScreen({route, navigation}: Props) {
     scrollElRef.current?.scrollToOffset({offset: 0, animated: false})
   }
 
-  // Landing on the bare `/newsroom` (or an unknown org) carries no resolvable
-  // name; reflect the focused org in the URL so it reads `/newsroom/<did>` and
-  // is shareable.
+  // Normalize the URL to the focused org's DID (`/newsroom/<did>`), waiting
+  // out an in-flight handle resolution so a handle deep link is not clobbered
+  // with the default org.
   useEffect(() => {
-    if (!name || !getNewsroomPublisherByDidOrHandle(name)) {
+    if (resolvingName) return
+    if (name !== publisher.did) {
       navigation.setParams({name: publisher.did})
     }
-  }, [name, publisher.did, navigation])
+  }, [resolvingName, name, publisher.did, navigation])
 
   // "The conversation" merges the publisher account and its reporters,
   // round-robin across their author feeds (see NewsFeedAPI).
   const feed =
     `newsroom|${getPublisherFeedDids(publisher).join(',')}` as FeedDescriptor
+
+  if (resolvingName) {
+    return (
+      <Layout.Screen testID="newsroomScreen">
+        <Layout.Center style={[a.flex_1, a.justify_center, a.align_center]}>
+          <Loader size="xl" />
+        </Layout.Center>
+      </Layout.Screen>
+    )
+  }
 
   return (
     <Layout.Screen testID="newsroomScreen">
@@ -106,14 +129,16 @@ export function NewsroomScreen({route, navigation}: Props) {
                 {NEWSROOM_PUBLISHERS.map(p => (
                   <Menu.Item
                     key={p.id}
-                    label={l`Switch to ${p.displayName}`}
+                    label={l`Switch to ${getPublisherName(profileByDid.get(p.did))}`}
                     onPress={() => onSelectPublisher(p)}>
                     <UserAvatar
                       type="user"
                       size={20}
-                      avatar={avatarByDid.get(p.did)}
+                      avatar={profileByDid.get(p.did)?.avatar}
                     />
-                    <Menu.ItemText>{p.displayName}</Menu.ItemText>
+                    <Menu.ItemText>
+                      {getPublisherName(profileByDid.get(p.did))}
+                    </Menu.ItemText>
                     <Menu.ItemRadio selected={p.id === publisher.id} />
                   </Menu.Item>
                 ))}
@@ -167,7 +192,7 @@ export function NewsroomScreen({route, navigation}: Props) {
               <Text
                 emoji
                 style={[a.text_xs, a.font_bold, t.atoms.text_contrast_medium]}>
-                <Trans>From {publisher.displayName} and its reporters</Trans>
+                <Trans>From {publisherName} and its reporters</Trans>
               </Text>
             </View>
           </>

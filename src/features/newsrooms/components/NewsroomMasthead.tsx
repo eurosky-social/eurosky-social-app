@@ -14,21 +14,21 @@ import {Link} from '#/components/Link'
 import * as ProfileCard from '#/components/ProfileCard'
 import {Text} from '#/components/Typography'
 import {VerificationCheckButton} from '#/components/verification/VerificationCheckButton'
-import {type NewsroomPublisher} from '../publishers'
+import {getPublisherName, type NewsroomPublisher} from '../publishers'
 
 export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
   const t = useTheme()
   const {t: l} = useLingui()
   const {gtMobile} = useBreakpoints()
   const accent = publisher.accent ?? t.palette.primary_500
-  // The masthead is the publisher's real Bluesky profile: a link out to it, with
-  // their live avatar and bio. Fall back to the registry tagline before the
-  // profile loads or if the account has no bio.
+  // The masthead is the publisher's real Bluesky profile: a link out to it,
+  // with their live avatar, name, and bio.
   const {data: profile} = useProfileQuery({did: publisher.did})
-  const bio = profile?.description?.trim() || publisher.tagline
+  const name = getPublisherName(profile)
+  const bio = profile?.description?.trim()
   const profilePath = makeProfileLink({
     did: publisher.did,
-    handle: publisher.handle,
+    handle: profile?.handle ?? publisher.did,
   })
 
   const categoryChips = publisher.categories.length > 0 && (
@@ -56,9 +56,7 @@ export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
           a.align_start,
           a.gap_md,
         ]}>
-        <Link
-          to={profilePath}
-          label={l`View ${publisher.displayName}’s profile`}>
+        <Link to={profilePath} label={l`View ${name}’s profile`}>
           <UserAvatar
             type="user"
             shape="square"
@@ -74,7 +72,7 @@ export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
             style={[a.flex_row, a.align_start, a.justify_between, a.gap_md]}>
             <Link
               to={profilePath}
-              label={l`View ${publisher.displayName}’s profile`}
+              label={l`View ${name}’s profile`}
               style={[a.flex_1, a.flex_col, a.align_start, a.gap_2xs]}>
               <View style={[a.flex_row, a.align_center, a.gap_xs, a.w_full]}>
                 <Text
@@ -86,13 +84,15 @@ export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
                     a.flex_shrink,
                     t.atoms.text,
                   ]}>
-                  {publisher.displayName}
+                  {name}
                 </Text>
                 {profile && <PublisherVerification profile={profile} />}
               </View>
-              <Text style={[a.text_xs, t.atoms.text_contrast_low]}>
-                {sanitizeHandle(publisher.handle, '@')}
-              </Text>
+              {!!profile && (
+                <Text style={[a.text_xs, t.atoms.text_contrast_low]}>
+                  {sanitizeHandle(profile.handle, '@')}
+                </Text>
+              )}
             </Link>
 
             {profile && (
@@ -100,12 +100,14 @@ export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
             )}
           </View>
 
-          <Text
-            emoji
-            numberOfLines={2}
-            style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
-            {bio}
-          </Text>
+          {!!bio && (
+            <Text
+              emoji
+              numberOfLines={2}
+              style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
+              {bio}
+            </Text>
+          )}
 
           {/* On wider screens the chips align under the bio; on mobile they
            * break out to full width below the row (see outside this column). */}
@@ -125,11 +127,8 @@ export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
   )
 }
 
-/**
- * A regular Bluesky account follow (the standard mutation, toasts, and
- * follow-back handling), tinted in the publisher's accent while unfollowed.
- * The local shadow only drives the tint; FollowButton tracks its own state.
- */
+// The local shadow only drives the accent tint (shown while unfollowed);
+// FollowButton tracks its own follow state.
 function PublisherFollowButton({
   profile,
   accent,

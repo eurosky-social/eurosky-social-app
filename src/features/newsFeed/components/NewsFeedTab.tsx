@@ -38,9 +38,8 @@ export function NewsFeedTab({
             <Trans>News</Trans>
           </Layout.Header.TitleText>
         </Layout.Header.Content>
-        {/* Crossover into the newsroom hub: the same publishers, org by org.
-         * A labeled pill outside the fixed-width slots, so it can say what it
-         * is. */}
+        {/* Sits outside Header.Slot: slots are fixed-width squares and this
+         * button carries a text label. */}
         <Link
           testID="newsFeedNewsroomsBtn"
           to="/newsroom"

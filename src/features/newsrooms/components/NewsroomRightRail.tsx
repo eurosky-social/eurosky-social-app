@@ -16,7 +16,7 @@ import {Text} from '#/components/Typography'
 import {ExploreLiveSportsWidget} from '#/features/liveSports/components/ExploreLiveSportsWidget'
 import {
   getDefaultNewsroomPublisher,
-  getNewsroomPublisherByDidOrHandle,
+  getNewsroomPublisherByDid,
   type NewsroomPublisher,
 } from '../publishers'
 
@@ -36,7 +36,7 @@ export function NewsroomRightRail() {
     return (route.params as {name?: string} | undefined)?.name
   })
   const publisher =
-    (routeParamName && getNewsroomPublisherByDidOrHandle(routeParamName)) ||
+    (routeParamName && getNewsroomPublisherByDid(routeParamName)) ||
     getDefaultNewsroomPublisher()
 
   return (
@@ -71,7 +71,7 @@ function ReportersModule({publisher}: {publisher: NewsroomPublisher}) {
     <View style={[a.pb_xl]}>
       <ModuleHeader.Container>
         <ModuleHeader.Icon icon={PersonGroupIcon} />
-        <ModuleHeader.TitleText>{l`From our reporters`}</ModuleHeader.TitleText>
+        <ModuleHeader.TitleText>{l`Reporters`}</ModuleHeader.TitleText>
       </ModuleHeader.Container>
       <View style={[a.px_lg, a.gap_lg]}>
         {profiles.map(profile => (

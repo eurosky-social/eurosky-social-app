@@ -106,8 +106,7 @@ export function useNewsFeedPrefsMutation() {
         },
       })
     },
-    // Optimistic: writers like the newsroom follow button respond on tap, and
-    // roll back if the PDS write fails.
+    // Optimistic: the UI updates on tap and rolls back if the PDS write fails.
     onMutate: async prefs => {
       await queryClient.cancelQueries({queryKey})
       const previous = queryClient.getQueryData<NewsFeedPrefs | null>(queryKey)

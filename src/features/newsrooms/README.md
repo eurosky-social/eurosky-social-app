@@ -14,12 +14,13 @@ in `publishers.ts` mapping each publisher to its account, reporters, categories,
 and content sources. This is config, not user state, so it does not live in the
 PDS.
 
-There is deliberately no per-user newsroom state for now. A "follow newsroom"
-subscription (stored on the shared `social.mu.newsFeedPrefs` record) existed
-briefly but was removed: with every registered newsroom equally visible
-everywhere, following had no observable effect. If it returns, the plan is to
-give it exactly one job - pinning the publisher into the reader's `/news` feed -
-with record creation still gated on explicit consent like the news feed setup.
+There is deliberately no per-user newsroom state: with every registered
+newsroom equally visible everywhere, a newsroom-level follow or subscription
+would have no observable effect. If per-user state is ever added, it should
+have exactly one job - e.g. pinning the publisher into the reader's `/news`
+feed - live on the shared `social.mu.newsFeedPrefs` record rather than a new
+collection, and gate record creation on explicit consent like the news feed
+setup does.
 
 ## The idea
 
@@ -48,9 +49,8 @@ Everything on the page is real data. There are no fabricated widgets.
    from anywhere on the page (the rail scrolls away with the feed) and resets
    the scroll position.
 1. Masthead - the publisher's live profile (avatar, name, verification badge,
-   bio with the registry tagline as fallback), category chips (display-only for
-   now), and a regular account follow button tinted in the publisher accent
-   while unfollowed.
+   bio), category chips (display-only for now), and a regular account follow
+   button tinted in the publisher accent while unfollowed.
 2. Front page (`components/NewsroomFrontPage.tsx`) - latest RSS articles, a hero
    plus a list, from `useRssArticlesQuery`, with the lead story's in-network
    discussion (`ArticleDiscussion`) woven in.
@@ -90,7 +90,7 @@ feed simply renders no front page - the page still works as the conversation.
 - Working category filter chips (filter both articles and the conversation).
 - Production RSS edge proxy (see `services/rss/README.md`).
 - Later, behind real demand: more `NewsroomSource` adapters (podcast, YouTube),
-  an aggregate dashboard across subscriptions.
+  an aggregate dashboard across newsrooms.
 
 ## Article anchoring
 
