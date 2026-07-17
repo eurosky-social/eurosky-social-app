@@ -54,6 +54,12 @@ const schema = z.object({
   // String (not enum) so it stays brand-agnostic; unknown/undefined falls back
   // to the brand's defaultAccent at read time.
   accentColor: z.string().optional(),
+  // Eurosky: app-chrome styling preferences, separate from color themes.
+  interfaceStyle: z
+    .object({
+      borders: z.enum(['standard', 'hidden']).optional(),
+    })
+    .optional(),
   session: z.object({
     accounts: z.array(accountSchema),
     currentAccount: currentAccountSchema.optional(),
@@ -169,6 +175,9 @@ export type Schema = z.infer<typeof schema>
 export const defaults: Schema = {
   colorMode: 'system',
   darkTheme: 'dim',
+  interfaceStyle: {
+    borders: 'standard',
+  },
   session: {
     accounts: [],
     currentAccount: undefined,
