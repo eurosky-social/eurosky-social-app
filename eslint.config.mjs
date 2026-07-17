@@ -47,6 +47,10 @@ export default defineConfig(
       '*.e2e.ts',
       '*.e2e.tsx',
       'eslint.config.mjs',
+      // Eurosky fork: build config, inherently `any`-typed webpack plumbing
+      // (the @expo/webpack-config return type is untyped), so the type-aware
+      // rules can't be satisfied. Mirrors the eslint.config.mjs ignore above.
+      'webpack.config.js',
       '.jscodeshift/**',
     ],
   },

@@ -108,7 +108,6 @@ import {AppearanceSettingsScreen} from '#/screens/Settings/AppearanceSettings'
 import {AppIconSettingsScreen} from '#/screens/Settings/AppIconSettings'
 import {AppPasswordsScreen} from '#/screens/Settings/AppPasswords'
 import {AutomationLabelSettingsScreen} from '#/screens/Settings/AutomationLabelSettings'
-import {CatCompanionSettingsScreen} from '#/screens/Settings/CatCompanionSettings'
 import {ContentAndMediaSettingsScreen} from '#/screens/Settings/ContentAndMediaSettings'
 import {DecorationsSettingsScreen} from '#/screens/Settings/DecorationsSettings'
 import {ExternalMediaPreferencesScreen} from '#/screens/Settings/ExternalMediaPreferences'
@@ -118,6 +117,7 @@ import {InterestsSettingsScreen} from '#/screens/Settings/InterestsSettings'
 import {LanguageSettingsScreen} from '#/screens/Settings/LanguageSettings'
 import {LegacyNotificationSettingsScreen} from '#/screens/Settings/LegacyNotificationSettings'
 import {NotificationSettingsScreen} from '#/screens/Settings/NotificationSettings'
+import {PetCompanionSettingsScreen} from '#/screens/Settings/PetCompanionSettings'
 import {PrivacyAndSecuritySettingsScreen} from '#/screens/Settings/PrivacyAndSecuritySettings'
 import {SettingsScreen} from '#/screens/Settings/Settings'
 import {ThreadPreferencesScreen} from '#/screens/Settings/ThreadPreferences'
@@ -407,10 +407,10 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         }}
       />
       <Stack.Screen
-        name="CatCompanionSettings"
-        getComponent={() => CatCompanionSettingsScreen}
+        name="PetCompanionSettings"
+        getComponent={() => PetCompanionSettingsScreen}
         options={{
-          title: title(msg`Companion Cat`),
+          title: title(msg`Companion`),
           requireAuth: true,
         }}
       />

@@ -117,6 +117,16 @@
           "items": {"type": "string"}
         }
       }
+    },
+    "fu": {
+      "type": "object",
+      "description": "Eurosky 'fu feed' personalized-feed onboarding config.",
+      "properties": {
+        "pickerDid": {
+          "type": "string",
+          "description": "DID of the account hosting the onboarding interest posts, liked during onboarding to seed personalization. Overridable at build with EXPO_PUBLIC_PICKER_DID. Empty disables interest-post likes."
+        }
+      }
     }
   },
   "$defs": {

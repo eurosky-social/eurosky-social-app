@@ -1,6 +1,7 @@
 const createExpoWebpackConfigAsync = require('@expo/webpack-config')
 const {withAlias} = require('@expo/webpack-config/addons')
 const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin')
+const webpack = require('webpack')
 const {BundleAnalyzerPlugin} = require('webpack-bundle-analyzer')
 const {sentryWebpackPlugin} = require('@sentry/webpack-plugin')
 const {version} = require('./package.json')
@@ -52,6 +53,30 @@ module.exports = async function (env, argv) {
     'react-native-gesture-handler': false, // RNGH should not be used on web, so let's cause a build error if it sneaks in
     '@sentry-internal/replay': false, // not used, ~300kb of dead weight
   })
+
+  /*
+   * Eurosky fork: inline EXPO_PUBLIC_* env vars into the web bundle.
+   *
+   * The EXPO_PUBLIC_ convention is a Metro-era feature. This project's web
+   * build still uses the legacy @expo/webpack-config path, whose ExpoDefinePlugin
+   * only surfaces `CI` to the bundle on modern SDKs (its ENV_VAR_REGEX is
+   * `/^(CI$)/i` for anything past SDK 40) and babel-preset-expo explicitly skips
+   * EXPO_PUBLIC inlining when the bundler is webpack. The net effect is that
+   * every `process.env.EXPO_PUBLIC_*` read in app code resolves to `undefined`
+   * at runtime and silently falls back to its hardcoded default - which shipped
+   * the PROD OAuth assertion URL to staging (CORS-rejected). Inline them here
+   * from the build environment so deploy-time overrides (staging OAuth worker,
+   * geolocation, Plausible, etc.) actually reach the bundle, matching Metro.
+   */
+  config.plugins.push(
+    new webpack.DefinePlugin(
+      Object.fromEntries(
+        Object.entries(process.env)
+          .filter(([key]) => key.startsWith('EXPO_PUBLIC_'))
+          .map(([key, value]) => [`process.env.${key}`, JSON.stringify(value)]),
+      ),
+    ),
+  )
 
   // react-native-uuid ships sourceMappingURL comments but no .map files.
   patchSourceMapFilter(config.module.rules, /react-native-uuid/)

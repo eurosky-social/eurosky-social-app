@@ -113,6 +113,7 @@ const schema = z.object({
       soundcloud: z.enum(externalEmbedOptions).optional(),
       flickr: z.enum(externalEmbedOptions).optional(),
       bandcamp: z.enum(externalEmbedOptions).optional(),
+      plyr: z.enum(externalEmbedOptions).optional(),
     })
     .optional(),
   invites: z.object({
@@ -129,6 +130,8 @@ const schema = z.object({
   disableHaptics: z.boolean().optional(),
   disableAutoplay: z.boolean().optional(),
   kawaii: z.boolean().optional(),
+  /** @deprecated migrated to `petCompanion` in normalizeData; kept so legacy
+   * persisted data survives schema parsing long enough to migrate. */
   catCompanion: z
     .object({
       enabled: z.boolean(),
@@ -140,6 +143,15 @@ const schema = z.object({
         'orange',
         'white',
       ]),
+    })
+    .optional(),
+  // species/variant are free strings (not enums) so adding pets or coats needs
+  // no schema change; unknown ids are clamped to valid ones at runtime.
+  petCompanion: z
+    .object({
+      enabled: z.boolean(),
+      species: z.string(),
+      variant: z.string(),
     })
     .optional(),
   hasCheckedForStarterPack: z.boolean().optional(),
@@ -194,7 +206,7 @@ export const defaults: Schema = {
   disableHaptics: false,
   disableAutoplay: PlatformInfo.getIsReducedMotionEnabled(),
   kawaii: false,
-  catCompanion: {enabled: false, color: 'orange'},
+  petCompanion: {enabled: false, species: 'cat', variant: 'orange'},
   hasCheckedForStarterPack: false,
   subtitlesEnabled: true,
   trendingDisabled: false,

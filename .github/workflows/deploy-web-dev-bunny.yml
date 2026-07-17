@@ -1,0 +1,113 @@
+# Eurosky fork: build the web app and deploy it to the DEV Bunny.net zone.
+#
+# Dev mirror of deploy-web-staging-bunny.yml, served at https://dev.mu.social.
+# Unlike staging (which continuously tracks eurosky/fork), dev is manual-only:
+# run the workflow from the Actions tab and pick any branch to put it live.
+# Useful for trying out risky or experimental branches without disturbing
+# staging. New file (not in upstream) -> no merge surface.
+#
+# Dev differs from staging only in build-time env (see the Build step): its
+# own OAuth client identity (assertions come from the shared non-prod worker
+# at oauth-staging.mu.social - see services/oauth/bunny/staging.ts), and its
+# own throwaway Plausible domain. Search noindexing is handled at the Bunny
+# pull zone (Edge Rule adds X-Robots-Tag: noindex, nofollow), not in the
+# build.
+#
+# Required repo secrets (Settings -> Secrets and variables -> Actions):
+#   DEV_BUNNY_STORAGE_ZONE      full base URL incl. zone, e.g.
+#                               https://storage.bunnycdn.com/mu-dev
+#   DEV_BUNNY_STORAGE_PASSWORD  storage zone password (AccessKey for uploads)
+#   DEV_BUNNY_PULLZONE_ID       numeric dev pull zone id (cache purge)
+#   BUNNY_API_KEY               account-level API key (shared with prod)
+name: Deploy web dev (Bunny)
+
+on:
+  # Manual only: Actions tab -> "Deploy web dev (Bunny)" -> Run workflow ->
+  # pick the branch to deploy. No push trigger; dev is an on-demand target.
+  workflow_dispatch: {}
+
+# Never run two dev deploys at once; a newer run supersedes an in-flight one.
+# Separate group from prod/staging so the three never queue on each other.
+concurrency:
+  group: deploy-web-dev-bunny
+  cancel-in-progress: true
+
+# Least privilege: only checks out + uploads to Bunny via Bunny secrets; never
+# uses GITHUB_TOKEN to write to the repo.
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      # bunny_build.sh does: frozen install (CI) -> intl:build -> build-web ->
+      # static-path rewrite -> _redirects. CI=true is set by Actions, so it
+      # uses --frozen-lockfile.
+      - name: Build web
+        run: bash ./scripts/bunny_build.sh
+        env:
+          # Non-prod: ship the disallow-all robots.txt so dev stays out of
+          # search (paired with the zone's noindex X-Robots-Tag edge rule).
+          ROBOTS_MODE: disallow-all
+          # Dev is its own atproto OAuth client: client_id derives from this
+          # base URL (gen-oauth-metadata.js emits the metadata into the build,
+          # so dev self-publishes it at /oauth-client-metadata.json).
+          # Client assertions come from the shared non-prod worker
+          # (services/oauth/bunny/staging.ts): one instance serves EVERY
+          # *.mu.social environment by deriving the client_id from the request
+          # Origin - adding version N needs no OAuth change at all. Prod stays
+          # on its own pinned worker at oauth.mu.social.
+          EXPO_PUBLIC_OAUTH_BASE_URL: https://dev.mu.social
+          EXPO_PUBLIC_OAUTH_ASSERTION_URL: https://oauth-staging.mu.social/client-assertion
+          # Dev routes AUTHED appview traffic to the Eurosky appview: the PDS
+          # resolves this DID's #bsky_appview service endpoint
+          # (https://api.eurosky.network) and proxies there via the
+          # atproto-proxy header. UNAUTHED traffic (logged-out browsing,
+          # brand.json services.publicApi/appView) stays on Bluesky's public
+          # API for now: the Eurosky appview does not resolve handles yet
+          # (handle lookups 404, profiles return handle.invalid), which would
+          # break logged-out views.
+          EXPO_PUBLIC_BLUESKY_PROXY_DID: did:web:api.eurosky.network
+          # Geolocation: same first-party endpoint as prod (services/geolocation/
+          # serves any origin), drives the regional moderation labelers.
+          EXPO_PUBLIC_ENABLE_GEOLOCATION: 'true'
+          EXPO_PUBLIC_GEOLOCATION_URL: https://ip.mu.social
+          EXPO_PUBLIC_ENABLE_LIVE_EVENTS: 'false'
+          EXPO_PUBLIC_ENABLE_APP_CONFIG: 'false'
+          # Product-analytics events otherwise POST to events.bsky.app. Disabled;
+          # GrowthBook flag fetching is unaffected (separate from this client).
+          EXPO_PUBLIC_ENABLE_METRICS: 'false'
+          # Deliberately NOT the prod Plausible site: dev.mu.social is
+          # unregistered in Plausible, so events are accepted and discarded and
+          # dev traffic never pollutes prod stats. (Blanking the value is not
+          # an option: bunny_build.sh's `:=` re-defaults empty to mu.social.)
+          EXPO_PUBLIC_PLAUSIBLE_DOMAIN: dev.mu.social
+          # First-party Bunny proxy for Plausible (see services/plausible/). Needs
+          # the scheme: the tracker posts to ${API_HOST}/api/event.
+          EXPO_PUBLIC_PLAUSIBLE_API_HOST: https://events.mu.social
+          # Shares the prod live-sports proxy (see services/footballData/); the
+          # endpoint is read-only and cached, so dev can reuse it.
+          EXPO_PUBLIC_FOOTBALLDATA_API_URL: https://sports.mu.social/v4
+      - name: Upload to Bunny + purge cache
+        run: bash ./scripts/bunny_upload.sh
+        env:
+          BUNNY_STORAGE_ZONE: ${{ secrets.DEV_BUNNY_STORAGE_ZONE }}
+          BUNNY_STORAGE_PASSWORD: ${{ secrets.DEV_BUNNY_STORAGE_PASSWORD }}
+          BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+          BUNNY_PULLZONE_ID: ${{ secrets.DEV_BUNNY_PULLZONE_ID }}
+      # Bot-mitigation config (network limits + cache/block edge rules), applied
+      # to the DEV pull zone. Idempotent - matches existing rules by description
+      # and updates in place, so it is safe to run every deploy. The noindex
+      # X-Robots-Tag edge rule on this zone is untouched (additive).
+      - name: Apply Bunny edge config (limits + rules)
+        run: bash ./scripts/bunny_edge_setup.sh
+        env:
+          BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+          BUNNY_PULLZONE_ID: ${{ secrets.DEV_BUNNY_PULLZONE_ID }}

@@ -40,7 +40,7 @@ const subtle = globalThis.crypto.subtle
 // The public key the script's private counterpart must match (shared kid).
 const publicJwks = JSON.parse(
   readFileSync(
-    join(here, '..', 'src', 'config', 'oauth.public-jwks.json'),
+    join(here, '..', '..', 'src', 'config', 'oauth.public-jwks.json'),
     'utf8',
   ),
 )

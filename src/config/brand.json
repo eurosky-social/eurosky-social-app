@@ -128,5 +128,8 @@
     "issuerDids": [
       "did:plc:257wekqxg4hyapkq6k47igmp"
     ]
+  },
+  "fu": {
+    "pickerDid": "did:plc:qycn7lwmbl5ije4jkvwksgm3"
   }
 }
