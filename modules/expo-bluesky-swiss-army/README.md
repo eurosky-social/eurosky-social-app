@@ -51,7 +51,7 @@ Tracks how users arrive at the app from external sources.
 
 ### SharedPrefs
 
-Native key-value storage that persists across app restarts. Uses iOS App Groups (`group.app.bsky`) for sharing data with extensions, and Android SharedPreferences.
+Native key-value storage that persists across app restarts. Uses iOS App Groups (`group.social.mu.app`) for sharing data with extensions, and Android SharedPreferences.
 
 **Functions:**
 
@@ -81,7 +81,7 @@ The Android implementation initializes certain keys with default values on first
 - Web: Not implemented
 
 **Implementation Notes:**
-- iOS uses App Group suite `group.app.bsky` to share preferences with app extensions
+- iOS uses App Group suite `group.social.mu.app` to share preferences with app extensions
 - Android stores preferences in `xyz.blueskyweb.app`
 - Both platforms work around a bug where `JavaScriptValue.isString()` can cause crashes, so there's a separate `setString` function internally
 
@@ -192,7 +192,7 @@ and Android; NotificationSettings is iOS only.
 
 ### iOS
 
-Requires iOS 13.4 or later. Uses the App Group `group.app.bsky` for SharedPrefs - ensure this is configured in your app's entitlements.
+Requires iOS 13.4 or later. Uses the App Group `group.social.mu.app` for SharedPrefs - ensure this is configured in your app's entitlements.
 
 ### Android
 
