@@ -1407,6 +1407,8 @@ export type Events = {
     uploadId: string
     engine: string
     errorClass: string
+    /** Truncated to 256 chars */
+    errorMessage: string
     elapsedMs: number
   }
   'video:upload:uploadStarted': {
@@ -1462,4 +1464,6 @@ export type Events = {
     jobId?: string
     elapsedInPhaseMs: number
   }
+
+  'post:likedBy:click': {}
 }

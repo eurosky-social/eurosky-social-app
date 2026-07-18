@@ -5,9 +5,10 @@ import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
 import {useWebMediaQueries} from '#/lib/hooks/useWebMediaQueries'
-import {useKawaiiMode} from '#/state/preferences/kawaii'
 import {ErrorBoundary} from '#/view/com/util/ErrorBoundary'
+import {Logo} from '#/view/icons/Logo'
 import {LogoHero} from '#/view/icons/LogoHero'
+import {useLogoVariant} from '#/view/icons/useLogoVariant'
 import {
   AppClipOverlay,
   postAppClipMessage,
@@ -47,7 +48,9 @@ export const SplashScreen = ({
     }
   }, [])
 
-  const kawaii = useKawaiiMode()
+  const logoVariant = useLogoVariant()
+  const kawaii = logoVariant === 'kawaii'
+  const japanLogo = logoVariant === 'japan'
 
   return (
     <>
@@ -82,11 +85,13 @@ export const SplashScreen = ({
           ]}>
           <ErrorBoundary>
             <View style={[a.justify_center, a.align_center]}>
-              {!kawaii && (
+              {logoVariant === 'default' ? (
                 <View style={[a.pt_5xl, a.pb_sm, a.align_center, a.gap_sm]}>
                   <LogoHero width={161} />
                   <BetaTag />
                 </View>
+              ) : (
+                <Logo width={kawaii ? 300 : japanLogo ? 120 : 92} />
               )}
 
               <Text

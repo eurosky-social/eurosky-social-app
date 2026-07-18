@@ -26,6 +26,7 @@ import {useAgent, useSession} from '#/state/session'
 import {type OnPostSuccessData} from '#/state/shell/composer'
 import {useMergedThreadgateHiddenReplies} from '#/state/threadgate-hidden-replies'
 import {type PostSource} from '#/state/unstable-post-source'
+import {LikesStat} from '#/screens/PostThread/components/LikesStat'
 import {ThreadComposePromptPill} from '#/screens/PostThread/components/ThreadComposePrompt'
 import {
   ThreadItemPost,
@@ -165,7 +166,6 @@ function ReaderSeamControlsInner({
   )
 
   const urip = new AtUri(post.uri)
-  const likesHref = makeProfileLink(post.author, 'post', urip.rkey, 'liked-by')
   const repostsHref = makeProfileLink(
     post.author,
     'post',
@@ -269,20 +269,7 @@ function ReaderSeamControlsInner({
               </Text>
             </Link>
           ) : null}
-          {post.likeCount ? (
-            <Link to={likesHref} label={l`Likes on this post`}>
-              <Text
-                testID="likeCount-expanded"
-                style={[a.text_md, t.atoms.text_contrast_medium]}>
-                <Trans comment="Like count display, the <0> tags enclose the number of likes in bold (will never be 0)">
-                  <Text style={[a.text_md, a.font_semi_bold, t.atoms.text]}>
-                    {formatPostStatCount(post.likeCount)}
-                  </Text>{' '}
-                  <Plural value={post.likeCount} one="like" other="likes" />
-                </Trans>
-              </Text>
-            </Link>
-          ) : null}
+          <LikesStat post={post} />
           {post.bookmarkCount ? (
             <Text
               testID="bookmarkCount-expanded"
