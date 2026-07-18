@@ -42,7 +42,7 @@ permissions:
 
 jobs:
   build:
-    if: github.repository == 'bluesky-social/social-app'
+    if: github.repository == 'eurosky-social/eurosky-social-app'
     name: Build and Submit iOS
     runs-on: macos-26-xlarge
     concurrency:
@@ -179,14 +179,14 @@ jobs:
           fi
 
       - name: 🚀 Deploy
-        run: pnpm eas submit -p ios --non-interactive --path "$BUILD_DIR/Bluesky.ipa"
+        run: pnpm eas submit -p ios --non-interactive --path "$BUILD_DIR/mu.ipa"
 
       - name: 🪲 Upload dSYM to Sentry
         run: >
-          SENTRY_ORG=blueskyweb
+          SENTRY_ORG=eurosky
           SENTRY_PROJECT=app
           SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
-          pnpm sentry-cli debug-files upload "$BUILD_DIR/Bluesky.app.dSYM.zip" --include-sources
+          pnpm sentry-cli debug-files upload "$BUILD_DIR/mu.app.dSYM.zip" --include-sources
 
       - name: 📚 Get version from package.json
         id: get-build-info
@@ -201,7 +201,7 @@ jobs:
         id: ipa-build-number
         run: |
           plist_dir="$(mktemp -d)"
-          unzip -o -q "$BUILD_DIR/Bluesky.ipa" 'Payload/*.app/Info.plist' -d "$plist_dir"
+          unzip -o -q "$BUILD_DIR/mu.ipa" 'Payload/*.app/Info.plist' -d "$plist_dir"
           plist="$(find "$plist_dir" -name Info.plist -print -quit)"
           build_number="$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$plist")"
           rm -rf "$plist_dir"
@@ -243,7 +243,7 @@ jobs:
             api_key_path:"$PWD/asc_api_key.json" \
             distribute_only:true \
             app_platform:"ios" \
-            app_identifier:"xyz.blueskyweb.app" \
+            app_identifier:"social.mu.app" \
             app_version:"$APP_VERSION" \
             build_number:"$BUILD_NUMBER" \
             groups:"$TESTFLIGHT_GROUP" \

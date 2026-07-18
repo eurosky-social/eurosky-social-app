@@ -54,6 +54,7 @@ import {
   PersonX_Stroke2_Corner0_Rounded as PersonXIcon,
 } from '#/components/icons/Person'
 import {RaisingHand4Finger_Stroke2_Corner2_Rounded as HandIcon} from '#/components/icons/RaisingHand'
+import {Sparkle_Stroke2_Corner0_Rounded as SparkleIcon} from '#/components/icons/Sparkle'
 import {Window_Stroke2_Corner2_Rounded as WindowIcon} from '#/components/icons/Window'
 import * as Layout from '#/components/Layout'
 import {Loader} from '#/components/Loader'
@@ -64,6 +65,7 @@ import * as Prompt from '#/components/Prompt'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
+import {BRAND} from '#/config/brand'
 import {IS_INTERNAL, IS_IOS, IS_NATIVE} from '#/env'
 import {useActorStatus} from '#/features/liveNow'
 import {device, useStorage} from '#/storage'
@@ -237,6 +239,16 @@ export function SettingsScreen({}: Props) {
               <Trans>Companion</Trans>
             </SettingsList.ItemText>
           </SettingsList.LinkItem>
+          {BRAND.decorations.enabled && (
+            <SettingsList.LinkItem
+              to="/settings/decorations"
+              label={l`Profile decorations`}>
+              <SettingsList.ItemIcon icon={SparkleIcon} />
+              <SettingsList.ItemText>
+                <Trans>Profile decorations</Trans>
+              </SettingsList.ItemText>
+            </SettingsList.LinkItem>
+          )}
           <SettingsList.LinkItem
             to="/settings/accessibility"
             label={l`Accessibility`}>

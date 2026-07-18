@@ -1,0 +1,54 @@
+{
+  "version": "4",
+  "specifiers": {
+    "npm:@types/node@*": "22.5.4"
+  },
+  "npm": {
+    "@types/node@22.5.4": {
+      "integrity": "sha512-FDuKUJQm/ju9fT/SeX/6+gBzoPzlVCzfzmGkwKvRHQVxi4BntVbyIwf6a4Xn62mrvndLiml6z/UBXIdEVjQLXg==",
+      "dependencies": [
+        "undici-types"
+      ]
+    },
+    "undici-types@6.19.8": {
+      "integrity": "sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw=="
+    }
+  },
+  "redirects": {
+    "https://esm.sh/@libsql/core@^0.17.4/api?target=denonext": "https://esm.sh/@libsql/core@0.17.4/api?target=denonext",
+    "https://esm.sh/@libsql/core@^0.17.4/config?target=denonext": "https://esm.sh/@libsql/core@0.17.4/config?target=denonext",
+    "https://esm.sh/@libsql/core@^0.17.4/uri?target=denonext": "https://esm.sh/@libsql/core@0.17.4/uri?target=denonext",
+    "https://esm.sh/@libsql/core@^0.17.4/util?target=denonext": "https://esm.sh/@libsql/core@0.17.4/util?target=denonext",
+    "https://esm.sh/@libsql/hrana-client@^0.10.0?target=denonext": "https://esm.sh/@libsql/hrana-client@0.10.0?target=denonext",
+    "https://esm.sh/@libsql/isomorphic-ws@^0.1.5?target=denonext": "https://esm.sh/@libsql/isomorphic-ws@0.1.5?target=denonext",
+    "https://esm.sh/@types/ws@~8.18.1/index.d.mts": "https://esm.sh/@types/ws@8.18.1/index.d.mts",
+    "https://esm.sh/js-base64@^3.7.5?target=denonext": "https://esm.sh/js-base64@3.9.1?target=denonext",
+    "https://esm.sh/promise-limit@^2.7.0?target=denonext": "https://esm.sh/promise-limit@2.7.0?target=denonext"
+  },
+  "remote": {
+    "https://esm.sh/@atcute/identity-resolver@2.0.1": "daeaf1ffd05e6a997b89c8f108ca17fa9de0c6fe29bfce04dd9e81a20ef1993b",
+    "https://esm.sh/@bunny.net/edgescript-sdk@0.12.1": "c55eac96cb55efc917cad15e3c597a2559ed5eba3010d2c46e4cbb60dee00f1d",
+    "https://esm.sh/@libsql/client@0.17.4/denonext/http.mjs": "dd61c85deff89e5788741145a5fd590ae19567e798a771493fdaefb3e3ece1b2",
+    "https://esm.sh/@libsql/client@0.17.4/denonext/lib-esm/hrana.mjs": "9b8f6d0b5e13445fbe05f0b1bd675a70c8b0b23213d225b07f25c98a3a495d0b",
+    "https://esm.sh/@libsql/client@0.17.4/denonext/lib-esm/sql_cache.mjs": "3646be834d189e1aead0af78e3d19a24d2fcf27f811124851c5a3df0c9d873f7",
+    "https://esm.sh/@libsql/client@0.17.4/denonext/web.mjs": "41b1e977984c67d2b9ae4fd14ea4561274b0f3af891287374f1fc7afcd610318",
+    "https://esm.sh/@libsql/client@0.17.4/denonext/ws.mjs": "6ed8f2d1b0a94bfa24dc9ec5be7240be15c64c4c1f798d51ea1eb065c67ffb75",
+    "https://esm.sh/@libsql/client@0.17.4/web": "a4ad3fe17d1656d1077762400b5c9aa7598cd11bd6a07f111f2542f71663008d",
+    "https://esm.sh/@libsql/core@0.17.4/api?target=denonext": "c0ec254076471c42da2fd296031201c3fe54d78bc191c3280e374928e9278384",
+    "https://esm.sh/@libsql/core@0.17.4/config?target=denonext": "f226f932c95fbaaa719843c2600e387ee3feacce16929cbc81455926e58624d8",
+    "https://esm.sh/@libsql/core@0.17.4/denonext/api.mjs": "54bbdc50773a6a660bf876144ffd932c45769da8def04809fe03d9584db60412",
+    "https://esm.sh/@libsql/core@0.17.4/denonext/config.mjs": "8c2a474aa0cf9206ad6c59ab194c8c18667e89c683e867472145863c9ea9092b",
+    "https://esm.sh/@libsql/core@0.17.4/denonext/uri.mjs": "2bf740413d11d6933ecbd5494345047203856b7fb0905a0b1651b07687a13e05",
+    "https://esm.sh/@libsql/core@0.17.4/denonext/util.mjs": "6535142e8110bd68957080374b3299415a7eee5068f4d8ff32199163ebf51062",
+    "https://esm.sh/@libsql/core@0.17.4/uri?target=denonext": "158b8527c31e45a0923e5fa266773f200d2f86e57d9ed5c1efd0f82e24548c0a",
+    "https://esm.sh/@libsql/core@0.17.4/util?target=denonext": "43cbb2c14f290c2ec6192cdd87ea3b8da497161d87ef647010aae6e8d45c401f",
+    "https://esm.sh/@libsql/hrana-client@0.10.0/denonext/hrana-client.mjs": "61cbcbefebbe926001fb7f95ac9da519a6d0320a39247f92fe86aaa347aaab0c",
+    "https://esm.sh/@libsql/hrana-client@0.10.0?target=denonext": "0ca20f75e0a2a5dd32c04c400e81034f02e3c01b838002320ddc498c8701b62b",
+    "https://esm.sh/@libsql/isomorphic-ws@0.1.5/denonext/isomorphic-ws.mjs": "9d104b6fe80cb913bd8b09e76a6e7e83e5d7537bd7dbf1d593da5842888cd2b2",
+    "https://esm.sh/@libsql/isomorphic-ws@0.1.5?target=denonext": "0d1a1aa981e92234677ee9b98e72d31125bde45d08cb653917dd2c5144001c9a",
+    "https://esm.sh/js-base64@3.9.1/denonext/js-base64.mjs": "2aad952a87ea7531c91806d373a70ea3a7812c4cad9a96979d027de9ecca5da8",
+    "https://esm.sh/js-base64@3.9.1?target=denonext": "6b138d971c5c054ee80b8c06ddbe83039ffb4d93bf571ebc0b40201bc6a6828a",
+    "https://esm.sh/promise-limit@2.7.0/denonext/promise-limit.mjs": "31155ca06e5efeac06f2c83fd35cf40bd836ebdbb56d3002004f619dfef9d886",
+    "https://esm.sh/promise-limit@2.7.0?target=denonext": "4939fc289aa872c6232bf9a5596d7d889f342abd4efda65a9c29b77c5e4f3191"
+  }
+}
