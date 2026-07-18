@@ -97,7 +97,9 @@
     "helpDesk": "https://blueskyweb.zendesk.com/hc/en-us",
     "supportRequest": "https://blueskyweb.zendesk.com/hc/requests/new",
     "download": "https://bsky.app/download",
-    "statusPage": "https://status.bsky.app/"
+    "statusPage": "https://status.bsky.app/",
+    "donate": "https://whydonate.com/fundraising/the-next-era-of-social-media",
+    "feedback": "https://userinput.app/s/did:plc:ooensn4mr5mhznzypvxelfa3/3mnwmwn7sn22u"
   },
   "services": {
     "pds": "https://bsky.social",
