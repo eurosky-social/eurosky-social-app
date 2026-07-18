@@ -109,6 +109,7 @@ import {AppIconSettingsScreen} from '#/screens/Settings/AppIconSettings'
 import {AppPasswordsScreen} from '#/screens/Settings/AppPasswords'
 import {AutomationLabelSettingsScreen} from '#/screens/Settings/AutomationLabelSettings'
 import {ContentAndMediaSettingsScreen} from '#/screens/Settings/ContentAndMediaSettings'
+import {DecorationsSettingsScreen} from '#/screens/Settings/DecorationsSettings'
 import {ExternalMediaPreferencesScreen} from '#/screens/Settings/ExternalMediaPreferences'
 import {FindContactsSettingsScreen} from '#/screens/Settings/FindContactsSettings'
 import {FollowingFeedPreferencesScreen} from '#/screens/Settings/FollowingFeedPreferences'
@@ -413,6 +414,16 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
           requireAuth: true,
         }}
       />
+      {BRAND.decorations.enabled && (
+        <Stack.Screen
+          name="DecorationsSettings"
+          getComponent={() => DecorationsSettingsScreen}
+          options={{
+            title: title(msg`Profile decorations`),
+            requireAuth: true,
+          }}
+        />
+      )}
       <Stack.Screen
         name="AccountSettings"
         getComponent={() => AccountSettingsScreen}

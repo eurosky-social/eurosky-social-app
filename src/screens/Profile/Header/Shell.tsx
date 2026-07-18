@@ -27,6 +27,7 @@ import {LabelsOnMe} from '#/components/moderation/LabelsOnMe'
 import {ProfileHeaderAlerts} from '#/components/moderation/ProfileHeaderAlerts'
 import {useAnalytics} from '#/analytics'
 import {IS_IOS} from '#/env'
+import {useAvatarDecoration} from '#/features/avatarDecorations'
 import {useActorStatus} from '#/features/liveNow'
 import {EditLiveDialog} from '#/features/liveNow/components/EditLiveDialog'
 import {LiveIndicator} from '#/features/liveNow/components/LiveIndicator'
@@ -111,6 +112,7 @@ let ProfileHeaderShell = ({
   )
 
   const live = useActorStatus(profile)
+  const decoration = useAvatarDecoration(profile.did)
 
   useEffect(() => {
     if (live.isActive) {
@@ -277,6 +279,7 @@ let ProfileHeaderShell = ({
                 avatar={profile.avatar}
                 moderation={moderation.ui('avatar')}
                 noBorder
+                decoration={decoration}
               />
               {live.isActive && <LiveIndicator size="large" />}
             </Animated.View>

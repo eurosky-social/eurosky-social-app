@@ -24,6 +24,7 @@ import {ProfileBadges} from '#/components/ProfileBadges'
 import {ProfileHoverCard} from '#/components/ProfileHoverCard'
 import {Text} from '#/components/Typography'
 import {IS_ANDROID} from '#/env'
+import {useNameStyle} from '#/features/avatarDecorations'
 import {useActorStatus} from '#/features/liveNow'
 import {TimeElapsed} from './TimeElapsed'
 import {PreviewableUserAvatar} from './UserAvatar'
@@ -62,6 +63,7 @@ let PostMeta = (opts: PostMetaOpts): React.ReactNode => {
 
   const timestampLabel = niceDate(i18n, opts.timestamp)
   const {isActive: live} = useActorStatus(author)
+  const nameStyle = useNameStyle(author.did)
 
   const MaybeLinkText = opts.linkDisabled ? Text : WebOnlyInlineLinkText
 
@@ -106,6 +108,7 @@ let PostMeta = (opts: PostMetaOpts): React.ReactNode => {
                 a.leading_tight,
                 a.flex_shrink_0,
                 {maxWidth: '70%'},
+                nameStyle,
               ]}>
               {forceLTR(
                 sanitizeDisplayName(
