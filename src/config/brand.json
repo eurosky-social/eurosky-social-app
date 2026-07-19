@@ -1,8 +1,8 @@
 {
   "$schema": "./brand.schema.json",
   "$comment": "Single source of truth for brand identity (everything a rebrand edits, except the logo SVGs in assets/brand/ and the OAuth signing keypair in oauth.public-jwks.json). Consumed by the app via the typed adapters src/config/brand.ts (identity/links/services), brand-theme.ts (colors) and oauth.ts (oauth), and directly by the Node build scripts, app.config.js and the Cloudflare Workers. Field docs live in brand.schema.json.",
-  "name": "mu",
-  "hosts": ["mu.social"],
+  "name": "Waldmeister",
+  "hosts": ["waldmeister.eu"],
   "socialHandle": "",
   "colors": {
     "neutral": {
@@ -73,29 +73,44 @@
         "primary_900": "#9A3D05",
         "primary_950": "#853600",
         "primary_975": "#6E2C00"
+      },
+      "woodruff": {
+        "primary_25": "#E8F7EC",
+        "primary_50": "#D1EFCF",
+        "primary_100": "#A9E2A3",
+        "primary_200": "#7ECE74",
+        "primary_300": "#52BA46",
+        "primary_400": "#37A62C",
+        "primary_500": "#2B9321",
+        "primary_600": "#23801B",
+        "primary_700": "#1C6B15",
+        "primary_800": "#165710",
+        "primary_900": "#11450C",
+        "primary_950": "#0C3308",
+        "primary_975": "#072204"
       }
     },
-    "defaultAccent": "pink"
+    "defaultAccent": "woodruff"
   },
   "oauth": {
     "$comment": "scope = what NEW logins request (keep transitional-only so every PDS accepts it). declaredScope = superset advertised in client metadata (must cover step-ups like identity:handle AND any scope older cached bundles still request). See src/config/oauth.ts.",
-    "defaultBaseUrl": "https://mu.social",
-    "clientName": "mu",
+    "defaultBaseUrl": "https://waldmeister.eu",
+    "clientName": "waldmeister",
     "scope": "atproto transition:generic transition:email transition:chat.bsky",
     "declaredScope": "atproto transition:generic transition:email transition:chat.bsky identity:handle account:email?action=manage account:status?action=manage",
     "handleResolver": "https://bsky.social",
-    "signupPdsHost": "https://eurosky.social"
+    "signupPdsHost": "https://wldmstr.de"
   },
   "links": {
-    "tos": "https://hello.mu.social/terms",
-    "privacy": "https://hello.mu.social/privacy",
-    "community": "https://hello.mu.social/guidelines",
-    "copyright": "https://hello.mu.social/copyright",
-    "support": "https://hello.mu.social/contact",
+    "tos": "https://hello.waldmeister.eu/terms",
+    "privacy": "https://hello.waldmeister.eu/privacy",
+    "community": "https://hello.waldmeister.eu/guidelines",
+    "copyright": "https://hello.waldmeister.eu/copyright",
+    "support": "https://hello.waldmeister.eu/contact",
     "faq": "https://bsky.social/about/faq",
     "dataPrivacy": "https://blueskyweb.zendesk.com/hc/en-us/articles/15835264007693-Data-Privacy",
-    "helpDesk": "https://hello.mu.social/contact",
-    "supportRequest": "https://hello.mu.social/contact",
+    "helpDesk": "https://hello.waldmeister.eu/contact",
+    "supportRequest": "https://hello.waldmeister.eu/contact",
     "download": "https://bsky.app/download",
     "statusPage": "https://status.bsky.app/"
   },
@@ -121,16 +136,16 @@
     "includeBlueskyVerifications": true
   },
   "ageAssurance": {
-    "serviceUrl": "https://age.mu.social",
-    "serviceDid": "did:web:age.mu.social"
+    "serviceUrl": "https://age.waldmeister.eu",
+    "serviceDid": "did:web:age.waldmeister.eu"
   },
   "decorations": {
     "$comment": "Eurosky+ profile decorations. Set enabled=false to remove the UI and read path completely. subscriberListUris are exact app.bsky.graph.list records whose members get access. Test builds override these values with EXPO_PUBLIC_DECO_* variables.",
     "enabled": false,
     "subscriberListUris": [],
-    "serviceUrl": "https://deco.mu.social",
-    "serviceDid": "did:web:deco.mu.social",
-    "manageUrl": "https://mu.social/settings/decorations"
+    "serviceUrl": "https://deco.waldmeister.eu",
+    "serviceDid": "did:web:deco.waldmeister.eu",
+    "manageUrl": "https://waldmeister.eu/settings/decorations"
   },
   "fu": {
     "pickerDid": "did:plc:qycn7lwmbl5ije4jkvwksgm3"
