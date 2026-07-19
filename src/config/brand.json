@@ -115,7 +115,8 @@
   },
   "verification": {
     "trustedVerifierListUris": [
-      "at://did:plc:ooensn4mr5mhznzypvxelfa3/app.bsky.graph.list/3mogaw2g4an23"
+      "at://did:plc:ooensn4mr5mhznzypvxelfa3/app.bsky.graph.list/3mogaw2g4an23",
+      "at://did:plc:5ur5o2ioynlahbbqagqcf4mj/app.bsky.graph.list/3mqzkqvikl22g"
     ],
     "includeBlueskyVerifications": true
   },
