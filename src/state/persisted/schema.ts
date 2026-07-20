@@ -54,6 +54,12 @@ const schema = z.object({
   // String (not enum) so it stays brand-agnostic; unknown/undefined falls back
   // to the brand's defaultAccent at read time.
   accentColor: z.string().optional(),
+  // Eurosky: app-chrome styling preferences, separate from color themes.
+  interfaceStyle: z
+    .object({
+      borders: z.enum(['standard', 'hidden']).optional(),
+    })
+    .optional(),
   session: z.object({
     accounts: z.array(accountSchema),
     currentAccount: currentAccountSchema.optional(),
@@ -113,6 +119,7 @@ const schema = z.object({
       soundcloud: z.enum(externalEmbedOptions).optional(),
       flickr: z.enum(externalEmbedOptions).optional(),
       bandcamp: z.enum(externalEmbedOptions).optional(),
+      plyr: z.enum(externalEmbedOptions).optional(),
     })
     .optional(),
   invites: z.object({
@@ -129,6 +136,8 @@ const schema = z.object({
   disableHaptics: z.boolean().optional(),
   disableAutoplay: z.boolean().optional(),
   kawaii: z.boolean().optional(),
+  /** @deprecated migrated to `petCompanion` in normalizeData; kept so legacy
+   * persisted data survives schema parsing long enough to migrate. */
   catCompanion: z
     .object({
       enabled: z.boolean(),
@@ -140,6 +149,15 @@ const schema = z.object({
         'orange',
         'white',
       ]),
+    })
+    .optional(),
+  // species/variant are free strings (not enums) so adding pets or coats needs
+  // no schema change; unknown ids are clamped to valid ones at runtime.
+  petCompanion: z
+    .object({
+      enabled: z.boolean(),
+      species: z.string(),
+      variant: z.string(),
     })
     .optional(),
   hasCheckedForStarterPack: z.boolean().optional(),
@@ -157,6 +175,9 @@ export type Schema = z.infer<typeof schema>
 export const defaults: Schema = {
   colorMode: 'system',
   darkTheme: 'dim',
+  interfaceStyle: {
+    borders: 'standard',
+  },
   session: {
     accounts: [],
     currentAccount: undefined,
@@ -194,7 +215,7 @@ export const defaults: Schema = {
   disableHaptics: false,
   disableAutoplay: PlatformInfo.getIsReducedMotionEnabled(),
   kawaii: false,
-  catCompanion: {enabled: false, color: 'orange'},
+  petCompanion: {enabled: false, species: 'cat', variant: 'orange'},
   hasCheckedForStarterPack: false,
   subtitlesEnabled: true,
   trendingDisabled: false,

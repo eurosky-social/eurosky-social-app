@@ -173,6 +173,20 @@ export const VIDEO_SAVED_FEED = {
   pinned: true,
 }
 
+/**
+ * Eurosky "fu feed" personalized feed generator. Intended to become the default
+ * home feed for new users once interest-post-seeded personalization is validated
+ * (see StepFinished onboarding). Publisher DID + rkey `fu` are fixed by the
+ * feedgen deployment (feed1.eurosky.network).
+ */
+export const FU_FEED_URI =
+  'at://did:plc:ooensn4mr5mhznzypvxelfa3/app.bsky.feed.generator/fu'
+export const FU_SAVED_FEED = {
+  type: 'feed',
+  value: FU_FEED_URI,
+  pinned: true,
+}
+
 export const RECOMMENDED_SAVED_FEEDS: Pick<
   AppBskyActorDefs.SavedFeed,
   'type' | 'value' | 'pinned'
@@ -283,6 +297,15 @@ export const VERIFICATION_DENYLIST_DIDS = new Set([
  * https://constellation.microcosm.blue/
  */
 export const CONSTELLATION_SERVICE = 'https://constellation.microcosm.blue'
+
+/**
+ * Microcosm Slingshot - a cached atproto record fetcher: getRecord for any
+ * repo/collection, resolved via the subject's PDS and edge-cached. Used where
+ * the appview can't help because it only serves collections it indexes
+ * (app.bsky.*), e.g. avatar decoration settings records.
+ * https://slingshot.microcosm.blue/
+ */
+export const SLINGSHOT_SERVICE = 'https://slingshot.microcosm.blue'
 export const PUBLIC_STAGING_APPVIEW_DID = 'did:web:api.staging.bsky.dev'
 
 export const DEV_ENV_APPVIEW = `http://localhost:2584` // always the same

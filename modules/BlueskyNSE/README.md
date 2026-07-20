@@ -18,7 +18,7 @@ When a push notification arrives on iOS, the system can invoke this extension to
 
 The extension uses shared UserDefaults (via App Groups) to access preferences set by the main app:
 
-- **App Group**: `group.app.bsky` allows data sharing between the main app and the extension
+- **App Group**: `group.social.mu.app` allows data sharing between the main app and the extension
 - **Shared Preferences**: Stored in UserDefaults suite accessible by both processes
 - **Thread Safety**: Uses a dedicated serial DispatchQueue (`NSEPrefsQueue`) to prevent race conditions when multiple notifications arrive simultaneously
 
@@ -73,7 +73,7 @@ Contains two main classes:
 
 ### App Group Setup
 
-The extension requires the `group.app.bsky` App Group to be configured in:
+The extension requires the `group.social.mu.app` App Group to be configured in:
 1. Main app target capabilities
 2. Extension target capabilities (defined in `BlueskyNSE.entitlements`)
 

@@ -1,5 +1,6 @@
 import {
   type $Typed,
+  type AppBskyFeedLike,
   type AppBskyGraphFollow,
   type AppBskyGraphGetFollows,
   type AtpAgent,
@@ -56,6 +57,46 @@ export async function bulkWriteFollows(
     )
   }
   return followUris
+}
+
+/**
+ * Creates `app.bsky.feed.like` records for the given post strong refs (uri + cid)
+ * in the current user's repo. Used during onboarding to seed the personalized
+ * feed with a like per selected interest (each interest maps to a picker-account
+ * "interest post"; refs are discovered by interestPostRefsFor).
+ */
+export async function bulkWriteLikes(
+  agent: AtpAgent,
+  subjects: ComAtprotoRepoStrongRef.Main[],
+) {
+  const session = agent.session
+
+  if (!session) {
+    throw new Error(`bulkWriteLikes failed: no session`)
+  }
+
+  if (subjects.length === 0) return
+
+  const likeWrites: $Typed<ComAtprotoRepoApplyWrites.Create>[] = subjects.map(
+    subject => ({
+      $type: 'com.atproto.repo.applyWrites#create',
+      collection: 'app.bsky.feed.like',
+      rkey: TID.nextStr(),
+      value: {
+        $type: 'app.bsky.feed.like',
+        subject,
+        createdAt: new Date().toISOString(),
+      } satisfies $Typed<AppBskyFeedLike.Record>,
+    }),
+  )
+
+  const chunks = chunk(likeWrites, 50)
+  for (const chunk of chunks) {
+    await agent.com.atproto.repo.applyWrites({
+      repo: session.did,
+      writes: chunk,
+    })
+  }
 }
 
 async function whenFollowsIndexed(

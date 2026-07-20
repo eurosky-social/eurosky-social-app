@@ -19,6 +19,12 @@
  */
 import brand from '#/config/brand.json'
 
+const decorationEnabledOverride = process.env.EXPO_PUBLIC_DECO_ENABLED as
+  | string
+  | undefined
+const decorationListUrisOverride = process.env
+  .EXPO_PUBLIC_DECO_SUBSCRIBER_LIST_URIS as string | undefined
+
 export const BRAND = {
   /** Display name used in page/tab titles and in-app brand text. */
   name: brand.name,
@@ -33,10 +39,35 @@ export const BRAND = {
   links: brand.links,
   services: brand.services,
   verification: brand.verification,
+  decorations: {
+    enabled:
+      decorationEnabledOverride === undefined
+        ? brand.decorations.enabled
+        : decorationEnabledOverride === 'true',
+    subscriberListUris: decorationListUrisOverride
+      ? decorationListUrisOverride
+          .split(',')
+          .map((uri: string) => uri.trim())
+          .filter(Boolean)
+      : brand.decorations.subscriberListUris,
+    serviceUrl:
+      process.env.EXPO_PUBLIC_DECO_SERVICE_URL || brand.decorations.serviceUrl,
+    serviceDid:
+      process.env.EXPO_PUBLIC_DECO_SERVICE_DID || brand.decorations.serviceDid,
+    manageUrl:
+      process.env.EXPO_PUBLIC_DECO_MANAGE_URL || brand.decorations.manageUrl,
+  },
   ageAssurance: {
     serviceUrl:
       process.env.EXPO_PUBLIC_AGE_SERVICE_URL || brand.ageAssurance.serviceUrl,
     serviceDid:
       process.env.EXPO_PUBLIC_AGE_SERVICE_DID || brand.ageAssurance.serviceDid,
+  },
+  fu: {
+    /**
+     * DID of the account hosting the onboarding interest posts (liked during
+     * onboarding to seed the fu feed). Empty disables interest-post likes.
+     */
+    pickerDid: process.env.EXPO_PUBLIC_PICKER_DID || brand.fu.pickerDid,
   },
 } as const

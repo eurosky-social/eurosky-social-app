@@ -30,7 +30,7 @@ import {
 } from '#/lib/hooks/useNotificationHandler'
 import {useWebScrollRestoration} from '#/lib/hooks/useWebScrollRestoration'
 import {useCallOnce} from '#/lib/once'
-import {buildStateObject} from '#/lib/routes/helpers'
+import {buildStateObject, getCurrentRoute} from '#/lib/routes/helpers'
 import {
   type AllNavigatorParams,
   type BottomTabNavigatorParams,
@@ -108,8 +108,9 @@ import {AppearanceSettingsScreen} from '#/screens/Settings/AppearanceSettings'
 import {AppIconSettingsScreen} from '#/screens/Settings/AppIconSettings'
 import {AppPasswordsScreen} from '#/screens/Settings/AppPasswords'
 import {AutomationLabelSettingsScreen} from '#/screens/Settings/AutomationLabelSettings'
-import {CatCompanionSettingsScreen} from '#/screens/Settings/CatCompanionSettings'
+import {BetaFeaturesSettingsScreen} from '#/screens/Settings/BetaFeaturesSettings'
 import {ContentAndMediaSettingsScreen} from '#/screens/Settings/ContentAndMediaSettings'
+import {DecorationsSettingsScreen} from '#/screens/Settings/DecorationsSettings'
 import {ExternalMediaPreferencesScreen} from '#/screens/Settings/ExternalMediaPreferences'
 import {FindContactsSettingsScreen} from '#/screens/Settings/FindContactsSettings'
 import {FollowingFeedPreferencesScreen} from '#/screens/Settings/FollowingFeedPreferences'
@@ -117,6 +118,7 @@ import {InterestsSettingsScreen} from '#/screens/Settings/InterestsSettings'
 import {LanguageSettingsScreen} from '#/screens/Settings/LanguageSettings'
 import {LegacyNotificationSettingsScreen} from '#/screens/Settings/LegacyNotificationSettings'
 import {NotificationSettingsScreen} from '#/screens/Settings/NotificationSettings'
+import {PetCompanionSettingsScreen} from '#/screens/Settings/PetCompanionSettings'
 import {PrivacyAndSecuritySettingsScreen} from '#/screens/Settings/PrivacyAndSecuritySettings'
 import {SettingsScreen} from '#/screens/Settings/Settings'
 import {ThreadPreferencesScreen} from '#/screens/Settings/ThreadPreferences'
@@ -412,18 +414,36 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         }}
       />
       <Stack.Screen
-        name="CatCompanionSettings"
-        getComponent={() => CatCompanionSettingsScreen}
+        name="PetCompanionSettings"
+        getComponent={() => PetCompanionSettingsScreen}
         options={{
-          title: title(msg`Companion Cat`),
+          title: title(msg`Companion`),
           requireAuth: true,
         }}
       />
+      {BRAND.decorations.enabled && (
+        <Stack.Screen
+          name="DecorationsSettings"
+          getComponent={() => DecorationsSettingsScreen}
+          options={{
+            title: title(msg`Profile decorations`),
+            requireAuth: true,
+          }}
+        />
+      )}
       <Stack.Screen
         name="AccountSettings"
         getComponent={() => AccountSettingsScreen}
         options={{
           title: title(msg`Account`),
+          requireAuth: true,
+        }}
+      />
+      <Stack.Screen
+        name="BetaFeaturesSettings"
+        getComponent={() => BetaFeaturesSettingsScreen}
+        options={{
+          title: title(msg`Beta features`),
           requireAuth: true,
         }}
       />
@@ -805,10 +825,7 @@ const LINKING = {
 
   getPathFromState(state: State) {
     // find the current node in the navigation tree
-    let node = state.routes[state.index || 0]
-    while (node.state?.routes && typeof node.state?.index === 'number') {
-      node = node.state?.routes[node.state?.index]
-    }
+    const node = getCurrentRoute(state)
 
     // build the path
     const route = router.matchName(node.name)
@@ -1019,18 +1036,19 @@ function RoutesContainer({children}: React.PropsWithChildren<{}>) {
     })
 
     if (IS_WEB) {
-      const referrerInfo = Referrer.getReferrerInfo()
-      if (
-        referrerInfo &&
-        referrerInfo.hostname !== 'bsky.app' &&
-        !BRAND.web.hosts.includes(referrerInfo.hostname)
-      ) {
-        ax.metric('deepLink:referrerReceived', {
-          to: window.location.href,
-          referrer: referrerInfo?.referrer,
-          hostname: referrerInfo?.hostname,
-        })
-      }
+      void Referrer.getReferrerInfo().then(referrerInfo => {
+        if (
+          referrerInfo &&
+          referrerInfo.hostname !== 'bsky.app' &&
+          !BRAND.web.hosts.includes(referrerInfo.hostname)
+        ) {
+          ax.metric('deepLink:referrerReceived', {
+            to: window.location.href,
+            referrer: referrerInfo.referrer,
+            hostname: referrerInfo.hostname,
+          })
+        }
+      })
     }
 
     // temp, just testing

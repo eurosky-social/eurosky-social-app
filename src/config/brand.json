@@ -73,6 +73,21 @@
         "primary_900": "#9A3D05",
         "primary_950": "#853600",
         "primary_975": "#6E2C00"
+      },
+      "green": {
+        "primary_25": "#F1F8F2",
+        "primary_50": "#DBF0DE",
+        "primary_100": "#B3E6BB",
+        "primary_200": "#7AD88E",
+        "primary_300": "#3DCB63",
+        "primary_400": "#02BC60",
+        "primary_500": "#0D8A4B",
+        "primary_600": "#0B7440",
+        "primary_700": "#10642C",
+        "primary_800": "#105427",
+        "primary_900": "#114622",
+        "primary_950": "#10391D",
+        "primary_975": "#0E2C17"
       }
     },
     "defaultAccent": "pink"
@@ -90,14 +105,16 @@
     "tos": "https://hello.mu.social/terms",
     "privacy": "https://hello.mu.social/privacy",
     "community": "https://hello.mu.social/guidelines",
-    "copyright": "https://bsky.social/about/support/copyright",
-    "support": "https://bsky.social/about/support",
+    "copyright": "https://hello.mu.social/copyright",
+    "support": "https://hello.mu.social/contact",
     "faq": "https://bsky.social/about/faq",
     "dataPrivacy": "https://blueskyweb.zendesk.com/hc/en-us/articles/15835264007693-Data-Privacy",
-    "helpDesk": "https://blueskyweb.zendesk.com/hc/en-us",
-    "supportRequest": "https://blueskyweb.zendesk.com/hc/requests/new",
+    "helpDesk": "https://hello.mu.social/contact",
+    "supportRequest": "https://hello.mu.social/contact",
     "download": "https://bsky.app/download",
-    "statusPage": "https://status.bsky.app/"
+    "statusPage": "https://status.bsky.app/",
+    "donate": "https://whydonate.com/fundraising/the-next-era-of-social-media",
+    "feedback": "https://userinput.app/s/did:plc:ooensn4mr5mhznzypvxelfa3/3mnwmwn7sn22u"
   },
   "services": {
     "pds": "https://bsky.social",
@@ -122,5 +139,16 @@
   "ageAssurance": {
     "serviceUrl": "https://age.mu.social",
     "serviceDid": "did:web:age.mu.social"
+  },
+  "decorations": {
+    "$comment": "Eurosky+ profile decorations. Set enabled=false to remove the UI and read path completely. subscriberListUris are exact app.bsky.graph.list records whose members get access. Test builds override these values with EXPO_PUBLIC_DECO_* variables.",
+    "enabled": false,
+    "subscriberListUris": [],
+    "serviceUrl": "https://deco.mu.social",
+    "serviceDid": "did:web:deco.mu.social",
+    "manageUrl": "https://mu.social/settings/decorations"
+  },
+  "fu": {
+    "pickerDid": "did:plc:qycn7lwmbl5ije4jkvwksgm3"
   }
 }

@@ -49,7 +49,10 @@ function clean(raw) {
 function parseRole(role, xml) {
   const vb = xml.match(/viewBox="([^"]+)"/)
   if (!vb) throw new Error(`assets/brand/${role}.svg: missing viewBox`)
-  const nums = vb[1].trim().split(/[\s,]+/).map(Number)
+  const nums = vb[1]
+    .trim()
+    .split(/[\s,]+/)
+    .map(Number)
   const [, , w, h] = nums
   if (!w || !h || nums.length !== 4) {
     throw new Error(`assets/brand/${role}.svg: bad viewBox "${vb[1]}"`)
@@ -79,9 +82,13 @@ const prev = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : ''
 if (next === prev) {
   console.log(`brand logo in sync (${Object.keys(out).join(', ')})`)
 } else if (check) {
-  console.error('\nbrand-logo.generated.json is stale. Run: pnpm brand:gen-logo')
+  console.error(
+    '\nbrand-logo.generated.json is stale. Run: pnpm brand:gen-logo',
+  )
   process.exit(1)
 } else {
   fs.writeFileSync(OUT, next)
-  console.log(`wrote ${path.relative(ROOT, OUT)} (${Object.keys(out).join(', ')})`)
+  console.log(
+    `wrote ${path.relative(ROOT, OUT)} (${Object.keys(out).join(', ')})`,
+  )
 }

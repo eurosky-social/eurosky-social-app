@@ -1,6 +1,9 @@
+const path = require('path')
+
 const createExpoWebpackConfigAsync = require('@expo/webpack-config')
 const {withAlias} = require('@expo/webpack-config/addons')
 const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin')
+const webpack = require('webpack')
 const {BundleAnalyzerPlugin} = require('webpack-bundle-analyzer')
 const {sentryWebpackPlugin} = require('@sentry/webpack-plugin')
 const {version} = require('./package.json')
@@ -46,12 +49,59 @@ module.exports = async function (env, argv) {
     dangerouslyAddModulePathsToTranspile: ['@bsky.app/expo', '@atproto/api'],
   }
   let config = await createExpoWebpackConfigAsync(env, argv)
+  /*
+   * Expo only registers its own internal config as a cache build dependency,
+   * so changes to this file (e.g. aliases) don't invalidate the persistent
+   * filesystem cache and stale module resolutions get reused. Register this
+   * file so edits here always bust the cache.
+   */
+  if (config.cache?.buildDependencies) {
+    config.cache.buildDependencies.config = [
+      ...(config.cache.buildDependencies.config || []),
+      __filename,
+    ]
+  }
   config = withAlias(config, {
     'react-native$': 'react-native-web',
     'react-native-webview': 'react-native-web-webview',
     'react-native-gesture-handler': false, // RNGH should not be used on web, so let's cause a build error if it sneaks in
     '@sentry-internal/replay': false, // not used, ~300kb of dead weight
+    /*
+     * react-native-svg's fetchData util imports the ~55KB `buffer` polyfill,
+     * but is only needed by SvgUri/SvgXml remote loading, which we don't use.
+     * Stubbing it out makes fetchText undefined, so it throws if ever called.
+     * The alias key must be an absolute path because the package imports it
+     * via a relative path internally.
+     */
+    [path.join(
+      __dirname,
+      'node_modules/react-native-svg/lib/module/utils/fetchData',
+    )]: false,
   })
+
+  /*
+   * Eurosky fork: inline EXPO_PUBLIC_* env vars into the web bundle.
+   *
+   * The EXPO_PUBLIC_ convention is a Metro-era feature. This project's web
+   * build still uses the legacy @expo/webpack-config path, whose ExpoDefinePlugin
+   * only surfaces `CI` to the bundle on modern SDKs (its ENV_VAR_REGEX is
+   * `/^(CI$)/i` for anything past SDK 40) and babel-preset-expo explicitly skips
+   * EXPO_PUBLIC inlining when the bundler is webpack. The net effect is that
+   * every `process.env.EXPO_PUBLIC_*` read in app code resolves to `undefined`
+   * at runtime and silently falls back to its hardcoded default - which shipped
+   * the PROD OAuth assertion URL to staging (CORS-rejected). Inline them here
+   * from the build environment so deploy-time overrides (staging OAuth worker,
+   * geolocation, Plausible, etc.) actually reach the bundle, matching Metro.
+   */
+  config.plugins.push(
+    new webpack.DefinePlugin(
+      Object.fromEntries(
+        Object.entries(process.env)
+          .filter(([key]) => key.startsWith('EXPO_PUBLIC_'))
+          .map(([key, value]) => [`process.env.${key}`, JSON.stringify(value)]),
+      ),
+    ),
+  )
 
   // react-native-uuid ships sourceMappingURL comments but no .map files.
   patchSourceMapFilter(config.module.rules, /react-native-uuid/)

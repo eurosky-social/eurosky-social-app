@@ -3,8 +3,8 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
-import {useKawaiiMode} from '#/state/preferences/kawaii'
 import {useSession} from '#/state/session'
+import {useLogoVariant} from '#/view/icons/useLogoVariant'
 import {DesktopFeeds} from '#/view/shell/desktop/Feeds'
 import {DesktopSearch} from '#/view/shell/desktop/Search'
 import {
@@ -16,7 +16,8 @@ import {
   web,
 } from '#/alf'
 import {AppLanguageDropdown} from '#/components/AppLanguageDropdown'
-import {ButtonText} from '#/components/Button'
+import {ButtonIcon, ButtonText} from '#/components/Button'
+import {Message_Stroke2_Corner0_Rounded as Message} from '#/components/icons/Message'
 import {CENTER_COLUMN_OFFSET} from '#/components/Layout'
 import {InlineLinkText, Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
@@ -28,7 +29,7 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
   const t = useTheme()
   const {_} = useLingui()
   const {hasSession} = useSession()
-  const kawaii = useKawaiiMode()
+  const logoVariant = useLogoVariant()
   const gutters = useGutters(['base', 0, 'base', 'wide'])
   const isSearchScreen = routeName === 'Search'
   const isMessagesRelatedScreen = routeName.startsWith('Messages')
@@ -111,17 +112,33 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
 
       {hasSession && <DesktopFeeds />}
 
-      <Link
-        to="https://whydonate.com/fundraising/the-next-era-of-social-media"
-        label={_(msg`Donate`)}
-        color="secondary"
-        size="small"
-        variant="solid"
-        style={[a.self_start]}>
-        <ButtonText>
-          <Trans>Donate</Trans>
-        </ButtonText>
-      </Link>
+      <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
+        <Link
+          to={BRAND.links.donate}
+          label={_(msg`Donate`)}
+          color="secondary"
+          size="small"
+          variant="outline"
+          style={{backgroundColor: 'transparent'}}>
+          <ButtonText>
+            <Trans>Donate</Trans>
+          </ButtonText>
+        </Link>
+        {hasSession && (
+          <Link
+            to={BRAND.links.feedback}
+            label={_(msg`Send feedback`)}
+            color="secondary"
+            size="small"
+            variant="outline"
+            style={{backgroundColor: 'transparent'}}>
+            <ButtonIcon icon={Message} position="left" />
+            <ButtonText>
+              <Trans>Feedback</Trans>
+            </ButtonText>
+          </Link>
+        )}
+      </View>
 
       <Text style={[a.leading_snug, t.atoms.text_contrast_low]}>
         <InlineLinkText
@@ -139,7 +156,7 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
         </InlineLinkText>
       </Text>
 
-      {kawaii && (
+      {logoVariant === 'kawaii' && (
         <Text style={[t.atoms.text_contrast_medium, {marginTop: 12}]}>
           <Trans>
             Logo by{' '}

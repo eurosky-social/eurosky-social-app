@@ -26,6 +26,7 @@ import {Provider as HomeBadgeProvider} from '#/state/home-badge'
 import {MessagesProvider} from '#/state/messages'
 import {init as initPersistedState} from '#/state/persisted'
 import {Provider as PrefsStateProvider} from '#/state/preferences'
+import {BetaUserStorageSync} from '#/state/preferences/beta-user-sync'
 import {Provider as LabelDefsProvider} from '#/state/preferences/label-defs'
 import {Provider as ModerationOptsProvider} from '#/state/preferences/moderation-opts'
 import {Provider as UnreadNotifsProvider} from '#/state/queries/notifications/unread'
@@ -45,7 +46,10 @@ import {Provider as ShellStateProvider} from '#/state/shell'
 import {Provider as ComposerProvider} from '#/state/shell/composer'
 import {Provider as LandingProvider} from '#/state/shell/landing'
 import {Provider as LoggedOutViewProvider} from '#/state/shell/logged-out'
-import {Provider as OnboardingProvider} from '#/state/shell/onboarding'
+import {
+  Provider as OnboardingProvider,
+  useOnboardingDispatch,
+} from '#/state/shell/onboarding'
 import {Provider as ProgressGuideProvider} from '#/state/shell/progress-guide'
 import {Provider as SelectedFeedProvider} from '#/state/shell/selected-feed'
 import {Provider as HiddenRepliesProvider} from '#/state/threadgate-hidden-replies'
@@ -97,6 +101,7 @@ function InnerApp() {
   const [isReady, setIsReady] = useState(false)
   const {currentAccount} = useSession()
   const {resumeSession, login} = useSessionApi()
+  const onboardingDispatch = useOnboardingDispatch()
   const theme = useColorModeTheme()
   const themesOverride = useThemesOverride() // Eurosky: per-user accent
   const {t: l} = useLingui()
@@ -108,7 +113,11 @@ function InnerApp() {
       try {
         // Finish an OAuth sign-in if we returned to the site root with
         // callback params; otherwise resume the stored session as usual.
-        if (await tryFinishWebOAuthSignIn(login)) {
+        if (
+          await tryFinishWebOAuthSignIn(login, () =>
+            onboardingDispatch({type: 'start'}),
+          )
+        ) {
           return
         }
         if (account) {
@@ -117,14 +126,14 @@ function InnerApp() {
           await features.init
         }
       } catch (e) {
-        logger.error('session: resumeSession failed', {message: e})
+        logger.warn('session: resumeSession failed', {message: e})
       } finally {
         setIsReady(true)
       }
     }
     const account = readLastActiveAccount()
     void onLaunch(account)
-  }, [resumeSession, login])
+  }, [resumeSession, login, onboardingDispatch])
 
   useEffect(() => {
     return listenSessionDropped(() => {
@@ -146,6 +155,7 @@ function InnerApp() {
                   key={currentAccount?.did}>
                   <AnalyticsFeaturesContext>
                     <QueryProvider currentDid={currentAccount?.did}>
+                      <BetaUserStorageSync />
                       <PolicyUpdateOverlayProvider>
                         <LiveEventsProvider>
                           <AgeAssuranceV2Provider>

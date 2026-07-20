@@ -10,6 +10,29 @@ import {AgeAssuranceAccess} from '#/ageAssurance/types'
  */
 export const MIN_ACCESS_AGE = 13
 
+/**
+ * Whether the current device can provide the native on-device age signals we
+ * use for age assurance (via `expo-age-range`). The underlying platform APIs
+ * are only available on:
+ *
+ * - iOS 26.0+ (Declared Age Range API)
+ *   https://developer.apple.com/documentation/declaredagerange/
+ * - Android 6.0 / API level 23+ (Play Age Signals API)
+ *   https://developer.android.com/google/play/age-signals/use-age-signals-api
+ *
+ * mu fork: force-disabled for now. On a supported native device this would
+ * otherwise trigger the OS age prompt (e.g. the iOS Declared Age Range sheet)
+ * on an explicit "Verify" - a surface web never shows, since there
+ * `expo-age-range` is unavailable. Disabling it makes native match web: the
+ * only age flow anywhere is the mu birthdate declaration (see NoAccessScreen /
+ * MuAgeConfirmDialog). When it is `false`, `getDeviceSignals` returns undefined
+ * and `allowsDeviceVerification` is off everywhere. Re-enable (restore the
+ * OS-version check below) once the mu device-verification flow is fully wired.
+ *
+ *   (IS_IOS && IOS_MAJOR_VERSION >= 26) || (IS_ANDROID && ANDROID_API_LEVEL >= 23)
+ */
+export const DEVICE_SIGNALS_SUPPORTED: boolean = false
+
 // Fork divergence: in regions with no explicit age-assurance config (i.e. every
 // non-regulated country - Germany and most of the world), grant Full access by
 // default instead of failing safe to None. Upstream's fallback Default is None,

@@ -6,7 +6,7 @@
   },
   "build": {
     "base": {
-      "node": "24.15.0"
+      "node": "24.18.0"
     },
     "development": {
       "extends": "base",
@@ -79,15 +79,21 @@
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "6444370199"
+        "ascAppId": "REPLACE_WITH_EUROSKY_ASC_APP_ID",
+        "appleTeamId": "REPLACE_WITH_APPLE_TEAM_ID",
+        "ascApiKeyPath": "./credentials/asc-api-key.p8",
+        "ascApiKeyId": "REPLACE_WITH_ASC_API_KEY_ID",
+        "ascApiKeyIssuerId": "REPLACE_WITH_ASC_API_KEY_ISSUER_ID"
       },
       "android": {
-        "track": "production"
+        "track": "production",
+        "serviceAccountKeyPath": "./credentials/google-play-service-account.json"
       }
     },
     "testflight-android": {
       "android": {
-        "track": "internal"
+        "track": "internal",
+        "serviceAccountKeyPath": "./credentials/google-play-service-account.json"
       }
     }
   }

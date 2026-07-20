@@ -107,6 +107,37 @@
         "serviceUrl": {"type": "string"},
         "serviceDid": {"type": "string"}
       }
+    },
+    "decorations": {
+      "type": "object",
+      "description": "Eurosky+ profile decorations and Mollie subscription service.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Master switch. False disables decoration queries, rendering, and settings UI."
+        },
+        "subscriberListUris": {
+          "type": "array",
+          "description": "Exact app.bsky.graph.list AT-URIs whose members receive decoration access.",
+          "items": {"type": "string"}
+        },
+        "serviceUrl": {"type": "string"},
+        "serviceDid": {"type": "string"},
+        "manageUrl": {
+          "type": "string",
+          "description": "Web settings URL opened from native builds to purchase or manage the subscription."
+        }
+      }
+    },
+    "fu": {
+      "type": "object",
+      "description": "Eurosky 'fu feed' personalized-feed onboarding config.",
+      "properties": {
+        "pickerDid": {
+          "type": "string",
+          "description": "DID of the account hosting the onboarding interest posts, liked during onboarding to seed personalization. Overridable at build with EXPO_PUBLIC_PICKER_DID. Empty disables interest-post likes."
+        }
+      }
     }
   },
   "$defs": {
