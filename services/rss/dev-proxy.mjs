@@ -47,15 +47,15 @@ const server = http.createServer(async (req, res) => {
         Accept:
           'text/html, application/xhtml+xml, application/rss+xml, application/atom+xml, application/xml, text/xml, */*;q=0.8',
         // Some servers reject requests without a UA.
-        'User-Agent':
-          'Mozilla/5.0 (compatible; curated-pages-dev-proxy/1.0)',
+        'User-Agent': 'Mozilla/5.0 (compatible; curated-pages-dev-proxy/1.0)',
       },
     })
     const body = await upstream.text()
     res.writeHead(upstream.status, {
       ...CORS,
       'Content-Type':
-        upstream.headers.get('content-type') || 'application/xml; charset=utf-8',
+        upstream.headers.get('content-type') ||
+        'application/xml; charset=utf-8',
     })
     res.end(body)
   } catch (err) {

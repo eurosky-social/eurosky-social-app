@@ -1,11 +1,18 @@
 import {Fragment} from 'react'
 import {View} from 'react-native'
-import {type AppBskyFeedDefs, type AppBskyFeedPost} from '@atproto/api'
+import {
+  type AppBskyFeedDefs,
+  type AppBskyFeedPost,
+  moderatePost,
+  type ModerationDecision,
+} from '@atproto/api'
 import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 
+import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {postUriToRelativePath} from '#/lib/strings/url-helpers'
+import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {PreviewableUserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
 import {Divider} from '#/components/Divider'
@@ -13,6 +20,8 @@ import {Bubble_Stroke2_Corner2_Rounded as Bubble} from '#/components/icons/Bubbl
 import {Heart2_Stroke2_Corner0_Rounded as Heart} from '#/components/icons/Heart2'
 import {Repost_Stroke2_Corner2_Rounded as Repost} from '#/components/icons/Repost'
 import {Link} from '#/components/Link'
+import {ContentHider} from '#/components/moderation/ContentHider'
+import {PostAlerts} from '#/components/moderation/PostAlerts'
 import {Text} from '#/components/Typography'
 import {useArticleDiscussionQuery} from '../queries'
 
@@ -32,18 +41,29 @@ export function ArticleDiscussion({
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
+  const moderationOpts = useModerationOpts()
   const {data, isLoading} = useArticleDiscussionQuery({url, publisherDid})
 
-  // Stay quiet until there's something real to show - no loaders or empty shells
-  // cluttering the front page.
-  if (isLoading || !data?.posts.length) return null
+  /*
+   * Stay quiet until there is something real and safe to show. Search results
+   * do not apply the app's moderation preferences for us.
+   */
+  if (isLoading || !data?.posts.length || !moderationOpts) return null
 
-  const posts = data.posts.slice(0, SHOWN)
+  const moderatedPosts = data.posts
+    .map(post => ({post, moderation: moderatePost(post, moderationOpts)}))
+    .filter(({moderation}) => !moderation.ui('contentList').filter)
+  const posts = moderatedPosts.slice(0, SHOWN)
+  if (!posts.length) return null
+
   // The publisher's own post of the article is its canonical thread; "see all"
-  // lands there rather than on a search page.
-  const anchorPath = data.anchor
-    ? postUriToRelativePath(data.anchor.uri, {
-        handle: data.anchor.author.handle,
+  // lands there rather than on a search page, unless moderation filtered it.
+  const visibleAnchor = data.anchor
+    ? moderatedPosts.find(({post}) => post.uri === data.anchor?.uri)?.post
+    : undefined
+  const anchorPath = visibleAnchor
+    ? postUriToRelativePath(visibleAnchor.uri, {
+        handle: visibleAnchor.author.handle,
       })
     : undefined
 
@@ -62,10 +82,10 @@ export function ArticleDiscussion({
         <Trans>The Atmosphere on this story</Trans>
       </Text>
 
-      {posts.map((post, i) => (
+      {posts.map(({post, moderation}, i) => (
         <Fragment key={post.uri}>
           {i > 0 && <Divider />}
-          <DiscussionPost post={post} />
+          <DiscussionPost post={post} moderation={moderation} />
         </Fragment>
       ))}
 
@@ -93,45 +113,66 @@ export function ArticleDiscussion({
   )
 }
 
-function DiscussionPost({post}: {post: AppBskyFeedDefs.PostView}) {
+function DiscussionPost({
+  post,
+  moderation,
+}: {
+  post: AppBskyFeedDefs.PostView
+  moderation: ModerationDecision
+}) {
   const t = useTheme()
   const author = post.author
   const record = post.record as AppBskyFeedPost.Record
   const text = typeof record.text === 'string' ? record.text : ''
   const path = postUriToRelativePath(post.uri, {handle: author.handle})
+  const contentModui = moderation.ui('contentView')
+  const displayName = sanitizeDisplayName(
+    author.displayName || sanitizeHandle(author.handle),
+    moderation.ui('displayName'),
+  )
+  const linkLabel = contentModui.blurs.length
+    ? author.handle
+    : text || author.handle
 
   const body = (
     <View style={[a.flex_row, a.gap_sm, a.w_full]}>
-      <PreviewableUserAvatar profile={author} size={28} />
+      <PreviewableUserAvatar
+        profile={author}
+        moderation={moderation.ui('avatar')}
+        size={28}
+      />
       <View style={[a.flex_1, a.gap_2xs]}>
         <Text
           emoji
           numberOfLines={1}
           style={[a.text_sm, a.font_bold, t.atoms.text]}>
-          {author.displayName || sanitizeHandle(author.handle)}
+          {displayName}
         </Text>
-        {!!text && (
-          <Text
-            emoji
-            numberOfLines={3}
-            style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_high]}>
-            {text}
-          </Text>
-        )}
-        {hasEngagement(post) && (
-          <View style={[a.flex_row, a.gap_md, a.pt_2xs]}>
-            <Stat icon={Repost} value={post.repostCount} />
-            <Stat icon={Heart} value={post.likeCount} />
-            <Stat icon={Bubble} value={post.replyCount} />
-          </View>
-        )}
+        <ContentHider modui={contentModui} childContainerStyle={[a.gap_2xs]}>
+          <PostAlerts modui={contentModui} />
+          {!!text && (
+            <Text
+              emoji
+              numberOfLines={3}
+              style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_high]}>
+              {text}
+            </Text>
+          )}
+          {hasEngagement(post) && (
+            <View style={[a.flex_row, a.gap_md, a.pt_2xs]}>
+              <Stat icon={Repost} value={post.repostCount} />
+              <Stat icon={Heart} value={post.likeCount} />
+              <Stat icon={Bubble} value={post.replyCount} />
+            </View>
+          )}
+        </ContentHider>
       </View>
     </View>
   )
 
   if (!path) return body
   return (
-    <Link to={path} label={text || author.handle} style={[a.flex_col]}>
+    <Link to={path} label={linkLabel} style={[a.flex_col]}>
       {body}
     </Link>
   )

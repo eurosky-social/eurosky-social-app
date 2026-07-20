@@ -392,7 +392,10 @@ export function HeaderStandardButtons({
           testID="profileHeaderNewsroomButton"
           to={`/newsroom/${profile.did}`}
           label={_(
-            msg`Visit the ${profile.displayName || sanitizeHandle(profile.handle)} newsroom`,
+            msg`Visit the ${sanitizeDisplayName(
+              profile.displayName || profile.handle,
+              moderation.ui('displayName'),
+            )} newsroom`,
           )}
           size="small"
           color="secondary">

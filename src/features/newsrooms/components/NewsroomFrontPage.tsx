@@ -185,13 +185,21 @@ function ArticleShareButton({
     publisherDid,
   })
 
-  // When the publisher posted the article itself, sharing quotes that post so
-  // every share grows the article's one canonical conversation. Otherwise seed
-  // `externalUri`, which attaches the article as a link-card embed while
-  // leaving the text input blank to start typing.
+  /*
+   * When the publisher posted the article and it can still be embedded, quote
+   * that post so every share grows one canonical conversation. Fall back to
+   * the article card when embedding is disabled or the viewer cannot interact
+   * with the publisher.
+   */
   function onShare() {
-    if (discussion?.anchor) {
-      openComposer({quote: discussion.anchor, logContext: 'Other'})
+    const anchor = discussion?.anchor
+    const anchorIsBlocked = Boolean(
+      anchor?.author.viewer?.blocking ||
+      anchor?.author.viewer?.blockedBy ||
+      anchor?.author.viewer?.blockingByList,
+    )
+    if (anchor && !anchor.viewer?.embeddingDisabled && !anchorIsBlocked) {
+      openComposer({quote: anchor, logContext: 'Other'})
     } else {
       openComposer({externalUri: item.link, logContext: 'Other'})
     }

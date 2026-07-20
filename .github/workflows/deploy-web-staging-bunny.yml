@@ -80,6 +80,9 @@ jobs:
           # Shares the prod live-sports proxy (see services/footballData/); the
           # endpoint is read-only and cached, so staging can reuse it.
           EXPO_PUBLIC_FOOTBALLDATA_API_URL: https://sports.mu.social/v4
+          # Newsroom RSS and article metadata need a CORS-enabled web proxy.
+          # The endpoint is public, read-only, and shared with production.
+          EXPO_PUBLIC_RSS_PROXY_URL: https://rss.mu.social
       - name: Upload to Bunny + purge cache
         run: bash ./scripts/bunny_upload.sh
         env:

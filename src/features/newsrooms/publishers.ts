@@ -182,7 +182,11 @@ export const NEWSROOM_PUBLISHERS: NewsroomPublisher[] = [
       'did:plc:krqenpph6og22jcprq2bhwlv', // Gianluca Mezzofiore
       'did:plc:3qbdrboerihasyf2igkz2uvi', // Ella Nilsen
     ],
-    sources: [{type: 'rss', url: 'http://rss.cnn.com/rss/cnn_topstories.rss'}],
+    /*
+     * CNN's legacy RSS endpoint stopped updating in April 2023. Keep the
+     * newsroom conversation-only until CNN publishes a current feed.
+     */
+    sources: [],
   },
   {
     id: 'nrc',

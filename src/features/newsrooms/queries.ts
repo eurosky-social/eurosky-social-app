@@ -99,17 +99,43 @@ export function useArticleDiscussionQuery({
     queryFn: async () => {
       const res = await agent.app.bsky.feed.searchPosts({
         q: url,
+        url,
         sort: 'top',
         limit: 25,
       })
       const posts = res.data.posts.filter(post => postReferencesUrl(post, url))
-      const anchor = publisherDid
+      let anchor = publisherDid
         ? (posts.find(post => post.author.did === publisherDid) ?? null)
         : null
+
+      /*
+       * The publisher's post may rank below the first page of top results. A
+       * focused author lookup prevents us from treating that as "not posted"
+       * and opening a standalone link embed instead of the canonical quote.
+       */
+      if (!anchor && publisherDid) {
+        try {
+          const publisherRes = await agent.app.bsky.feed.searchPosts({
+            q: url,
+            url,
+            author: publisherDid,
+            sort: 'latest',
+            limit: 100,
+          })
+          anchor =
+            publisherRes.data.posts.find(post =>
+              postReferencesUrl(post, url),
+            ) ?? null
+        } catch {
+          /* A failed anchor lookup should not hide the broader discussion. */
+        }
+      }
+
       const ordered = anchor
-        ? [anchor, ...posts.filter(post => post !== anchor)]
+        ? [anchor, ...posts.filter(post => post.uri !== anchor.uri)]
         : posts
-      return {posts: ordered, total: posts.length, anchor}
+      const total = Math.max(res.data.hitsTotal ?? posts.length, ordered.length)
+      return {posts: ordered, total, anchor}
     },
   })
 }

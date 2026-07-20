@@ -1,10 +1,15 @@
 import {View} from 'react-native'
+import {type AppBskyActorDefs} from '@atproto/api'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {useNavigationState} from '@react-navigation/native'
+import {useQueries} from '@tanstack/react-query'
+import chunk from 'lodash.chunk'
 
 import {getCurrentRoute} from '#/lib/routes/helpers'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
-import {useProfilesQuery} from '#/state/queries/profile'
+import {STALE} from '#/state/queries'
+import {profilesQueryKey} from '#/state/queries/profile'
+import {useAgent} from '#/state/session'
 import * as ModuleHeader from '#/screens/Search/components/ModuleHeader'
 import {atoms as a, useTheme} from '#/alf'
 import {ButtonText} from '#/components/Button'
@@ -55,15 +60,15 @@ export function NewsroomRightRail() {
 function ReportersModule({publisher}: {publisher: NewsroomPublisher}) {
   const {t: l} = useLingui()
   const moderationOpts = useModerationOpts()
-  const {data} = useProfilesQuery({handles: publisher.reporterDids})
+  const {profilesByDid, isLoading} = useReporterProfiles(publisher.reporterDids)
 
   // Stay quiet until everything is loaded - same rule as the front page.
-  if (!publisher.reporterDids.length || !data || !moderationOpts) return null
+  if (!publisher.reporterDids.length || isLoading || !moderationOpts)
+    return null
 
   // getProfiles does not guarantee order; keep the registry's.
-  const byDid = new Map(data.profiles.map(profile => [profile.did, profile]))
   const profiles = publisher.reporterDids
-    .map(did => byDid.get(did))
+    .map(did => profilesByDid.get(did))
     .filter(profile => !!profile)
   if (!profiles.length) return null
 
@@ -106,6 +111,34 @@ function ReportersModule({publisher}: {publisher: NewsroomPublisher}) {
       </View>
     </View>
   )
+}
+
+/** Fetch reporter profiles in chunks because getProfiles accepts at most 25. */
+function useReporterProfiles(dids: string[]) {
+  const agent = useAgent()
+  const results = useQueries({
+    queries: chunk(dids, 25).map(actors => ({
+      enabled: actors.length > 0,
+      staleTime: STALE.MINUTES.FIVE,
+      queryKey: profilesQueryKey(actors),
+      queryFn: async () => {
+        const res = await agent.getProfiles({actors})
+        return res.data
+      },
+    })),
+  })
+
+  const profilesByDid = new Map<string, AppBskyActorDefs.ProfileViewDetailed>()
+  for (const result of results) {
+    for (const profile of result.data?.profiles ?? []) {
+      profilesByDid.set(profile.did, profile)
+    }
+  }
+
+  return {
+    profilesByDid,
+    isLoading: results.some(result => result.isPending),
+  }
 }
 
 function NewsModule() {
