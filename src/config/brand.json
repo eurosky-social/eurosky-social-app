@@ -112,7 +112,9 @@
     "helpDesk": "https://hello.mu.social/contact",
     "supportRequest": "https://hello.mu.social/contact",
     "download": "https://bsky.app/download",
-    "statusPage": "https://status.bsky.app/"
+    "statusPage": "https://status.bsky.app/",
+    "donate": "https://whydonate.com/fundraising/the-next-era-of-social-media",
+    "feedback": "https://userinput.app/s/did:plc:ooensn4mr5mhznzypvxelfa3/3mnwmwn7sn22u"
   },
   "services": {
     "pds": "https://bsky.social",

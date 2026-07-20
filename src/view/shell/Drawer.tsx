@@ -12,7 +12,6 @@ import {useLingui} from '@lingui/react'
 import {Plural, Trans} from '@lingui/react/macro'
 import {StackActions, useNavigation} from '@react-navigation/native'
 
-import {FEEDBACK_FORM_URL, HELP_DESK_URL} from '#/lib/constants'
 import {type PressableScale} from '#/lib/custom-animations/PressableScale'
 import {useNavigationTabState} from '#/lib/hooks/useNavigationTabState'
 import {getTabState, TabState} from '#/lib/routes/helpers'
@@ -301,16 +300,11 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
   }, [navigation, setDrawerOpen, ax])
 
   const onPressFeedback = useCallback(() => {
-    Linking.openURL(
-      FEEDBACK_FORM_URL({
-        email: currentAccount?.email,
-        handle: currentAccount?.handle,
-      }),
-    )
-  }, [currentAccount])
+    Linking.openURL(BRAND.links.feedback)
+  }, [])
 
-  const onPressHelp = useCallback(() => {
-    Linking.openURL(HELP_DESK_URL)
+  const onPressDonate = useCallback(() => {
+    Linking.openURL(BRAND.links.donate)
   }, [])
 
   // rendering
@@ -392,7 +386,8 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
 
       <DrawerFooter
         onPressFeedback={onPressFeedback}
-        onPressHelp={onPressHelp}
+        onPressDonate={onPressDonate}
+        hasSession={hasSession}
       />
       <InviteFriendsDialog control={inviteFriendsControl} />
     </View>
@@ -403,10 +398,12 @@ export {DrawerContent}
 
 let DrawerFooter = ({
   onPressFeedback,
-  onPressHelp,
+  onPressDonate,
+  hasSession,
 }: {
   onPressFeedback: () => void
-  onPressHelp: () => void
+  onPressDonate: () => void
+  hasSession: boolean
 }): React.ReactNode => {
   const {_} = useLingui()
   const insets = useSafeAreaInsets()
@@ -426,29 +423,34 @@ let DrawerFooter = ({
         },
       ]}>
       <Button
-        label={_(msg`Send feedback`)}
-        size="small"
-        variant="solid"
-        color="secondary"
-        onPress={onPressFeedback}>
-        <ButtonIcon icon={Message} position="left" />
-        <ButtonText>
-          <Trans>Feedback</Trans>
-        </ButtonText>
-      </Button>
-      <Button
-        label={_(msg`Get help`)}
+        label={_(msg`Donate`)}
         size="small"
         variant="outline"
         color="secondary"
-        onPress={onPressHelp}
+        onPress={onPressDonate}
         style={{
           backgroundColor: 'transparent',
         }}>
         <ButtonText>
-          <Trans>Help</Trans>
+          <Trans>Donate</Trans>
         </ButtonText>
       </Button>
+      {hasSession && (
+        <Button
+          label={_(msg`Send feedback`)}
+          size="small"
+          variant="outline"
+          color="secondary"
+          onPress={onPressFeedback}
+          style={{
+            backgroundColor: 'transparent',
+          }}>
+          <ButtonIcon icon={Message} position="left" />
+          <ButtonText>
+            <Trans>Feedback</Trans>
+          </ButtonText>
+        </Button>
+      )}
     </View>
   )
 }
