@@ -56,6 +56,9 @@ export interface ComposerOpts {
   quote?: AppBskyFeedDefs.PostView
   mention?: string // handle of user to mention
   text?: string
+  // Seed an external link-card embed without putting the URL in the text input,
+  // so the composer opens to a blank message with just the card attached.
+  externalUri?: string
   imageUris?: {uri: string; width: number; height: number; altText?: string}[]
   videoUri?: {uri: string; width: number; height: number}
   openGallery?: boolean

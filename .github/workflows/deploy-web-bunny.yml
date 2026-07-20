@@ -67,6 +67,8 @@ jobs:
           # server-side; the app sends none. Renders null until the worker is
           # deployed, so it is safe to set ahead of time.
           EXPO_PUBLIC_FOOTBALLDATA_API_URL: https://sports.mu.social/v4
+          # First-party CORS proxy for newsroom RSS and article metadata.
+          EXPO_PUBLIC_RSS_PROXY_URL: https://rss.mu.social
       - name: Upload to Bunny + purge cache
         run: bash ./scripts/bunny_upload.sh
         env:

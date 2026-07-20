@@ -226,7 +226,7 @@ let PostFeed = ({
   headerOffset?: number
   progressViewOffset?: number
   desktopFixedHeightOffset?: number
-  ListHeaderComponent?: () => React.ReactElement
+  ListHeaderComponent?: React.ReactElement | (() => React.ReactElement)
   extraData?: any
   savedFeedConfig?: AppBskyActorDefs.SavedFeed
   initialNumToRender?: number
