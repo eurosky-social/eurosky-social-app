@@ -10,17 +10,14 @@ import {LogoHero} from '#/view/icons/LogoHero'
 import {atoms as a, flatten, useBreakpoints, useTheme, web} from '#/alf'
 import {BetaTag} from '#/components/BetaTag'
 import {Button, ButtonText} from '#/components/Button'
+import {type WelcomeModalControl} from '#/components/hooks/useWelcomeModal.shared'
 import {TimesLarge_Stroke2_Corner0_Rounded as XIcon} from '#/components/icons/Times'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {BRAND} from '#/config/brand'
 
 interface WelcomeModalProps {
-  control: {
-    isOpen: boolean
-    open: () => void
-    close: () => void
-  }
+  control: WelcomeModalControl
 }
 
 export function WelcomeModal({control}: WelcomeModalProps) {

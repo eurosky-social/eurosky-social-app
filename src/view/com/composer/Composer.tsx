@@ -257,6 +257,7 @@ export const ComposePost = ({
   quote: initQuote,
   mention: initMention,
   text: initText,
+  externalUri: initExternalUri,
   imageUris: initImageUris,
   videoUri: initVideoUri,
   openGallery,
@@ -359,6 +360,7 @@ export const ComposePost = ({
       initImageUris,
       initQuoteUri: initQuote?.uri,
       initText,
+      initExternalUri,
       initMention,
       initInteractionSettings: preferences?.postInteractionSettings,
       initEditPost,
@@ -394,9 +396,15 @@ export const ComposePost = ({
       /*
        * Share-extension deeplinks deliver a video URI without duration, so
        * probe before we decide whether to compress. The picker and web paste
-       * paths already populate duration upstream.
+       * paths already populate duration upstream. GIFs must skip the probe:
+       * they have no video track, so the iOS prober never resolves or rejects
+       * and the await below would hang forever.
        */
-      if (asset.duration == null && IS_NATIVE) {
+      if (
+        asset.duration == null &&
+        IS_NATIVE &&
+        asset.mimeType !== 'image/gif'
+      ) {
         try {
           const probed = await getVideoMetadata(asset.uri)
           asset = {

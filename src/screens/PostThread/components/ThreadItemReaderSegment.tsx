@@ -24,7 +24,6 @@ import {type ReaderSegmentItem} from '#/screens/PostThread/reader'
 import {atoms as a, useTheme} from '#/alf'
 import {Trash_Stroke2_Corner0_Rounded as TrashIcon} from '#/components/icons/Trash'
 import {GalleryBleed} from '#/components/images/Gallery'
-import {LabelsOnMyPost} from '#/components/moderation/LabelsOnMe'
 import {PostAlerts} from '#/components/moderation/PostAlerts'
 import {Embed, PostEmbedViewContext} from '#/components/Post/Embed'
 import {TranslatedPost} from '#/components/Post/Translated'
@@ -122,13 +121,11 @@ const ThreadItemReaderSegmentInner = memo(
           <View style={[{paddingHorizontal: OUTER_SPACE}]}>
             <View>
               {seam.expanded && (
-                <>
-                  <LabelsOnMyPost post={post} style={[a.pb_xs]} />
-                  <PostAlerts
-                    modui={moderation.ui('contentList')}
-                    style={[a.pb_2xs]}
-                  />
-                </>
+                <PostAlerts
+                  post={post}
+                  modui={moderation.ui('contentList')}
+                  style={[a.pb_2xs]}
+                />
               )}
               {richText?.text ? (
                 <View style={[a.mb_2xs]}>

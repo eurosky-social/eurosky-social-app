@@ -30,7 +30,7 @@ import {
 } from '#/lib/hooks/useNotificationHandler'
 import {useWebScrollRestoration} from '#/lib/hooks/useWebScrollRestoration'
 import {useCallOnce} from '#/lib/once'
-import {buildStateObject} from '#/lib/routes/helpers'
+import {buildStateObject, getCurrentRoute} from '#/lib/routes/helpers'
 import {
   type AllNavigatorParams,
   type BottomTabNavigatorParams,
@@ -108,6 +108,7 @@ import {AppearanceSettingsScreen} from '#/screens/Settings/AppearanceSettings'
 import {AppIconSettingsScreen} from '#/screens/Settings/AppIconSettings'
 import {AppPasswordsScreen} from '#/screens/Settings/AppPasswords'
 import {AutomationLabelSettingsScreen} from '#/screens/Settings/AutomationLabelSettings'
+import {BetaFeaturesSettingsScreen} from '#/screens/Settings/BetaFeaturesSettings'
 import {ContentAndMediaSettingsScreen} from '#/screens/Settings/ContentAndMediaSettings'
 import {DecorationsSettingsScreen} from '#/screens/Settings/DecorationsSettings'
 import {ExternalMediaPreferencesScreen} from '#/screens/Settings/ExternalMediaPreferences'
@@ -139,6 +140,7 @@ import {BRAND} from '#/config/brand'
 import {IS_LIQUID_GLASS, IS_NATIVE, IS_WEB} from '#/env'
 import {InviteScannerScreen} from '#/features/inviteFriends'
 import {NewsFeedScreen} from '#/features/newsFeed/NewsFeedScreen'
+import {NewsroomScreen} from '#/features/newsrooms/NewsroomScreen'
 import {router} from '#/routes'
 import {Referrer} from '../modules/expo-bluesky-swiss-army'
 import {renderMessagesSplitViewLayout} from './screens/Messages/components/splitView/MessagesSplitViewLayout'
@@ -179,6 +181,11 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         name="NewsFeed"
         getComponent={() => NewsFeedScreen}
         options={{title: title(msg`News`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="Newsroom"
+        getComponent={() => NewsroomScreen}
+        options={{title: title(msg`Mu Newsrooms`), requireAuth: true}}
       />
       <Stack.Screen
         name="Moderation"
@@ -429,6 +436,14 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         getComponent={() => AccountSettingsScreen}
         options={{
           title: title(msg`Account`),
+          requireAuth: true,
+        }}
+      />
+      <Stack.Screen
+        name="BetaFeaturesSettings"
+        getComponent={() => BetaFeaturesSettingsScreen}
+        options={{
+          title: title(msg`Beta features`),
           requireAuth: true,
         }}
       />
@@ -810,10 +825,7 @@ const LINKING = {
 
   getPathFromState(state: State) {
     // find the current node in the navigation tree
-    let node = state.routes[state.index || 0]
-    while (node.state?.routes && typeof node.state?.index === 'number') {
-      node = node.state?.routes[node.state?.index]
-    }
+    const node = getCurrentRoute(state)
 
     // build the path
     const route = router.matchName(node.name)
@@ -1024,18 +1036,19 @@ function RoutesContainer({children}: React.PropsWithChildren<{}>) {
     })
 
     if (IS_WEB) {
-      const referrerInfo = Referrer.getReferrerInfo()
-      if (
-        referrerInfo &&
-        referrerInfo.hostname !== 'bsky.app' &&
-        !BRAND.web.hosts.includes(referrerInfo.hostname)
-      ) {
-        ax.metric('deepLink:referrerReceived', {
-          to: window.location.href,
-          referrer: referrerInfo?.referrer,
-          hostname: referrerInfo?.hostname,
-        })
-      }
+      void Referrer.getReferrerInfo().then(referrerInfo => {
+        if (
+          referrerInfo &&
+          referrerInfo.hostname !== 'bsky.app' &&
+          !BRAND.web.hosts.includes(referrerInfo.hostname)
+        ) {
+          ax.metric('deepLink:referrerReceived', {
+            to: window.location.href,
+            referrer: referrerInfo.referrer,
+            hostname: referrerInfo.hostname,
+          })
+        }
+      })
     }
 
     // temp, just testing

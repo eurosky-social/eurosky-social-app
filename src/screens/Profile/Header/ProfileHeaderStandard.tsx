@@ -31,6 +31,7 @@ import {MessageProfileButton} from '#/components/dms/MessageProfileButton'
 import {ArrowTopRight_Stroke2_Corner0_Rounded as ArrowTopRightIcon} from '#/components/icons/Arrow'
 import {ArrowShareRight_Stroke2_Corner2_Rounded as ArrowShareRight} from '#/components/icons/ArrowShareRight'
 import {Globe_Stroke2_Corner0_Rounded as Globe} from '#/components/icons/Globe'
+import {Newspaper2_Stroke2_Corner2_Rounded as NewsroomIcon} from '#/components/icons/Newspaper2'
 import {PlusLarge_Stroke2_Corner0_Rounded as Plus} from '#/components/icons/Plus'
 import {
   KnownFollowers,
@@ -45,6 +46,7 @@ import {useAnalytics} from '#/analytics'
 import {IS_IOS, IS_NATIVE} from '#/env'
 import {InviteFriendsDialog} from '#/features/inviteFriends'
 import {useActorStatus} from '#/features/liveNow'
+import {getNewsroomPublisherByDid} from '#/features/newsrooms/publishers'
 import {GermButton} from '../components/GermButton'
 import {ProfileHeaderDisplayName} from './DisplayName'
 import {EditProfileDialog} from './EditProfileDialog'
@@ -284,6 +286,8 @@ export function HeaderStandardButtons({
 
   const isMe = currentAccount?.did === profile.did
 
+  const newsroomPublisher = getNewsroomPublisherByDid(profile.did)
+
   const onPressFollow = () => {
     playHaptic()
     requireAuth(async () => {
@@ -365,6 +369,24 @@ export function HeaderStandardButtons({
 
   return (
     <>
+      {newsroomPublisher && (
+        <Link
+          testID="profileHeaderNewsroomButton"
+          to={`/newsroom/${profile.did}`}
+          label={_(
+            msg`Visit the ${sanitizeDisplayName(
+              profile.displayName || profile.handle,
+              moderation.ui('displayName'),
+            )} newsroom`,
+          )}
+          size="small"
+          color="secondary">
+          <ButtonIcon icon={NewsroomIcon} />
+          <ButtonText>
+            <Trans>Newsroom</Trans>
+          </ButtonText>
+        </Link>
+      )}
       {isMe ? (
         <>
           <Button

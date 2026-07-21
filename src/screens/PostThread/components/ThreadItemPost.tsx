@@ -38,7 +38,6 @@ import {
   GalleryBleed,
   maybeApplyGalleryOffsetStyles,
 } from '#/components/images/Gallery'
-import {LabelsOnMyPost} from '#/components/moderation/LabelsOnMe'
 import {PostAlerts} from '#/components/moderation/PostAlerts'
 import {PostHider} from '#/components/moderation/PostHider'
 import {type AppModerationCause} from '#/components/Pills'
@@ -328,8 +327,8 @@ const ThreadItemPostInner = memo(function ThreadItemPostInner({
                   }),
                 ]}
               />
-              <LabelsOnMyPost post={post} style={[a.pb_xs]} />
               <PostAlerts
+                post={post}
                 modui={moderation.ui('contentList')}
                 style={[a.pb_2xs]}
                 additionalCauses={additionalPostAlerts}

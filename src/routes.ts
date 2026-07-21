@@ -16,6 +16,7 @@ export const router = new Router<AllNavigatableRoutes>({
   Settings: '/settings',
   Lists: '/lists',
   NewsFeed: '/news',
+  Newsroom: ['/newsroom/:name', '/newsroom'],
   // moderation
   Moderation: '/moderation',
   ModerationModlists: '/moderation/modlists',
@@ -53,6 +54,7 @@ export const router = new Router<AllNavigatableRoutes>({
   AppearanceSettings: '/settings/appearance',
   PetCompanionSettings: '/settings/pet-companion',
   DecorationsSettings: '/settings/decorations',
+  BetaFeaturesSettings: '/settings/beta-features',
   SavedFeeds: '/settings/saved-feeds',
   AccountSettings: '/settings/account',
   AutomationLabelSettings: '/settings/automation-label',
