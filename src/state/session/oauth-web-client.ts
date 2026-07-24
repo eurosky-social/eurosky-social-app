@@ -71,6 +71,65 @@ function isLoopback(): boolean {
   )
 }
 
+/** Replace any DID occurrences so error strings never leak identity (MED-1). */
+function redactDid(text: string): string {
+  return text.replace(/did:[a-z0-9%._:-]+/gi, 'did:[redacted]')
+}
+
+/**
+ * The OAuth error code and HTTP status live on an `OAuthResponseError`,
+ * which may be the thrown error itself or be
+ * wrapped as the `cause` of a `TokenRefreshError`.
+ */
+function extractOAuthResponseFields(
+  err: unknown,
+): {error?: string; status?: number; detail?: string} | undefined {
+  let cur: unknown = err
+  for (let depth = 0; depth < 4 && cur != null; depth++) {
+    if (typeof cur !== 'object') break
+    const o = cur as Record<string, unknown>
+    const error = typeof o.error === 'string' ? o.error : undefined
+    const status = typeof o.status === 'number' ? o.status : undefined
+    const detail =
+      typeof o.errorDescription === 'string' ? o.errorDescription : undefined
+    if (error != null || status != null || detail != null) {
+      return {error, status, detail}
+    }
+    cur = o.cause
+  }
+  return undefined
+}
+
+/**
+ * PII-safe breakdown of an OAuth error for logging.
+ */
+export function describeOAuthError(cause: unknown): {
+  kind: string
+  reason?: string
+  oauthError?: string
+  status?: number
+  detail?: string
+} {
+  const kind =
+    cause instanceof Error
+      ? cause.constructor?.name || cause.name
+      : typeof cause
+  const reason =
+    cause instanceof Error && typeof cause.message === 'string'
+      ? redactDid(cause.message)
+      : typeof cause === 'string'
+        ? redactDid(cause)
+        : undefined
+  const oauth = extractOAuthResponseFields(cause)
+  return {
+    kind,
+    ...(reason ? {reason} : {}),
+    ...(oauth?.error ? {oauthError: oauth.error} : {}),
+    ...(oauth?.status != null ? {status: oauth.status} : {}),
+    ...(oauth?.detail ? {detail: redactDid(oauth.detail)} : {}),
+  }
+}
+
 // Session lifecycle hooks. @atproto/oauth-client-browser ^0.3 exposes
 // onDelete/onUpdate via constructor SessionHooks. "Telemetry dropped" means
 // Blacksky's bespoke OAuth growthbook telemetry was NOT ported - it does NOT
@@ -78,14 +137,7 @@ function isLoopback(): boolean {
 // must keep PII (DID/sub) and raw error objects out of it (MED-1).
 const sessionHooks = {
   onDelete(_sub: string, cause: unknown) {
-    logger.warn('oauth: session deleted', {
-      safeMessage:
-        cause instanceof Error
-          ? cause.message
-          : typeof cause === 'string'
-            ? cause
-            : 'unknown',
-    })
+    logger.warn('oauth: session deleted', describeOAuthError(cause))
   },
   onUpdate(_sub: string) {},
 }
@@ -215,14 +267,9 @@ function createConfidentialClient(): WebOAuthClient {
 
   client.addEventListener('deleted', ({detail: {cause}}) => {
     // No `sub` (DID) - this reaches the live Sentry transport (MED-1).
-    logger.warn('oauth: session deleted', {
-      safeMessage:
-        cause instanceof Error
-          ? cause.message
-          : typeof cause === 'string'
-            ? cause
-            : 'unknown',
-    })
+    // describeOAuthError surfaces kind/oauthError/status so the true first
+    // deletion can be told apart from a trailing "another process" read.
+    logger.warn('oauth: session deleted', describeOAuthError(cause))
   })
 
   return {

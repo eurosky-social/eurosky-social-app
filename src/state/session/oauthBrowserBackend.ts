@@ -24,6 +24,8 @@ import {
   type StateStore,
 } from '@atproto/oauth-client'
 
+import {logger} from '#/logger'
+
 // -- Runtime -----------------------------------------------------------------
 
 const requestLock: RuntimeImplementation['requestLock'] =
@@ -154,6 +156,27 @@ async function pruneExpired(store: StoreName, ttlMs: number): Promise<void> {
 }
 
 /**
+ * store read/write failures are otherwise invisible.
+ *  This is purely additive: the error is still rethrown, so behavior
+ * is unchanged.
+ */
+function logStoreError(
+  op: 'get' | 'set',
+  store: StoreName,
+  err: unknown,
+): void {
+  logger.error('oauth: session store operation failed', {
+    op,
+    store,
+    kind: err instanceof Error ? err.constructor?.name || err.name : typeof err,
+    reason:
+      err instanceof Error && typeof err.message === 'string'
+        ? err.message.replace(/did:[a-z0-9%._:-]+/gi, 'did:[redacted]')
+        : undefined,
+  })
+}
+
+/**
  * Generic IndexedDB-backed SimpleStore whose value carries a `dpopKey` Key
  * that must be encoded/decoded around the structured-clone boundary. All
  * other fields (tokenSet, iss, verifier, appState, authMethod) are plain
@@ -174,28 +197,38 @@ function createKeyStore<V extends {dpopKey: Key}>(
     tx(store, 'readwrite', s => s.delete(key)).then(() => undefined)
   return {
     async get(key: string): Promise<V | undefined> {
-      const stored = await tx<Stored | undefined>(store, 'readonly', s =>
-        s.get(key),
-      )
-      if (!stored) return undefined
-      const {dpopKey, __storedAt, ...rest} = stored
-      if (
-        ttlMs &&
-        (typeof __storedAt !== 'number' || Date.now() - __storedAt > ttlMs)
-      ) {
-        await del(key)
-        return undefined
+      try {
+        const stored = await tx<Stored | undefined>(store, 'readonly', s =>
+          s.get(key),
+        )
+        if (!stored) return undefined
+        const {dpopKey, __storedAt, ...rest} = stored
+        if (
+          ttlMs &&
+          (typeof __storedAt !== 'number' || Date.now() - __storedAt > ttlMs)
+        ) {
+          await del(key)
+          return undefined
+        }
+        return {...rest, dpopKey: await decodeKey(dpopKey)} as unknown as V
+      } catch (err) {
+        logStoreError('get', store, err)
+        throw err
       }
-      return {...rest, dpopKey: await decodeKey(dpopKey)} as unknown as V
     },
     async set(key: string, value: V): Promise<void> {
-      const {dpopKey, ...rest} = value
-      const encoded: Stored = {
-        ...rest,
-        dpopKey: encodeKey(dpopKey),
-        ...(ttlMs ? {__storedAt: Date.now()} : {}),
+      try {
+        const {dpopKey, ...rest} = value
+        const encoded: Stored = {
+          ...rest,
+          dpopKey: encodeKey(dpopKey),
+          ...(ttlMs ? {__storedAt: Date.now()} : {}),
+        }
+        await tx(store, 'readwrite', s => s.put(encoded, key))
+      } catch (err) {
+        logStoreError('set', store, err)
+        throw err
       }
-      await tx(store, 'readwrite', s => s.put(encoded, key))
     },
     del,
     async clear(): Promise<void> {

@@ -10,7 +10,7 @@ import {BLUESKY_PROXY_HEADER, BSKY_SERVICE} from '#/lib/constants'
 import {logger} from '#/logger'
 import {sessionAccountToSession} from './agent'
 import {configureModerationForAccount} from './moderation'
-import {getWebOAuthClient} from './oauth-web-client'
+import {describeOAuthError, getWebOAuthClient} from './oauth-web-client'
 import {type SessionAccount} from './types'
 
 const OAUTH_RESTORE_TIMEOUT_MS = 10_000
@@ -42,9 +42,7 @@ export async function oauthResumeSession(account: SessionAccount) {
   } catch (e) {
     // No DID/raw error: this goes to the live Sentry transport. A raw
     // atproto/XRPC error can carry request/response context (URLs, headers).
-    logger.error('oauthResumeSession: restore failed', {
-      safeMessage: e instanceof Error ? e.message : String(e),
-    })
+    logger.error('oauthResumeSession: restore failed', describeOAuthError(e))
     throw e
   }
   return await oauthCreateAgent(session)
@@ -78,9 +76,10 @@ export async function oauthAgentAndSessionToSessionAccount(
     ])
     data = res.data
   } catch (e: any) {
-    logger.error('oauthAgentAndSessionToSessionAccount: getSession failed', {
-      safeMessage: e instanceof Error ? e.message : String(e),
-    })
+    logger.error(
+      'oauthAgentAndSessionToSessionAccount: getSession failed',
+      describeOAuthError(e),
+    )
     return undefined
   }
   let aud: string
@@ -96,9 +95,10 @@ export async function oauthAgentAndSessionToSessionAccount(
     ])
     aud = tokenInfo.aud
   } catch (e: any) {
-    logger.error('oauthAgentAndSessionToSessionAccount: getTokenInfo failed', {
-      safeMessage: e instanceof Error ? e.message : String(e),
-    })
+    logger.error(
+      'oauthAgentAndSessionToSessionAccount: getTokenInfo failed',
+      describeOAuthError(e),
+    )
     return undefined
   }
   return {
