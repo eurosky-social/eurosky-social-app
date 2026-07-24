@@ -208,7 +208,7 @@ async function buildPostTags(
   const images = extractPostImages(post).slice(0, MAX_IMAGES)
   // Canonical handle-form URL (the path may have arrived in DID form).
   const canonical = `${SITE_URL}/profile/${handle}/post/${rkey}`
-
+  
   const tags: Tag[] = [
     meta('property', 'og:type', 'article'),
     meta('property', 'og:site_name', SITE_NAME),
@@ -216,6 +216,7 @@ async function buildPostTags(
     meta('property', 'og:url', canonical),
     meta('property', 'og:title', title),
     meta('name', 'twitter:title', title),
+    meta('name', 'at:canonical', post.uri),
   ]
   if (text) {
     const desc = truncate(text, MAX_DESC)
@@ -270,6 +271,7 @@ async function buildProfileTags(
     meta('property', 'profile:username', handle),
     meta('property', 'og:title', title),
     meta('name', 'twitter:title', title),
+    meta('name', 'at:canonical', `at://${p.did}/app.bsky.actor.profile/self`),
   ]
   if (p.description) {
     const desc = truncate(p.description, MAX_DESC)
@@ -345,6 +347,7 @@ async function buildStarterPackTags(
     meta('property', 'og:description', desc),
     meta('name', 'twitter:description', desc),
     meta('name', 'twitter:card', 'summary'),
+    meta('name', 'at:canonical', sp.uri),
   ]
   return {title: name, tags}
 }
