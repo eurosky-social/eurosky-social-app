@@ -88,6 +88,21 @@
         "primary_900": "#114622",
         "primary_950": "#10391D",
         "primary_975": "#0E2C17"
+      },
+      "purple": {
+        "primary_25":  "#F5F3F7",
+        "primary_50":  "#ECE8F0",
+        "primary_100": "#DED6E7",
+        "primary_200": "#CBBCD9",
+        "primary_300": "#B7A2CD",
+        "primary_400": "#A274D1",
+        "primary_500": "#986DC4",
+        "primary_600": "#7845AA",
+        "primary_700": "#6B4392",
+        "primary_800": "#573975",
+        "primary_900": "#432E58",
+        "primary_950": "#30223D",
+        "primary_975": "#1C1524"
       }
     },
     "defaultAccent": "pink"
