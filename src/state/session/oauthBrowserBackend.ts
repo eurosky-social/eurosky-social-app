@@ -171,7 +171,7 @@ function logStoreError(
     kind: err instanceof Error ? err.constructor?.name || err.name : typeof err,
     reason:
       err instanceof Error && typeof err.message === 'string'
-        ? err.message.replace(/did:[a-z0-9%._:-]+/gi, 'did:[redacted]')
+        ? redactDid(err.message)
         : undefined,
   })
 }
