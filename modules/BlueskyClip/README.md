@@ -55,7 +55,7 @@ Main app displays starter pack onboarding flow
   - `store`: Writes JSON data to shared UserDefaults with the specified key
 
 **Data Sharing**:
-- Uses UserDefaults suite `group.app.bsky` (App Group)
+- Uses UserDefaults suite `group.social.mu.app` (App Group)
 - Primary key: `starterPackUri` - stores the starter pack URL
 - The main app reads this value on launch via `SharedPrefs.getString('starterPackUri')` (see `src/components/hooks/useStarterPackEntry.native.ts`)
 
@@ -75,11 +75,11 @@ The App Clip target is automatically configured via Expo config plugins located 
 ### Entitlements
 
 **Main App** (`app.entitlements`):
-- `com.apple.security.application-groups`: `group.app.bsky`
+- `com.apple.security.application-groups`: `group.social.mu.app`
 - `com.apple.developer.associated-appclip-app-identifiers`: Links to the App Clip bundle ID
 
 **App Clip** (`BlueskyClip.entitlements`):
-- `com.apple.security.application-groups`: `group.app.bsky` (for data sharing)
+- `com.apple.security.application-groups`: `group.social.mu.app` (for data sharing)
 - `com.apple.developer.parent-application-identifiers`: Links to the main app bundle ID
 - `com.apple.developer.associated-domains`: Inherits from main app config (for universal links)
 

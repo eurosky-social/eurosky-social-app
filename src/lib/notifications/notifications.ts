@@ -42,7 +42,7 @@ async function _registerPushToken({
         : PUBLIC_APPVIEW_DID,
       platform: Platform.OS,
       token: token.data,
-      appId: 'xyz.blueskyweb.app',
+      appId: 'social.mu.app',
       ageRestricted: extra.ageRestricted ?? false,
     }
 
@@ -340,7 +340,7 @@ export async function unregisterPushToken(agents: AtpAgent[]) {
               : PUBLIC_APPVIEW_DID,
             platform: Platform.OS,
             token: token.data,
-            appId: 'xyz.blueskyweb.app',
+            appId: 'social.mu.app',
           },
           {
             headers: BLUESKY_NOTIF_SERVICE_HEADERS,

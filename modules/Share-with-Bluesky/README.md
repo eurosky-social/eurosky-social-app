@@ -24,7 +24,7 @@ The extension is implemented as a native iOS Share Extension using Swift. When a
 
 1. The `ShareViewController` receives the shared content from the extension context
 2. Content is processed based on its type (text, URL, image, or video)
-3. Media files are copied to a shared App Group container (`group.app.bsky`) for access by the main app
+3. Media files are copied to a shared App Group container (`group.social.mu.app`) for access by the main app
 4. Image and video dimensions are extracted and encoded into the URI
 5. The extension constructs a deep link URL with the content encoded in query parameters
 6. The main Bluesky app is opened with the deep link
@@ -77,7 +77,7 @@ Defined in `Info.plist` under `NSExtensionActivationRule`:
 
 ### App Group
 
-The extension uses the `group.app.bsky` App Group identifier to share files with the main app. This is configured in:
+The extension uses the `group.social.mu.app` App Group identifier to share files with the main app. This is configured in:
 
 - `Share-with-Bluesky.entitlements`
 - Main app's entitlements file

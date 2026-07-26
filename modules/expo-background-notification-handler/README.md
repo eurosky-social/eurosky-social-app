@@ -18,7 +18,7 @@ The primary use case is storing user preferences (like notification sound settin
 
 ### iOS Implementation
 
-Uses iOS App Groups (`group.app.bsky`) to share UserDefaults between the main app and the notification service extension. This allows the notification service extension to read preferences set by the main app without launching the app.
+Uses iOS App Groups (`group.social.mu.app`) to share UserDefaults between the main app and the notification service extension. This allows the notification service extension to read preferences set by the main app without launching the app.
 
 **Key Files:**
 - `ios/ExpoBackgroundNotificationHandlerModule.swift` - Native module implementation
@@ -141,7 +141,7 @@ When the app is foregrounded, the module defers to `expo-notifications` for noti
 ### iOS
 
 Requires App Group entitlement configured in Xcode:
-- App Group ID: `group.app.bsky`
+- App Group ID: `group.social.mu.app`
 
 ### Android
 

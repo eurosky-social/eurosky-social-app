@@ -6,7 +6,6 @@
  * provider returns the user to `/` with params, and we finish sign-in at
  * app startup here.
  */
-import * as persisted from '#/state/persisted'
 import {type SessionApiContext} from '#/state/session/types'
 import {
   getWebOAuthClient,
@@ -46,6 +45,7 @@ function hasOAuthCallbackParams(): boolean {
  */
 export async function tryFinishWebOAuthSignIn(
   login: SessionApiContext['login'],
+  startOnboarding: () => void,
 ): Promise<boolean> {
   if (!hasOAuthCallbackParams()) return false
   const client = getWebOAuthClient()
@@ -54,8 +54,22 @@ export async function tryFinishWebOAuthSignIn(
     // A fresh signup (prompt=create) is created on the external PDS page, which
     // never runs our in-app signup wizard - so start onboarding here, the same
     // way that wizard does. Plain sign-ins carry no state and are untouched.
+    //
+    // Start it BEFORE login() so onboarding is already active the instant the
+    // session appears. login() never touches onboarding state ('skip' only fires
+    // on logout / account switch), and persisted onboarding defaults to 'Home'
+    // (inactive) for a new account - so starting it AFTER login left a gap in
+    // which the shell rendered the default home feed for ~1-2s before the wizard.
+    //
+    // We drive the in-memory onboarding reducer (startOnboarding) rather than
+    // only writing persisted state. OnboardingProvider is mounted above the
+    // session, so login() never remounts it, and on web persisted.write() does
+    // not fire onUpdate listeners in the same tab (its cross-tab BroadcastChannel
+    // never echoes back to the sender). A bare write would leave the onboarding
+    // context stale and the wizard would not appear until a manual reload. The
+    // reducer's 'start' action persists the step itself.
     if (result.state === OAUTH_SIGNUP_STATE) {
-      await persisted.write('onboarding', {step: 'Welcome'})
+      startOnboarding()
     }
     // For a handle step-up the DID is unchanged, so login() replaces the
     // existing session in place with the upgraded (identity:handle) tokens.

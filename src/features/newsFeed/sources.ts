@@ -1,5 +1,5 @@
 /**
- * The curated registry of approved news accounts, each tagged with the topics,
+ * The registry of approved news accounts, each tagged with the topics,
  * regions, and languages it covers. This is shared, operator-owned config
  * rather than per-user state, so it lives as a local list instead of in the
  * PDS. The user's own selections live in the `social.mu.newsFeedPrefs`
@@ -711,6 +711,14 @@ export const NEWS_SOURCES: NewsSource[] = [
     handle: 'politico.eu',
     displayName: 'POLITICO Europe',
     topics: ['politics'],
+    regions: ['europe'],
+    langs: ['en'],
+  },
+  {
+    did: 'did:plc:xnmkjaouspdzqv4hzvvcf3j3',
+    handle: 'euobserver.com',
+    displayName: 'EUobserver',
+    topics: ['general', 'politics'],
     regions: ['europe'],
     langs: ['en'],
   },

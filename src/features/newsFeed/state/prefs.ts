@@ -85,7 +85,14 @@ export function useNewsFeedPrefsMutation() {
   const queryClient = useQueryClient()
   const {currentAccount} = useSession()
 
-  return useMutation<void, unknown, NewsFeedPrefs>({
+  const queryKey = createNewsFeedPrefsQueryKey({did: currentAccount?.did})
+
+  return useMutation<
+    void,
+    unknown,
+    NewsFeedPrefs,
+    {previous: NewsFeedPrefs | null | undefined}
+  >({
     mutationFn: async prefs => {
       if (!currentAccount) throw new Error('Not signed in')
       await agent.com.atproto.repo.putRecord({
@@ -99,13 +106,19 @@ export function useNewsFeedPrefsMutation() {
         },
       })
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: createNewsFeedPrefsQueryKey({did: currentAccount?.did}),
-      })
+    // Optimistic: the UI updates on tap and rolls back if the PDS write fails.
+    onMutate: async prefs => {
+      await queryClient.cancelQueries({queryKey})
+      const previous = queryClient.getQueryData<NewsFeedPrefs | null>(queryKey)
+      queryClient.setQueryData(queryKey, prefs)
+      return {previous}
     },
-    onError: error => {
+    onError: (error, _prefs, context) => {
+      queryClient.setQueryData(queryKey, context?.previous)
       logger.error('newsFeedPrefs: failed to save', {safeMessage: error})
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({queryKey})
     },
   })
 }

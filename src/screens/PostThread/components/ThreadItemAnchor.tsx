@@ -48,7 +48,6 @@ import {Trash_Stroke2_Corner0_Rounded as TrashIcon} from '#/components/icons/Tra
 import {GalleryBleed} from '#/components/images/Gallery'
 import {Link} from '#/components/Link'
 import {ContentHider} from '#/components/moderation/ContentHider'
-import {LabelsOnMyPost} from '#/components/moderation/LabelsOnMe'
 import {PostAlerts} from '#/components/moderation/PostAlerts'
 import {type AppModerationCause} from '#/components/Pills'
 import {Embed, PostEmbedViewContext} from '#/components/Post/Embed'
@@ -367,15 +366,15 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
               />
             )}
             <View style={[!inReader && a.pb_sm]}>
-              <LabelsOnMyPost post={post} style={[a.pb_sm]} />
               <View>
                 <ContentHider
                   modui={moderation.ui('contentView')}
                   ignoreMute
                   childContainerStyle={[a.pt_sm]}>
                   <PostAlerts
+                    post={post}
                     modui={moderation.ui('contentView')}
-                    size="lg"
+                    view="expanded"
                     includeMute
                     style={[a.pb_sm]}
                     additionalCauses={additionalPostAlerts}

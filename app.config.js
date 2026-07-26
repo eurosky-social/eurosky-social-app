@@ -1,5 +1,25 @@
 // @ts-check
 const pkg = require('./package.json')
+
+/**
+ * FCM config for Android push. Gitignored (see .gitignore) and provisioned
+ * out-of-band - present for credentialed local/EAS builds, absent otherwise.
+ * When absent we omit the key entirely so prebuild doesn't fail trying to copy
+ * a missing file; Android remote push just isn't configured on that build. We
+ * probe with `require.resolve` (module-relative, like the requires above) to
+ * avoid importing the `fs`/`path` builtins, which the lint config forbids here.
+ */
+const GOOGLE_SERVICES_FILE = (() => {
+  try {
+    require.resolve('./google-services.json')
+    return './google-services.json'
+  } catch {
+    console.warn(
+      '[app.config] google-services.json not found - building without Android FCM config.',
+    )
+    return undefined
+  }
+})()
 /**
  * Single brand config (src/config/brand.json; see brand.schema.json). Shared
  * with the in-app adapters, the web codegen and the Workers. Native chrome
@@ -55,10 +75,12 @@ module.exports = function (_config) {
   return {
     expo: {
       version: VERSION,
-      name: 'Bluesky',
-      slug: 'bluesky',
+      name: 'mu',
+      slug: 'mu-social',
       scheme: 'bluesky',
-      owner: 'blueskysocial',
+      // Expo org slug (the developer org, not the app's store brand). Must match
+      // the account/org that owns the EAS project (created via `eas init`).
+      owner: 'eurosky',
       runtimeVersion: {
         policy: 'appVersion',
       },
@@ -72,7 +94,7 @@ module.exports = function (_config) {
       newArchEnabled: false,
       ios: {
         supportsTablet: false,
-        bundleIdentifier: 'xyz.blueskyweb.app',
+        bundleIdentifier: 'social.mu.app',
         appleTeamId: process.env.EXPO_APPLE_TEAM_ID,
         config: {
           usesNonExemptEncryption: false,
@@ -139,7 +161,7 @@ module.exports = function (_config) {
         entitlements: {
           'com.apple.developer.kernel.increased-memory-limit': true,
           'com.apple.developer.kernel.extended-virtual-addressing': true,
-          'com.apple.security.application-groups': 'group.app.bsky',
+          'com.apple.security.application-groups': 'group.social.mu.app',
           'com.apple.developer.usernotifications.communication': true,
           // 'com.apple.developer.device-information.user-assigned-device-name': true,
           'com.apple.developer.declared-age-range': true,
@@ -210,8 +232,8 @@ module.exports = function (_config) {
           monochromeImage: './assets/icon-android-monochrome.png',
           backgroundColor: BRAND_ACCENT.primary_500,
         },
-        googleServicesFile: './google-services.json',
-        package: 'xyz.blueskyweb.app',
+        googleServicesFile: GOOGLE_SERVICES_FILE,
+        package: 'social.mu.app',
         intentFilters: [
           {
             action: 'VIEW',
@@ -279,7 +301,7 @@ module.exports = function (_config) {
               /** @type {[string, any]} */ ([
                 '@sentry/react-native/expo',
                 {
-                  organization: 'blueskyweb',
+                  organization: 'eurosky',
                   project: 'app',
                   url: 'https://sentry.io',
                 },
@@ -464,31 +486,33 @@ module.exports = function (_config) {
                 appExtensions: [
                   {
                     targetName: 'Share-with-Bluesky',
-                    bundleIdentifier: 'xyz.blueskyweb.app.Share-with-Bluesky',
+                    bundleIdentifier: 'social.mu.app.Share-with-Bluesky',
                     entitlements: {
                       'com.apple.security.application-groups': [
-                        'group.app.bsky',
+                        'group.social.mu.app',
                       ],
                     },
                   },
                   {
                     targetName: 'BlueskyNSE',
-                    bundleIdentifier: 'xyz.blueskyweb.app.BlueskyNSE',
+                    bundleIdentifier: 'social.mu.app.BlueskyNSE',
                     entitlements: {
                       'com.apple.security.application-groups': [
-                        'group.app.bsky',
+                        'group.social.mu.app',
                       ],
                     },
                   },
                   {
                     targetName: 'BlueskyClip',
-                    bundleIdentifier: 'xyz.blueskyweb.app.AppClip',
+                    bundleIdentifier: 'social.mu.app.AppClip',
                   },
                 ],
               },
             },
           },
-          projectId: '55bd077a-d905-4184-9c7f-94789ba0f302',
+          // PLACEHOLDER: replaced by `eas init` (or paste the id from the
+          // Eurosky EAS project). Builds will fail until this is a real id.
+          projectId: '52e14cdd-ab10-4b16-a0f4-fc918a9fa323',
         },
       },
     },

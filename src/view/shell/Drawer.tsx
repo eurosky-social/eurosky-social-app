@@ -12,7 +12,6 @@ import {useLingui} from '@lingui/react'
 import {Plural, Trans} from '@lingui/react/macro'
 import {StackActions, useNavigation} from '@react-navigation/native'
 
-import {FEEDBACK_FORM_URL, HELP_DESK_URL} from '#/lib/constants'
 import {type PressableScale} from '#/lib/custom-animations/PressableScale'
 import {useNavigationTabState} from '#/lib/hooks/useNavigationTabState'
 import {getTabState, TabState} from '#/lib/routes/helpers'
@@ -21,13 +20,13 @@ import {type NavigationProp} from '#/lib/routes/types'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {colors} from '#/lib/styles'
 import {emitSoftReset} from '#/state/events'
-import {useKawaiiMode} from '#/state/preferences/kawaii'
 import {useUnreadNotifications} from '#/state/queries/notifications/unread'
 import {useProfileQuery} from '#/state/queries/profile'
 import {type SessionAccount, useSession} from '#/state/session'
 import {useSetDrawerOpen} from '#/state/shell'
 import {formatCount} from '#/view/com/util/numeric/format'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
+import {useLogoVariant} from '#/view/icons/useLogoVariant'
 import {NavSignupCard} from '#/view/shell/NavSignupCard'
 import {atoms as a, tokens, useTheme, web} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
@@ -301,16 +300,11 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
   }, [navigation, setDrawerOpen, ax])
 
   const onPressFeedback = useCallback(() => {
-    Linking.openURL(
-      FEEDBACK_FORM_URL({
-        email: currentAccount?.email,
-        handle: currentAccount?.handle,
-      }),
-    )
-  }, [currentAccount])
+    Linking.openURL(BRAND.links.feedback)
+  }, [])
 
-  const onPressHelp = useCallback(() => {
-    Linking.openURL(HELP_DESK_URL)
+  const onPressDonate = useCallback(() => {
+    Linking.openURL(BRAND.links.donate)
   }, [])
 
   // rendering
@@ -392,7 +386,8 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
 
       <DrawerFooter
         onPressFeedback={onPressFeedback}
-        onPressHelp={onPressHelp}
+        onPressDonate={onPressDonate}
+        hasSession={hasSession}
       />
       <InviteFriendsDialog control={inviteFriendsControl} />
     </View>
@@ -403,10 +398,12 @@ export {DrawerContent}
 
 let DrawerFooter = ({
   onPressFeedback,
-  onPressHelp,
+  onPressDonate,
+  hasSession,
 }: {
   onPressFeedback: () => void
-  onPressHelp: () => void
+  onPressDonate: () => void
+  hasSession: boolean
 }): React.ReactNode => {
   const {_} = useLingui()
   const insets = useSafeAreaInsets()
@@ -426,29 +423,34 @@ let DrawerFooter = ({
         },
       ]}>
       <Button
-        label={_(msg`Send feedback`)}
-        size="small"
-        variant="solid"
-        color="secondary"
-        onPress={onPressFeedback}>
-        <ButtonIcon icon={Message} position="left" />
-        <ButtonText>
-          <Trans>Feedback</Trans>
-        </ButtonText>
-      </Button>
-      <Button
-        label={_(msg`Get help`)}
+        label={_(msg`Donate`)}
         size="small"
         variant="outline"
         color="secondary"
-        onPress={onPressHelp}
+        onPress={onPressDonate}
         style={{
           backgroundColor: 'transparent',
         }}>
         <ButtonText>
-          <Trans>Help</Trans>
+          <Trans>Donate</Trans>
         </ButtonText>
       </Button>
+      {hasSession && (
+        <Button
+          label={_(msg`Send feedback`)}
+          size="small"
+          variant="outline"
+          color="secondary"
+          onPress={onPressFeedback}
+          style={{
+            backgroundColor: 'transparent',
+          }}>
+          <ButtonIcon icon={Message} position="left" />
+          <ButtonText>
+            <Trans>Feedback</Trans>
+          </ButtonText>
+        </Button>
+      )}
     </View>
   )
 }
@@ -770,7 +772,7 @@ function MenuItem({icon, label, count, bold, onPress}: MenuItemProps) {
 function ExtraLinks() {
   const {_} = useLingui()
   const t = useTheme()
-  const kawaii = useKawaiiMode()
+  const logoVariant = useLogoVariant()
 
   return (
     <View style={[a.flex_col, a.gap_md, a.flex_wrap]}>
@@ -786,7 +788,7 @@ function ExtraLinks() {
         label={_(msg`Privacy Policy`)}>
         <Trans>Privacy Policy</Trans>
       </InlineLinkText>
-      {kawaii && (
+      {logoVariant === 'kawaii' && (
         <Text style={t.atoms.text_contrast_medium}>
           <Trans>
             Logo by{' '}

@@ -58,4 +58,20 @@ sed -i'' -E 's#"static/#"/static/#g' web-build/index.html
 # Clean up the BSD sed backup file if any
 rm -f web-build/index.html-E
 
+# robots.txt: chosen per environment. Expo does not reliably copy arbitrary
+# files out of web/, so copy it explicitly.
+#   - prod (default): web/robots.txt disallows the high-cardinality, JS-only
+#     routes (profiles, posts, hashtags, search, ...) so crawlers stop treating
+#     every federated permalink as a unique page and re-downloading the JS
+#     bundles per URL. See web/robots.txt for the rationale.
+#   - non-prod (ROBOTS_MODE=disallow-all): web/robots.disallow.txt blocks all
+#     crawling, so staging/dev stay out of search entirely.
+# Prod-style is the default so a forgotten flag fails safe (a crawlable-but-
+# noindexed non-prod), never an accidentally deindexed prod.
+if [[ "${ROBOTS_MODE:-prod}" == "disallow-all" ]]; then
+  cp web/robots.disallow.txt web-build/robots.txt
+else
+  cp web/robots.txt web-build/robots.txt
+fi
+
 echo "Build complete. Output: web-build/"

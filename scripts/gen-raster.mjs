@@ -30,7 +30,10 @@ import {fileURLToPath} from 'node:url'
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const BRAND_DIR = path.join(ROOT, 'assets/brand')
 const LOGO = JSON.parse(
-  fs.readFileSync(path.join(ROOT, 'src/config/brand-logo.generated.json'), 'utf8'),
+  fs.readFileSync(
+    path.join(ROOT, 'src/config/brand-logo.generated.json'),
+    'utf8',
+  ),
 )
 const BRAND = JSON.parse(
   fs.readFileSync(path.join(ROOT, 'src/config/brand.json'), 'utf8'),
@@ -145,7 +148,9 @@ function write(rel, buf) {
 const iconSvgPath = path.join(BRAND_DIR, 'icon.svg')
 let wroteIcon = false
 if (fs.existsSync(iconSvgPath)) {
-  const svg = paint(fs.readFileSync(iconSvgPath, 'utf8'), {current: A.primary_500})
+  const svg = paint(fs.readFileSync(iconSvgPath, 'utf8'), {
+    current: A.primary_500,
+  })
   write(ICON_MASTER, rasterize(svg, ICON_SIZE, ICON_SIZE))
   wroteIcon = true
 } else if (COMPOSE) {

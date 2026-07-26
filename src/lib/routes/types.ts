@@ -23,6 +23,7 @@ export type CommonNavigatorParams = {
   NotFound: undefined
   Lists: undefined
   NewsFeed: undefined
+  Newsroom: {name?: string}
   Moderation: undefined
   ModerationModlists: undefined
   ModerationMutedAccounts: undefined
@@ -64,7 +65,9 @@ export type CommonNavigatorParams = {
   PreferencesExternalEmbeds: undefined
   AccessibilitySettings: undefined
   AppearanceSettings: undefined
-  CatCompanionSettings: undefined
+  PetCompanionSettings: undefined
+  DecorationsSettings: undefined
+  BetaFeaturesSettings: undefined
   AccountSettings: undefined
   AutomationLabelSettings: undefined
   PrivacyAndSecuritySettings: undefined

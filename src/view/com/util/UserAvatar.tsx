@@ -55,6 +55,11 @@ import * as Menu from '#/components/Menu'
 import {ProfileHoverCard} from '#/components/ProfileHoverCard'
 import {useAnalytics} from '#/analytics'
 import {IS_ANDROID, IS_NATIVE, IS_WEB, IS_WEB_TOUCH_DEVICE} from '#/env'
+import {
+  AvatarDecorationRing,
+  type DecorationFrame,
+  useAvatarDecoration,
+} from '#/features/avatarDecorations'
 import {useActorStatus} from '#/features/liveNow'
 import {LiveIndicator} from '#/features/liveNow/components/LiveIndicator'
 import {LiveStatusDialog} from '#/features/liveNow/components/LiveStatusDialog'
@@ -79,6 +84,7 @@ interface UserAvatarProps extends BaseUserAvatarProps {
   onLoad?: () => void
   style?: StyleProp<ViewStyle>
   extraAviStyle?: ImageStyle
+  decoration?: DecorationFrame
 }
 
 interface EditableUserAvatarProps extends BaseUserAvatarProps {
@@ -228,6 +234,7 @@ let UserAvatar = ({
   hideLiveBadge,
   noBorder,
   extraAviStyle,
+  decoration,
 }: UserAvatarProps): React.ReactNode => {
   const t = useTheme()
   const finalShape = overrideShape ?? (type === 'user' ? 'circle' : 'square')
@@ -335,6 +342,9 @@ let UserAvatar = ({
         />
       )}
       {!noBorder && <MediaInsetBorder style={borderStyle} />}
+      {decoration && type === 'user' && !live && !moderation?.blur && (
+        <AvatarDecorationRing frame={decoration} size={size} />
+      )}
       {live && size > 16 && !hideLiveBadge && (
         <LiveIndicator size={size > 32 ? 'small' : 'tiny'} />
       )}
@@ -344,6 +354,9 @@ let UserAvatar = ({
     <View style={containerStyle}>
       <DefaultAvatar type={type} shape={finalShape} size={size} />
       {!noBorder && <MediaInsetBorder style={borderStyle} />}
+      {decoration && type === 'user' && !live && !moderation?.blur && (
+        <AvatarDecorationRing frame={decoration} size={size} />
+      )}
       {live && size > 16 && !hideLiveBadge && (
         <LiveIndicator size={size > 32 ? 'small' : 'tiny'} />
       )}
@@ -561,6 +574,7 @@ let PreviewableUserAvatar = ({
   const status = useActorStatus(profile)
   const liveControl = useDialogControl()
   const playHaptic = useHaptics()
+  const decoration = useAvatarDecoration(profile.did)
 
   const onPress = useCallback(() => {
     onBeforePress?.()
@@ -579,6 +593,7 @@ let PreviewableUserAvatar = ({
       moderation={moderation}
       type={profile.associated?.labeler ? 'labeler' : 'user'}
       live={status.isActive || live}
+      decoration={decoration}
       {...props}
     />
   )

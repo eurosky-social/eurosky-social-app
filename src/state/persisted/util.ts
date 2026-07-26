@@ -42,6 +42,18 @@ export function normalizeData(data: Schema) {
     })
   }
 
+  /**
+   * Migrate the legacy single-species cat companion to the generic pet
+   * companion. The old coat name maps directly onto the cat species' variant.
+   */
+  if (next.catCompanion && !next.petCompanion) {
+    next.petCompanion = {
+      enabled: next.catCompanion.enabled,
+      species: 'cat',
+      variant: next.catCompanion.color,
+    }
+  }
+
   return next
 }
 

@@ -47,7 +47,10 @@ const server = http.createServer(async (req, res) => {
       headers: {Accept: 'application/json', 'X-Auth-Token': TOKEN},
     })
     const body = await upstream.text()
-    res.writeHead(upstream.status, {...CORS, 'Content-Type': 'application/json'})
+    res.writeHead(upstream.status, {
+      ...CORS,
+      'Content-Type': 'application/json',
+    })
     res.end(body)
   } catch (err) {
     res.writeHead(502, {...CORS, 'Content-Type': 'application/json'})

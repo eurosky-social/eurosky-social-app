@@ -5,8 +5,10 @@ import {type FeedDescriptor} from '#/state/queries/post-feed'
 import {PostFeed} from '#/view/com/posts/PostFeed'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
+import {Newspaper2_Stroke2_Corner2_Rounded as NewsroomsIcon} from '#/components/icons/Newspaper2'
 import {SettingsGear2_Stroke2_Corner0_Rounded as SettingsGear} from '#/components/icons/SettingsGear2'
 import * as Layout from '#/components/Layout'
+import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {selectSources} from '../sources'
 import {type NewsFeedPrefs} from '../state/prefs'
@@ -36,6 +38,19 @@ export function NewsFeedTab({
             <Trans>News</Trans>
           </Layout.Header.TitleText>
         </Layout.Header.Content>
+        {/* Sits outside Header.Slot: slots are fixed-width squares and this
+         * button carries a text label. */}
+        <Link
+          testID="newsFeedNewsroomsBtn"
+          to="/newsroom"
+          label={l`Open newsrooms`}
+          size="small"
+          color="secondary">
+          <ButtonIcon icon={NewsroomsIcon} />
+          <ButtonText>
+            <Trans>Newsrooms</Trans>
+          </ButtonText>
+        </Link>
         <Layout.Header.Slot>
           <Button
             testID="newsFeedEditBtn"

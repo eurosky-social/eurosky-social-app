@@ -61,11 +61,24 @@ async function bearer(agent: AtpAgent, lxm: string): Promise<string> {
  */
 const REQUEST_TIMEOUT = 8000
 
+/**
+ * Cross-platform request-timeout signal. `AbortSignal.timeout()` is a
+ * browser/Node API that Hermes (React Native) does not implement, so calling it
+ * throws synchronously on native - which made every age-service call fail and
+ * silently failed the gate open to a restricted state (web, which has the API,
+ * worked fine). `AbortController` + `setTimeout` is supported on both.
+ */
+function timeoutSignal(ms: number): AbortSignal {
+  const controller = new AbortController()
+  setTimeout(() => controller.abort(), ms)
+  return controller.signal
+}
+
 export async function getMuAgeStatus(agent: AtpAgent): Promise<MuAgeStatus> {
   const authorization = await bearer(agent, GET_STATUS)
   const res = await fetch(
     `${BRAND.ageAssurance.serviceUrl}/xrpc/${GET_STATUS}`,
-    {headers: {authorization}, signal: AbortSignal.timeout(REQUEST_TIMEOUT)},
+    {headers: {authorization}, signal: timeoutSignal(REQUEST_TIMEOUT)},
   )
   if (!res.ok) {
     throw new Error(`getMuAgeStatus: ${res.status}`)
@@ -84,7 +97,7 @@ export async function setMuAgeStatus(
       method: 'POST',
       headers: {authorization, 'content-type': 'application/json'},
       body: JSON.stringify(flags),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT),
+      signal: timeoutSignal(REQUEST_TIMEOUT),
     },
   )
   if (!res.ok) {

@@ -7,6 +7,7 @@ import {type Shadow} from '#/state/cache/types'
 import {atoms as a, platform, useBreakpoints, useTheme} from '#/alf'
 import {ProfileBadges} from '#/components/ProfileBadges'
 import {Text} from '#/components/Typography'
+import {useNameStyle} from '#/features/avatarDecorations'
 
 export function ProfileHeaderDisplayName({
   profile,
@@ -17,6 +18,7 @@ export function ProfileHeaderDisplayName({
 }) {
   const t = useTheme()
   const {gtMobile} = useBreakpoints()
+  const nameStyle = useNameStyle(profile.did)
 
   return (
     <View>
@@ -29,6 +31,7 @@ export function ProfileHeaderDisplayName({
           a.self_start,
           a.font_bold,
           a.leading_tight,
+          nameStyle,
         ]}>
         {sanitizeDisplayName(
           profile.displayName || sanitizeHandle(profile.handle),

@@ -19,6 +19,7 @@ module.exports = function (api) {
     plugins: [
       '@lingui/babel-plugin-lingui-macro',
       ['babel-plugin-react-compiler', {target: '19'}],
+      'module:react-native-dotenv', // used by web build! can remove when we drop webpack
       [
         'module-resolver',
         {

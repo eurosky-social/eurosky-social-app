@@ -30,6 +30,13 @@ export const interests = [
 ] as const
 export type Interest = (typeof interests)[number]
 
+/**
+ * Minimum interests a user must select during onboarding before continuing.
+ * Each selected interest becomes a like on its picker-account interest post,
+ * seeding the fu feed's personalization, so we require a few for a useful seed.
+ */
+export const MIN_ONBOARDING_INTERESTS = 3
+
 // most popular selected interests
 export const popularInterests = [
   'art',

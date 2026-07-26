@@ -5,8 +5,10 @@ import {useLingui} from '@lingui/react/macro'
 import * as ModuleHeader from '#/screens/Search/components/ModuleHeader'
 import {atoms as a, tokens, useGutters, useTheme} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
-import {ChevronBottom_Stroke2_Corner0_Rounded as ChevronDown} from '#/components/icons/Chevron'
-import {ChevronTop_Stroke2_Corner0_Rounded as ChevronUp} from '#/components/icons/Chevron'
+import {
+  ChevronBottom_Stroke2_Corner0_Rounded as ChevronDown,
+  ChevronTop_Stroke2_Corner0_Rounded as ChevronUp,
+} from '#/components/icons/Chevron'
 import {Trophy_Stroke2_Corner2_Rounded as TrophyIcon} from '#/components/icons/Trophy'
 import {Text} from '#/components/Typography'
 import {
