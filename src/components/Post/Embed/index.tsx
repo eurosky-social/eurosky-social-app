@@ -29,6 +29,7 @@ import {RichText} from '#/components/RichText'
 import {Embed as StarterPackCard} from '#/components/StarterPack/StarterPackCard'
 import {SubtleHover} from '#/components/SubtleHover'
 import {matchCustomEmbed} from '#/features/customEmbeds/registry'
+import {NewsroomLinkChip} from '#/features/newsrooms/components/NewsroomLinkChip'
 import * as bsky from '#/types/bsky'
 import {
   type Embed as TEmbed,
@@ -151,6 +152,8 @@ function MediaEmbed({
             onOpen={rest.onOpen}
             style={[a.mt_sm, rest.style]}
           />
+          {/* EUROSKY: links a post to the newsroom of the org it links to. */}
+          <NewsroomLinkChip url={embed.view.external.uri} style={[a.mt_xs]} />
         </ContentHider>
       )
     }
