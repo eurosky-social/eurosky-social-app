@@ -11,10 +11,11 @@ import {EditBig_Stroke2_Corner2_Rounded as ComposeIcon} from '#/components/icons
 import {InlineLinkText, Link} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
-import {articleDiscussionPath} from '../discussion'
+import {articleSearchPath} from '../discussion'
 import {getPublisherRssUrls, type NewsroomPublisher} from '../publishers'
 import {
   useArticleDiscussionQuery,
+  useArticleDiscussionsQuery,
   useOgImageQuery,
   useRssArticlesQuery,
 } from '../queries'
@@ -24,10 +25,19 @@ import {ArticleDiscussion} from './ArticleDiscussion'
 export function NewsroomFrontPage({publisher}: {publisher: NewsroomPublisher}) {
   const urls = getPublisherRssUrls(publisher)
   const {data: articles, isLoading} = useRssArticlesQuery({urls})
+  const discussions = useArticleDiscussionsQuery({
+    urls: articles?.map(item => item.link) ?? [],
+    publisherDid: publisher.did,
+  })
 
   if (urls.length === 0) return null
 
-  if (isLoading) {
+  /*
+   * Featuring depends on every article's interaction total, so the loader
+   * holds until the discussion lookups settle too - otherwise the hero would
+   * visibly swap once the counts arrive.
+   */
+  if (isLoading || discussions.some(q => q.isLoading)) {
     return (
       <View style={[a.px_lg, a.py_xl, a.align_center]}>
         <Loader size="md" />
@@ -39,7 +49,24 @@ export function NewsroomFrontPage({publisher}: {publisher: NewsroomPublisher}) {
   // render nothing rather than an empty shell.
   if (!articles?.length) return null
 
-  const [hero, ...rest] = articles
+  /*
+   * The featured story is whichever article drew the most Atmosphere
+   * interactions, discounted by age so last week's viral piece eventually
+   * cedes the hero slot to fresher news. Ties (including all-zero, e.g. when
+   * search is down) fall back to the feed's newest-first order, which the
+   * rest keep.
+   */
+  const now = Date.now()
+  const scores = new Map(
+    articles.map((item, i) => [
+      item,
+      heroScore(item, discussions[i]?.data?.interactions ?? 0, now),
+    ]),
+  )
+  const hero = articles.reduce((top, item) =>
+    (scores.get(item) ?? 0) > (scores.get(top) ?? 0) ? item : top,
+  )
+  const rest = articles.filter(item => item !== hero)
 
   return (
     <View style={[a.px_lg, a.pt_sm, a.pb_lg, a.gap_md]}>
@@ -171,12 +198,7 @@ function SecondaryArticle({
           <ArticleMeta
             item={item}
             discussionCount={discussion?.total}
-            discussionPath={
-              articleDiscussionPath({
-                url: item.link,
-                anchor: discussion?.anchor,
-              }).path
-            }
+            discussionPath={articleSearchPath(item.link)}
           />
         </View>
       </View>
@@ -308,6 +330,24 @@ function ArticleMeta({
       )}
     </Text>
   )
+}
+
+/** How long an interaction keeps half its weight in the hero choice. */
+const HERO_HALF_LIFE_MS = 24 * 60 * 60 * 1000
+
+/**
+ * An article's claim on the hero slot: its Atmosphere interactions decayed
+ * exponentially by age. Undated articles count as two half-lives old, so a
+ * dated story with comparable engagement beats them.
+ */
+function heroScore(item: RssItem, interactions: number, now: number): number {
+  const published = item.publishedAt
+    ? new Date(item.publishedAt).getTime()
+    : NaN
+  const ageMs = Number.isNaN(published)
+    ? HERO_HALF_LIFE_MS * 2
+    : Math.max(0, now - published)
+  return interactions * 0.5 ** (ageMs / HERO_HALF_LIFE_MS)
 }
 
 function safeHostname(url: string): string {

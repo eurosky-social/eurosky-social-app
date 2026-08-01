@@ -15,6 +15,7 @@ import * as ProfileCard from '#/components/ProfileCard'
 import {Text} from '#/components/Typography'
 import {VerificationCheckButton} from '#/components/verification/VerificationCheckButton'
 import {getPublisherName, type NewsroomPublisher} from '../publishers'
+import {toSingleParagraph} from '../text'
 
 export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
   const t = useTheme()
@@ -25,7 +26,7 @@ export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
   // with their live avatar, name, and bio.
   const {data: profile} = useProfileQuery({did: publisher.did})
   const name = getPublisherName(profile)
-  const bio = profile?.description?.trim()
+  const bio = profile?.description && toSingleParagraph(profile.description)
   const profilePath = makeProfileLink({
     did: publisher.did,
     handle: profile?.handle ?? publisher.did,

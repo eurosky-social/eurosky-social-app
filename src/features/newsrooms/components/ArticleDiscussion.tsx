@@ -9,12 +9,14 @@ import {
 import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 
+import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {postUriToRelativePath} from '#/lib/strings/url-helpers'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {PreviewableUserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
+import {Button} from '#/components/Button'
 import {Divider} from '#/components/Divider'
 import {Bubble_Stroke2_Corner2_Rounded as Bubble} from '#/components/icons/Bubble'
 import {Heart2_Stroke2_Corner0_Rounded as Heart} from '#/components/icons/Heart2'
@@ -23,8 +25,9 @@ import {Link} from '#/components/Link'
 import {ContentHider} from '#/components/moderation/ContentHider'
 import {PostAlerts} from '#/components/moderation/PostAlerts'
 import {Text} from '#/components/Typography'
-import {articleDiscussionPath} from '../discussion'
+import {articleSearchPath} from '../discussion'
 import {useArticleDiscussionQuery} from '../queries'
+import {toSingleParagraph} from '../text'
 
 const SHOWN = 3
 
@@ -43,6 +46,7 @@ export function ArticleDiscussion({
   const t = useTheme()
   const {t: l} = useLingui()
   const moderationOpts = useModerationOpts()
+  const {openComposer} = useOpenComposer()
   const {data, isLoading} = useArticleDiscussionQuery({url, publisherDid})
 
   /*
@@ -57,15 +61,36 @@ export function ArticleDiscussion({
   const posts = moderatedPosts.slice(0, SHOWN)
   if (!posts.length) return null
 
-  // The publisher's own post of the article is its canonical thread; "see all"
-  // lands there rather than on a search page, unless moderation filtered it.
+  // The publisher's own post of the article is its canonical thread; joining
+  // the conversation replies there, unless moderation filtered it.
   const visibleAnchor = data.anchor
-    ? moderatedPosts.find(({post}) => post.uri === data.anchor?.uri)?.post
+    ? moderatedPosts.find(({post}) => post.uri === data.anchor?.uri)
     : undefined
-  const {path: discussionPath, isAnchor} = articleDiscussionPath({
-    url,
-    anchor: visibleAnchor,
-  })
+  const anchorPath = visibleAnchor
+    ? postUriToRelativePath(visibleAnchor.post.uri, {
+        handle: visibleAnchor.post.author.handle,
+      })
+    : undefined
+
+  // "Join the conversation" opens the composer as a reply to the canonical
+  // thread, so joining grows the one conversation instead of starting another.
+  function onJoinConversation() {
+    if (!visibleAnchor) return
+    const {post, moderation} = visibleAnchor
+    const record = post.record as AppBskyFeedPost.Record
+    openComposer({
+      replyTo: {
+        uri: post.uri,
+        cid: post.cid,
+        text: typeof record.text === 'string' ? record.text : '',
+        author: post.author,
+        embed: post.embed,
+        moderation,
+        langs: record.langs,
+      },
+      logContext: 'PostReply',
+    })
+  }
 
   return (
     <View
@@ -78,9 +103,16 @@ export function ArticleDiscussion({
         t.atoms.border_contrast_low,
         t.atoms.bg_contrast_25,
       ]}>
-      <Text style={[a.text_xs, a.font_bold, t.atoms.text_contrast_medium]}>
-        <Trans>This story in the Atmosphere</Trans>
-      </Text>
+      {/* The header is the door to the full conversation: every post that
+          features this article, not just the few shown here. */}
+      <Link
+        to={articleSearchPath(url)}
+        label={l`See all posts featuring this article`}
+        style={[a.self_start]}>
+        <Text style={[a.text_xs, a.font_bold, t.atoms.text_contrast_medium]}>
+          <Trans>This story in the Atmosphere</Trans>
+        </Text>
+      </Link>
 
       {posts.map(({post, moderation}, i) => (
         <Fragment key={post.uri}>
@@ -89,26 +121,48 @@ export function ArticleDiscussion({
         </Fragment>
       ))}
 
-      <Link
-        to={discussionPath}
-        label={
-          isAnchor
-            ? l`Open the discussion thread`
-            : l`See all posts about this article`
-        }
-        style={[a.self_start]}>
-        <Text style={[a.text_sm, a.font_bold, {color: t.palette.primary_500}]}>
-          {isAnchor ? (
-            <Trans>Join the conversation</Trans>
-          ) : data.total > SHOWN ? (
-            <Trans>
-              See all {plural(data.total, {one: '# post', other: '# posts'})}
-            </Trans>
-          ) : (
-            <Trans>See the conversation</Trans>
+      {visibleAnchor ? (
+        <View style={[a.flex_row, a.align_center, a.gap_lg]}>
+          <Button
+            label={l`Reply to the discussion thread`}
+            onPress={onJoinConversation}
+            style={[a.self_start]}>
+            <Text
+              style={[a.text_sm, a.font_bold, {color: t.palette.primary_500}]}>
+              <Trans>Join the conversation</Trans>
+            </Text>
+          </Button>
+          {/* Composing is the primary action; the quiet link beside it opens
+              the canonical thread for reading. */}
+          {anchorPath && (
+            <Link
+              to={anchorPath}
+              label={l`Open the discussion thread`}
+              style={[a.self_start]}>
+              <Text
+                style={[a.text_sm, a.font_bold, t.atoms.text_contrast_medium]}>
+                <Trans>Open the thread</Trans>
+              </Text>
+            </Link>
           )}
-        </Text>
-      </Link>
+        </View>
+      ) : (
+        <Link
+          to={articleSearchPath(url)}
+          label={l`See all posts featuring this article`}
+          style={[a.self_start]}>
+          <Text
+            style={[a.text_sm, a.font_bold, {color: t.palette.primary_500}]}>
+            {data.total > SHOWN ? (
+              <Trans>
+                See all {plural(data.total, {one: '# post', other: '# posts'})}
+              </Trans>
+            ) : (
+              <Trans>See the conversation</Trans>
+            )}
+          </Text>
+        </Link>
+      )}
     </View>
   )
 }
@@ -123,7 +177,8 @@ function DiscussionPost({
   const t = useTheme()
   const author = post.author
   const record = post.record as AppBskyFeedPost.Record
-  const text = typeof record.text === 'string' ? record.text : ''
+  const text =
+    typeof record.text === 'string' ? toSingleParagraph(record.text) : ''
   const path = postUriToRelativePath(post.uri, {handle: author.handle})
   const contentModui = moderation.ui('contentView')
   const displayName = sanitizeDisplayName(
@@ -179,7 +234,12 @@ function DiscussionPost({
 }
 
 function hasEngagement(post: AppBskyFeedDefs.PostView): boolean {
-  return !!(post.repostCount || post.likeCount || post.replyCount)
+  return !!(
+    post.repostCount ||
+    post.likeCount ||
+    post.replyCount ||
+    post.quoteCount
+  )
 }
 
 function Stat({

@@ -3,7 +3,7 @@ import {
   type AppBskyFeedDefs,
   type AppBskyFeedPost,
 } from '@atproto/api'
-import {useQuery} from '@tanstack/react-query'
+import {useQueries, useQuery} from '@tanstack/react-query'
 
 import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
@@ -69,33 +69,22 @@ export const createArticleDiscussionQueryKey = (args: {
 }) => createQueryKey('newsroomArticleDiscussion', args)
 
 /**
- * The in-network conversation about a specific article: posts across the network
- * that link to its URL. This is the page's reason to exist - the discussion the
- * publisher's own site and the scattered home feed don't put next to the piece.
- *
- * `searchPosts` indexes link facets, so a URL query surfaces posts that shared
- * it; we then keep only posts that genuinely reference the URL (rather than
- * merely matching its tokens) and rank by engagement.
- *
- * When the publisher itself posted the article, that post is the article's
- * canonical thread: it is pinned first and returned as `anchor`, so sharing can
- * quote it (growing one conversation) instead of starting a parallel one.
+ * Shared query definition for an article's discussion, so the single-article
+ * hook and the front page's all-articles lookup hit one cache entry per URL.
  */
-export function useArticleDiscussionQuery({
+function articleDiscussionQueryOptions({
   url,
   publisherDid,
-  enabled = true,
+  agent,
 }: {
   url: string
   publisherDid?: string
-  enabled?: boolean
+  agent: ReturnType<typeof useAgent>
 }) {
-  const agent = useAgent()
-
-  return useQuery({
+  return {
     queryKey: createArticleDiscussionQueryKey({url, publisherDid}),
     staleTime: STALE.MINUTES.FIVE,
-    enabled: enabled && !!url,
+    enabled: !!url,
     queryFn: async () => {
       const res = await agent.app.bsky.feed.searchPosts({
         q: url,
@@ -131,13 +120,87 @@ export function useArticleDiscussionQuery({
         }
       }
 
-      const ordered = anchor
-        ? [anchor, ...posts.filter(post => post.uri !== anchor.uri)]
+      /*
+       * The publisher's own post wins the top slot - it is the article's
+       * canonical thread - and the rest of the conversation ranks by its
+       * interactions in the Atmosphere.
+       */
+      const rest = anchor
+        ? posts.filter(post => post.uri !== anchor.uri)
         : posts
+      const orderedRest = [...rest].sort(
+        (a, b) => engagementScore(b) - engagementScore(a),
+      )
+      const ordered = anchor ? [anchor, ...orderedRest] : orderedRest
       const total = Math.max(res.data.hitsTotal ?? posts.length, ordered.length)
-      return {posts: ordered, total, anchor}
+      /* The article's pull in the Atmosphere; picks the front page's featured
+       * story. */
+      const interactions = ordered.reduce(
+        (sum, post) => sum + engagementScore(post),
+        0,
+      )
+      return {posts: ordered, total, anchor, interactions}
     },
+  }
+}
+
+/**
+ * The in-network conversation about a specific article: posts across the network
+ * that link to its URL. This is the page's reason to exist - the discussion the
+ * publisher's own site and the scattered home feed don't put next to the piece.
+ *
+ * `searchPosts` indexes link facets, so a URL query surfaces posts that shared
+ * it; we then keep only posts that genuinely reference the URL (rather than
+ * merely matching its tokens).
+ *
+ * When the publisher itself posted the article, that post is the article's
+ * canonical thread: it is pinned first and returned as `anchor`, so sharing can
+ * quote it (growing one conversation) instead of starting a parallel one. The
+ * remaining posts rank by their Atmosphere interactions (likes, reposts,
+ * replies, quotes).
+ */
+export function useArticleDiscussionQuery({
+  url,
+  publisherDid,
+  enabled = true,
+}: {
+  url: string
+  publisherDid?: string
+  enabled?: boolean
+}) {
+  const agent = useAgent()
+  const options = articleDiscussionQueryOptions({url, publisherDid, agent})
+  return useQuery({...options, enabled: enabled && options.enabled})
+}
+
+/**
+ * The discussions for a whole front page of articles at once, one cache-shared
+ * query per URL. The front page uses the per-article `interactions` totals to
+ * feature the story the Atmosphere engaged with most.
+ */
+export function useArticleDiscussionsQuery({
+  urls,
+  publisherDid,
+}: {
+  urls: string[]
+  publisherDid?: string
+}) {
+  const agent = useAgent()
+  return useQueries({
+    queries: urls.map(url =>
+      articleDiscussionQueryOptions({url, publisherDid, agent}),
+    ),
   })
+}
+
+/** A post's total interactions in the Atmosphere; ranks the discussion. */
+function engagementScore(post: AppBskyFeedDefs.PostView): number {
+  return (
+    (post.likeCount ?? 0) +
+    (post.repostCount ?? 0) +
+    (post.replyCount ?? 0) +
+    (post.quoteCount ?? 0)
+  )
 }
 
 /** Whether a post links to `url`, comparing normalized host + path. */
