@@ -8,9 +8,10 @@ import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {Divider} from '#/components/Divider'
 import {EditBig_Stroke2_Corner2_Rounded as ComposeIcon} from '#/components/icons/EditBig'
-import {Link} from '#/components/Link'
+import {InlineLinkText, Link} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
+import {articleDiscussionPath} from '../discussion'
 import {getPublisherRssUrls, type NewsroomPublisher} from '../publishers'
 import {
   useArticleDiscussionQuery,
@@ -126,37 +127,59 @@ function SecondaryArticle({
   // scrape (a full page fetch per article).
   const image = item.imageUrl
 
+  /*
+   * The meta line's post count is its own link, so it sits beside the article
+   * link rather than inside it - a link within a link is invalid on web and
+   * unreliable on native.
+   */
   return (
     <View style={[a.flex_row, a.gap_md, a.align_start]}>
-      <Link
-        to={item.link}
-        label={item.title}
-        style={[a.flex_1, a.flex_row, a.gap_md]}>
+      <View style={[a.flex_1, a.flex_row, a.gap_md]}>
         {!!image && (
-          <Image
-            accessibilityIgnoresInvertColors
-            source={{uri: image}}
-            style={[a.rounded_sm, {width: 96, height: 72}]}
-            contentFit="cover"
-            transition={200}
-          />
+          <Link to={item.link} label={item.title}>
+            <Image
+              accessibilityIgnoresInvertColors
+              source={{uri: image}}
+              style={[a.rounded_sm, {width: 96, height: 72}]}
+              contentFit="cover"
+              transition={200}
+            />
+          </Link>
         )}
         <View style={[a.flex_1, a.gap_2xs]}>
-          <Text
-            numberOfLines={2}
-            style={[a.text_md, a.font_bold, a.leading_snug, t.atoms.text]}>
-            {item.title}
-          </Text>
-          {!!item.description && (
+          <Link
+            to={item.link}
+            label={item.title}
+            style={[a.flex_col, a.gap_2xs, a.w_full]}>
             <Text
               numberOfLines={2}
-              style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
-              {item.description}
+              style={[a.text_md, a.font_bold, a.leading_snug, t.atoms.text]}>
+              {item.title}
             </Text>
-          )}
-          <ArticleMeta item={item} discussionCount={discussion?.total} />
+            {!!item.description && (
+              <Text
+                numberOfLines={2}
+                style={[
+                  a.text_sm,
+                  a.leading_snug,
+                  t.atoms.text_contrast_medium,
+                ]}>
+                {item.description}
+              </Text>
+            )}
+          </Link>
+          <ArticleMeta
+            item={item}
+            discussionCount={discussion?.total}
+            discussionPath={
+              articleDiscussionPath({
+                url: item.link,
+                anchor: discussion?.anchor,
+              }).path
+            }
+          />
         </View>
-      </Link>
+      </View>
       <ArticleShareButton item={item} publisherDid={publisher.did} compact />
     </View>
   )
@@ -244,13 +267,20 @@ function ArticleShareButton({
 function ArticleMeta({
   item,
   discussionCount,
+  discussionPath,
 }: {
   item: RssItem
   discussionCount?: number
+  /** Makes the post count a link into the article's posts. */
+  discussionPath?: string
 }) {
   const t = useTheme()
-  const {i18n} = useLingui()
+  const {i18n, t: l} = useLingui()
   const hostname = safeHostname(item.link)
+  const postCount = plural(discussionCount ?? 0, {
+    one: '# post',
+    other: '# posts',
+  })
 
   return (
     <Text style={[a.text_xs, t.atoms.text_contrast_low]}>
@@ -264,7 +294,16 @@ function ArticleMeta({
       {!!discussionCount && (
         <>
           {' · '}
-          {plural(discussionCount, {one: '# post', other: '# posts'})}
+          {discussionPath ? (
+            <InlineLinkText
+              to={discussionPath}
+              label={l`See this story in the Atmosphere`}
+              style={[a.text_xs]}>
+              {postCount}
+            </InlineLinkText>
+          ) : (
+            postCount
+          )}
         </>
       )}
     </Text>

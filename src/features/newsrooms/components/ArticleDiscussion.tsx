@@ -23,6 +23,7 @@ import {Link} from '#/components/Link'
 import {ContentHider} from '#/components/moderation/ContentHider'
 import {PostAlerts} from '#/components/moderation/PostAlerts'
 import {Text} from '#/components/Typography'
+import {articleDiscussionPath} from '../discussion'
 import {useArticleDiscussionQuery} from '../queries'
 
 const SHOWN = 3
@@ -61,11 +62,10 @@ export function ArticleDiscussion({
   const visibleAnchor = data.anchor
     ? moderatedPosts.find(({post}) => post.uri === data.anchor?.uri)?.post
     : undefined
-  const anchorPath = visibleAnchor
-    ? postUriToRelativePath(visibleAnchor.uri, {
-        handle: visibleAnchor.author.handle,
-      })
-    : undefined
+  const {path: discussionPath, isAnchor} = articleDiscussionPath({
+    url,
+    anchor: visibleAnchor,
+  })
 
   return (
     <View
@@ -79,7 +79,7 @@ export function ArticleDiscussion({
         t.atoms.bg_contrast_25,
       ]}>
       <Text style={[a.text_xs, a.font_bold, t.atoms.text_contrast_medium]}>
-        <Trans>The Atmosphere on this story</Trans>
+        <Trans>This story in the Atmosphere</Trans>
       </Text>
 
       {posts.map(({post, moderation}, i) => (
@@ -90,15 +90,15 @@ export function ArticleDiscussion({
       ))}
 
       <Link
-        to={anchorPath ?? `/search?q=${encodeURIComponent(url)}`}
+        to={discussionPath}
         label={
-          anchorPath
+          isAnchor
             ? l`Open the discussion thread`
             : l`See all posts about this article`
         }
         style={[a.self_start]}>
         <Text style={[a.text_sm, a.font_bold, {color: t.palette.primary_500}]}>
-          {anchorPath ? (
+          {isAnchor ? (
             <Trans>Join the conversation</Trans>
           ) : data.total > SHOWN ? (
             <Trans>
