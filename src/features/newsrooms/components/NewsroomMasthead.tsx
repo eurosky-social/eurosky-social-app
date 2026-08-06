@@ -15,6 +15,7 @@ import * as ProfileCard from '#/components/ProfileCard'
 import {Text} from '#/components/Typography'
 import {VerificationCheckButton} from '#/components/verification/VerificationCheckButton'
 import {getPublisherName, type NewsroomPublisher} from '../publishers'
+import {toSingleParagraph} from '../text'
 
 export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
   const t = useTheme()
@@ -25,7 +26,7 @@ export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
   // with their live avatar, name, and bio.
   const {data: profile} = useProfileQuery({did: publisher.did})
   const name = getPublisherName(profile)
-  const bio = profile?.description?.trim()
+  const bio = profile?.description && toSingleParagraph(profile.description)
   const profilePath = makeProfileLink({
     did: publisher.did,
     handle: profile?.handle ?? publisher.did,
@@ -36,7 +37,7 @@ export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
       {publisher.categories.map(category => (
         <View
           key={category}
-          style={[a.px_md, a.py_xs, a.rounded_full, t.atoms.bg_contrast_25]}>
+          style={[a.px_md, a.py_xs, a.rounded_full, t.atoms.bg_contrast_50]}>
           <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
             {category}
           </Text>
@@ -89,7 +90,7 @@ export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
                 {profile && <PublisherVerification profile={profile} />}
               </View>
               {!!profile && (
-                <Text style={[a.text_xs, t.atoms.text_contrast_low]}>
+                <Text style={[a.text_xs, t.atoms.text_contrast_medium]}>
                   {sanitizeHandle(profile.handle, '@')}
                 </Text>
               )}
