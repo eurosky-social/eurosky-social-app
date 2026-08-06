@@ -305,7 +305,7 @@ function ArticleMeta({
   })
 
   return (
-    <Text style={[a.text_xs, t.atoms.text_contrast_low]}>
+    <Text style={[a.text_xs, t.atoms.text_contrast_medium]}>
       {hostname}
       {!!item.publishedAt && (
         <>

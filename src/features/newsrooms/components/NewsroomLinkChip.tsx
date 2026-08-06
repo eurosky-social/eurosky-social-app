@@ -6,6 +6,7 @@ import {atoms as a, useTheme} from '#/alf'
 import {Newspaper2_Stroke2_Corner2_Rounded as NewsroomIcon} from '#/components/icons/Newspaper2'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
+import {readableAccent} from '../accent'
 import {
   getNewsroomPublisherByUrl,
   getPublisherName,
@@ -46,7 +47,7 @@ function Chip({
   const {t: l} = useLingui()
   const {data: profile} = useProfileQuery({did: publisher.did})
   const name = getPublisherName(profile)
-  const accent = publisher.accent ?? t.palette.primary_500
+  const accent = readableAccent(publisher.accent, t)
 
   return (
     <View style={[a.flex_row, style]}>

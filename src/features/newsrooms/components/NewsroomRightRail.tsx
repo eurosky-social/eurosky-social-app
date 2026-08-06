@@ -27,6 +27,7 @@ import {Link} from '#/components/Link'
 import * as ProfileCard from '#/components/ProfileCard'
 import {Text} from '#/components/Typography'
 import {ExploreLiveSportsWidget} from '#/features/liveSports/components/ExploreLiveSportsWidget'
+import {readableAccent} from '../accent'
 import {
   getDefaultNewsroomPublisher,
   getNewsroomPublisherByDid,
@@ -108,7 +109,7 @@ function ReportersModule({
   const shown =
     canToggle && !expanded ? profiles.slice(0, COLLAPSED_SHOWN) : profiles
 
-  const accent = publisher.accent ?? t.palette.primary_500
+  const accent = readableAccent(publisher.accent, t)
 
   const header = (
     <ModuleHeader.Container
@@ -129,9 +130,9 @@ function ReportersModule({
             {i18n.number(profiles.length)}
           </Text>
           {expanded ? (
-            <ChevronUpIcon size="sm" style={t.atoms.text_contrast_low} />
+            <ChevronUpIcon size="sm" style={t.atoms.text_contrast_medium} />
           ) : (
-            <ChevronDownIcon size="sm" style={t.atoms.text_contrast_low} />
+            <ChevronDownIcon size="sm" style={t.atoms.text_contrast_medium} />
           )}
         </>
       )}

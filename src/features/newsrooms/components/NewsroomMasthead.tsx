@@ -37,7 +37,7 @@ export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
       {publisher.categories.map(category => (
         <View
           key={category}
-          style={[a.px_md, a.py_xs, a.rounded_full, t.atoms.bg_contrast_25]}>
+          style={[a.px_md, a.py_xs, a.rounded_full, t.atoms.bg_contrast_50]}>
           <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
             {category}
           </Text>
@@ -90,7 +90,7 @@ export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
                 {profile && <PublisherVerification profile={profile} />}
               </View>
               {!!profile && (
-                <Text style={[a.text_xs, t.atoms.text_contrast_low]}>
+                <Text style={[a.text_xs, t.atoms.text_contrast_medium]}>
                   {sanitizeHandle(profile.handle, '@')}
                 </Text>
               )}

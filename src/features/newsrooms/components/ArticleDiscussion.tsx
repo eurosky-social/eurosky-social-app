@@ -72,6 +72,13 @@ export function ArticleDiscussion({
       })
     : undefined
 
+  /*
+   * A thread gate on the canonical thread would reject the reply after the
+   * composer had already taken it, so offer reading the thread instead.
+   */
+  const canReply = !!visibleAnchor && !visibleAnchor.post.viewer?.replyDisabled
+  const showAnchorActions = canReply || !!anchorPath
+
   // "Join the conversation" opens the composer as a reply to the canonical
   // thread, so joining grows the one conversation instead of starting another.
   function onJoinConversation() {
@@ -121,26 +128,38 @@ export function ArticleDiscussion({
         </Fragment>
       ))}
 
-      {visibleAnchor ? (
+      {showAnchorActions ? (
         <View style={[a.flex_row, a.align_center, a.gap_lg]}>
-          <Button
-            label={l`Reply to the discussion thread`}
-            onPress={onJoinConversation}
-            style={[a.self_start]}>
-            <Text
-              style={[a.text_sm, a.font_bold, {color: t.palette.primary_500}]}>
-              <Trans>Join the conversation</Trans>
-            </Text>
-          </Button>
-          {/* Composing is the primary action; the quiet link beside it opens
-              the canonical thread for reading. */}
+          {canReply && (
+            <Button
+              label={l`Reply to the discussion thread`}
+              onPress={onJoinConversation}
+              style={[a.self_start]}>
+              <Text
+                style={[
+                  a.text_sm,
+                  a.font_bold,
+                  {color: t.palette.primary_500},
+                ]}>
+                <Trans>Join the conversation</Trans>
+              </Text>
+            </Button>
+          )}
+          {/* Composing is the primary action where it is open to us; otherwise
+              reading the canonical thread is all that is left. */}
           {anchorPath && (
             <Link
               to={anchorPath}
               label={l`Open the discussion thread`}
               style={[a.self_start]}>
               <Text
-                style={[a.text_sm, a.font_bold, t.atoms.text_contrast_medium]}>
+                style={[
+                  a.text_sm,
+                  a.font_bold,
+                  canReply
+                    ? t.atoms.text_contrast_medium
+                    : {color: t.palette.primary_500},
+                ]}>
                 <Trans>Open the thread</Trans>
               </Text>
             </Link>
@@ -233,13 +252,9 @@ function DiscussionPost({
   )
 }
 
+// Only the counts the row actually renders, so it is never an empty padded row.
 function hasEngagement(post: AppBskyFeedDefs.PostView): boolean {
-  return !!(
-    post.repostCount ||
-    post.likeCount ||
-    post.replyCount ||
-    post.quoteCount
-  )
+  return !!(post.repostCount || post.likeCount || post.replyCount)
 }
 
 function Stat({

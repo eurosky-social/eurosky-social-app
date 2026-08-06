@@ -7,6 +7,7 @@ import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
 import {Text} from '#/components/Typography'
+import {readableAccent} from '../accent'
 import {getPublisherName, type NewsroomPublisher} from '../publishers'
 
 /**
@@ -66,7 +67,7 @@ function OrgTab({
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
-  const accent = publisher.accent ?? t.palette.primary_500
+  const accent = readableAccent(publisher.accent, t)
   const name = getPublisherName(profile)
 
   return (
