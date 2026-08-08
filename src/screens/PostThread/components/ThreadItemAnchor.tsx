@@ -29,7 +29,11 @@ import {
   ReaderSeamControls,
 } from '#/screens/PostThread/components/ReaderSeamControls'
 import {ThreadItemAnchorFollowButton} from '#/screens/PostThread/components/ThreadItemAnchorFollowButton'
-import {ThreadPositionChip} from '#/screens/PostThread/components/ThreadPositionChip'
+import {
+  POST_NUMBER_INLINE_OFFSET,
+  ThreadItemPostNumber,
+  useHasThreadItemPostNumber,
+} from '#/screens/PostThread/components/ThreadItemPostNumber'
 import {
   LINEAR_AVI_WIDTH,
   OUTER_SPACE,
@@ -40,7 +44,6 @@ import {
 import {
   type ReaderSeam as ReaderSeamData,
   type ThreadPostItem,
-  type ThreadPostPosition,
 } from '#/screens/PostThread/reader'
 import {atoms as a, useTheme} from '#/alf'
 import {DebugFieldDisplay} from '#/components/DebugFieldDisplay'
@@ -49,6 +52,7 @@ import {GalleryBleed} from '#/components/images/Gallery'
 import {Link} from '#/components/Link'
 import {ContentHider} from '#/components/moderation/ContentHider'
 import {PostAlerts} from '#/components/moderation/PostAlerts'
+import * as ReportDialogMetadataContext from '#/components/moderation/ReportDialog/ReportDialogMetadataContext'
 import {type AppModerationCause} from '#/components/Pills'
 import {Embed, PostEmbedViewContext} from '#/components/Post/Embed'
 import {TranslatedPost} from '#/components/Post/Translated'
@@ -69,7 +73,6 @@ export type ThreadItemAnchorReaderSeam = ReaderSeamData & {
 export function ThreadItemAnchor({
   item,
   readerSeam,
-  threadPosition,
   onPostSuccess,
   threadgateRecord,
   postSource,
@@ -80,11 +83,6 @@ export function ThreadItemAnchor({
    * controls and replies into a seam below the post body.
    */
   readerSeam?: ThreadItemAnchorReaderSeam
-  /**
-   * Set in linear view when the anchor is part of a self-thread: renders a
-   * "(x/n)" position chip at the end of the post text.
-   */
-  threadPosition?: ThreadPostPosition
   onPostSuccess?: (data: OnPostSuccessData) => void
   threadgateRecord?: AppBskyFeedThreadgate.Record
   postSource?: PostSource
@@ -98,18 +96,17 @@ export function ThreadItemAnchor({
   }
 
   return (
-    <ThreadItemAnchorInner
-      // Safeguard from clobbering per-post state below:
-      key={postShadow.uri}
-      item={item}
-      isRoot={isRoot}
-      readerSeam={readerSeam}
-      threadPosition={threadPosition}
-      postShadow={postShadow}
-      onPostSuccess={onPostSuccess}
-      threadgateRecord={threadgateRecord}
-      postSource={postSource}
-    />
+    <ReportDialogMetadataContext.Provider key={postShadow.uri}>
+      <ThreadItemAnchorInner
+        item={item}
+        isRoot={isRoot}
+        readerSeam={readerSeam}
+        postShadow={postShadow}
+        onPostSuccess={onPostSuccess}
+        threadgateRecord={threadgateRecord}
+        postSource={postSource}
+      />
+    </ReportDialogMetadataContext.Provider>
   )
 }
 
@@ -183,7 +180,6 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
   item,
   isRoot,
   readerSeam,
-  threadPosition,
   postShadow,
   onPostSuccess,
   threadgateRecord,
@@ -192,7 +188,6 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
   item: ThreadPostItem
   isRoot: boolean
   readerSeam?: ThreadItemAnchorReaderSeam
-  threadPosition?: ThreadPostPosition
   postShadow: Shadow<AppBskyFeedDefs.PostView>
   onPostSuccess?: (data: OnPostSuccessData) => void
   threadgateRecord?: AppBskyFeedThreadgate.Record
@@ -206,6 +201,8 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
 
   const post = postShadow
   const record = item.value.post.record
+  const postNumbering = item.value
+  const showPostNumber = useHasThreadItemPostNumber(postNumbering)
   const moderation = item.moderation
   const authorShadow = useProfileShadow(post.author)
   const {isActive: live} = useActorStatus(post.author)
@@ -389,20 +386,20 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
                         style={[a.flex_1, a.text_lg]}
                         authorHandle={post.author.handle}
                         shouldProxyLinks={true}
-                        trailing={
-                          threadPosition ? (
-                            <ThreadPositionChip
-                              threadPosition={threadPosition}
-                            />
+                        suffixOffset={POST_NUMBER_INLINE_OFFSET}
+                        suffix={
+                          showPostNumber ? (
+                            <ThreadItemPostNumber value={postNumbering} />
                           ) : undefined
                         }
                       />
                     </View>
-                  ) : threadPosition ? (
-                    // Text-less anchors (e.g. image-only) still show their
-                    // position so the numbering reads without gaps.
-                    <ThreadPositionChip threadPosition={threadPosition} />
-                  ) : undefined}
+                  ) : (
+                    <ThreadItemPostNumber
+                      inline={false}
+                      value={postNumbering}
+                    />
+                  )}
                   <TranslatedPost post={post} postTextStyle={[a.text_lg]} />
                   {post.embed && (
                     <View style={[richText?.text ? a.py_xs : []]}>

@@ -4,11 +4,23 @@ import {
 } from '@atproto/api'
 
 import {AgeAssuranceAccess} from '#/ageAssurance/types'
+import {IS_IOS, IS_WEB} from '#/env'
 
 /**
  * Minimum age required to access the app at all.
  */
 export const MIN_ACCESS_AGE = 13
+
+/**
+ * The identifier for the current platform, matching the `knownValues` of the
+ * `platforms` property on `app.bsky.ageassurance.defs#configRegion`. Used to
+ * filter out region configs that don't apply to this platform.
+ */
+export const AGE_ASSURANCE_PLATFORM: 'web' | 'ios' | 'android' = IS_WEB
+  ? 'web'
+  : IS_IOS
+    ? 'ios'
+    : 'android'
 
 /**
  * Whether the current device can provide the native on-device age signals we

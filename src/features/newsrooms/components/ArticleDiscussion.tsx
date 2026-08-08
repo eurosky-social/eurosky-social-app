@@ -6,8 +6,7 @@ import {
   moderatePost,
   type ModerationDecision,
 } from '@atproto/api'
-import {plural} from '@lingui/core/macro'
-import {Trans, useLingui} from '@lingui/react/macro'
+import {Plural, Trans, useLingui} from '@lingui/react/macro'
 
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
@@ -174,7 +173,8 @@ export function ArticleDiscussion({
             style={[a.text_sm, a.font_bold, {color: t.palette.primary_500}]}>
             {data.total > SHOWN ? (
               <Trans>
-                See all {plural(data.total, {one: '# post', other: '# posts'})}
+                See all{' '}
+                <Plural value={data.total} one="# post" other="# posts" />
               </Trans>
             ) : (
               <Trans>See the conversation</Trans>

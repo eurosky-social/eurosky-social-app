@@ -4,7 +4,7 @@ import {AppBskyRichtextFacet, RichText as RichTextAPI} from '@atproto/api'
 
 import {hasCode} from '#/lib/code/parse'
 import {toShortUrl} from '#/lib/strings/url-helpers'
-import {atoms as a, flatten, type TextStyleProp} from '#/alf'
+import {atoms as a, flatten, ios, type TextStyleProp} from '#/alf'
 import {isOnlyEmoji} from '#/alf/typography'
 import {InlineLinkText, type LinkProps} from '#/components/Link'
 import {ProfileHoverCard} from '#/components/ProfileHoverCard'
@@ -35,13 +35,19 @@ export type RichTextProps = TextStyleProp &
     interactiveStyle?: StyleProp<TextStyle>
     emojiMultiplier?: number
     shouldProxyLinks?: boolean
+    suffix?: React.ReactNode
     /**
-     * Rendered inline after the last text segment, so it flows with the final
-     * line and wraps with the text, e.g. the thread position indicator in the
-     * post thread's linear view. Must be text-compatible (a string or nested
-     * <Text>).
+     * How far below the text baseline `suffix` extends, in px.
+     *
+     * Inline views inside `Text` sit with their bottom edge on the baseline, so
+     * a suffix nudged below it overflows the `Text`'s measured bounds and iOS
+     * clips it. We reserve this much room as bottom padding and cancel it with
+     * an equal negative margin, so the suffix can paint without moving anything
+     * after it. Pass the same offset the suffix nudges itself by.
+     *
+     * Overrides any `paddingBottom`/`marginBottom` set via `style`.
      */
-    trailing?: ReactNode
+    suffixOffset?: number
     /**
      * DANGEROUS: Disable facet lexicon validation
      *
@@ -70,8 +76,9 @@ export function RichText({
   onLayout,
   onTextLayout,
   shouldProxyLinks,
+  suffix,
+  suffixOffset = 0,
   disableMentionFacetValidation,
-  trailing,
 }: RichTextProps) {
   const richText = useMemo(() => {
     if (value instanceof RichTextAPI) {
@@ -84,6 +91,10 @@ export function RichText({
   }, [value])
 
   const plainStyles = style
+  const suffixStyles =
+    suffix && suffixOffset
+      ? ios({paddingBottom: suffixOffset, marginBottom: -suffixOffset})
+      : null
   const interactiveStyles = [plainStyles, interactiveStyle]
 
   const {text, facets} = richText
@@ -108,21 +119,22 @@ export function RichText({
           emoji
           selectable={selectable}
           testID={testID}
-          style={plainStyles}
+          style={[plainStyles, suffixStyles]}
           numberOfLines={numberOfLines}
           onLayout={onLayout}
           onTextLayout={onTextLayout}
           // @ts-ignore web only -prf
           dataSet={WORD_WRAP}>
           {parts.map(p => p.node)}
-          {trailing}
+          {suffix ? ' ' : null}
+          {suffix}
         </Text>
       )
     }
     const out: ReactNode[] = []
     let run: ReactNode[] = []
     let runKey = 0
-    const flushRun = () => {
+    const flushRun = (isFinal = false) => {
       if (run.length === 0) return
       const children = run
       out.push(
@@ -130,7 +142,7 @@ export function RichText({
           key={`run${runKey}`}
           emoji
           selectable={selectable}
-          style={plainStyles}
+          style={[plainStyles, isFinal && suffixStyles]}
           // @ts-ignore web only -prf
           dataSet={WORD_WRAP}>
           {children}
@@ -147,10 +159,11 @@ export function RichText({
         run.push(part.node)
       }
     }
-    if (trailing) {
-      run.push(<Fragment key="trailing">{trailing}</Fragment>)
+    if (suffix) {
+      run.push(' ')
+      run.push(<Fragment key="suffix">{suffix}</Fragment>)
     }
-    flushRun()
+    flushRun(true)
     // NOTE: posts with a fenced block in a full view render as a <View
     // testID={testID}> wrapping <Text> runs, rather than the usual single
     // <Text testID={testID}>. testID stays on the wrapper, but the structure
@@ -176,13 +189,14 @@ export function RichText({
           emoji
           selectable={selectable}
           testID={testID}
-          style={[plainStyles, {fontSize}]}
+          style={[plainStyles, {fontSize}, suffixStyles]}
           onLayout={onLayout}
           onTextLayout={onTextLayout}
           // @ts-ignore web only -prf
           dataSet={WORD_WRAP}>
           {text}
-          {trailing}
+          {suffix ? ' ' : null}
+          {suffix}
         </Text>
       )
     }

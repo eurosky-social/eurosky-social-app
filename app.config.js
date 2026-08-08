@@ -91,7 +91,6 @@ module.exports = function (_config) {
       icon: './assets/app-icons/ios_icon_default_next.png',
       userInterfaceStyle: 'automatic',
       primaryColor: BRAND_ACCENT.primary_500,
-      newArchEnabled: false,
       ios: {
         supportsTablet: false,
         bundleIdentifier: 'social.mu.app',
