@@ -2,6 +2,7 @@ import {View} from 'react-native'
 import {type AppBskyActorDefs} from '@atproto/api'
 import {useLingui} from '@lingui/react/macro'
 
+import {HITSLOP_20} from '#/lib/constants'
 import {makeProfileLink} from '#/lib/routes/links'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useProfileShadow} from '#/state/cache/profile-shadow'
@@ -160,5 +161,11 @@ function PublisherVerification({
   profile: AppBskyActorDefs.ProfileViewDetailed
 }) {
   const shadowed = useProfileShadow(profile)
-  return <VerificationCheckButton profile={shadowed} width={18} />
+  return (
+    <VerificationCheckButton
+      profile={shadowed}
+      width={18}
+      hitSlop={HITSLOP_20}
+    />
+  )
 }

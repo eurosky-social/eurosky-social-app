@@ -57,11 +57,7 @@ import {
   ThreadItemTreePost,
   ThreadItemTreePostSkeleton,
 } from '#/screens/PostThread/components/ThreadItemTreePost'
-import {
-  buildReaderThread,
-  computeSelfThreadPositions,
-  type ReaderItem,
-} from '#/screens/PostThread/reader'
+import {buildReaderThread, type ReaderItem} from '#/screens/PostThread/reader'
 import {
   atoms as a,
   native,
@@ -474,16 +470,6 @@ export function PostThread({
   const sourceItems = reader?.items ?? thread.data.items
 
   /*
-   * In linear view, self-thread posts - the OP thread and multi-part replies
-   * alike - get "(x/n)" position chips at the end of their text.
-   */
-  const threadPositions = useMemo(() => {
-    return thread.state.view === 'linear'
-      ? computeSelfThreadPositions(thread.data.items)
-      : undefined
-  }, [thread.state.view, thread.data.items])
-
-  /*
    * Show a floating collapse button when the open seam has replies, so the
    * user can close them without scrolling back up.
    */
@@ -585,7 +571,6 @@ export function PostThread({
               overrides={{
                 topBorder: index === 0,
               }}
-              threadPosition={threadPositions?.get(item.uri)}
               onPostSuccess={optimisticOnPostReply}
             />
           )
@@ -622,7 +607,6 @@ export function PostThread({
                       }
                     : undefined
                 }
-                threadPosition={threadPositions?.get(item.uri)}
                 threadgateRecord={thread.data.threadgate?.record ?? undefined}
                 onPostSuccess={optimisticOnPostReply}
                 postSource={anchorPostSource}
@@ -649,7 +633,6 @@ export function PostThread({
                 overrides={{
                   moderation: thread.state.otherItemsVisible && item.depth > 0,
                 }}
-                threadPosition={threadPositions?.get(item.uri)}
                 onPostSuccess={optimisticOnPostReply}
               />
             )
@@ -712,7 +695,6 @@ export function PostThread({
     [
       thread,
       reader,
-      threadPositions,
       toggleSeam,
       optimisticOnPostReply,
       onReplyToAnchor,

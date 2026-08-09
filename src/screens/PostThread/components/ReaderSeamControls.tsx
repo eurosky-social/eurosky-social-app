@@ -26,7 +26,7 @@ import {useAgent, useSession} from '#/state/session'
 import {type OnPostSuccessData} from '#/state/shell/composer'
 import {useMergedThreadgateHiddenReplies} from '#/state/threadgate-hidden-replies'
 import {type PostSource} from '#/state/unstable-post-source'
-import {LikesStat} from '#/screens/PostThread/components/LikesStat'
+import {KnownLikers, LikesStat} from '#/screens/PostThread/components/LikesStat'
 import {ThreadComposePromptPill} from '#/screens/PostThread/components/ThreadComposePrompt'
 import {
   ThreadItemPost,
@@ -282,6 +282,7 @@ function ReaderSeamControlsInner({
               </Trans>
             </Text>
           ) : null}
+          <KnownLikers post={post} />
         </View>
       ) : null}
 
