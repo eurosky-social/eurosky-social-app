@@ -23,13 +23,16 @@ import {type OnPostSuccessData} from '#/state/shell/composer'
 import {useMergedThreadgateHiddenReplies} from '#/state/threadgate-hidden-replies'
 import {PostMeta} from '#/view/com/util/PostMeta'
 import {PreviewableUserAvatar} from '#/view/com/util/UserAvatar'
-import {ThreadPositionChip} from '#/screens/PostThread/components/ThreadPositionChip'
+import {
+  POST_NUMBER_INLINE_OFFSET,
+  ThreadItemPostNumber,
+  useHasThreadItemPostNumber,
+} from '#/screens/PostThread/components/ThreadItemPostNumber'
 import {
   LINEAR_AVI_WIDTH,
   OUTER_SPACE,
   REPLY_LINE_WIDTH,
 } from '#/screens/PostThread/const'
-import {type ThreadPostPosition} from '#/screens/PostThread/reader'
 import {atoms as a, useTheme} from '#/alf'
 import {DebugFieldDisplay} from '#/components/DebugFieldDisplay'
 import {useInteractionState} from '#/components/hooks/useInteractionState'
@@ -40,6 +43,7 @@ import {
 } from '#/components/images/Gallery'
 import {PostAlerts} from '#/components/moderation/PostAlerts'
 import {PostHider} from '#/components/moderation/PostHider'
+import * as ReportDialogMetadataContext from '#/components/moderation/ReportDialog/ReportDialogMetadataContext'
 import {type AppModerationCause} from '#/components/Pills'
 import {Embed, PostEmbedViewContext} from '#/components/Post/Embed'
 import {ShowMoreTextButton} from '#/components/Post/ShowMoreTextButton'
@@ -61,11 +65,6 @@ export type ThreadItemPostProps = {
    * Adjusts the hover overlay, e.g. to start at the reader bracket edge.
    */
   hoverStyle?: StyleProp<ViewStyle>
-  /**
-   * Set in linear view when this post is part of a self-thread: renders a
-   * "(x/n)" position chip at the end of the post text.
-   */
-  threadPosition?: ThreadPostPosition
   onPostSuccess?: (data: OnPostSuccessData) => void
   threadgateRecord?: AppBskyFeedThreadgate.Record
 }
@@ -74,7 +73,6 @@ export function ThreadItemPost({
   item,
   overrides,
   hoverStyle,
-  threadPosition,
   onPostSuccess,
   threadgateRecord,
 }: ThreadItemPostProps) {
@@ -85,15 +83,16 @@ export function ThreadItemPost({
   }
 
   return (
-    <ThreadItemPostInner
-      item={item}
-      postShadow={postShadow}
-      threadgateRecord={threadgateRecord}
-      overrides={overrides}
-      hoverStyle={hoverStyle}
-      threadPosition={threadPosition}
-      onPostSuccess={onPostSuccess}
-    />
+    <ReportDialogMetadataContext.Provider key={postShadow.uri}>
+      <ThreadItemPostInner
+        item={item}
+        postShadow={postShadow}
+        threadgateRecord={threadgateRecord}
+        overrides={overrides}
+        hoverStyle={hoverStyle}
+        onPostSuccess={onPostSuccess}
+      />
+    </ReportDialogMetadataContext.Provider>
   )
 }
 
@@ -201,7 +200,6 @@ const ThreadItemPostInner = memo(function ThreadItemPostInner({
   postShadow,
   overrides,
   hoverStyle,
-  threadPosition,
   onPostSuccess,
   threadgateRecord,
 }: ThreadItemPostProps & {
@@ -213,6 +211,8 @@ const ThreadItemPostInner = memo(function ThreadItemPostInner({
 
   const post = item.value.post
   const record = item.value.post.record
+  const postNumbering = item.value
+  const showPostNumber = useHasThreadItemPostNumber(postNumbering)
   const moderation = item.moderation
   const richText = useMemo(
     () =>
@@ -343,26 +343,29 @@ const ThreadItemPostInner = memo(function ThreadItemPostInner({
                     numberOfLines={limitLines ? MAX_POST_LINES : undefined}
                     authorHandle={post.author.handle}
                     shouldProxyLinks={true}
-                    trailing={
-                      threadPosition ? (
-                        <ThreadPositionChip threadPosition={threadPosition} />
+                    suffixOffset={POST_NUMBER_INLINE_OFFSET}
+                    suffix={
+                      !limitLines && showPostNumber ? (
+                        <ThreadItemPostNumber value={postNumbering} />
                       ) : undefined
                     }
                   />
                   {limitLines && (
-                    <ShowMoreTextButton
-                      style={[a.text_md]}
-                      onPress={onPressShowMore}
-                    />
+                    <View style={[a.flex_row, a.align_center, a.gap_xs]}>
+                      <ShowMoreTextButton
+                        style={[a.text_md]}
+                        onPress={onPressShowMore}
+                      />
+                      <ThreadItemPostNumber
+                        inline={false}
+                        value={postNumbering}
+                      />
+                    </View>
                   )}
                 </View>
-              ) : threadPosition ? (
-                // Text-less posts (e.g. image-only) still show their position
-                // so the numbering reads without gaps.
-                <View style={[a.mb_2xs]}>
-                  <ThreadPositionChip threadPosition={threadPosition} />
-                </View>
-              ) : undefined}
+              ) : (
+                <ThreadItemPostNumber inline={false} value={postNumbering} />
+              )}
               <TranslatedPost hideTranslateLink post={post} />
               {post.embed && (
                 <View

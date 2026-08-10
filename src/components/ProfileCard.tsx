@@ -601,7 +601,7 @@ export function FollowButtonPlaceholder({style}: ViewStyleProp) {
   return (
     <View
       style={[
-        a.rounded_sm,
+        a.rounded_full,
         t.atoms.bg_contrast_50,
         a.w_full,
         {
@@ -623,8 +623,9 @@ export function Labels({
   const moderation = moderateProfile(profile, moderationOpts)
   const modui = moderation.ui('profileList')
   const followedBy = profile.viewer?.followedBy
+  const mutedOnlyReposts = profile.viewer?.mutedOnlyReposts
 
-  if (!followedBy && !modui.inform && !modui.alert) {
+  if (!followedBy && !mutedOnlyReposts && !modui.inform && !modui.alert) {
     return null
   }
 
@@ -637,6 +638,7 @@ export function Labels({
       {modui.informs.map(inform => (
         <Pills.Label key={getModerationCauseKey(inform)} cause={inform} />
       ))}
+      {mutedOnlyReposts && <Pills.MutedOnlyReposts />}
     </Pills.Row>
   )
 }

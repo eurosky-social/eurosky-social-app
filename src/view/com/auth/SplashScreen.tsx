@@ -70,13 +70,15 @@ export const SplashScreen = ({
             size="large"
             color={isDarkMode ? 'secondary_inverted' : 'secondary'}
             style={[
-              t.atoms.shadow_md,
               {
+                shadowColor: t.palette.black,
+                shadowRadius: 8,
                 shadowOpacity: 0.1,
                 shadowOffset: {
                   width: 0,
                   height: 5,
                 },
+                elevation: 16,
               },
             ]}>
             <ButtonText>

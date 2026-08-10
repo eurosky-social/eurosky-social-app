@@ -23,12 +23,14 @@ import {useInteractionState} from '#/components/hooks/useInteractionState'
 import {GalleryBleed} from '#/components/images/Gallery'
 import {ContentHider} from '#/components/moderation/ContentHider'
 import {PostAlerts} from '#/components/moderation/PostAlerts'
+import * as ReportDialogMetadataContext from '#/components/moderation/ReportDialog/ReportDialogMetadataContext'
 import {StandardSiteEmbed} from '#/components/Post/Embed/StandardSiteEmbed'
 import {isStandardSiteEmbed} from '#/components/Post/Embed/StandardSiteEmbed/utils'
 import {RichText} from '#/components/RichText'
 import {Embed as StarterPackCard} from '#/components/StarterPack/StarterPackCard'
 import {SubtleHover} from '#/components/SubtleHover'
 import {matchCustomEmbed} from '#/features/customEmbeds/registry'
+import {NewsroomLinkChip} from '#/features/newsrooms/components/NewsroomLinkChip'
 import * as bsky from '#/types/bsky'
 import {
   type Embed as TEmbed,
@@ -151,6 +153,8 @@ function MediaEmbed({
             onOpen={rest.onOpen}
             style={[a.mt_sm, rest.style]}
           />
+          {/* EUROSKY: links a post to the newsroom of the org it links to. */}
+          <NewsroomLinkChip url={embed.view.external.uri} style={[a.mt_xs]} />
         </ContentHider>
       )
     }
@@ -328,7 +332,7 @@ export function QuoteEmbed({
   } = useInteractionState()
 
   const contents = (
-    <>
+    <ReportDialogMetadataContext.Provider key={quote.uri}>
       <PostMeta
         author={quote.author}
         moderation={moderation}
@@ -367,7 +371,7 @@ export function QuoteEmbed({
           post={quote}
         />
       )}
-    </>
+    </ReportDialogMetadataContext.Provider>
   )
 
   return (

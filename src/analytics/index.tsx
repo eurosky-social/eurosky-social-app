@@ -6,7 +6,7 @@ import {
   useSyncExternalStore,
 } from 'react'
 import {Platform} from 'react-native'
-import {type Result} from '@growthbook/growthbook-react'
+import {type Result, type WidenPrimitives} from '@growthbook/growthbook-react'
 
 import {Logger} from '#/logger'
 import {
@@ -69,6 +69,7 @@ export type AnalyticsContextType = {
   ) => void
   features: typeof Features & {
     enabled(feature: Features): boolean
+    getValue<T>(feature: Features, defaultValue: T): WidenPrimitives<T>
   }
 }
 export type AnalyticsBaseContextType = Omit<AnalyticsContextType, 'features'>
@@ -85,7 +86,8 @@ function createLogger(
     warn: logger.warn.bind(logger),
     error: logger.error.bind(logger),
     useChild: (context: Exclude<Logger['context'], undefined>) => {
-      return useMemo(() => createLogger(context, metadata), [context])
+      // oxlint-disable-next-line react-hooks/exhaustive-deps
+      return useMemo(() => createLogger(context, metadata), [context, metadata])
     },
     Context: Logger.Context,
   }
@@ -339,6 +341,7 @@ export function AnalyticsFeaturesContext({
       ...parentContext,
       features: {
         enabled: feats.isOn.bind(feats),
+        getValue: feats.getFeatureValue.bind(feats),
         ...Features,
       },
     }

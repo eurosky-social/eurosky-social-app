@@ -12,9 +12,11 @@ import {PostFeed} from '#/view/com/posts/PostFeed'
 import {type ListMethods} from '#/view/com/util/List'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useLayoutBreakpoints, useTheme} from '#/alf'
-import {Button, ButtonIcon} from '#/components/Button'
+import {Button, ButtonIcon, ButtonText} from '#/components/Button'
+import {Newspaper_Stroke2_Corner2_Rounded as NewsFeedIcon} from '#/components/icons/Newspaper'
 import {Newspaper2_Stroke2_Corner2_Rounded as NewsroomsIcon} from '#/components/icons/Newspaper2'
 import * as Layout from '#/components/Layout'
+import {Link} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import * as Menu from '#/components/Menu'
 import {Text} from '#/components/Typography'
@@ -107,6 +109,20 @@ export function NewsroomScreen({route, navigation}: Props) {
             <Trans>Mu Newsrooms</Trans>
           </Layout.Header.TitleText>
         </Layout.Header.Content>
+        {/* Mirrors the news feed header's "Newsrooms" link, so the two news
+         * surfaces cross-link both ways. Sits outside Header.Slot: slots are
+         * fixed-width squares and this button carries a text label. */}
+        <Link
+          testID="newsroomNewsFeedBtn"
+          to="/news"
+          label={l`Open your news feed`}
+          size="small"
+          color="secondary">
+          <ButtonIcon icon={NewsFeedIcon} />
+          <ButtonText>
+            <Trans>News</Trans>
+          </ButtonText>
+        </Link>
         {/* The org switcher scrolls away with the feed; this menu keeps
          * switching newsrooms one tap away from anywhere on the page. */}
         <Layout.Header.Slot>
@@ -177,21 +193,34 @@ export function NewsroomScreen({route, navigation}: Props) {
              * is hidden, fall back to rendering it inline above the feed. */}
             {!rightNavVisible && (
               <View style={[a.pb_md]}>
-                <NewsroomRightRail />
+                <NewsroomRightRail inline />
               </View>
             )}
             {/* Native social layer: the conversation around the journalism. */}
             <View
               style={[
+                a.flex_row,
+                a.align_center,
+                a.gap_sm,
                 a.px_lg,
-                a.pt_lg,
-                a.pb_sm,
+                a.py_xl,
                 a.border_t,
+                a.border_b,
                 t.atoms.border_contrast_low,
               ]}>
+              <NewsroomsIcon
+                size="lg"
+                style={{color: publisher.accent ?? t.palette.primary_500}}
+              />
               <Text
                 emoji
-                style={[a.text_xs, a.font_bold, t.atoms.text_contrast_medium]}>
+                style={[
+                  a.flex_1,
+                  a.text_2xl,
+                  a.font_bold,
+                  a.leading_tight,
+                  t.atoms.text,
+                ]}>
                 <Trans>From {publisherName} and its reporters</Trans>
               </Text>
             </View>

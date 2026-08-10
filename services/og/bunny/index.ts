@@ -208,7 +208,7 @@ async function buildPostTags(
   const images = extractPostImages(post).slice(0, MAX_IMAGES)
   // Canonical handle-form URL (the path may have arrived in DID form).
   const canonical = `${SITE_URL}/profile/${handle}/post/${rkey}`
-  
+
   const tags: Tag[] = [
     meta('property', 'og:type', 'article'),
     meta('property', 'og:site_name', SITE_NAME),

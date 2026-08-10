@@ -23,6 +23,12 @@ export interface NewsroomPublisher {
   did: string
   /** Per-publisher brand accent, tinting the follow button and share CTA. */
   accent?: string
+  /**
+   * Hostnames the publisher's site lives on. A post anywhere in the app that
+   * links to one of these (subdomains included) gets a chip pointing back to
+   * the publisher's newsroom.
+   */
+  domains: string[]
   /** Category filter chips, e.g. Politics, World, Economy, Culture. */
   categories: string[]
   /** Accounts surfaced in the "Reporters" rail / merged feed. */
@@ -34,6 +40,7 @@ export interface NewsroomPublisher {
 export const NEWSROOM_PUBLISHERS: NewsroomPublisher[] = [
   {
     id: 'financial-times',
+    domains: ['ft.com', 'ft.trib.al'],
     did: 'did:plc:5u54z2qgkq43dh2nzwzdbbhb',
     // FT claret; the avatar salmon is too light for a button.
     accent: '#990F3D',
@@ -60,6 +67,7 @@ export const NEWSROOM_PUBLISHERS: NewsroomPublisher[] = [
   },
   {
     id: 'the-verge',
+    domains: ['theverge.com'],
     did: 'did:plc:7exlcsle4mjfhu3wnhcgizz6',
     accent: '#5200FD',
     categories: ['Tech', 'Science', 'Culture'],
@@ -81,6 +89,7 @@ export const NEWSROOM_PUBLISHERS: NewsroomPublisher[] = [
   },
   {
     id: 'wired',
+    domains: ['wired.com'],
     did: 'did:plc:inz4fkbbp7ms3ixufw6xuvdi',
     categories: ['Tech', 'Security', 'Science', 'Culture'],
     reporterDids: [
@@ -100,6 +109,7 @@ export const NEWSROOM_PUBLISHERS: NewsroomPublisher[] = [
   },
   {
     id: 'new-york-times',
+    domains: ['nytimes.com', 'nyti.ms'],
     did: 'did:plc:eclio37ymobqex2ncko63h4r',
     categories: ['World', 'Politics', 'Business', 'Culture'],
     reporterDids: [
@@ -132,6 +142,7 @@ export const NEWSROOM_PUBLISHERS: NewsroomPublisher[] = [
   },
   {
     id: 'euractiv',
+    domains: ['euractiv.com'],
     did: 'did:plc:npdxsw4zvih4gcyqppoql7qk',
     accent: '#637D8A',
     categories: ['EU', 'Politics', 'Policy'],
@@ -154,6 +165,7 @@ export const NEWSROOM_PUBLISHERS: NewsroomPublisher[] = [
   },
   {
     id: '404-media',
+    domains: ['404media.co'],
     did: 'did:plc:vcepp6trx4vpe5ourxso4tjl',
     accent: '#16A34A',
     categories: ['Technology', 'Privacy', 'Policy'],
@@ -167,6 +179,7 @@ export const NEWSROOM_PUBLISHERS: NewsroomPublisher[] = [
   },
   {
     id: 'cnn',
+    domains: ['cnn.com', 'cnn.it'],
     did: 'did:plc:dzezcmpb3fhcpns4n4xm4ur5',
     accent: '#CD0001',
     categories: ['World', 'Politics', 'US'],
@@ -190,6 +203,7 @@ export const NEWSROOM_PUBLISHERS: NewsroomPublisher[] = [
   },
   {
     id: 'nrc',
+    domains: ['nrc.nl'],
     did: 'did:plc:bvkk4kkuavnhqrwapc34wtfp',
     accent: '#D40811',
     categories: ['Netherlands', 'World', 'Politics'],
@@ -200,6 +214,7 @@ export const NEWSROOM_PUBLISHERS: NewsroomPublisher[] = [
   },
   {
     id: 'propublica',
+    domains: ['propublica.org', 'propub.li'],
     did: 'did:plc:k4jt6heuiamymgi46yeuxtpt',
     categories: ['Investigations', 'Politics', 'Justice'],
     reporterDids: [
@@ -221,6 +236,7 @@ export const NEWSROOM_PUBLISHERS: NewsroomPublisher[] = [
   },
   {
     id: 'euobserver',
+    domains: ['euobserver.com', 'euobs.com'],
     did: 'did:plc:xnmkjaouspdzqv4hzvvcf3j3',
     accent: '#EF513B',
     categories: ['EU', 'Politics', 'Green Economy', 'Migration', 'Digital'],
@@ -233,6 +249,7 @@ export const NEWSROOM_PUBLISHERS: NewsroomPublisher[] = [
   },
   {
     id: 'the-guardian',
+    domains: ['theguardian.com', 'gu.com'],
     did: 'did:plc:vovinwhtulbsx4mwfw26r5ni',
     accent: '#052962',
     categories: ['Europe', 'World', 'Politics', 'Culture'],
@@ -252,6 +269,7 @@ export const NEWSROOM_PUBLISHERS: NewsroomPublisher[] = [
   },
   {
     id: 'le-monde',
+    domains: ['lemonde.fr', 'lemde.fr'],
     did: 'did:plc:qqxqxgdu5z3he2piqfbfaku4',
     categories: ['France', 'World', 'Politics'],
     reporterDids: [
@@ -300,6 +318,7 @@ export const NEWSROOM_PUBLISHERS: NewsroomPublisher[] = [
   },
   {
     id: 'el-pais',
+    domains: ['elpais.com'],
     did: 'did:plc:u6mkbcgviwlbhuwqirmhcgu3',
     accent: '#0067A0',
     categories: ['Spain', 'World', 'Politics'],
@@ -324,6 +343,7 @@ export const NEWSROOM_PUBLISHERS: NewsroomPublisher[] = [
   },
   {
     id: 'next',
+    domains: ['next.ink'],
     did: 'did:plc:o4gygiehiqr7hcpyicprn6w4',
     accent: '#4A5CFE',
     categories: ['Tech', 'Digital Policy', 'Privacy'],
@@ -344,6 +364,27 @@ export function getNewsroomPublisherByDid(
   did: string,
 ): NewsroomPublisher | undefined {
   return NEWSROOM_PUBLISHERS.find(p => p.did === did)
+}
+
+/**
+ * The publisher whose site a URL points at, if any. Matches the hostname
+ * against each publisher's registered `domains`, subdomains included, so
+ * `www.ft.com` and `rss.nytimes.com` resolve to their orgs.
+ */
+export function getNewsroomPublisherByUrl(
+  url: string,
+): NewsroomPublisher | undefined {
+  let hostname: string
+  try {
+    hostname = new URL(url).hostname.toLowerCase()
+  } catch {
+    return undefined
+  }
+  return NEWSROOM_PUBLISHERS.find(p =>
+    p.domains.some(
+      domain => hostname === domain || hostname.endsWith('.' + domain),
+    ),
+  )
 }
 
 /**
