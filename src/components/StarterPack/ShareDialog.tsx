@@ -2,7 +2,6 @@ import {lazy, Suspense, useRef} from 'react'
 import {View} from 'react-native'
 import type ViewShot from 'react-native-view-shot'
 import {requestPermissionsAsync, saveToLibraryAsync} from 'expo-media-library'
-import {type AppBskyGraphDefs} from '@atproto/api'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
@@ -22,6 +21,7 @@ import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {IS_NATIVE, IS_WEB} from '#/env'
+import {type app} from '#/lexicons'
 
 const LazyViewShot = lazy(
   // @ts-expect-error dynamic import
@@ -29,7 +29,7 @@ const LazyViewShot = lazy(
 )
 
 interface Props {
-  starterPack: AppBskyGraphDefs.StarterPackView
+  starterPack: app.bsky.graph.defs.StarterPackView
   link?: string
   qrDialogControl: DialogControlProps
   control: DialogControlProps

@@ -1,9 +1,11 @@
-import {type AtpAgent} from '@atproto/api'
+import {type Client} from '@atproto/lex'
+import {type NsidString} from '@atproto/syntax'
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 
 import {createQueryKey} from '#/state/queries/util'
-import {useAgent, useSession} from '#/state/session'
+import {usePdsClient, useSession} from '#/state/session'
 import {BRAND} from '#/config/brand'
+import {com} from '#/lexicons'
 
 const GET_STATUS = 'social.mu.deco.getStatus'
 const CREATE_CHECKOUT = 'social.mu.deco.createCheckout'
@@ -34,8 +36,8 @@ const subscriptionQueryKeyRoot = 'decoration-subscription'
 export const createDecorationSubscriptionQueryKey = (did: string) =>
   createQueryKey(subscriptionQueryKeyRoot, {did})
 
-async function bearer(agent: AtpAgent, lxm: string): Promise<string> {
-  const {data} = await agent.com.atproto.server.getServiceAuth({
+async function bearer(client: Client, lxm: NsidString): Promise<string> {
+  const data = await client.call(com.atproto.server.getServiceAuth, {
     aud: BRAND.decorations.serviceDid,
     lxm,
   })
@@ -43,11 +45,11 @@ async function bearer(agent: AtpAgent, lxm: string): Promise<string> {
 }
 
 async function request<T>(
-  agent: AtpAgent,
-  method: string,
+  client: Client,
+  method: NsidString,
   httpMethod: 'GET' | 'POST',
 ): Promise<T> {
-  const authorization = await bearer(agent, method)
+  const authorization = await bearer(client, method)
   const response = await fetch(
     `${BRAND.decorations.serviceUrl}/xrpc/${method}`,
     {
@@ -76,7 +78,7 @@ export function useDecorationSubscriptionQuery({
 }: {
   pollUntilActive?: boolean
 } = {}) {
-  const agent = useAgent()
+  const pdsClient = usePdsClient()
   const {currentAccount} = useSession()
   const did = currentAccount?.did ?? ''
 
@@ -85,28 +87,28 @@ export function useDecorationSubscriptionQuery({
     enabled: BRAND.decorations.enabled && !!did,
     staleTime: 30_000,
     queryFn: () =>
-      request<DecorationSubscriptionStatus>(agent, GET_STATUS, 'GET'),
+      request<DecorationSubscriptionStatus>(pdsClient, GET_STATUS, 'GET'),
     refetchInterval: query =>
       pollUntilActive && !query.state.data?.active ? 2_000 : false,
   })
 }
 
 export function useCreateDecorationCheckoutMutation() {
-  const agent = useAgent()
+  const pdsClient = usePdsClient()
   return useMutation({
     mutationFn: () =>
-      request<{checkoutUrl: string}>(agent, CREATE_CHECKOUT, 'POST'),
+      request<{checkoutUrl: string}>(pdsClient, CREATE_CHECKOUT, 'POST'),
   })
 }
 
 export function useCancelDecorationSubscriptionMutation() {
-  const agent = useAgent()
+  const pdsClient = usePdsClient()
   const {currentAccount} = useSession()
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: () =>
-      request<DecorationSubscriptionStatus>(agent, CANCEL, 'POST'),
+      request<DecorationSubscriptionStatus>(pdsClient, CANCEL, 'POST'),
     onSuccess(status) {
       if (!currentAccount) return
       queryClient.setQueryData(

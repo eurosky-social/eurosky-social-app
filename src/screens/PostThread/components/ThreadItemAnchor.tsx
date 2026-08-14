@@ -1,11 +1,7 @@
 import {memo, useMemo} from 'react'
 import {View} from 'react-native'
-import {
-  type AppBskyFeedDefs,
-  type AppBskyFeedThreadgate,
-  AtUri,
-  RichText as RichTextAPI,
-} from '@atproto/api'
+import {AtUri} from '@atproto/syntax'
+import {RichText as RichTextAPI} from '@bsky/sdk/richtext'
 import {Trans} from '@lingui/react/macro'
 
 import {makeProfileLink} from '#/lib/routes/links'
@@ -64,6 +60,7 @@ import * as Skele from '#/components/Skeleton'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {useActorStatus} from '#/features/liveNow'
+import {type app} from '#/lexicons'
 
 export type ThreadItemAnchorReaderSeam = ReaderSeamData & {
   onToggle: () => void
@@ -84,7 +81,7 @@ export function ThreadItemAnchor({
    */
   readerSeam?: ThreadItemAnchorReaderSeam
   onPostSuccess?: (data: OnPostSuccessData) => void
-  threadgateRecord?: AppBskyFeedThreadgate.Record
+  threadgateRecord?: app.bsky.feed.threadgate.Main
   postSource?: PostSource
 }) {
   const postShadow = usePostShadow(item.value.post)
@@ -188,9 +185,9 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
   item: ThreadPostItem
   isRoot: boolean
   readerSeam?: ThreadItemAnchorReaderSeam
-  postShadow: Shadow<AppBskyFeedDefs.PostView>
+  postShadow: Shadow<app.bsky.feed.defs.PostView>
   onPostSuccess?: (data: OnPostSuccessData) => void
-  threadgateRecord?: AppBskyFeedThreadgate.Record
+  threadgateRecord?: app.bsky.feed.threadgate.Main
   postSource?: PostSource
 }) {
   const inReader = !!readerSeam

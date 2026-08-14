@@ -1,4 +1,4 @@
-import {type AppBskyFeedPost} from '@atproto/api'
+import {type app} from '#/lexicons'
 
 // Posts can only be edited for a few minutes after going up.
 export const EDIT_WINDOW_MS = 5 * 60 * 1000
@@ -14,9 +14,14 @@ export type PostEditFields = {
   originalText?: string
 }
 
-export type EditedPostRecord = AppBskyFeedPost.Record & PostEditFields
+export type EditedPostRecord = app.bsky.feed.post.Main & PostEditFields
 
-export function getPostEditInfo(record: AppBskyFeedPost.Record): {
+type PostRecordForEditInfo = {
+  text: string
+  createdAt: string
+} & PostEditFields
+
+export function getPostEditInfo(record: PostRecordForEditInfo): {
   isEdited: boolean
   updatedAt: string | undefined
   originalText: string | undefined

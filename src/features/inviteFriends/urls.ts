@@ -8,7 +8,7 @@
  * simply drops the `https://` scheme for readability.
  *
  * BRAND is an import-free config leaf, so this module stays light (no
- * #/lib/strings/url-helpers / @atproto/api graph) and its unit tests stay fast.
+ * #/lib/strings/url-helpers or lexicon graph) and its unit tests stay fast.
  */
 
 import {BRAND} from '#/config/brand'

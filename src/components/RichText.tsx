@@ -1,16 +1,18 @@
 import {Fragment, type ReactNode, useMemo} from 'react'
 import {type StyleProp, type TextStyle, View} from 'react-native'
-import {AppBskyRichtextFacet, RichText as RichTextAPI} from '@atproto/api'
+import {RichText as RichTextAPI} from '@bsky/sdk/richtext'
 
 import {hasCode} from '#/lib/code/parse'
 import {toShortUrl} from '#/lib/strings/url-helpers'
-import {atoms as a, flatten, ios, type TextStyleProp} from '#/alf'
+import {android, atoms as a, flatten, type TextStyleProp} from '#/alf'
 import {isOnlyEmoji} from '#/alf/typography'
 import {InlineLinkText, type LinkProps} from '#/components/Link'
 import {ProfileHoverCard} from '#/components/ProfileHoverCard'
 import {type CodePart, parseCodeParts} from '#/components/RichTextCode'
 import {RichTextTag} from '#/components/RichTextTag'
 import {Text, type TextProps} from '#/components/Typography'
+import {app} from '#/lexicons'
+import * as bsky from '#/types/bsky'
 
 const WORD_WRAP = {wordWrap: 1}
 // lifted from facet detection in `RichText` impl, _without_ `gm` flags
@@ -39,13 +41,12 @@ export type RichTextProps = TextStyleProp &
     /**
      * How far below the text baseline `suffix` extends, in px.
      *
-     * Inline views inside `Text` sit with their bottom edge on the baseline, so
-     * a suffix nudged below it overflows the `Text`'s measured bounds and iOS
-     * clips it. We reserve this much room as bottom padding and cancel it with
-     * an equal negative margin, so the suffix can paint without moving anything
-     * after it. Pass the same offset the suffix nudges itself by.
+     * Android clips inline views that are translated below the measured text
+     * bounds. Reserve matching room there and cancel it with a negative margin
+     * so content following the text does not move. iOS allows inline attachment
+     * overflow through `RNUITextView` and does not need this compensation.
      *
-     * Overrides any `paddingBottom`/`marginBottom` set via `style`.
+     * Overrides any `paddingBottom`/`marginBottom` set via `style` on Android.
      */
     suffixOffset?: number
     /**
@@ -93,7 +94,7 @@ export function RichText({
   const plainStyles = style
   const suffixStyles =
     suffix && suffixOffset
-      ? ios({paddingBottom: suffixOffset, marginBottom: -suffixOffset})
+      ? android({paddingBottom: suffixOffset, marginBottom: -suffixOffset})
       : null
   const interactiveStyles = [plainStyles, interactiveStyle]
 
@@ -218,7 +219,7 @@ export function RichText({
     if (
       mention &&
       (disableMentionFacetValidation ||
-        AppBskyRichtextFacet.validateMention(mention).success) &&
+        bsky.matches(app.bsky.richtext.facet.mention, mention)) &&
       !disableLinks
     ) {
       parts.push({
@@ -238,7 +239,7 @@ export function RichText({
           </ProfileHoverCard>
         ),
       })
-    } else if (link && AppBskyRichtextFacet.validateLink(link).success) {
+    } else if (link && bsky.matches(app.bsky.richtext.facet.link, link)) {
       const isValidLink = URL_REGEX.test(link.uri)
       if (!isValidLink || disableLinks) {
         parts.push({block: false, node: toShortUrl(segment.text)})
@@ -266,7 +267,7 @@ export function RichText({
       !disableLinks &&
       enableTags &&
       tag &&
-      AppBskyRichtextFacet.validateTag(tag).success
+      bsky.matches(app.bsky.richtext.facet.tag, tag)
     ) {
       parts.push({
         block: false,

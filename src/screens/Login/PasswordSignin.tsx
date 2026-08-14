@@ -1,9 +1,6 @@
 import {useRef, useState} from 'react'
 import {Keyboard, type TextInput, View} from 'react-native'
-import {
-  ComAtprotoServerCreateSession,
-  type ComAtprotoServerDescribeServer,
-} from '@atproto/api'
+import {LexAuthFactorError} from '@atproto/lex-password-session'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
@@ -28,9 +25,10 @@ import {Ticket_Stroke2_Corner0_Rounded as Ticket} from '#/components/icons/Ticke
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
 import {IS_IOS, IS_WEB} from '#/env'
+import {type com} from '#/lexicons'
 import {FormContainer} from './FormContainer'
 
-type ServiceDescription = ComAtprotoServerDescribeServer.OutputSchema
+type ServiceDescription = com.atproto.server.describeServer.$OutputBody
 
 /**
  * Eurosky fork: password sign-in. Reimplements the upstream password/2FA
@@ -122,9 +120,7 @@ export const PasswordSignin = ({
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : String(e)
       setIsProcessing(false)
-      if (
-        e instanceof ComAtprotoServerCreateSession.AuthFactorTokenRequiredError
-      ) {
+      if (e instanceof LexAuthFactorError) {
         setIsAuthFactorTokenNeeded(true)
       } else if (e instanceof ResolvePdsError) {
         // Resolution failed before we could even reach a PDS - surface a

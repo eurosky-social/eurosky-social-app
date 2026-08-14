@@ -1,4 +1,4 @@
-import {AtUri} from '@atproto/api'
+import {AtUri} from '@atproto/syntax'
 
 import {makeProfileLink} from '#/lib/routes/links'
 import {type ThreadItem} from '#/state/queries/usePostThread/types'
