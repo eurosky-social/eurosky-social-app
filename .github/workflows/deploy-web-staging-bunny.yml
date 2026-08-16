@@ -57,15 +57,12 @@ jobs:
           # Non-prod: ship the disallow-all robots.txt so staging stays out of
           # search (paired with the zone's noindex X-Robots-Tag edge rule).
           ROBOTS_MODE: disallow-all
-          # staging routes AUTHED appview traffic to the Eurosky appview: the PDS
-          # resolves this DID's #bsky_appview service endpoint
-          # (https://api.eurosky.network) and proxies there via the
-          # atproto-proxy header. UNAUTHED traffic (logged-out browsing,
-          # brand.json services.publicApi/appView) stays on Bluesky's public
-          # API for now: the Eurosky appview does not resolve handles yet
-          # (handle lookups 404, profiles return handle.invalid), which would
-          # break logged-out views.
-          EXPO_PUBLIC_BLUESKY_PROXY_DID: did:web:api.eurosky.network
+          # Route every AppView path to Eurosky: public/logged-out reads go
+          # directly to this URL, while authenticated reads go through the PDS
+          # with this DID's #bsky_appview proxy target. The configured AppView
+          # DID is also the default for EXPO_PUBLIC_BLUESKY_PROXY_DID.
+          EXPO_PUBLIC_APPVIEW_URL: https://api.eurosky.network
+          EXPO_PUBLIC_APPVIEW_DID: did:web:api.eurosky.network
           # Staging is its own atproto OAuth client: client_id derives from this
           # base URL (gen-oauth-metadata.js emits the metadata into the build,
           # so staging self-publishes it at /oauth-client-metadata.json).
