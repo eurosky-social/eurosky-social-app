@@ -12,12 +12,11 @@ import {
   PersistQueryClientProvider,
 } from '@tanstack/react-query-persist-client'
 
-import {PUBLIC_BSKY_SERVICE} from '#/lib/constants'
 import {createPersistedQueryStorage} from '#/lib/persisted-query-storage'
 import {listenNetworkConfirmed, listenNetworkLost} from '#/state/events'
 import {isQueryPersisted} from '#/state/queries/util'
 import * as env from '#/env'
-import {IS_NATIVE, IS_WEB} from '#/env'
+import {HEALTH_PROBE_SERVICE, IS_NATIVE, IS_WEB} from '#/env'
 
 declare global {
   interface Window {
@@ -31,16 +30,20 @@ async function checkIsOnline(): Promise<boolean> {
     setTimeout(() => {
       controller.abort()
     }, 15e3)
-    const res = await fetch(`${PUBLIC_BSKY_SERVICE}/xrpc/_health`, {
+    const res = await fetch(`${HEALTH_PROBE_SERVICE}/xrpc/_health`, {
       cache: 'no-store',
       signal: controller.signal,
     })
-    const json = await res.json()
-    if (json.version) {
-      return true
-    } else {
+    if (!res.ok) {
       return false
     }
+    /*
+     * Parse the body to catch captive portals, which answer 200 with HTML.
+     * Don't require a particular field: `_health` payloads differ by service
+     * (our AppView answers `{}`), so parseable JSON is the signal, not `version`.
+     */
+    await res.json()
+    return true
   } catch (e) {
     return false
   }

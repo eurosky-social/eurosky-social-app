@@ -831,9 +831,6 @@
   "src/lib/react-query.tsx": {
     "typescript/no-explicit-any": {
       "count": 1
-    },
-    "typescript/no-unsafe-member-access": {
-      "count": 1
     }
   },
   "src/lib/routes/links.ts": {
