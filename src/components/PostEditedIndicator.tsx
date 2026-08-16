@@ -1,11 +1,11 @@
 import {View} from 'react-native'
-import {type AppBskyFeedPost} from '@atproto/api'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {getPostEditInfo} from '#/lib/edit-post'
 import {atoms as a, useTheme, web} from '#/alf'
 import * as Dialog from '#/components/Dialog'
 import {Text} from '#/components/Typography'
+import {type app} from '#/lexicons'
 
 /**
  * The "· Edited" badge next to a post's timestamp. Renders nothing unless the
@@ -15,7 +15,7 @@ export function PostEditedIndicator({
   record,
   size = 'md',
 }: {
-  record: AppBskyFeedPost.Record
+  record: app.bsky.feed.post.Main
   size?: 'sm' | 'md'
 }) {
   const t = useTheme()

@@ -39,8 +39,7 @@ function applyInterfaceStyle(
  * themes, keeping those customizations out of individual UI components.
  */
 export function useThemesOverride():
-  | ReturnType<typeof buildThemes>
-  | undefined {
+  ReturnType<typeof buildThemes> | undefined {
   const {accentColor} = useThemePrefs()
   const {borders} = useInterfaceStyle()
   return useMemo(() => {

@@ -1,5 +1,4 @@
 import {View} from 'react-native'
-import {type AppBskyActorDefs} from '@atproto/api'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {useProfilesQuery} from '#/state/queries/profile'
@@ -16,6 +15,7 @@ import {
   NEWSROOM_PUBLISHERS,
   type NewsroomPublisher,
 } from '#/features/newsrooms/publishers'
+import {type app} from '#/lexicons'
 import {selectSources} from '../sources'
 import {useNewsFeedPrefsQuery} from '../state/prefs'
 
@@ -60,7 +60,7 @@ function NewsroomsModule() {
   const {data} = useProfilesQuery({
     handles: publishers.map(p => p.did),
   })
-  const profileByDid = new Map(
+  const profileByDid = new Map<string, app.bsky.actor.defs.ProfileViewDetailed>(
     data?.profiles.map(profile => [profile.did, profile]) ?? [],
   )
 
@@ -107,7 +107,7 @@ function FeaturedNewsroom({
   profile,
 }: {
   publisher: NewsroomPublisher
-  profile?: AppBskyActorDefs.ProfileViewDetailed
+  profile?: app.bsky.actor.defs.ProfileViewDetailed
 }) {
   const {t: l} = useLingui()
   const name = getPublisherName(profile)

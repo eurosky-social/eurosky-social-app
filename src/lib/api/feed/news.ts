@@ -1,6 +1,8 @@
-import {type AppBskyFeedDefs, type AtpAgent} from '@atproto/api'
+import {type Client} from '@atproto/lex'
+import {type AtIdentifierString} from '@atproto/syntax'
 import chunk from 'lodash.chunk'
 
+import {app} from '#/lexicons'
 import {type FeedAPI, type FeedAPIResponse} from './types'
 
 // News should be fresh: stop paginating a source once it goes past this age.
@@ -12,7 +14,7 @@ const FETCH_CONCURRENCY = 8
 type SourceState = {
   did: string
   cursor: string | undefined
-  queue: AppBskyFeedDefs.FeedViewPost[]
+  queue: app.bsky.feed.defs.FeedViewPost[]
   hasMore: boolean
 }
 
@@ -25,14 +27,14 @@ type SourceState = {
  * cursor (a fresh load) resets them.
  */
 export class NewsFeedAPI implements FeedAPI {
-  agent: AtpAgent
+  client: Client
   dids: string[]
   sources: SourceState[] = []
   seen = new Set<string>()
   itemCursor = 0
 
-  constructor({agent, dids}: {agent: AtpAgent; dids: string[]}) {
-    this.agent = agent
+  constructor({client, dids}: {client: Client; dids: string[]}) {
+    this.client = client
     this.dids = dids.filter(Boolean)
   }
 
@@ -47,13 +49,13 @@ export class NewsFeedAPI implements FeedAPI {
     this.itemCursor = 0
   }
 
-  async peekLatest(): Promise<AppBskyFeedDefs.FeedViewPost> {
-    const res = await this.agent.getAuthorFeed({
-      actor: this.dids[0],
+  async peekLatest(): Promise<app.bsky.feed.defs.FeedViewPost> {
+    const data = await this.client.call(app.bsky.feed.getAuthorFeed, {
+      actor: this.dids[0] as AtIdentifierString,
       filter: 'posts_no_replies',
       limit: 1,
     })
-    return res.data.feed[0]
+    return data.feed[0]
   }
 
   async fetch({
@@ -91,17 +93,17 @@ export class NewsFeedAPI implements FeedAPI {
 
   async _topUp(source: SourceState, minDate: number) {
     try {
-      const res = await this.agent.getAuthorFeed({
-        actor: source.did,
+      const data = await this.client.call(app.bsky.feed.getAuthorFeed, {
+        actor: source.did as AtIdentifierString,
         filter: 'posts_no_replies',
         cursor: source.cursor,
         limit: 30,
       })
-      source.cursor = res.data.cursor
-      if (!res.data.cursor || res.data.feed.length === 0) {
+      source.cursor = data.cursor
+      if (!data.cursor || data.feed.length === 0) {
         source.hasMore = false
       }
-      for (const item of res.data.feed) {
+      for (const item of data.feed) {
         if (new Date(item.post.indexedAt).getTime() < minDate) {
           // Author feeds are newest-first, so once we cross the cutoff the rest
           // of this source's history is older too.
@@ -120,8 +122,8 @@ export class NewsFeedAPI implements FeedAPI {
 
   // Take one post from each source per pass for equal representation, visiting
   // sources newest-head first so the page still trends fresh.
-  _takeRoundRobin(limit: number): AppBskyFeedDefs.FeedViewPost[] {
-    const posts: AppBskyFeedDefs.FeedViewPost[] = []
+  _takeRoundRobin(limit: number): app.bsky.feed.defs.FeedViewPost[] {
+    const posts: app.bsky.feed.defs.FeedViewPost[] = []
     while (posts.length < limit) {
       const ready = this.sources.filter(source => source.queue.length > 0)
       if (ready.length === 0) break

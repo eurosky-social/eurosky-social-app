@@ -1,11 +1,6 @@
 import {Fragment} from 'react'
 import {View} from 'react-native'
-import {
-  type AppBskyFeedDefs,
-  type AppBskyFeedPost,
-  moderatePost,
-  type ModerationDecision,
-} from '@atproto/api'
+import {moderatePost, type ModerationDecision} from '@bsky/sdk/moderation'
 import {Plural, Trans, useLingui} from '@lingui/react/macro'
 
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
@@ -24,6 +19,8 @@ import {Link} from '#/components/Link'
 import {ContentHider} from '#/components/moderation/ContentHider'
 import {PostAlerts} from '#/components/moderation/PostAlerts'
 import {Text} from '#/components/Typography'
+import {app} from '#/lexicons'
+import * as bsky from '#/types/bsky'
 import {articleSearchPath} from '../discussion'
 import {useArticleDiscussionQuery} from '../queries'
 import {toSingleParagraph} from '../text'
@@ -83,7 +80,8 @@ export function ArticleDiscussion({
   function onJoinConversation() {
     if (!visibleAnchor) return
     const {post, moderation} = visibleAnchor
-    const record = post.record as AppBskyFeedPost.Record
+    if (!bsky.isType(app.bsky.feed.post, post.record)) return
+    const record = post.record
     openComposer({
       replyTo: {
         uri: post.uri,
@@ -190,14 +188,15 @@ function DiscussionPost({
   post,
   moderation,
 }: {
-  post: AppBskyFeedDefs.PostView
+  post: app.bsky.feed.defs.PostView
   moderation: ModerationDecision
 }) {
   const t = useTheme()
   const author = post.author
-  const record = post.record as AppBskyFeedPost.Record
-  const text =
-    typeof record.text === 'string' ? toSingleParagraph(record.text) : ''
+  const record = bsky.isType(app.bsky.feed.post, post.record)
+    ? post.record
+    : undefined
+  const text = record ? toSingleParagraph(record.text) : ''
   const path = postUriToRelativePath(post.uri, {handle: author.handle})
   const contentModui = moderation.ui('contentView')
   const displayName = sanitizeDisplayName(
@@ -253,7 +252,7 @@ function DiscussionPost({
 }
 
 // Only the counts the row actually renders, so it is never an empty padded row.
-function hasEngagement(post: AppBskyFeedDefs.PostView): boolean {
+function hasEngagement(post: app.bsky.feed.defs.PostView): boolean {
   return !!(post.repostCount || post.likeCount || post.replyCount)
 }
 

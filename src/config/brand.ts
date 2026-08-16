@@ -20,8 +20,7 @@
 import brand from '#/config/brand.json'
 
 const decorationEnabledOverride = process.env.EXPO_PUBLIC_DECO_ENABLED as
-  | string
-  | undefined
+  string | undefined
 const decorationListUrisOverride = process.env
   .EXPO_PUBLIC_DECO_SUBSCRIBER_LIST_URIS as string | undefined
 

@@ -1,7 +1,7 @@
 import {useState} from 'react'
 import {View} from 'react-native'
 import {LinearGradient} from 'expo-linear-gradient'
-import {type AppBskyActorDefs} from '@atproto/api'
+import {type AtIdentifierString} from '@atproto/syntax'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {useNavigationState} from '@react-navigation/native'
 import {useQueries} from '@tanstack/react-query'
@@ -11,7 +11,7 @@ import {getCurrentRoute} from '#/lib/routes/helpers'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {STALE} from '#/state/queries'
 import {profilesQueryKey} from '#/state/queries/profile'
-import {useAgent} from '#/state/session'
+import {useAppviewClient} from '#/state/session'
 import * as ModuleHeader from '#/screens/Search/components/ModuleHeader'
 import {atoms as a, useTheme} from '#/alf'
 import {transparentifyColor} from '#/alf/util/colorGeneration'
@@ -27,6 +27,7 @@ import {Link} from '#/components/Link'
 import * as ProfileCard from '#/components/ProfileCard'
 import {Text} from '#/components/Typography'
 import {ExploreLiveSportsWidget} from '#/features/liveSports/components/ExploreLiveSportsWidget'
+import {app} from '#/lexicons'
 import {readableAccent} from '../accent'
 import {
   getDefaultNewsroomPublisher,
@@ -232,20 +233,24 @@ function ReportersModule({
 
 /** Fetch reporter profiles in chunks because getProfiles accepts at most 25. */
 function useReporterProfiles(dids: string[]) {
-  const agent = useAgent()
+  const appviewClient = useAppviewClient()
   const results = useQueries({
     queries: chunk(dids, 25).map(actors => ({
       enabled: actors.length > 0,
       staleTime: STALE.MINUTES.FIVE,
       queryKey: profilesQueryKey(actors),
       queryFn: async () => {
-        const res = await agent.getProfiles({actors})
-        return res.data
+        return appviewClient.call(app.bsky.actor.getProfiles, {
+          actors: actors as AtIdentifierString[],
+        })
       },
     })),
   })
 
-  const profilesByDid = new Map<string, AppBskyActorDefs.ProfileViewDetailed>()
+  const profilesByDid = new Map<
+    string,
+    app.bsky.actor.defs.ProfileViewDetailed
+  >()
   for (const result of results) {
     for (const profile of result.data?.profiles ?? []) {
       profilesByDid.set(profile.did, profile)

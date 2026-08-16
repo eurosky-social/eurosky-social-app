@@ -1,8 +1,7 @@
-import {type AppBskyEmbedExternal, type AtpAgent} from '@atproto/api'
-
 import {LINK_META_PROXY} from '#/lib/constants'
 import {getGiphyMetaUri} from '#/lib/strings/embed-player'
 import {parseStarterPackUri} from '#/lib/strings/starter-pack'
+import {type app} from '#/lexicons'
 import {isBskyAppUrl} from '../strings/url-helpers'
 
 export enum LikelyType {
@@ -26,12 +25,11 @@ export interface LinkMeta {
    * The AT-URI of the Atmosphere record representing this external content, if
    * it exists. Example: a site.standard.document record.
    */
-  associatedRefs?: AppBskyEmbedExternal.External['associatedRefs']
-  view?: AppBskyEmbedExternal.View
+  associatedRefs?: app.bsky.embed.external.External['associatedRefs']
+  view?: app.bsky.embed.external.View
 }
 
 export async function getLinkMeta(
-  agent: AtpAgent,
   url: string,
   timeout = 15e3,
 ): Promise<LinkMeta> {
@@ -79,15 +77,13 @@ export async function getLinkMeta(
   const to = setTimeout(() => controller.abort(), timeout || 5e3)
 
   try {
-    // mu fork: OAuth sessions use a generic Agent with no `serviceUrl` (only
-    // password sessions' AtpAgent has it). Reading it unguarded threw, and the
-    // throw was swallowed below - leaving every link card with no title, image,
-    // or description for OAuth users. LINK_META_PROXY ignores this argument
-    // anyway (it picks prod/staging off IS_DEV), so guarding it is enough.
+    /*
+     * LINK_META_PROXY chooses prod or staging from the environment; it does not
+     * need a session service URL. Keeping this independent of the active
+     * session also makes link cards work for OAuth users.
+     */
     const response = await fetch(
-      `${LINK_META_PROXY(agent.serviceUrl?.toString() || '')}${encodeURIComponent(
-        url,
-      )}`,
+      `${LINK_META_PROXY('')}${encodeURIComponent(url)}`,
       {signal: controller.signal},
     )
 

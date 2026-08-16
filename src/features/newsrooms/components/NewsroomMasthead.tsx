@@ -1,5 +1,4 @@
 import {View} from 'react-native'
-import {type AppBskyActorDefs} from '@atproto/api'
 import {useLingui} from '@lingui/react/macro'
 
 import {HITSLOP_20} from '#/lib/constants'
@@ -15,6 +14,7 @@ import {Link} from '#/components/Link'
 import * as ProfileCard from '#/components/ProfileCard'
 import {Text} from '#/components/Typography'
 import {VerificationCheckButton} from '#/components/verification/VerificationCheckButton'
+import {type app} from '#/lexicons'
 import {getPublisherName, type NewsroomPublisher} from '../publishers'
 import {toSingleParagraph} from '../text'
 
@@ -135,7 +135,7 @@ function PublisherFollowButton({
   profile,
   accent,
 }: {
-  profile: AppBskyActorDefs.ProfileViewDetailed
+  profile: app.bsky.actor.defs.ProfileViewDetailed
   accent: string
 }) {
   const moderationOpts = useModerationOpts()
@@ -158,7 +158,7 @@ function PublisherFollowButton({
 function PublisherVerification({
   profile,
 }: {
-  profile: AppBskyActorDefs.ProfileViewDetailed
+  profile: app.bsky.actor.defs.ProfileViewDetailed
 }) {
   const shadowed = useProfileShadow(profile)
   return (
