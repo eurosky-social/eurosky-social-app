@@ -8,8 +8,9 @@ import {
   useInfiniteQuery,
 } from '@tanstack/react-query'
 
+import {BLUESKY_APPVIEW_SERVICE} from '#/lib/constants'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
-import {useAppviewClient} from '#/state/session'
+import {useAppviewClient, useSession} from '#/state/session'
 import {type SearchFilters} from '#/screens/Search/searchParams'
 import {app} from '#/lexicons'
 import {
@@ -46,6 +47,7 @@ export function useSearchPostsV2Query({
   filters?: SearchFilters
 }) {
   const client = useAppviewClient()
+  const {hasSession} = useSession()
   const moderationOpts = useModerationOpts()
   const selectArgs = useMemo(
     () => ({
@@ -87,22 +89,32 @@ export function useSearchPostsV2Query({
         filters,
       ) as app.bsky.feed.searchPostsV2.$Params
       const finalQuery = appendFromMe(q, filters?.from === 'me')
-      return await client.call(app.bsky.feed.searchPostsV2, {
-        ...builtFilters,
-        query: finalQuery,
-        limit: 25,
-        cursor: pageParam,
-        /*
-         * v2 calls the recency sort 'recent'; the rest of the app still uses
-         * the v1 'latest' label.
-         */
-        sort: sort === 'latest' ? 'recent' : sort,
-        allTime: true,
-      })
+      /*
+       * Eurosky does not yet implement the complete v2 search behavior. Pin
+       * this endpoint to Bluesky without changing the configured AppView for
+       * other reads.
+       */
+      return await client.call(
+        app.bsky.feed.searchPostsV2,
+        {
+          ...builtFilters,
+          query: finalQuery,
+          limit: 25,
+          cursor: pageParam,
+          /*
+           * v2 calls the recency sort 'recent'; the rest of the app still uses
+           * the v1 'latest' label.
+           */
+          sort: sort === 'latest' ? 'recent' : sort,
+          allTime: true,
+        },
+        {service: BLUESKY_APPVIEW_SERVICE},
+      )
     },
     initialPageParam: undefined,
     getNextPageParam: lastPage => lastPage.cursor,
-    enabled: enabled ?? !!moderationOpts,
+    /* Bluesky's post search requires authentication. */
+    enabled: hasSession && (enabled ?? !!moderationOpts),
     select: useCallback(
       (data: InfiniteData<app.bsky.feed.searchPostsV2.$OutputBody>) => {
         const {moderationOpts, isSearchingSpecificUser} = selectArgs
