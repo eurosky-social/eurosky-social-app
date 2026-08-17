@@ -16,9 +16,9 @@ import {useMemo} from 'preact/hooks'
 
 import infoIcon from '../../assets/circleInfo_stroke2_corner0_rounded.svg'
 import playIcon from '../../assets/play_filled_corner0_rounded.svg'
-import starterPackIcon from '../../assets/starterPack.svg'
 import {BRAND} from '../brand'
 import {Globe} from '../icons/Globe'
+import {LibraryBig} from '../icons/LibraryBig'
 import {CONTENT_LABELS, labelsToInfo} from '../labels'
 import * as bsky from '../types/bsky'
 import {getRkey} from '../util/rkey'
@@ -515,7 +515,7 @@ function StarterPackEmbed({
       <img src={imageUri} className="aspect-[1200/630] object-cover" />
       <div className="py-3 px-4">
         <div className="flex space-x-2 items-center">
-          <img src={starterPackIcon} className="w-10 h-10" />
+          <LibraryBig size={40} className="shrink-0 text-brand" />
           <div>
             <p className="font-semibold leading-[21px]">
               {content.record.name}

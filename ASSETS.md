@@ -45,9 +45,8 @@ rather not buy one.
 
 This section covers every file at the top level of `assets/icons/` **except** those named
 elsewhere in this document — specifically `logomark.svg`, `newskie.svg`, `verifiedCheck.svg`,
-`verifierCheck.svg`, `starterPack.svg`, `starterPack_stroke2_corner0_rounded.svg`, `apple_logo.svg`,
-and `android_logo.svg`. The `assets/icons/flags/` and `assets/icons/community/`
-subdirectories are covered by [Section 6](#6-third-party-assets-you-may-redistribute) and
+`verifierCheck.svg`, `apple_logo.svg`, and `android_logo.svg`. The `assets/icons/flags/` and
+`assets/icons/community/` subdirectories are covered by [Section 6](#6-third-party-assets-you-may-redistribute) and
 [Section 5](#5-third-party-trademarks) respectively.
 
 See [`assets/icons/README.md`](./assets/icons/README.md).
@@ -67,7 +66,6 @@ supports it.
 - `assets/icons/newskie.svg`
 - `assets/icons/verifiedCheck.svg`
 - `assets/icons/verifierCheck.svg`
-- `assets/icons/starterPack.svg`, `assets/icons/starterPack_stroke2_corner0_rounded.svg`
 
 We are not asking anyone to remove these files from the repository. They are here because the
 app needs them to build. Replacing them is a forker's responsibility, not ours.
@@ -103,6 +101,7 @@ Their license text travels with the files, and you must keep it there.
 | Inter typeface | `assets/fonts/inter/` | SIL Open Font License 1.1 | [`OFL.txt`](./assets/fonts/inter/OFL.txt) |
 | Inter typeface (OG card service) | `bskyogcard/src/assets/fonts/` | SIL Open Font License 1.1 | [`README.md`](./bskyogcard/src/assets/fonts/README.md) |
 | country-flag-icons | `assets/icons/flags/` | MIT, © @catamphetamine | [`README.md`](./assets/icons/flags/README.md) |
+| Lucide LibraryBig icon | `src/components/icons/LibraryBig.tsx`<br>`bskyembed/src/icons/LibraryBig.tsx` | ISC, © Lucide Icons and Contributors | [`NOTICE.md`](./NOTICE.md) |
 | Material Icons | `bskyweb/static/media/MaterialIcons.*.ttf` | Apache License 2.0 | [`NOTICE.md`](./NOTICE.md) |
 
 Build output under `bskyweb/static/media/` also contains compiled Inter files. They are the same

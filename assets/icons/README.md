@@ -12,8 +12,8 @@ This notice covers the SVG files at the top level of this directory. It does not
 
 - `flags/` — country-flag-icons, MIT licensed, see [`flags/README.md`](./flags/README.md)
 - `community/` — third-party service marks, see [`community/README.md`](./community/README.md)
-- `logomark.svg`, `newskie.svg`, `verifiedCheck.svg`, `verifierCheck.svg`, `starterPack.svg`,
-  `starterPack_stroke2_corner0_rounded.svg` — Bluesky trademarks and brand assets
+- `logomark.svg`, `newskie.svg`, `verifiedCheck.svg`, `verifierCheck.svg` — Bluesky trademarks
+  and brand assets
 - `apple_logo.svg`, `android_logo.svg` — Apple and Google trademarks
 
 Each of those is described in [`ASSETS.md`](../../ASSETS.md).

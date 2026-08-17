@@ -8,6 +8,19 @@ If you distribute this software or a fork of it, these notices need to travel wi
 
 ---
 
+## Lucide
+
+**Paths:** `src/components/icons/LibraryBig.tsx` and
+`bskyembed/src/icons/LibraryBig.tsx`
+**License:** ISC — full text at [`licenses/LUCIDE-ISC.txt`](./licenses/LUCIDE-ISC.txt)
+
+```
+Copyright (c) 2026 Lucide Icons and Contributors
+```
+
+The LibraryBig icon from `lucide-static` 1.31.0 is used as the starter-pack glyph in the app
+and embed renderer.
+
 ## Material Icons
 
 **Path:** `bskyweb/static/media/MaterialIcons.*.ttf`
