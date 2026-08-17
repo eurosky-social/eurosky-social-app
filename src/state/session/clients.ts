@@ -1,4 +1,4 @@
-import {type Agent, type Client} from '@atproto/lex'
+import {type Agent, type Client, type Service} from '@atproto/lex'
 import {type PasswordSession} from '@atproto/lex-password-session'
 
 import {
@@ -8,14 +8,19 @@ import {
   PUBLIC_BSKY_SERVICE,
 } from '#/lib/constants'
 import {createLexClient} from '#/lib/lexClient'
+import {
+  getAppViewProxyService,
+  getPublicAppViewUrl,
+} from '#/features/appView/config'
 import {networkAwareFetch} from './network'
 
 /**
  * Build the signed-in appview {@link Client}.
  *
- * {@link BLUESKY_PROXY_HEADER} is passed as the client's `service`, so lex sets
+ * The selected AppView's `did#bsky_appview` service (falling back to
+ * {@link BLUESKY_PROXY_HEADER}) is passed as the client's `service`, so lex sets
  * `atproto-proxy: <that value>` on every request and raw calls are proxied to
- * the appview. Record helpers force `service: null`, so they still target the
+ * the AppView. Record helpers force `service: null`, so they still target the
  * account host.
  *
  * The class-wide `Client.appLabelers` static is deliberately NOT suppressed
@@ -29,7 +34,9 @@ import {networkAwareFetch} from './network'
  * fetch, which is `networkAwareFetch` wrapped in the disposal kill switch.
  */
 export function buildAppviewClient(agent: Agent): Client {
-  return createLexClient(agent, {service: BLUESKY_PROXY_HEADER.get()})
+  return createLexClient(agent, {
+    service: getAppViewProxyService(BLUESKY_PROXY_HEADER.get()) as Service,
+  })
 }
 
 /**
@@ -164,7 +171,7 @@ export function getPublicBlueskyAppviewClient(): Client {
  */
 export function getPublicAppviewClient(): Client {
   return (publicLexClient ??= createLexClient({
-    service: PUBLIC_BSKY_SERVICE,
+    service: getPublicAppViewUrl(PUBLIC_BSKY_SERVICE),
     fetch: networkAwareFetch,
   }))
 }

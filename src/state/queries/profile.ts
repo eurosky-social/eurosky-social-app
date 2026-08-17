@@ -51,6 +51,7 @@ import {
 import * as userActionHistory from '#/state/userActionHistory'
 import {useAnalytics} from '#/analytics'
 import {type Metrics, toClout} from '#/analytics/metrics'
+import {getAppViewDid} from '#/features/appView/config'
 import {app} from '#/lexicons'
 import type * as bsky from '#/types/bsky'
 import {
@@ -81,7 +82,7 @@ const BLUESKY_PROFILE_TIMEOUT_MS = 3e3
 function isUsingBlueskyAppview(client: Client, hasSession: boolean): boolean {
   return hasSession
     ? client.service === BLUESKY_APPVIEW_SERVICE
-    : PUBLIC_APPVIEW_DID === BLUESKY_APPVIEW_DID
+    : getAppViewDid(PUBLIC_APPVIEW_DID) === BLUESKY_APPVIEW_DID
 }
 
 async function getBlueskyProfile({

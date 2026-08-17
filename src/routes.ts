@@ -52,6 +52,8 @@ export const router = new Router<AllNavigatableRoutes>({
   PreferencesExternalEmbeds: '/settings/external-embeds',
   AccessibilitySettings: '/settings/accessibility',
   AppearanceSettings: '/settings/appearance',
+  NetworkServicesSettings: '/settings/network-services',
+  ContentServiceSettings: '/settings/network-services/content-service',
   PetCompanionSettings: '/settings/pet-companion',
   DecorationsSettings: '/settings/decorations',
   BetaFeaturesSettings: '/settings/beta-features',

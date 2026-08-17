@@ -14,11 +14,15 @@ import {usePatchAgeAssuranceServerState} from '#/ageAssurance'
 import {logger} from '#/ageAssurance/logger'
 import {useAnalytics} from '#/analytics'
 import {BLUESKY_PROXY_DID} from '#/env'
+import {getAppViewDid, getPublicAppViewUrl} from '#/features/appView/config'
 import {useGeolocation} from '#/geolocation'
 import {app, com} from '#/lexicons'
 
 const IS_DEV_ENV = BLUESKY_PROXY_DID !== PUBLIC_APPVIEW_DID
-const APPVIEW = IS_DEV_ENV ? DEV_ENV_APPVIEW : PUBLIC_APPVIEW
+const APPVIEW = getPublicAppViewUrl(
+  IS_DEV_ENV ? DEV_ENV_APPVIEW : PUBLIC_APPVIEW,
+)
+const APPVIEW_DID = getAppViewDid(BLUESKY_PROXY_DID)
 
 export function useBeginAgeAssurance() {
   const ax = useAnalytics()
@@ -40,7 +44,7 @@ export function useBeginAgeAssurance() {
       }
 
       const {token} = await pdsClient.call(com.atproto.server.getServiceAuth, {
-        aud: BLUESKY_PROXY_DID,
+        aud: APPVIEW_DID,
         lxm: `app.bsky.ageassurance.begin`,
       })
 
