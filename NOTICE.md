@@ -8,18 +8,19 @@ If you distribute this software or a fork of it, these notices need to travel wi
 
 ---
 
-## Lucide
+## Phosphor Icons
 
-**Paths:** `src/components/icons/LibraryBig.tsx` and
-`bskyembed/src/icons/LibraryBig.tsx`
-**License:** ISC — full text at [`licenses/LUCIDE-ISC.txt`](./licenses/LUCIDE-ISC.txt)
+**Paths:** generated components under `src/components/icons/` and
+`bskyembed/src/icons/Phosphor.tsx`
+**Source:** `@phosphor-icons/core` 2.1.1
+**License:** MIT — full text at [`licenses/PHOSPHOR-MIT.txt`](./licenses/PHOSPHOR-MIT.txt)
 
 ```
-Copyright (c) 2026 Lucide Icons and Contributors
+Copyright (c) 2023 Phosphor Icons
 ```
 
-The LibraryBig icon from `lucide-static` 1.31.0 is used as the starter-pack glyph in the app
-and embed renderer.
+The generated components use Phosphor's regular, bold, and fill weights. Their compatibility
+export names preserve the app's existing icon API; they do not indicate their upstream source.
 
 ## Material Icons
 

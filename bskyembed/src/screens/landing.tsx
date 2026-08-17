@@ -4,7 +4,6 @@ import {AppBskyFeedDefs, AppBskyFeedPost, AtpAgent, AtUri} from '@atproto/api'
 import {h, render} from 'preact'
 import {useEffect, useMemo, useRef, useState} from 'preact/hooks'
 
-import arrowBottom from '../../assets/arrowBottom_stroke2_corner0_rounded.svg'
 import logo from '../../assets/logo.svg'
 import {BRAND, isSupportedAppHost} from '../brand'
 import {
@@ -15,6 +14,7 @@ import {
 import {Container} from '../components/container'
 import {Link} from '../components/link'
 import {Post} from '../components/post'
+import {ArrowDown} from '../icons/Phosphor'
 import * as bsky from '../types/bsky'
 import {niceDate} from '../util/nice-date'
 
@@ -161,7 +161,7 @@ function LandingPage() {
         </div>
       </div>
 
-      <img src={arrowBottom} className="w-6 dark:invert" />
+      <ArrowDown size={24} />
 
       {loading ? (
         <div className={`${colorMode} w-full max-w-[600px]`}>

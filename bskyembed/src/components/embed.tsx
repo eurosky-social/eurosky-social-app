@@ -14,11 +14,8 @@ import {
 import {ComponentChildren, h} from 'preact'
 import {useMemo} from 'preact/hooks'
 
-import infoIcon from '../../assets/circleInfo_stroke2_corner0_rounded.svg'
-import playIcon from '../../assets/play_filled_corner0_rounded.svg'
 import {BRAND} from '../brand'
-import {Globe} from '../icons/Globe'
-import {LibraryBig} from '../icons/LibraryBig'
+import {Globe, Info as InfoIcon, Play, Tote} from '../icons/Phosphor'
 import {CONTENT_LABELS, labelsToInfo} from '../labels'
 import * as bsky from '../types/bsky'
 import {getRkey} from '../util/rkey'
@@ -231,7 +228,7 @@ export function Embed({
 function Info({children}: {children: ComponentChildren}) {
   return (
     <div className="w-full rounded-xl border py-2 px-2.5 flex-row flex gap-2 hover:bg-blue-50 dark:border-slate-600 dark:hover:bg-slate-900">
-      <img src={infoIcon} className="w-4 h-4 shrink-0 mt-0.5" />
+      <InfoIcon size={16} className="shrink-0 mt-0.5" />
       <p className="text-sm text-textLight dark:text-textDimmed">{children}</p>
     </div>
   )
@@ -485,7 +482,7 @@ function VideoEmbed({content}: {content: AppBskyEmbedVideo.View}) {
         className="object-cover size-full"
       />
       <div className="size-24 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/50 flex items-center justify-center">
-        <img src={playIcon} className="object-cover size-3/5" />
+        <Play size={58} className="text-white" />
       </div>
     </div>
   )
@@ -515,7 +512,7 @@ function StarterPackEmbed({
       <img src={imageUri} className="aspect-[1200/630] object-cover" />
       <div className="py-3 px-4">
         <div className="flex space-x-2 items-center">
-          <LibraryBig size={40} className="shrink-0 text-brand" />
+          <Tote size={40} className="shrink-0 text-brand" />
           <div>
             <p className="font-semibold leading-[21px]">
               {content.record.name}

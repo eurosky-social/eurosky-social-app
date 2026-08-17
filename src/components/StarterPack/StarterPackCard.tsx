@@ -11,7 +11,7 @@ import {precacheResolvedUri} from '#/state/queries/resolve-uri'
 import {precacheStarterPack} from '#/state/queries/starter-packs'
 import {useSession} from '#/state/session'
 import {atoms as a, useTheme} from '#/alf'
-import {LibraryBig as StarterPackIcon} from '#/components/icons/LibraryBig'
+import {Tote as StarterPackIcon} from '#/components/icons/Tote'
 import {
   Link as BaseLink,
   type LinkProps as BaseLinkProps,

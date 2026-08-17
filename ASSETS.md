@@ -28,47 +28,25 @@ The commissioned landing-screen illustrations from the upstream Bluesky reposito
 removed from this fork. They were licensed for Bluesky's products only and must not be restored
 during an upstream sync.
 
-## 2. Licensed icon system — not ours to pass on
+## 2. Licensed icon system — removed
 
-**`assets/icons/` (top level), and the icon glyphs in `bskyembed/assets/`**
+The Central icon system glyphs inherited from the upstream Bluesky repository have been removed
+from `assets/icons/`, `bskyembed/assets/`, and the app's icon components. Do not restore those
+files during an upstream sync unless you hold an appropriate license from Iconists.
 
-The user-interface glyphs at the top level of `assets/icons/`, plus copies of several in
-`bskyembed/assets/`, come from the Central icon system by Iconists (David & Storm GbR). Bluesky
-Social PBC licenses these icons for use in our own products. **That license is for our own use.
-It does not include the right to pass any rights to the icons on to you.**
+The replacement UI icon system is generated from MIT-licensed Phosphor Icons. Its source,
+generation commands, and notice are described in [Section 6](#6-third-party-assets-you-may-redistribute)
+and [`assets/icons/README.md`](./assets/icons/README.md).
 
-This is not us telling you that you cannot use these icons. It is us telling you that any right
-you have to use them has to come from Iconists rather than from us, and that you should not
-assume our MIT license gave you one. Licenses are available directly from
-[iconists.co](https://iconists.co), and there are good openly licensed alternatives if you would
-rather not buy one.
+## 3. Bluesky trademarks and brand assets — removed
 
-This section covers every file at the top level of `assets/icons/` **except** those named
-elsewhere in this document — specifically `logomark.svg`, `newskie.svg`, `verifiedCheck.svg`,
-`verifierCheck.svg`, `apple_logo.svg`, and `android_logo.svg`. The `assets/icons/flags/` and
-`assets/icons/community/` subdirectories are covered by [Section 6](#6-third-party-assets-you-may-redistribute) and
-[Section 5](#5-third-party-trademarks) respectively.
+The inherited Bluesky name, butterfly marks, logotypes, app icons, Newskie glyph, verification
+glyphs, and starter-pack glyphs have been removed or replaced with Mu and openly licensed
+assets. Do not restore them during an upstream sync.
 
-See [`assets/icons/README.md`](./assets/icons/README.md).
-
-## 3. Bluesky trademarks and brand assets
-
-Our name, logo, butterfly mark, logotype, and app icons are trademarks of Bluesky Social PBC.
-They are not licensed to you under the MIT license or by this document. Use of them is governed
-by our [Trademark Policy](https://bsky.social/about/support/trademarks) and [Brand Guidelines](https://bsky.social/about/support/branding).
-
-You may refer to Bluesky by name to describe interoperability or origin — for example, "a client
-for Bluesky," or "based on the Bluesky app." You may not use our marks as the identity of your
-own product or service, or in any way likely to suggest that Bluesky publishes, endorses, or
-supports it.
-
-- `assets/icons/logomark.svg`
-- `assets/icons/newskie.svg`
-- `assets/icons/verifiedCheck.svg`
-- `assets/icons/verifierCheck.svg`
-
-We are not asking anyone to remove these files from the repository. They are here because the
-app needs them to build. Replacing them is a forker's responsibility, not ours.
+You may still refer to Bluesky by name to describe interoperability or origin — for example,
+"a client for Bluesky," or "based on the Bluesky app." Do not use Bluesky's marks as the
+identity of this product or in a way that suggests Bluesky publishes, endorses, or supports it.
 
 ## 4. Community and contest artwork — removed
 
@@ -101,7 +79,7 @@ Their license text travels with the files, and you must keep it there.
 | Inter typeface | `assets/fonts/inter/` | SIL Open Font License 1.1 | [`OFL.txt`](./assets/fonts/inter/OFL.txt) |
 | Inter typeface (OG card service) | `bskyogcard/src/assets/fonts/` | SIL Open Font License 1.1 | [`README.md`](./bskyogcard/src/assets/fonts/README.md) |
 | country-flag-icons | `assets/icons/flags/` | MIT, © @catamphetamine | [`README.md`](./assets/icons/flags/README.md) |
-| Lucide LibraryBig icon | `src/components/icons/LibraryBig.tsx`<br>`bskyembed/src/icons/LibraryBig.tsx` | ISC, © Lucide Icons and Contributors | [`NOTICE.md`](./NOTICE.md) |
+| Phosphor UI icons | `src/components/icons/`<br>`bskyembed/src/icons/Phosphor.tsx` | MIT, © Phosphor Icons | [`NOTICE.md`](./NOTICE.md) |
 | Material Icons | `bskyweb/static/media/MaterialIcons.*.ttf` | Apache License 2.0 | [`NOTICE.md`](./NOTICE.md) |
 
 Build output under `bskyweb/static/media/` also contains compiled Inter files. They are the same
@@ -146,12 +124,12 @@ You have our blessing to fork this application. To do it cleanly:
 1. **Do not restore the upstream landing illustrations.** They were commissioned for Bluesky's
    products only and have been removed. See
    [Section 1](#1-commissioned-bluesky-artwork--removed).
-2. **Source your own UI icons.** The glyph set in `assets/icons/` is licensed to us for our own
-   use. See [Section 2](#2-licensed-icon-system--not-ours-to-pass-on).
+2. **Keep the Phosphor notice if you redistribute the generated UI icons.** See
+   [Section 6](#6-third-party-assets-you-may-redistribute).
 3. **Replace `assets/images/`.** Treat as not licensed to you. See
    [Section 7](#7-product-imagery--treat-as-not-licensed-to-you).
-4. **Replace the remaining Bluesky marks** listed in
-   [Section 3](#3-bluesky-trademarks-and-brand-assets).
+4. **Do not restore the removed Bluesky marks** described in
+   [Section 3](#3-bluesky-trademarks-and-brand-assets--removed).
 5. **Do not restore the removed community artwork** described in
    [Section 4](#4-community-and-contest-artwork--removed).
 6. **Check your own position on the third-party marks** in

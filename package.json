@@ -110,7 +110,8 @@
     "make-deploy-bundle": "bash scripts/bundleUpdate.sh",
     "generate-webpack-stats-file": "EXPO_PUBLIC_GENERATE_STATS=1 pnpm build-web",
     "open-analyzer": "EXPO_PUBLIC_OPEN_ANALYZER=1 pnpm build-web",
-    "icons:optimize": "svgo -f ./assets/icons",
+    "icons:generate": "node scripts/gen-phosphor-icons.mjs",
+    "icons:check": "node scripts/gen-phosphor-icons.mjs --check",
     "prettier": "prettier --check ."
   },
   "dependencies": {
@@ -292,6 +293,7 @@
     "@crowdin/cli": "^4.14.1",
     "@lingui/babel-plugin-lingui-macro": "^5.9.2",
     "@lingui/cli": "^5.9.2",
+    "@phosphor-icons/core": "2.1.1",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.15",
     "@react-native/babel-preset": "0.81.5",
     "@react-native/typescript-config": "^0.81.5",

@@ -32,7 +32,6 @@ import {CircleX_Stroke2_Corner0_Rounded as CircleXIcon} from '#/components/icons
 import {Clipboard_Stroke2_Corner2_Rounded as ClipboardIcon} from '#/components/icons/Clipboard'
 import {DotGrid3x1_Stroke2_Corner0_Rounded as EllipsisIcon} from '#/components/icons/DotGrid'
 import {Flag_Stroke2_Corner0_Rounded as FlagIcon} from '#/components/icons/Flag'
-import {LibraryBig as StarterPackIcon} from '#/components/icons/LibraryBig'
 import {ListSparkle_Stroke2_Corner0_Rounded as ListIcon} from '#/components/icons/ListSparkle'
 import {Live_Stroke2_Corner0_Rounded as LiveIcon} from '#/components/icons/Live'
 import {MagnifyingGlass_Stroke2_Corner0_Rounded as SearchIcon} from '#/components/icons/MagnifyingGlass'
@@ -48,6 +47,7 @@ import {
   RepostStrike_Stroke2_Corner0_Rounded as RepostStrikeIcon,
 } from '#/components/icons/Repost'
 import {SpeakerVolumeFull_Stroke2_Corner0_Rounded as UnmuteIcon} from '#/components/icons/Speaker'
+import {Tote as StarterPackIcon} from '#/components/icons/Tote'
 import * as Menu from '#/components/Menu'
 import {BlockDialog} from '#/components/moderation/BlockDialog'
 import {
