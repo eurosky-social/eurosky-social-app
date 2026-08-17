@@ -22,8 +22,11 @@
  * raster step); Safari tints it via the
  * <link rel="mask-icon" color="..."> attribute that the web codegen sets from
  * the brand accent.
+ *
+ *   node scripts/gen-brand-favicons.mjs
+ *   node scripts/gen-brand-favicons.mjs --check
  */
-import {readFileSync, writeFileSync} from 'node:fs'
+import {existsSync, readFileSync, writeFileSync} from 'node:fs'
 import {createRequire} from 'node:module'
 import {dirname, join, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
@@ -33,6 +36,8 @@ const {generateImageAsync} = require('@expo/image-utils')
 const Jimp = require('jimp-compact')
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const check = process.argv.includes('--check')
+const drift = []
 
 /** The one master image. Replace this file (or repoint) to rebrand favicons. */
 const MASTER = join(root, 'assets/app-icons/ios_icon_default_next.png')
@@ -87,6 +92,18 @@ async function roundCorners(buf, size) {
   return img.getBufferAsync(Jimp.MIME_PNG)
 }
 
+/** @param {string} rel @param {Buffer} next */
+function syncFile(rel, next) {
+  const file = join(root, rel)
+  const previous = existsSync(file) ? readFileSync(file) : null
+  if (previous?.equals(next)) return
+  if (check) {
+    drift.push(rel)
+  } else {
+    writeFileSync(file, next)
+  }
+}
+
 async function main() {
   for (const [rel, size, round] of PNG_TARGETS) {
     const {source} = await generateImageAsync(
@@ -101,8 +118,10 @@ async function main() {
       },
     )
     const out = round ? await roundCorners(source, size) : source
-    writeFileSync(join(root, rel), out)
-    console.log(`  ${rel}  ${size}x${size}${round ? '  (rounded)' : ''}`)
+    syncFile(rel, out)
+    if (!check) {
+      console.log(`  ${rel}  ${size}x${size}${round ? '  (rounded)' : ''}`)
+    }
   }
 
   const logo = JSON.parse(
@@ -112,10 +131,19 @@ async function main() {
   // to black), which Safari then tints via the <link rel="mask-icon"> colour.
   const safari = logo.mark.xml.replace(/\sfill="[^"]*"/g, '') + '\n'
   const safariPath = 'bskyweb/static/safari-pinned-tab.svg'
-  writeFileSync(join(root, safariPath), safari)
-  console.log(`  ${safariPath}  (monochrome wordmark mask)`)
+  syncFile(safariPath, Buffer.from(safari))
+  if (!check) {
+    console.log(`  ${safariPath}  (monochrome wordmark mask)`)
+    console.log(`\nDone. Master: ${MASTER.replace(root + '/', '')}`)
+  }
 
-  console.log(`\nDone. Master: ${MASTER.replace(root + '/', '')}`)
+  if (check && drift.length) {
+    console.error(
+      `\nbrand favicons out of sync:\n  ${drift.join('\n  ')}\n\nRun: pnpm brand:gen-favicons`,
+    )
+    process.exit(1)
+  }
+  if (check) console.log('brand favicons in sync')
 }
 
 main().catch(err => {

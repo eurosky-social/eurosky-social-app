@@ -1,3 +1,12 @@
+const brand = require('../src/config/brand.json')
+
+const accent = brand.colors.accents[brand.colors.defaultAccent]
+const neutral = brand.colors.neutral
+const subdued = {
+  ...neutral,
+  ...brand.colors.neutralSubduedOverrides,
+}
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
@@ -5,16 +14,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        brand: 'rgb(0,106,255)',
-        brandHover: 'rgb(245,249,255)',
-        brandHoverDark: 'rgb(17,24,34)',
-        brandLighten: 'rgb(32,139,254)',
-        textLight: 'rgb(63,82,104)',
-        textDimmed: 'rgb(164,179,197)',
-        textNeutral: 'rgb(102,123,153)',
-        dimmedBgLighten: 'rgb(30,41,54)',
-        dimmedBg: 'rgb(22,30,39)',
-        dimmedBgDarken: 'rgb(18,25,32)',
+        brand: accent.primary_500,
+        brandHover: accent.primary_25,
+        brandHoverDark: accent.primary_975,
+        brandLighten: accent.primary_400,
+        textLight: neutral.contrast_700,
+        textDimmed: neutral.contrast_300,
+        textNeutral: neutral.contrast_500,
+        dimmedBgLighten: subdued.contrast_900,
+        dimmedBg: subdued.contrast_950,
+        dimmedBgDarken: subdued.contrast_975,
       },
     },
   },

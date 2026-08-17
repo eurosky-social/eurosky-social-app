@@ -8,7 +8,7 @@ import {useSession} from '#/state/session'
 import {useWizardState} from '#/screens/StarterPack/Wizard/State'
 import {atoms as a, useTheme} from '#/alf'
 import * as TextField from '#/components/forms/TextField'
-import {StarterPackMultiPathLarge as StarterPackIcon} from '#/components/icons/StarterPack'
+import {Tote as StarterPackIcon} from '#/components/icons/Tote'
 import {ScreenTransition} from '#/components/ScreenTransition'
 import {Text} from '#/components/Typography'
 

@@ -146,7 +146,6 @@ const schema = z.object({
   pdsAddressHistory: z.array(z.string()).optional(),
   disableHaptics: z.boolean().optional(),
   disableAutoplay: z.boolean().optional(),
-  kawaii: z.boolean().optional(),
   /** @deprecated migrated to `petCompanion` in normalizeData; kept so legacy
    * persisted data survives schema parsing long enough to migrate. */
   catCompanion: z
@@ -225,7 +224,6 @@ export const defaults: Schema = {
   pdsAddressHistory: [],
   disableHaptics: false,
   disableAutoplay: PlatformInfo.getIsReducedMotionEnabled(),
-  kawaii: false,
   petCompanion: {enabled: false, species: 'cat', variant: 'orange'},
   hasCheckedForStarterPack: false,
   subtitlesEnabled: true,

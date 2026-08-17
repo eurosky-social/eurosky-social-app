@@ -130,7 +130,7 @@ export function SignupQueued() {
           <View style={[a.flex_1, {maxWidth: COL_WIDTH}]}>
             <View
               style={[a.w_full, a.justify_center, a.align_center, a.my_4xl]}>
-              <Logo allowVariants={false} width={120} />
+              <Logo width={120} />
             </View>
 
             <Text style={[a.text_4xl, a.font_bold, a.pb_sm]}>

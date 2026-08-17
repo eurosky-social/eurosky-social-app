@@ -22,101 +22,36 @@ on its own terms, which travel with the files.
 
 ---
 
-## 1. Commissioned artwork — licensed to Bluesky only
+## 1. Commissioned Bluesky artwork — removed
 
-**`assets/illustrations/`**
+The commissioned landing-screen illustrations from the upstream Bluesky repository have been
+removed from this fork. They were licensed for Bluesky's products only and must not be restored
+during an upstream sync.
 
-The landing-screen illustration, in light and dark variants, used by
-`src/view/com/auth/SplashScreen.tsx` (`illustration-mobile.png` and
-`illustration-mobile-dark.png`).
+## 2. Licensed icon system — removed
 
-This artwork was commissioned by Bluesky Social PBC from illustrator Owen D. Pomery, through
-his agent Brilliant Artists Ltd. Copyright remains with the artist. Our license is limited to
-Bluesky's own products and channels, it is exclusive to us, and it does not permit us to
-sublicense the artwork or to distribute modified versions of it.
+The Central icon system glyphs inherited from the upstream Bluesky repository have been removed
+from `assets/icons/`, `bskyembed/assets/`, and the app's icon components. Do not restore those
+files during an upstream sync unless you hold an appropriate license from Iconists.
 
-**If you are forking this repository, replace these files.** They are not available for
-third-party licensing while our license runs, so please do not contact the artist or his agent
-to request permission — the answer is constrained by our agreement, not by their willingness.
-See [`assets/illustrations/README.md`](./assets/illustrations/README.md).
+The replacement UI icon system is generated from MIT-licensed Phosphor Icons. Its source,
+generation commands, and notice are described in [Section 6](#6-third-party-assets-you-may-redistribute)
+and [`assets/icons/README.md`](./assets/icons/README.md).
 
-## 2. Licensed icon system — not ours to pass on
+## 3. Bluesky trademarks and brand assets — removed
 
-**`assets/icons/` (top level), and the icon glyphs in `bskyembed/assets/`**
+The inherited Bluesky name, butterfly marks, logotypes, app icons, Newskie glyph, verification
+glyphs, and starter-pack glyphs have been removed or replaced with Mu and openly licensed
+assets. Do not restore them during an upstream sync.
 
-The user-interface glyphs at the top level of `assets/icons/`, plus copies of several in
-`bskyembed/assets/`, come from the Central icon system by Iconists (David & Storm GbR). Bluesky
-Social PBC licenses these icons for use in our own products. **That license is for our own use.
-It does not include the right to pass any rights to the icons on to you.**
+You may still refer to Bluesky by name to describe interoperability or origin — for example,
+"a client for Bluesky," or "based on the Bluesky app." Do not use Bluesky's marks as the
+identity of this product or in a way that suggests Bluesky publishes, endorses, or supports it.
 
-This is not us telling you that you cannot use these icons. It is us telling you that any right
-you have to use them has to come from Iconists rather than from us, and that you should not
-assume our MIT license gave you one. Licenses are available directly from
-[iconists.co](https://iconists.co), and there are good openly licensed alternatives if you would
-rather not buy one.
+## 4. Community and contest artwork — removed
 
-This section covers every file at the top level of `assets/icons/` **except** those named
-elsewhere in this document — specifically `logomark.svg`, `newskie.svg`, `verifiedCheck.svg`,
-`verifierCheck.svg`, `starterPack.svg`, `starterPack_stroke2_corner0_rounded.svg`, `custom_logo_japan.svg`,
-`apple_logo.svg`, and `android_logo.svg`. The `assets/icons/flags/` and `assets/icons/community/`
-subdirectories are covered by [Section 6](#6-third-party-assets-you-may-redistribute) and
-[Section 5](#5-third-party-trademarks) respectively.
-
-See [`assets/icons/README.md`](./assets/icons/README.md).
-
-## 3. Bluesky trademarks and brand assets
-
-Our name, logo, butterfly mark, logotype, and app icons are trademarks of Bluesky Social PBC.
-They are not licensed to you under the MIT license or by this document. Use of them is governed
-by our [Trademark Policy](https://bsky.social/about/support/trademarks) and [Brand Guidelines](https://bsky.social/about/support/branding).
-
-You may refer to Bluesky by name to describe interoperability or origin — for example, "a client
-for Bluesky," or "based on the Bluesky app." You may not use our marks as the identity of your
-own product or service, or in any way likely to suggest that Bluesky publishes, endorses, or
-supports it.
-
-- `assets/app-icons/` — all iOS and Android app icon variants, including the `.icon` bundles
-- `assets/favicon.png`
-- `assets/logo.png`
-- `assets/default-avatar.png`
-- `assets/icon-android-foreground.png`
-- `assets/icon-android-monochrome.png`
-- `assets/icon-android-notification.png`
-- `assets/splash/splash.png`
-- `assets/splash/splash-dark.png`
-- `assets/splash/android-splash-logo-white.png`
-- `assets/icons/logomark.svg`
-- `assets/icons/newskie.svg`
-- `assets/icons/verifiedCheck.svg`
-- `assets/icons/verifierCheck.svg`
-- `assets/icons/starterPack.svg`, `assets/icons/starterPack_stroke2_corner0_rounded.svg`
-- `bskyembed/assets/logo.svg`
-- `bskyembed/assets/logo_full_name.svg`
-- `bskyweb/static/favicon.png`, `favicon-16x16.png`, `favicon-32x32.png`
-- `bskyweb/static/apple-touch-icon.png`
-- `bskyweb/static/safari-pinned-tab.svg`
-- `bskyweb/static/social-card-default.png`, `bskyweb/static/social-card-default-gradient.png`
-- `bskyweb/embedr-static/favicon.png`, `favicon-16x16.png`, `favicon-32x32.png`
-- `modules/BlueskyClip/Images.xcassets/AppIcon.appiconset/`
-- Inline vector path data in `src/view/icons/Logo.tsx` and `src/view/icons/Logotype.tsx`
-
-We are not asking anyone to remove these files from the repository. They are here because the
-app needs them to build. Replacing them is a forker's responsibility, not ours.
-
-## 4. Community and contest artwork — credited, but not ours to license
-
-These are third-party artworks that appear in the app with attribution. We hold no license that
-lets us pass rights to them on to you.
-
-- `assets/kawaii.png`, `assets/kawaii_smol.png` — logo by
-  [@sawaratsuki.bsky.social](https://bsky.app/profile/sawaratsuki.bsky.social), shown as an
-  opt-in variant and credited in `src/view/shell/Drawer.tsx` and
-  `src/view/shell/desktop/RightNav.tsx`
-- `assets/icons/custom_logo_japan.svg` — the winning entry from the Bluesky Japan logo contest,
-  created by a contest entrant
-
-Replace these if you fork. If you want to use them, that is a conversation with the artist,
-not with us.
+The community and contest logo variants inherited from the upstream Bluesky repository have
+been removed from this fork. Do not restore them without permission from their artists.
 
 ## 5. Third-party trademarks
 
@@ -144,6 +79,7 @@ Their license text travels with the files, and you must keep it there.
 | Inter typeface | `assets/fonts/inter/` | SIL Open Font License 1.1 | [`OFL.txt`](./assets/fonts/inter/OFL.txt) |
 | Inter typeface (OG card service) | `bskyogcard/src/assets/fonts/` | SIL Open Font License 1.1 | [`README.md`](./bskyogcard/src/assets/fonts/README.md) |
 | country-flag-icons | `assets/icons/flags/` | MIT, © @catamphetamine | [`README.md`](./assets/icons/flags/README.md) |
+| Phosphor UI icons | `src/components/icons/`<br>`bskyembed/src/icons/Phosphor.tsx` | MIT, © Phosphor Icons | [`NOTICE.md`](./NOTICE.md) |
 | Material Icons | `bskyweb/static/media/MaterialIcons.*.ttf` | Apache License 2.0 | [`NOTICE.md`](./NOTICE.md) |
 
 Build output under `bskyweb/static/media/` also contains compiled Inter files. They are the same
@@ -168,27 +104,54 @@ drawing the line at the directory.
 If you are forking, replace these or ship without them.
 See [`assets/images/README.md`](./assets/images/README.md).
 
+## 8. Licensed pet artwork — not ours to pass on
+
+**`assets/pets/`**
+
+The cat, dog, and fox sprite sheets are paid artwork from
+[ToffeeCraft](https://toffeecraft.itch.io/). We have a license to use them in this project, but
+that license does not transfer through this repository and does not extend to forks or other
+downstream users. The repository's MIT license does not cover this artwork, and its presence here
+does not grant permission to reuse or redistribute it independently.
+
+Forks must obtain their own applicable license from ToffeeCraft or replace/remove the pet artwork.
+See [`assets/pets/README.md`](./assets/pets/README.md).
+
+## 9. Mu brand assets
+
+Mu's name, logo, app icons, favicons, splash images, social cards, and other product-identity
+assets are not Bluesky assets. Forks should still replace them with their own branding rather
+than ship as Mu.
+
+The white-label sources are `src/config/brand.json`, `assets/brand/`, and the primary app-icon
+master. Run `pnpm brand` after changing them; it regenerates the runtime logo data, web and embed
+identity, QR/default-avatar rasters, App Clip icon, social cards, and favicon set. See
+[`docs/rebranding.md`](./docs/rebranding.md).
+
 ---
 
 ## If you are forking
 
 You have our blessing to fork this application. To do it cleanly:
 
-1. **Replace `assets/illustrations/`.** Commissioned artwork, licensed to Bluesky only. See
-   [Section 1](#1-commissioned-artwork--licensed-to-bluesky-only).
-2. **Source your own UI icons.** The glyph set in `assets/icons/` is licensed to us for our own
-   use. See [Section 2](#2-licensed-icon-system--not-ours-to-pass-on).
+1. **Do not restore the upstream landing illustrations.** They were commissioned for Bluesky's
+   products only and have been removed. See
+   [Section 1](#1-commissioned-bluesky-artwork--removed).
+2. **Keep the Phosphor notice if you redistribute the generated UI icons.** See
+   [Section 6](#6-third-party-assets-you-may-redistribute).
 3. **Replace `assets/images/`.** Treat as not licensed to you. See
    [Section 7](#7-product-imagery--treat-as-not-licensed-to-you).
-4. **Replace the Bluesky marks** listed in [Section 3](#3-bluesky-trademarks-and-brand-assets) —
-   app icons, favicons, logo files, and the inline logo paths in `src/view/icons/`.
-5. **Replace or remove the community artwork** in
-   [Section 4](#4-community-and-contest-artwork--credited-but-not-ours-to-license).
-6. **Check your own position on the third-party marks** in
+4. **License or replace the pet artwork.** Our ToffeeCraft license does not transfer to forks.
+   See [Section 8](#8-licensed-pet-artwork--not-ours-to-pass-on).
+5. **Do not restore the removed Bluesky marks** described in
+   [Section 3](#3-bluesky-trademarks-and-brand-assets--removed).
+6. **Do not restore the removed community artwork** described in
+   [Section 4](#4-community-and-contest-artwork--removed).
+7. **Check your own position on the third-party marks** in
    [Section 5](#5-third-party-trademarks).
-7. **Keep the license notices** for the assets in
+8. **Keep the license notices** for the assets in
    [Section 6](#6-third-party-assets-you-may-redistribute).
-8. **Change your branding, support links, and analytics** as described in the
+9. **Change your branding, support links, and analytics** as described in the
    [Forking guidelines](./README.md#forking-guidelines).
 
 This list is about licensing. The [Forking guidelines](./README.md#forking-guidelines) in the

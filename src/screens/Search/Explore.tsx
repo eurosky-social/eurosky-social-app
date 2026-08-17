@@ -54,7 +54,7 @@ import {
   type Props as SVGIconProps,
 } from '#/components/icons/common'
 import {ListSparkle_Stroke2_Corner0_Rounded as ListSparkle} from '#/components/icons/ListSparkle'
-import {StarterPackMultiPathLarge as StarterPackIcon} from '#/components/icons/StarterPack'
+import {Tote as StarterPackIcon} from '#/components/icons/Tote'
 import {UserCircle_Stroke2_Corner0_Rounded as Person} from '#/components/icons/UserCircle'
 import {boostInterests} from '#/components/InterestTabs'
 import {Loader} from '#/components/Loader'

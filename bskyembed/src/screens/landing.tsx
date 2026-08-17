@@ -4,8 +4,8 @@ import {AppBskyFeedDefs, AppBskyFeedPost, AtpAgent, AtUri} from '@atproto/api'
 import {h, render} from 'preact'
 import {useEffect, useMemo, useRef, useState} from 'preact/hooks'
 
-import arrowBottom from '../../assets/arrowBottom_stroke2_corner0_rounded.svg'
 import logo from '../../assets/logo.svg'
+import {BRAND, isSupportedAppHost} from '../brand'
 import {
   assertColorModeValues,
   ColorModeValues,
@@ -14,6 +14,7 @@ import {
 import {Container} from '../components/container'
 import {Link} from '../components/link'
 import {Post} from '../components/post'
+import {ArrowDown} from '../icons/Phosphor'
 import * as bsky from '../types/bsky'
 import {niceDate} from '../util/nice-date'
 
@@ -22,7 +23,7 @@ const DEFAULT_POST =
 const DEFAULT_URI =
   'at://did:plc:vjug55kidv6sye7ykr5faxxn/app.bsky.feed.post/3jzn6g7ixgq2y'
 
-export const EMBED_SERVICE = 'https://embed.bsky.app'
+export const EMBED_SERVICE = BRAND.embedService
 export const EMBED_SCRIPT = `${EMBED_SERVICE}/static/embed.js`
 
 const root = document.getElementById('app')
@@ -31,7 +32,7 @@ if (!root) throw new Error('No root element')
 initSystemColorMode({additionalBodyClasses: 'dark:bg-dimmedBgDarken'})
 
 const agent = new AtpAgent({
-  service: 'https://public.api.bsky.app',
+  service: BRAND.publicApi,
 })
 
 render(<LandingPage />, root)
@@ -60,7 +61,7 @@ function LandingPage() {
           } else {
             try {
               const urlp = new URL(uri)
-              if (!urlp.hostname.endsWith('bsky.app')) {
+              if (!isSupportedAppHost(urlp.hostname)) {
                 throw new Error('Invalid hostname')
               }
               const split = urlp.pathname.slice(1).split('/')
@@ -86,7 +87,7 @@ function LandingPage() {
               atUri = `at://${did}/app.bsky.feed.post/${rkey}`
             } catch (err) {
               console.log(err)
-              throw new Error('Invalid Bluesky URL')
+              throw new Error('Invalid post URL')
             }
           }
         }
@@ -111,7 +112,7 @@ function LandingPage() {
         setThread(data.thread)
       } catch (err) {
         console.error(err)
-        setError(err instanceof Error ? err.message : 'Invalid Bluesky URL')
+        setError(err instanceof Error ? err.message : 'Invalid post URL')
       } finally {
         setLoading(false)
       }
@@ -121,12 +122,14 @@ function LandingPage() {
   return (
     <main className="w-full min-h-dvh flex flex-col items-center gap-8 py-14 px-4 md:pt-32 dark:text-slate-200">
       <Link
-        href="https://bsky.social/about"
+        href={BRAND.appUrl}
         className="transition-transform hover:scale-110">
         <img src={logo} className="h-10" />
       </Link>
 
-      <h1 className="text-4xl font-bold text-center">Embed a Bluesky Post</h1>
+      <h1 className="text-4xl font-bold text-center">
+        Embed a {BRAND.name} Post
+      </h1>
 
       <div className="flex flex-col w-full max-w-[600px] gap-6">
         <input
@@ -158,7 +161,7 @@ function LandingPage() {
         </div>
       </div>
 
-      <img src={arrowBottom} className="w-6 dark:invert" />
+      <ArrowDown size={24} />
 
       {loading ? (
         <div className={`${colorMode} w-full max-w-[600px]`}>
@@ -294,7 +297,7 @@ function Snippet({
 }
 
 function toShareUrl(path: string) {
-  return `https://bsky.app${path}?ref_src=embed`
+  return `${BRAND.appUrl}${path}?ref_src=embed`
 }
 
 /**

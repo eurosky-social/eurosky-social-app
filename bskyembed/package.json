@@ -6,7 +6,7 @@
     "dev": "vite",
     "dev-snippet": "tsc --project tsconfig.snippet.json && serve -s dist -p 3000 -n",
     "build": "tsc && vite build",
-    "build-snippet": "tsc --project tsconfig.snippet.json",
+    "build-snippet": "tsc --project tsconfig.snippet.json && node scripts/finalize-snippet.mjs",
     "analyze": "ANALYZE=1 vite build",
     "lint": "eslint --cache src",
     "typecheck": "tsc --noEmit",

@@ -8,6 +8,20 @@ If you distribute this software or a fork of it, these notices need to travel wi
 
 ---
 
+## Phosphor Icons
+
+**Paths:** generated components under `src/components/icons/` and
+`bskyembed/src/icons/Phosphor.tsx`
+**Source:** `@phosphor-icons/core` 2.1.1
+**License:** MIT — full text at [`licenses/PHOSPHOR-MIT.txt`](./licenses/PHOSPHOR-MIT.txt)
+
+```
+Copyright (c) 2023 Phosphor Icons
+```
+
+The generated components use Phosphor's regular, bold, and fill weights. Their compatibility
+export names preserve the app's existing icon API; they do not indicate their upstream source.
+
 ## Material Icons
 
 **Path:** `bskyweb/static/media/MaterialIcons.*.ttf`
