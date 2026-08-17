@@ -30,6 +30,7 @@ const GOOGLE_SERVICES_FILE = (() => {
 const brand = require('./src/config/brand.json')
 const brandMeta = brand
 const BRAND_ACCENT = brand.colors.accents[brand.colors.defaultAccent]
+const APPLE_TEAM_ID = process.env.EXPO_APPLE_TEAM_ID ?? '2472Y2UN4X'
 
 /**
  * @param {import('@expo/config-types').ExpoConfig} _config
@@ -94,7 +95,8 @@ module.exports = function (_config) {
       ios: {
         supportsTablet: false,
         bundleIdentifier: 'social.mu.app',
-        appleTeamId: process.env.EXPO_APPLE_TEAM_ID,
+        buildNumber: process.env.BSKY_IOS_BUILD_NUMBER ?? '1',
+        appleTeamId: APPLE_TEAM_ID,
         config: {
           usesNonExemptEncryption: false,
         },
@@ -346,7 +348,9 @@ module.exports = function (_config) {
             networkInstrumentation: true,
           },
         ],
-        './plugins/starterPackAppClipExtension/withStarterPackAppClip.js',
+        ...(!IS_DEV
+          ? ['./plugins/starterPackAppClipExtension/withStarterPackAppClip.js']
+          : []),
         './plugins/withGradleJVMHeapSizeIncrease.js',
         './plugins/withAndroidManifestLargeHeapPlugin.js',
         './plugins/withAndroidManifestFCMIconPlugin.js',
@@ -501,10 +505,14 @@ module.exports = function (_config) {
                       ],
                     },
                   },
-                  {
-                    targetName: 'BlueskyClip',
-                    bundleIdentifier: 'social.mu.app.AppClip',
-                  },
+                  ...(!IS_DEV
+                    ? [
+                        {
+                          targetName: 'BlueskyClip',
+                          bundleIdentifier: 'social.mu.app.AppClip',
+                        },
+                      ]
+                    : []),
                 ],
               },
             },

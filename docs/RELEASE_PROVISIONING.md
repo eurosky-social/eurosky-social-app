@@ -14,11 +14,12 @@ steps require external accounts and cannot be done from the repo alone.
 | Android package | `social.mu.app` |
 | App Group (iOS) | `group.social.mu.app` |
 | Expo owner (org slug) | `eurosky` (`app.config.js` `expo.owner`) |
+| Apple team | Stichting Modal (`2472Y2UN4X`) |
 | EAS project | `@eurosky/mu-social` (slug `mu-social`, id `52e14cdd-ab10-4b16-a0f4-fc918a9fa323`) |
 | Sentry org | `eurosky` (only used when `SENTRY_AUTH_TOKEN` is set) |
 
 Placeholders that still need real values (search the repo for `REPLACE_WITH_`):
-`eas.json` submit block (`ascAppId`, `appleTeamId`, ASC API key id/issuer).
+`eas.json` submit block (`ascAppId` and ASC API key id/issuer).
 
 ## Prerequisites
 
@@ -53,8 +54,8 @@ or EAS commands error with a slug-mismatch.
 3. Create an **App Store Connect API key** (Users and Access → Integrations →
    App Store Connect API, role: App Manager). Download the `.p8`. Fill
    `eas.json`: `ascApiKeyId`, `ascApiKeyIssuerId`, and place the file at
-   `ascApiKeyPath` (`./credentials/asc-api-key.p8`, git-ignored). Set
-   `appleTeamId` too.
+   `ascApiKeyPath` (`./credentials/asc-api-key.p8`, git-ignored). The Stichting
+   Modal Apple Team ID is already configured in `eas.json`.
 4. Let EAS manage signing certs + provisioning profiles:
    `eas credentials -p ios` (or it will prompt on first `eas build`). Sign in
    with the Apple account when asked; EAS creates the distribution cert and
