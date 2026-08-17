@@ -22,6 +22,7 @@ import {type OnPostSuccessData} from '#/state/shell/composer'
 import {ReaderSeamReplies} from '#/screens/PostThread/components/ReaderSeamControls'
 import {ThreadComposePromptPill} from '#/screens/PostThread/components/ThreadComposePrompt'
 import {
+  getReplyLineColor,
   OUTER_SPACE,
   READER_BRACKET_WIDTH,
   READER_SEAM_HEIGHT,
@@ -228,7 +229,7 @@ function ReaderSeamInner({
               marginTop: READER_SEAM_HEIGHT / 2 - 1,
               height: READER_BRACKET_WIDTH,
               opacity: lineVisible ? 1 : 0,
-              backgroundColor: t.atoms.border_contrast_low.borderColor,
+              backgroundColor: getReplyLineColor(t),
             },
           ]}
         />

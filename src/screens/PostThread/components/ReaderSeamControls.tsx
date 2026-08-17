@@ -29,6 +29,7 @@ import {
 } from '#/screens/PostThread/components/ThreadItemPost'
 import {ThreadItemReadMore} from '#/screens/PostThread/components/ThreadItemReadMore'
 import {
+  getReplyLineColor,
   OUTER_SPACE,
   READER_BRACKET_WIDTH,
   READER_LINE_INDENT,
@@ -76,7 +77,7 @@ export function ReaderBracket({
         borderLeftWidth: READER_BRACKET_WIDTH,
         borderTopWidth: READER_BRACKET_WIDTH,
         borderBottomWidth: READER_BRACKET_WIDTH,
-        borderColor: t.atoms.border_contrast_low.borderColor,
+        borderColor: getReplyLineColor(t),
       }}
     />
   )
@@ -564,7 +565,7 @@ export function ReaderSeamReplies({
         style={{
           height: REPLY_LINE_WIDTH,
           marginLeft: READER_LINE_INDENT,
-          backgroundColor: t.atoms.border_contrast_low.borderColor,
+          backgroundColor: getReplyLineColor(t),
         }}
       />
     </>

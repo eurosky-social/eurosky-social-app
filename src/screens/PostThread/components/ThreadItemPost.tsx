@@ -25,6 +25,7 @@ import {
   useHasThreadItemPostNumber,
 } from '#/screens/PostThread/components/ThreadItemPostNumber'
 import {
+  getReplyLineColor,
   LINEAR_AVI_WIDTH,
   OUTER_SPACE,
   REPLY_LINE_WIDTH,
@@ -181,7 +182,7 @@ const ThreadItemPostParentReplyLine = memo(
                 a.mb_xs,
                 {
                   width: REPLY_LINE_WIDTH,
-                  backgroundColor: t.atoms.border_contrast_low.borderColor,
+                  backgroundColor: getReplyLineColor(t),
                 },
               ]}
             />
@@ -301,7 +302,7 @@ const ThreadItemPostInner = memo(function ThreadItemPostInner({
                     a.flex_1,
                     {
                       width: REPLY_LINE_WIDTH,
-                      backgroundColor: t.atoms.border_contrast_low.borderColor,
+                      backgroundColor: getReplyLineColor(t),
                     },
                   ]}
                 />

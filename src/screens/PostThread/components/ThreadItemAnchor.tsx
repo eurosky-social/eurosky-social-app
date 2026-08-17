@@ -31,6 +31,7 @@ import {
   useHasThreadItemPostNumber,
 } from '#/screens/PostThread/components/ThreadItemPostNumber'
 import {
+  getReplyLineColor,
   LINEAR_AVI_WIDTH,
   OUTER_SPACE,
   READER_LINE_INDENT,
@@ -164,7 +165,7 @@ function ThreadItemAnchorParentReplyLine({isRoot}: {isRoot: boolean}) {
               marginLeft: 'auto',
               marginRight: 'auto',
               flexGrow: 1,
-              backgroundColor: t.atoms.border_contrast_low.borderColor,
+              backgroundColor: getReplyLineColor(t),
             },
           ]}
         />
