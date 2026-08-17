@@ -19,7 +19,7 @@ import {AnalyticsContext, useAnalyticsBase, utils} from '#/analytics'
 import {IS_WEB} from '#/env'
 import {com} from '#/lexicons'
 import {emitSessionDropped} from '../events'
-import {getPublicAppviewClient} from './clients'
+import {getPublicAppviewClient, getPublicBlueskyAppviewClient} from './clients'
 import {createSessionBundleAndCreateAccount} from './create-account'
 import {pickExpiryRescueCandidate} from './expiry-rescue'
 import {
@@ -869,4 +869,11 @@ export function useMaybeChatClient(): Client | null {
  */
 export function usePublicAppviewClient(): Client {
   return getPublicAppviewClient()
+}
+
+/**
+ * The unauthenticated client pinned to Bluesky's public AppView.
+ */
+export function usePublicBlueskyAppviewClient(): Client {
+  return getPublicBlueskyAppviewClient()
 }

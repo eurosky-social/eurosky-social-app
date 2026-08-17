@@ -25,6 +25,11 @@ import {
 
 import {uploadBlob} from '#/lib/api'
 import {until} from '#/lib/async/until'
+import {
+  BLUESKY_APPVIEW_DID,
+  BLUESKY_APPVIEW_SERVICE,
+  PUBLIC_APPVIEW_DID,
+} from '#/lib/constants'
 import {useToggleMutationQueue} from '#/lib/hooks/useToggleMutationQueue'
 import {updateProfileShadow} from '#/state/cache/profile-shadow'
 import {type Shadow} from '#/state/cache/types'
@@ -37,7 +42,12 @@ import {
   useUnstableProfileViewCache,
 } from '#/state/queries/unstable-profile-cache'
 import {useUpdateProfileVerificationCache} from '#/state/queries/verification/useUpdateProfileVerificationCache'
-import {useAppviewClient, usePdsClient, useSession} from '#/state/session'
+import {
+  useAppviewClient,
+  usePdsClient,
+  usePublicBlueskyAppviewClient,
+  useSession,
+} from '#/state/session'
 import * as userActionHistory from '#/state/userActionHistory'
 import {useAnalytics} from '#/analytics'
 import {type Metrics, toClout} from '#/analytics/metrics'
@@ -66,6 +76,115 @@ export const profilesQueryKey = (handles: string[]) => [
   handles,
 ]
 
+const BLUESKY_PROFILE_TIMEOUT_MS = 3e3
+
+function isUsingBlueskyAppview(client: Client, hasSession: boolean): boolean {
+  return hasSession
+    ? client.service === BLUESKY_APPVIEW_SERVICE
+    : PUBLIC_APPVIEW_DID === BLUESKY_APPVIEW_DID
+}
+
+async function getBlueskyProfile({
+  appviewClient,
+  publicBlueskyClient,
+  actor,
+  hasSession,
+  signal,
+}: {
+  appviewClient: Client
+  publicBlueskyClient: Client
+  actor: AtIdentifierString
+  hasSession: boolean
+  signal?: AbortSignal
+}): Promise<app.bsky.actor.defs.ProfileViewDetailed | null> {
+  const controller = new AbortController()
+  const abort = () => controller.abort()
+  if (signal?.aborted) {
+    abort()
+  } else {
+    signal?.addEventListener('abort', abort, {once: true})
+  }
+  const timeout = setTimeout(abort, BLUESKY_PROFILE_TIMEOUT_MS)
+
+  try {
+    return hasSession
+      ? await appviewClient.call(
+          app.bsky.actor.getProfile,
+          {actor},
+          {service: BLUESKY_APPVIEW_SERVICE, signal: controller.signal},
+        )
+      : await publicBlueskyClient.call(
+          app.bsky.actor.getProfile,
+          {actor},
+          {signal: controller.signal},
+        )
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timeout)
+    signal?.removeEventListener('abort', abort)
+  }
+}
+
+function mergeBlueskyGraphData(
+  profile: app.bsky.actor.defs.ProfileViewDetailed,
+  blueskyProfile: app.bsky.actor.defs.ProfileViewDetailed | null,
+): app.bsky.actor.defs.ProfileViewDetailed {
+  if (!blueskyProfile) return profile
+
+  const knownFollowers = blueskyProfile.viewer?.knownFollowers
+  return {
+    ...profile,
+    followersCount: blueskyProfile.followersCount ?? profile.followersCount,
+    followsCount: blueskyProfile.followsCount ?? profile.followsCount,
+    ...(knownFollowers
+      ? {viewer: {...profile.viewer, knownFollowers}}
+      : undefined),
+  }
+}
+
+async function getProfileWithBlueskyGraph({
+  appviewClient,
+  publicBlueskyClient,
+  actor,
+  hasSession,
+  signal,
+}: {
+  appviewClient: Client
+  publicBlueskyClient: Client
+  actor: AtIdentifierString
+  hasSession: boolean
+  signal?: AbortSignal
+}): Promise<app.bsky.actor.defs.ProfileViewDetailed> {
+  const profilePromise = appviewClient.call(
+    app.bsky.actor.getProfile,
+    {actor},
+    {signal},
+  )
+
+  if (isUsingBlueskyAppview(appviewClient, hasSession)) {
+    return await profilePromise
+  }
+
+  const blueskyProfilePromise = getBlueskyProfile({
+    appviewClient,
+    publicBlueskyClient,
+    actor,
+    hasSession,
+    signal,
+  })
+  const [profile, blueskyProfile] = await Promise.all([
+    profilePromise,
+    blueskyProfilePromise,
+  ])
+
+  /*
+   * Users compare graph counts with Bluesky, so match its view while keeping
+   * Eurosky authoritative for profile data, moderation and relationship state.
+   */
+  return mergeBlueskyGraphData(profile, blueskyProfile)
+}
+
 export function useProfileQuery({
   did,
   staleTime = STALE.SECONDS.FIFTEEN,
@@ -74,6 +193,8 @@ export function useProfileQuery({
   staleTime?: number
 }) {
   const client = useAppviewClient()
+  const publicBlueskyClient = usePublicBlueskyAppviewClient()
+  const {hasSession} = useSession()
   const {getUnstableProfile} = useUnstableProfileViewCache()
   return useQuery<app.bsky.actor.defs.ProfileViewDetailed>({
     // WARNING
@@ -83,9 +204,13 @@ export function useProfileQuery({
     staleTime,
     refetchOnWindowFocus: true,
     queryKey: RQKEY(did ?? ''),
-    queryFn: async () => {
-      return await client.call(app.bsky.actor.getProfile, {
+    queryFn: async ({signal}) => {
+      return await getProfileWithBlueskyGraph({
+        appviewClient: client,
+        publicBlueskyClient,
         actor: (did ?? '') as AtIdentifierString,
+        hasSession,
+        signal,
       })
     },
     placeholderData: () => {
@@ -119,20 +244,26 @@ export function useProfilesQuery({
 
 export function usePrefetchProfileQuery() {
   const client = useAppviewClient()
+  const publicBlueskyClient = usePublicBlueskyAppviewClient()
+  const {hasSession} = useSession()
   const queryClient = useQueryClient()
   const prefetchProfileQuery = useCallback(
     async (did: string) => {
       await queryClient.prefetchQuery({
         staleTime: STALE.SECONDS.THIRTY,
         queryKey: RQKEY(did),
-        queryFn: async () => {
-          return await client.call(app.bsky.actor.getProfile, {
-            actor: (did || '') as AtIdentifierString,
+        queryFn: async ({signal}) => {
+          return await getProfileWithBlueskyGraph({
+            appviewClient: client,
+            publicBlueskyClient,
+            actor: did as AtIdentifierString,
+            hasSession,
+            signal,
           })
         },
       })
     },
-    [queryClient, client],
+    [queryClient, client, publicBlueskyClient, hasSession],
   )
   return prefetchProfileQuery
 }
