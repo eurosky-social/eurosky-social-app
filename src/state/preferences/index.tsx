@@ -5,7 +5,6 @@ import {Provider as ExternalEmbedsProvider} from './external-embeds-prefs'
 import {Provider as HiddenPostsProvider} from './hidden-posts'
 import {Provider as InAppBrowserProvider} from './in-app-browser'
 import {Provider as InterfaceStyleProvider} from './interface-style'
-import {Provider as KawaiiProvider} from './kawaii'
 import {Provider as LanguagesProvider} from './languages'
 import {Provider as LargeAltBadgeProvider} from './large-alt-badge'
 import {Provider as PetCompanionProvider} from './pet-companion'
@@ -50,15 +49,13 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
                     <UsedStarterPacksProvider>
                       <SubtitlesProvider>
                         <TrendingSettingsProvider>
-                          <KawaiiProvider>
-                            <PetCompanionProvider>
-                              <TranslationProviderProvider>
-                                <InterfaceStyleProvider>
-                                  {children}
-                                </InterfaceStyleProvider>
-                              </TranslationProviderProvider>
-                            </PetCompanionProvider>
-                          </KawaiiProvider>
+                          <PetCompanionProvider>
+                            <TranslationProviderProvider>
+                              <InterfaceStyleProvider>
+                                {children}
+                              </InterfaceStyleProvider>
+                            </TranslationProviderProvider>
+                          </PetCompanionProvider>
                         </TrendingSettingsProvider>
                       </SubtitlesProvider>
                     </UsedStarterPacksProvider>

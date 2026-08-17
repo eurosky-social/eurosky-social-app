@@ -151,7 +151,7 @@ export function QrCodeInner({link}: {link: string}) {
             a.rounded_sm,
             {paddingHorizontal: 8, paddingVertical: 10, backgroundColor: QR_BG},
           ]}>
-          <Logo allowVariants={false} width={44} fill="#1a1a1a" />
+          <Logo width={44} fill="#1a1a1a" />
         </View>
       </View>
     </View>

@@ -14,7 +14,6 @@ This notice covers the SVG files at the top level of this directory. It does not
 - `community/` — third-party service marks, see [`community/README.md`](./community/README.md)
 - `logomark.svg`, `newskie.svg`, `verifiedCheck.svg`, `verifierCheck.svg`, `starterPack.svg`,
   `starterPack_stroke2_corner0_rounded.svg` — Bluesky trademarks and brand assets
-- `custom_logo_japan.svg` — artwork by a Bluesky Japan logo contest entrant
 - `apple_logo.svg`, `android_logo.svg` — Apple and Google trademarks
 
 Each of those is described in [`ASSETS.md`](../../ASSETS.md).

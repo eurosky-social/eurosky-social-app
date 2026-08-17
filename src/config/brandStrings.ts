@@ -135,9 +135,6 @@ const APP_BRAND_MSGIDS = new Set<string>([
  *   'tBlmFu'  ...violations of Bluesky's community guidelines...   (policy doc)
  *   'QPZ2Bk'  ...first seen by Bluesky on <date>   (appview/network indexing)
  *   'f4olkV'  Bluesky cannot confirm... claimed date (appview/network)
- *   'dMRRI+'  Bluesky+ icons                       (product/subscription name)
- *   'E1Imji'  Bluesky+                             (product/subscription name)
- *   'oaQ0RU'  Bluesky Classic(TM)                  (trademark / app-icon variant)
  *   '7+c6/U'  ...sign in to other Bluesky clients  (network ecosystem)
  *   'u7I+xA'  ...sent to Bluesky's moderation service (the real Bluesky-run
  *             labeler at moderation.bsky.app; keep until we run our own -
