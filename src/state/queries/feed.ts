@@ -20,7 +20,11 @@ import {GCTIME, STALE} from '#/state/queries'
 import {RQKEY as listQueryKey} from '#/state/queries/list'
 import {usePreferencesQuery} from '#/state/queries/preferences'
 import {createQueryKey} from '#/state/queries/util'
-import {useAppviewClient, useSession} from '#/state/session'
+import {
+  useAppviewClient,
+  useBlueskyAppviewRequestTarget,
+  useSession,
+} from '#/state/session'
 import {app} from '#/lexicons'
 import {router} from '#/routes'
 import {useModerationOpts} from '../preferences/moderation-opts'
@@ -233,7 +237,7 @@ export function createGetPopularFeedsQueryKey(
 
 export function useGetPopularFeedsQuery(options?: GetPopularFeedsOptions) {
   const {hasSession} = useSession()
-  const client = useAppviewClient()
+  const {client, service} = useBlueskyAppviewRequestTarget()
   const limit = options?.limit || 10
   const {data: preferences} = usePreferencesQuery()
   const queryClient = useQueryClient()
@@ -254,12 +258,18 @@ export function useGetPopularFeedsQuery(options?: GetPopularFeedsOptions) {
     enabled: Boolean(moderationOpts) && options?.enabled !== false,
     queryKey: createGetPopularFeedsQueryKey(options),
     queryFn: async ({pageParam}) => {
+      const params = {
+        limit,
+        cursor: pageParam,
+      }
+      /*
+       * Eurosky can resolve known generators but does not yet provide a
+       * complete popular-feed directory. Keep discovery pinned to Bluesky.
+       */
       const data = await client.call(
         app.bsky.unspecced.getPopularFeedGenerators,
-        {
-          limit,
-          cursor: pageParam,
-        },
+        params,
+        {service},
       )
 
       // precache feeds
@@ -338,7 +348,7 @@ export function useGetPopularFeedsQuery(options?: GetPopularFeedsOptions) {
 }
 
 export function useSearchPopularFeedsMutation() {
-  const client = useAppviewClient()
+  const {client, service} = useBlueskyAppviewRequestTarget()
   const moderationOpts = useModerationOpts()
 
   return useMutation({
@@ -349,6 +359,7 @@ export function useSearchPopularFeedsMutation() {
           limit: 10,
           query: query,
         },
+        {service},
       )
 
       if (moderationOpts) {
@@ -376,7 +387,7 @@ export function usePopularFeedsSearch({
   query: string
   enabled?: boolean
 }) {
-  const client = useAppviewClient()
+  const {client, service} = useBlueskyAppviewRequestTarget()
   const moderationOpts = useModerationOpts()
   const enabledInner = enabled ?? Boolean(moderationOpts)
 
@@ -390,6 +401,7 @@ export function usePopularFeedsSearch({
           limit: 15,
           query: query,
         },
+        {service},
       )
 
       return data.feeds

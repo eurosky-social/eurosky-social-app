@@ -9,9 +9,10 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react'
-import {type Client} from '@atproto/lex'
+import {type Client, type Service} from '@atproto/lex'
 import {type SessionData} from '@atproto/lex-password-session'
 
+import {BLUESKY_APPVIEW_SERVICE} from '#/lib/constants'
 import * as persisted from '#/state/persisted'
 import {useCloseAllActiveElements} from '#/state/util'
 import {useGlobalDialogsControlContext} from '#/components/dialogs/Context'
@@ -869,6 +870,28 @@ export function useMaybeChatClient(): Client | null {
  */
 export function usePublicAppviewClient(): Client {
   return getPublicAppviewClient()
+}
+
+/**
+ * A client and per-call service override pinned to Bluesky's AppView.
+ *
+ * Signed in, the active session client routes through the PDS proxy. Logged
+ * out, the dedicated public Bluesky client talks to that AppView directly and
+ * needs no proxy override.
+ */
+export function useBlueskyAppviewRequestTarget(): {
+  client: Client
+  service: Service | null
+} {
+  const bundle = useContext(BundleContext)
+  if (!bundle) {
+    throw Error(
+      'useBlueskyAppviewRequestTarget() must be below <SessionProvider>.',
+    )
+  }
+  return bundle.session
+    ? {client: bundle.appviewClient, service: BLUESKY_APPVIEW_SERVICE}
+    : {client: getPublicBlueskyAppviewClient(), service: null}
 }
 
 /**

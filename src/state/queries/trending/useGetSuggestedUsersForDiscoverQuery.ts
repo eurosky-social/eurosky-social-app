@@ -8,7 +8,7 @@ import {logger} from '#/logger'
 import {getContentLanguages} from '#/state/preferences/languages'
 import {STALE} from '#/state/queries'
 import {usePreferencesQuery} from '#/state/queries/preferences'
-import {useAppviewClient} from '#/state/session'
+import {useBlueskyAppviewRequestTarget} from '#/state/session'
 import {app} from '#/lexicons'
 
 export type QueryProps = {
@@ -22,7 +22,7 @@ export const createGetSuggestedUsersForDiscoverQueryKey = (props: {
 }) => [getSuggestedUsersForDiscoverQueryKeyRoot, props.limit]
 
 export function useGetSuggestedUsersForDiscoverQuery(props: QueryProps = {}) {
-  const client = useAppviewClient()
+  const {client, service} = useBlueskyAppviewRequestTarget()
   const {data: preferences} = usePreferencesQuery()
 
   return useQuery({
@@ -32,17 +32,15 @@ export function useGetSuggestedUsersForDiscoverQuery(props: QueryProps = {}) {
       const contentLangs = getContentLanguages().join(',')
       const userInterests = aggregateUserInterests(preferences)
 
+      const params = {limit: props.limit || 10}
+      const headers = {
+        ...createBskyTopicsHeader(userInterests),
+        'Accept-Language': contentLangs,
+      }
       const data = await client.call(
         app.bsky.unspecced.getSuggestedUsersForDiscover,
-        {
-          limit: props.limit || 10,
-        },
-        {
-          headers: {
-            ...createBskyTopicsHeader(userInterests),
-            'Accept-Language': contentLangs,
-          },
-        },
+        params,
+        {headers, service},
       )
       if (!data.recIdStr) {
         logger.debug('getSuggestedUsersForDiscover response missing recIdStr')
