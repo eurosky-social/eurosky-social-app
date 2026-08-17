@@ -5,7 +5,7 @@ import {logger} from '#/logger'
 import {getContentLanguages} from '#/state/preferences/languages'
 import {STALE} from '#/state/queries'
 import {usePreferencesQuery} from '#/state/queries/preferences'
-import {useAppviewClient} from '#/state/session'
+import {useBlueskyAppviewRequestTarget} from '#/state/session'
 import {app} from '#/lexicons'
 
 export type QueryProps = {
@@ -27,7 +27,7 @@ export const createGetSuggestedOnboardingUsersQueryKey = (
 ]
 
 export function useGetSuggestedOnboardingUsersQuery(props: QueryProps) {
-  const client = useAppviewClient()
+  const {client, service} = useBlueskyAppviewRequestTarget()
   const {data: preferences} = usePreferencesQuery()
 
   return useQuery({
@@ -39,18 +39,18 @@ export function useGetSuggestedOnboardingUsersQuery(props: QueryProps) {
 
       const overrideInterests = props.overrideInterests.join(',')
 
+      const params = {
+        category: props.category ?? undefined,
+        limit: props.limit || 10,
+      }
+      const headers = {
+        ...createBskyTopicsHeader(overrideInterests),
+        'Accept-Language': contentLangs,
+      }
       const data = await client.call(
         app.bsky.unspecced.getSuggestedOnboardingUsers,
-        {
-          category: props.category ?? undefined,
-          limit: props.limit || 10,
-        },
-        {
-          headers: {
-            ...createBskyTopicsHeader(overrideInterests),
-            'Accept-Language': contentLangs,
-          },
-        },
+        params,
+        {headers, service},
       )
 
       if (!data.recIdStr) {

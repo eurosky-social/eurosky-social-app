@@ -1,4 +1,4 @@
-import {type Client} from '@atproto/lex'
+import {type Client, type Service} from '@atproto/lex'
 import {PasswordSession} from '@atproto/lex-password-session'
 import {beforeEach, describe, expect, it, jest} from '@jest/globals'
 import {act, render} from '@testing-library/react-native'
@@ -62,9 +62,11 @@ jest.mock('../create-account', () => ({
   createSessionBundleAndCreateAccount: () => new Promise(() => {}),
 }))
 
+import {BLUESKY_APPVIEW_SERVICE} from '#/lib/constants'
 import {
   Provider,
   useAppviewClient,
+  useBlueskyAppviewRequestTarget,
   useChatClient,
   useMaybeChatClient,
   useMaybePdsClient,
@@ -76,6 +78,7 @@ import {
   buildAppviewClient,
   buildChatClient,
   buildPdsClient,
+  getPublicBlueskyAppviewClient,
   getUnauthenticatedThrowingClient,
 } from '../clients'
 import {type SessionBundle} from '../session-core'
@@ -84,6 +87,7 @@ import {asFetch, makeAccount, makeMockFetch} from './mock-fetch'
 
 type Clients = {
   appview: Client
+  bluesky: {client: Client; service: Service | null}
   pds: Client
   chat: Client
   maybePds: Client | null
@@ -116,6 +120,7 @@ function renderClients(): {api: SessionApiContext; clients: () => Clients} {
     api = useSessionApi()
     clients = {
       appview: useAppviewClient(),
+      bluesky: useBlueskyAppviewRequestTarget(),
       pds: usePdsClient(),
       chat: useChatClient(),
       maybePds: useMaybePdsClient(),
@@ -141,6 +146,14 @@ describe('client hooks while logged out', () => {
     expect(clients().appview).toBeDefined()
     /* the logged-out bundle holds the public appview client itself */
     expect(clients().appview.did).toBeUndefined()
+  })
+
+  it('serves Bluesky directly for pinned public reads', () => {
+    const {clients} = renderClients()
+    expect(clients().bluesky).toEqual({
+      client: getPublicBlueskyAppviewClient(),
+      service: null,
+    })
   })
 
   it('serves the throwing client for the write surfaces', () => {
@@ -171,6 +184,22 @@ describe('client hooks with a session', () => {
     expect(clients().appview).toBe(bundle.appviewClient)
     expect(clients().pds).toBe(bundle.pdsClient)
     expect(clients().chat).toBe(bundle.chatClient)
+  })
+
+  it('routes pinned Bluesky reads through the session AppView client', async () => {
+    const account = makeAccount()
+    const bundle = makeBundle(account)
+    const {api, clients} = renderClients()
+
+    mockLogin.mockResolvedValueOnce({bundle, account})
+    await act(async () => {
+      await api.login({} as never, 'LoginForm')
+    })
+
+    expect(clients().bluesky).toEqual({
+      client: bundle.appviewClient,
+      service: BLUESKY_APPVIEW_SERVICE,
+    })
   })
 
   it('serves the same clients from the maybe variants', async () => {
