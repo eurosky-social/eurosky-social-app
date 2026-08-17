@@ -5,8 +5,13 @@ import {
   useInfiniteQuery,
 } from '@tanstack/react-query'
 
+import {BLUESKY_APPVIEW_SERVICE} from '#/lib/constants'
 import {STALE} from '#/state/queries'
-import {useAppviewClient} from '#/state/session'
+import {
+  useAppviewClient,
+  usePublicBlueskyAppviewClient,
+  useSession,
+} from '#/state/session'
 import {app} from '#/lexicons'
 
 export const RQKEY_ROOT = 'starter-pack-search'
@@ -28,6 +33,8 @@ export function useStarterPackSearch({
   limit?: number
 }) {
   const client = useAppviewClient()
+  const publicBlueskyClient = usePublicBlueskyAppviewClient()
+  const {hasSession} = useSession()
   return useInfiniteQuery<
     app.bsky.graph.searchStarterPacksV2.$OutputBody,
     Error,
@@ -38,11 +45,24 @@ export function useStarterPackSearch({
     staleTime: STALE.MINUTES.FIVE,
     queryKey: RQKEY(query, limit),
     queryFn: async ({pageParam}) => {
-      return await client.call(app.bsky.graph.searchStarterPacksV2, {
+      const params = {
         q: query,
         limit,
         cursor: pageParam,
-      })
+      }
+      /*
+       * Eurosky does not yet implement the complete v2 search behavior. Signed
+       * in, route through the PDS to Bluesky; logged out, use Bluesky's public
+       * AppView directly.
+       */
+      return hasSession
+        ? await client.call(app.bsky.graph.searchStarterPacksV2, params, {
+            service: BLUESKY_APPVIEW_SERVICE,
+          })
+        : await publicBlueskyClient.call(
+            app.bsky.graph.searchStarterPacksV2,
+            params,
+          )
     },
     enabled: enabled && !!query,
     initialPageParam: undefined,
