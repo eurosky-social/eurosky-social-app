@@ -12,6 +12,10 @@ export const STAGING_SERVICE = 'https://staging.bsky.dev'
 export const BSKY_SERVICE = BRAND.services.pds
 export const BSKY_SERVICE_DID = BRAND.services.pdsDid
 export const PUBLIC_BSKY_SERVICE = BRAND.services.publicApi
+/** Bluesky's canonical AppView, independent of the configured primary AppView. */
+export const BLUESKY_APPVIEW_DID = api.app.did
+export const BLUESKY_APPVIEW_SERVICE: Service = api.app.service
+export const BLUESKY_PUBLIC_APPVIEW = api.app.urlPublic
 export const DEFAULT_SERVICE = BSKY_SERVICE
 export const HELP_DESK_URL = BRAND.links.helpDesk
 export const CHAT_SERVICE = BRAND.services.chat

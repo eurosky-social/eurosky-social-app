@@ -3,6 +3,7 @@ import {type PasswordSession} from '@atproto/lex-password-session'
 
 import {
   BLUESKY_PROXY_HEADER,
+  BLUESKY_PUBLIC_APPVIEW,
   CHAT_PROXY_SERVICE,
   PUBLIC_BSKY_SERVICE,
 } from '#/lib/constants'
@@ -129,6 +130,21 @@ export function getUnauthenticatedThrowingClient(): Client {
 }
 
 let publicLexClient: Client | undefined
+let publicBlueskyLexClient: Client | undefined
+
+/**
+ * The unauthenticated {@link Client} pinned to Bluesky's public AppView.
+ *
+ * This remains separate from {@link getPublicAppviewClient}: deployments may
+ * point their primary public reads at another AppView while selectively using
+ * Bluesky's view for compatibility data such as profile graph counts.
+ */
+export function getPublicBlueskyAppviewClient(): Client {
+  return (publicBlueskyLexClient ??= createLexClient({
+    service: BLUESKY_PUBLIC_APPVIEW,
+    fetch: networkAwareFetch,
+  }))
+}
 
 /**
  * The unauthenticated {@link Client} for public reads, pointed at the public

@@ -8,8 +8,9 @@ const realFetch = globalThis.fetch
 
 /**
  * Fetch wrapper that reports network reachability to the app-wide event bus.
- * Any resolved response (including HTTP errors) confirms the network is up; a
- * thrown error (DNS failure, timeout, offline) reports it as lost.
+ * Any resolved response (including HTTP errors) confirms the network is up;
+ * network failures report it as lost. Explicit request cancellation is ignored
+ * because it says nothing about network reachability.
  */
 export const networkAwareFetch: typeof fetch = async (...args) => {
   try {
@@ -17,7 +18,14 @@ export const networkAwareFetch: typeof fetch = async (...args) => {
     emitNetworkConfirmed()
     return res
   } catch (e) {
-    emitNetworkLost()
+    const isAbortError =
+      typeof e === 'object' &&
+      e !== null &&
+      'name' in e &&
+      e.name === 'AbortError'
+    if (!isAbortError) {
+      emitNetworkLost()
+    }
     throw e
   }
 }

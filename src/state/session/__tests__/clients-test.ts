@@ -13,7 +13,11 @@ jest.mock('jwt-decode', () => ({
   },
 }))
 
-import {BLUESKY_PROXY_HEADER, CHAT_PROXY_SERVICE} from '#/lib/constants'
+import {
+  BLUESKY_APPVIEW_SERVICE,
+  BLUESKY_PROXY_HEADER,
+  CHAT_PROXY_SERVICE,
+} from '#/lib/constants'
 import {app, chat, com} from '#/lexicons'
 import {configureGlobalAppLabelers} from '../additional-moderation-authorities'
 import {
@@ -109,6 +113,20 @@ describe('buildAppviewClient', () => {
     expect(
       headersFor(fetchMock, 'app.bsky.actor.getProfile').get('atproto-proxy'),
     ).toBe(BLUESKY_PROXY_HEADER.get())
+  })
+
+  it('allows one read to be routed to Bluesky instead', async () => {
+    const client = buildAppviewClient(makeSession(fetchMock))
+
+    await client.call(
+      app.bsky.actor.getProfile,
+      {actor: HANDLE},
+      {service: BLUESKY_APPVIEW_SERVICE},
+    )
+
+    expect(
+      headersFor(fetchMock, 'app.bsky.actor.getProfile').get('atproto-proxy'),
+    ).toBe(BLUESKY_APPVIEW_SERVICE)
   })
 
   it('emits an account subscription exactly once', async () => {
