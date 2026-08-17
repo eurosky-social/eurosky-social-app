@@ -77,6 +77,7 @@ import {
   features,
   setupDeviceId,
 } from '#/analytics'
+import {KeyboardShortcuts} from '#/features/keyboardShortcuts'
 import {
   prefetchLiveEvents,
   Provider as LiveEventsProvider,
@@ -179,6 +180,7 @@ function InnerApp() {
                                                             <IntentDialogProvider>
                                                               <TranslateOnDeviceProvider>
                                                                 <HotkeysProvider>
+                                                                  <KeyboardShortcuts />
                                                                   <Shell />
                                                                   <ToastOutlet />
                                                                 </HotkeysProvider>

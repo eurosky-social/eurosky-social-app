@@ -60,6 +60,7 @@ export type Device = {
   mergedGeolocation?: Geolocation
 
   trendingBetaEnabled: boolean
+  keyboardShortcutsEnabled?: boolean
   devMode: boolean
   demoMode: boolean
   activitySubscriptionsNudged?: boolean

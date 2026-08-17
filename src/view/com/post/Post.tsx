@@ -163,6 +163,11 @@ function PostInner({
           style,
         ]}
         onBeforePress={onBeforePress}
+        dataSet={{
+          keyboardNavigationPost: post.uri,
+          keyboardNavigationHref: itemHref,
+          keyboardNavigationClickable: 'true',
+        }}
         onPointerEnter={() => {
           setHover(true)
         }}

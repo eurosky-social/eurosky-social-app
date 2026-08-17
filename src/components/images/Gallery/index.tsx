@@ -448,6 +448,7 @@ function GalleryImage({
         onPreviewPress={onPreviewPress}>
         <Pressable
           ref={itemRef}
+          testID="postMediaOpenBtn"
           tabIndex={index === 0 ? 0 : -1}
           onPress={onPress}
           onPressIn={onPressIn}
