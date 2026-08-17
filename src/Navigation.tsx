@@ -118,6 +118,7 @@ import {InterestsSettingsScreen} from '#/screens/Settings/InterestsSettings'
 import {LanguageSettingsScreen} from '#/screens/Settings/LanguageSettings'
 import {LegacyNotificationSettingsScreen} from '#/screens/Settings/LegacyNotificationSettings'
 import {NetworkServicesSettingsScreen} from '#/screens/Settings/NetworkServicesSettings'
+import {AppViewTransferSettingsScreen} from '#/screens/Settings/NetworkServicesSettings/AppViewTransfer'
 import {ContentServiceSettingsScreen} from '#/screens/Settings/NetworkServicesSettings/ContentServiceSettings'
 import {NotificationSettingsScreen} from '#/screens/Settings/NotificationSettings'
 import {ActivityNotificationSettingsScreen} from '#/screens/Settings/NotificationSettings/ActivityNotificationSettings'
@@ -429,6 +430,14 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         getComponent={() => ContentServiceSettingsScreen}
         options={{
           title: title(msg`Content service`),
+          requireAuth: true,
+        }}
+      />
+      <Stack.Screen
+        name="AppViewTransferSettings"
+        getComponent={() => AppViewTransferSettingsScreen}
+        options={{
+          title: title(msg`Transfer app data`),
           requireAuth: true,
         }}
       />

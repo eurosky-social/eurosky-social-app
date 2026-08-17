@@ -1,5 +1,6 @@
 import {type ID as PolicyUpdate202508} from '#/components/PolicyUpdateOverlay/updates/202508/config'
 import {type AppViewPreference} from '#/features/appView/types'
+import {type AppViewTransferCheckpoint} from '#/features/appViewTransfer/types'
 import {type Gif} from '#/features/gifPicker/types'
 import {type InviteThemeKey} from '#/features/inviteFriends/themes'
 import {type Geolocation} from '#/geolocation/types'
@@ -111,6 +112,9 @@ export type Account = {
    * account after a switch, until that account's preferences loaded.
    */
   isBetaUser?: boolean
+
+  /** The latest resumable private-data transfer between AppViews. */
+  appViewTransfer?: AppViewTransferCheckpoint
 
   /**
    * The account's subscribed labeler DIDs, cached from preferences so the
