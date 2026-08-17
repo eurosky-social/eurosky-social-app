@@ -24,6 +24,7 @@ import {
   useHasThreadItemPostNumber,
 } from '#/screens/PostThread/components/ThreadItemPostNumber'
 import {
+  getReplyLineColor,
   OUTER_SPACE,
   REPLY_LINE_WIDTH,
   TREE_AVI_WIDTH,
@@ -147,14 +148,12 @@ const ThreadItemTreePostOuterWrapper = memo(
             return (
               <View
                 key={`${item.value.post.uri}-padding-${n}`}
-                style={[
-                  t.atoms.border_contrast_low,
-                  {
-                    borderRightWidth: isSkipped ? 0 : REPLY_LINE_WIDTH,
-                    width: TREE_INDENT + TREE_AVI_WIDTH / 2,
-                    left: 1,
-                  },
-                ]}
+                style={{
+                  borderColor: getReplyLineColor(t),
+                  borderRightWidth: isSkipped ? 0 : REPLY_LINE_WIDTH,
+                  width: TREE_INDENT + TREE_AVI_WIDTH / 2,
+                  left: 1,
+                }}
               />
             )
           })}
@@ -197,8 +196,8 @@ const ThreadItemTreePostInnerWrapper = memo(
           <View
             style={[
               a.absolute,
-              t.atoms.border_contrast_low,
               {
+                borderColor: getReplyLineColor(t),
                 left: -1,
                 top: 0,
                 height:
@@ -230,8 +229,12 @@ const ThreadItemTreeReplyChildReplyLine = memo(
           <View
             style={[
               a.flex_1,
-              t.atoms.border_contrast_low,
-              {borderRightWidth: 2, width: '50%', left: -1},
+              {
+                borderColor: getReplyLineColor(t),
+                borderRightWidth: 2,
+                width: '50%',
+                left: -1,
+              },
             ]}
           />
         )}
