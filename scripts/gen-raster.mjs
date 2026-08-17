@@ -2,9 +2,9 @@
 /**
  * OPTIONAL raster generator - app icon + OG image from the brand SVGs.
  *
- * Deliberately NOT a project dependency. It auto-detects a rasterizer and skips
- * gracefully if none is installed, so normal dev / `pnpm brand` / CI never need
- * one. Run it by hand only when the logo changes:
+ * This is not part of the normal `pnpm brand` path because it may overwrite
+ * hand-designed app-icon and OG masters. Run it explicitly when those masters
+ * should be regenerated from SVG:
  *
  *   pnpm brand:gen-raster              from assets/brand/{icon,og}.svg if present
  *   pnpm brand:gen-raster --compose    also compose defaults from the mark for
@@ -12,8 +12,7 @@
  *   pnpm brand:gen-raster --out /tmp   write to a dir instead of in place (dry run)
  *
  * Rasterizer, in priority order (first one found wins):
- *   1. @resvg/resvg-js   (optional node module; `npm i -g` it or install locally,
- *                         never committed - it is not in package.json)
+ *   1. @resvg/resvg-js   (project dev dependency)
  *   2. rsvg-convert      (system; `brew install librsvg`)
  *   3. magick / convert  (system ImageMagick)
  *

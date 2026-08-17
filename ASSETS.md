@@ -63,17 +63,11 @@ for Bluesky," or "based on the Bluesky app." You may not use our marks as the id
 own product or service, or in any way likely to suggest that Bluesky publishes, endorses, or
 supports it.
 
-- `assets/logo.png`
-- `assets/default-avatar.png`
 - `assets/icons/logomark.svg`
 - `assets/icons/newskie.svg`
 - `assets/icons/verifiedCheck.svg`
 - `assets/icons/verifierCheck.svg`
 - `assets/icons/starterPack.svg`, `assets/icons/starterPack_stroke2_corner0_rounded.svg`
-- `bskyembed/assets/logo.svg`
-- `bskyembed/assets/logo_full_name.svg`
-- `bskyweb/static/social-card-default.png`, `bskyweb/static/social-card-default-gradient.png`
-- `modules/BlueskyClip/Images.xcassets/AppIcon.appiconset/`
 
 We are not asking anyone to remove these files from the repository. They are here because the
 app needs them to build. Replacing them is a forker's responsibility, not ours.
@@ -132,6 +126,17 @@ drawing the line at the directory.
 
 If you are forking, replace these or ship without them.
 See [`assets/images/README.md`](./assets/images/README.md).
+
+## 8. Mu brand assets
+
+Mu's name, logo, app icons, favicons, splash images, social cards, and other product-identity
+assets are not Bluesky assets. Forks should still replace them with their own branding rather
+than ship as Mu.
+
+The white-label sources are `src/config/brand.json`, `assets/brand/`, and the primary app-icon
+master. Run `pnpm brand` after changing them; it regenerates the runtime logo data, web and embed
+identity, QR/default-avatar rasters, App Clip icon, social cards, and favicon set. See
+[`docs/rebranding.md`](./docs/rebranding.md).
 
 ---
 
