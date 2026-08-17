@@ -30,6 +30,7 @@ const GOOGLE_SERVICES_FILE = (() => {
 const brand = require('./src/config/brand.json')
 const brandMeta = brand
 const BRAND_ACCENT = brand.colors.accents[brand.colors.defaultAccent]
+const APPLE_TEAM_ID = process.env.EXPO_APPLE_TEAM_ID ?? '2472Y2UN4X'
 
 /**
  * @param {import('@expo/config-types').ExpoConfig} _config
@@ -94,7 +95,7 @@ module.exports = function (_config) {
       ios: {
         supportsTablet: false,
         bundleIdentifier: 'social.mu.app',
-        appleTeamId: process.env.EXPO_APPLE_TEAM_ID,
+        appleTeamId: APPLE_TEAM_ID,
         config: {
           usesNonExemptEncryption: false,
         },
