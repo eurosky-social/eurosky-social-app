@@ -10,6 +10,7 @@ import {
   getAppLanguageAsContentLanguage,
   getContentLanguages,
 } from '#/state/preferences/languages'
+import {getPublicAppViewUrl} from '#/features/appView/config'
 import {app} from '#/lexicons'
 import {type FeedAPI, type FeedAPIResponse} from './types'
 import {createBskyTopicsHeader, isBlueskyOwnedFeed} from './utils'
@@ -106,7 +107,7 @@ let loggedOutAppviewClient: Client | undefined
 
 /**
  * The unauthenticated {@link Client} for logged-out feed reads, pointed at the
- * direct appview ({@link PUBLIC_APPVIEW}, `api.bsky.app`).
+ * selected direct AppView (falling back to {@link PUBLIC_APPVIEW}).
  *
  * Deliberately NOT the public appview client (`public.api.bsky.app`): that host
  * fronts a cache which does not vary on `Accept-Language`, so it would answer a
@@ -121,7 +122,7 @@ let loggedOutAppviewClient: Client | undefined
  */
 function getLoggedOutAppviewClient(): Client {
   return (loggedOutAppviewClient ??= createLexClient({
-    service: PUBLIC_APPVIEW,
+    service: getPublicAppViewUrl(PUBLIC_APPVIEW),
   }))
 }
 

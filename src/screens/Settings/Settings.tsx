@@ -215,6 +215,14 @@ export function SettingsScreen({}: Props) {
               <Trans>Content and media</Trans>
             </SettingsList.ItemText>
           </SettingsList.LinkItem>
+          <SettingsList.LinkItem
+            to="/settings/network-services"
+            label={l`Network services`}>
+            <SettingsList.ItemIcon icon={EarthIcon} />
+            <SettingsList.ItemText>
+              <Trans>Network services</Trans>
+            </SettingsList.ItemText>
+          </SettingsList.LinkItem>
           {IS_NATIVE &&
             findContactsEnabled &&
             !ax.features.enabled(ax.features.ImportContactsSettingsDisable) && (
