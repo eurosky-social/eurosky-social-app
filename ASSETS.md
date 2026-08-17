@@ -104,7 +104,20 @@ drawing the line at the directory.
 If you are forking, replace these or ship without them.
 See [`assets/images/README.md`](./assets/images/README.md).
 
-## 8. Mu brand assets
+## 8. Licensed pet artwork — not ours to pass on
+
+**`assets/pets/`**
+
+The cat, dog, and fox sprite sheets are paid artwork from
+[ToffeeCraft](https://toffeecraft.itch.io/). We have a license to use them in this project, but
+that license does not transfer through this repository and does not extend to forks or other
+downstream users. The repository's MIT license does not cover this artwork, and its presence here
+does not grant permission to reuse or redistribute it independently.
+
+Forks must obtain their own applicable license from ToffeeCraft or replace/remove the pet artwork.
+See [`assets/pets/README.md`](./assets/pets/README.md).
+
+## 9. Mu brand assets
 
 Mu's name, logo, app icons, favicons, splash images, social cards, and other product-identity
 assets are not Bluesky assets. Forks should still replace them with their own branding rather
@@ -128,15 +141,17 @@ You have our blessing to fork this application. To do it cleanly:
    [Section 6](#6-third-party-assets-you-may-redistribute).
 3. **Replace `assets/images/`.** Treat as not licensed to you. See
    [Section 7](#7-product-imagery--treat-as-not-licensed-to-you).
-4. **Do not restore the removed Bluesky marks** described in
+4. **License or replace the pet artwork.** Our ToffeeCraft license does not transfer to forks.
+   See [Section 8](#8-licensed-pet-artwork--not-ours-to-pass-on).
+5. **Do not restore the removed Bluesky marks** described in
    [Section 3](#3-bluesky-trademarks-and-brand-assets--removed).
-5. **Do not restore the removed community artwork** described in
+6. **Do not restore the removed community artwork** described in
    [Section 4](#4-community-and-contest-artwork--removed).
-6. **Check your own position on the third-party marks** in
+7. **Check your own position on the third-party marks** in
    [Section 5](#5-third-party-trademarks).
-7. **Keep the license notices** for the assets in
+8. **Keep the license notices** for the assets in
    [Section 6](#6-third-party-assets-you-may-redistribute).
-8. **Change your branding, support links, and analytics** as described in the
+9. **Change your branding, support links, and analytics** as described in the
    [Forking guidelines](./README.md#forking-guidelines).
 
 This list is about licensing. The [Forking guidelines](./README.md#forking-guidelines) in the
