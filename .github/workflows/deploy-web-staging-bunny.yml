@@ -77,6 +77,8 @@ jobs:
           EXPO_PUBLIC_ENABLE_GEOLOCATION: 'true'
           EXPO_PUBLIC_GEOLOCATION_URL: https://ip.mu.social
           EXPO_PUBLIC_ENABLE_LIVE_EVENTS: 'false'
+          # Seasonal sports module is currently retired.
+          EXPO_PUBLIC_ENABLE_SPORTS: 'false'
           EXPO_PUBLIC_ENABLE_APP_CONFIG: 'false'
           # Product-analytics events otherwise POST to events.bsky.app. Disabled;
           # GrowthBook flag fetching is unaffected (separate from this client).
