@@ -97,6 +97,7 @@ export const RepostButton = ({
     </EventStopper>
   ) : (
     <PostControlButton
+      testID="repostBtn"
       onPress={() => requireAuth(() => {})}
       active={isReposted}
       activeColor={t.palette.positive_500}

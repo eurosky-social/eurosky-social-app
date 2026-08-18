@@ -274,6 +274,11 @@ const ThreadItemPostInner = memo(function ThreadItemPostInner({
         <PostHider
           testID={`postThreadItem-by-${post.author.handle}`}
           href={postHref}
+          dataSet={{
+            keyboardNavigationPost: post.uri,
+            keyboardNavigationHref: postHref,
+            keyboardNavigationClickable: 'true',
+          }}
           disabled={overrides?.moderation === true}
           modui={moderation.ui('contentList')}
           hiderStyle={[a.pl_0, a.pr_2xs, a.bg_transparent]}

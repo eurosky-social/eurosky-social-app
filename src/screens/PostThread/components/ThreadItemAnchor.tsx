@@ -279,6 +279,15 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
       <GalleryBleed>
         <View
           testID={`postThreadItem-by-${post.author.handle}`}
+          // @ts-expect-error web only
+          dataSet={{
+            keyboardNavigationPost: post.uri,
+            keyboardNavigationHref: makeProfileLink(
+              post.author,
+              'post',
+              new AtUri(post.uri).rkey,
+            ),
+          }}
           style={[
             {
               paddingHorizontal: OUTER_SPACE,

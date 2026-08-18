@@ -335,7 +335,14 @@ let FeedItemInner = ({
         noFeedback
         accessible={false}
         onBeforePress={onBeforePress}
-        dataSet={{feedContext}}
+        dataSet={{
+          feedContext,
+          keyboardNavigationPost:
+            post.uri === rootPost.uri ? post.uri : undefined,
+          keyboardNavigationHref: post.uri === rootPost.uri ? href : undefined,
+          keyboardNavigationClickable:
+            post.uri === rootPost.uri ? 'true' : undefined,
+        }}
         onPointerEnter={() => {
           setHover(true)
         }}

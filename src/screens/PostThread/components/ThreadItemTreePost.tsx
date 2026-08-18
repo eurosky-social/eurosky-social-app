@@ -327,6 +327,11 @@ const ThreadItemTreePostInner = memo(function ThreadItemTreePostInner({
         <PostHider
           testID={`postThreadItem-by-${post.author.handle}`}
           href={postHref}
+          dataSet={{
+            keyboardNavigationPost: post.uri,
+            keyboardNavigationHref: postHref,
+            keyboardNavigationClickable: 'true',
+          }}
           disabled={overrides?.moderation === true}
           modui={moderation.ui('contentList')}
           iconSize={42}
