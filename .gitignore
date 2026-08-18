@@ -127,6 +127,9 @@ src/locale/locales/**/messages.js
 src/locale/locales/**/messages.mjs
 src/locale/locales/**/messages.ts
 
+# generated lexicon schemas (pnpm lexicons:generate)
+src/lexicons/
+
 # local builds
 *.apk
 *.aab
@@ -144,3 +147,6 @@ bskyweb/static/media/*.svg
 # superpowers plugin plans/specs — local-only workspace
 docs/superpowers/
 .claude/worktrees
+
+# pnpm
+.pnpm-store/

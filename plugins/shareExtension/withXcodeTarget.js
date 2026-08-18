@@ -3,6 +3,7 @@ const {withXcodeProject} = require('expo/config-plugins')
 const withXcodeTarget = (config, {extensionName, controllerName}) => {
   return withXcodeProject(config, config => {
     const pbxProject = config.modResults
+    const developmentTeam = config.ios.appleTeamId
 
     const target = pbxProject.addTarget(
       extensionName,
@@ -43,17 +44,17 @@ const withXcodeTarget = (config, {extensionName, controllerName}) => {
           buildSettingsObj.SWIFT_EMIT_LOC_STRINGS = 'YES'
           buildSettingsObj.SWIFT_VERSION = '5.0'
           buildSettingsObj.TARGETED_DEVICE_FAMILY = `"1,2"`
-          buildSettingsObj.DEVELOPMENT_TEAM = 'B3LX46C5HS'
+          buildSettingsObj.DEVELOPMENT_TEAM = developmentTeam
         }
       }
     }
 
     pbxProject.addTargetAttribute(
       'DevelopmentTeam',
-      'B3LX46C5HS',
+      developmentTeam,
       extensionName,
     )
-    pbxProject.addTargetAttribute('DevelopmentTeam', 'B3LX46C5HS')
+    pbxProject.addTargetAttribute('DevelopmentTeam', developmentTeam)
 
     return config
   })

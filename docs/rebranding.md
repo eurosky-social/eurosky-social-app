@@ -1,7 +1,7 @@
 # Rebranding / white-labeling
 
-Brand identity is **one JSON file + a folder of SVGs + one command**. The visual
-+ text rebrand happy path:
+Brand identity is **one JSON file + a folder of SVGs + one app-icon master + one
+command**. The visual + text rebrand happy path:
 
 ## 1. Edit `src/config/brand.json`
 
@@ -47,17 +47,20 @@ Plain colours (hex/rgb) render as-authored (for genuinely multi-colour logos).
 ## 3. Run the generators
 
 ```bash
-pnpm brand         # gen-logo + sync-web + favicons - the full visual rebrand
-pnpm brand:check   # CI guard: non-zero if the generated artifacts are stale
+pnpm brand         # regenerate all committed brand artifacts
+pnpm brand:check   # CI guard: non-zero if any generated artifact is stale
 ```
 
 Under the hood (run individually if you like):
 
 - `pnpm brand:gen-logo` — `assets/brand/*.svg` → `src/config/brand-logo.generated.json`
   (committed; consumed by `<BrandLogo>`, the splash, and the favicon mask).
-- `pnpm brand:sync-web` — writes the colours / splash / og / title into the
-  pre-boot HTML (`web/index.html`, `bskyweb/templates/base.html`).
-- `pnpm brand:gen-favicons` — favicons + Safari mask from the icon master PNG.
+- `pnpm brand:sync-web` — writes colours, splash, metadata, Go-template
+  constants, and standalone embed identity from `brand.json`.
+- `pnpm brand:gen-assets` — generates the QR fallback logo, development default
+  avatar, App Clip icon, embed logos, and bskyweb social cards.
+- `pnpm brand:gen-favicons` — generates favicons, touch icons, and the Safari
+  mask from the icon master PNG.
 
 That's the full visual + text rebrand. `BRAND.name` propagates through the UI
 automatically; the upstream "Bluesky" → name swap lives in
@@ -65,22 +68,22 @@ automatically; the upstream "Bluesky" → name swap lives in
 
 ## App icon + OG image (optional `gen-raster`)
 
-Favicons are generated from the icon master at
-`assets/app-icons/ios_icon_default_next.png` — replace it with your 1024×1024
-square tile, or generate it from SVG:
+The App Clip icon and favicons are generated from the icon master at
+`assets/app-icons/ios_icon_default_next.png`. Replace it with your 1024×1024
+full-bleed square tile, or generate it from SVG:
 
 ```bash
 pnpm brand:gen-raster            # from assets/brand/{icon,og}.svg if present
 pnpm brand:gen-raster --compose  # else compose defaults from your mark
 ```
 
-`gen-raster` is **optional and not a project dependency**. It auto-detects a
-rasterizer — `@resvg/resvg-js` (install it yourself, never committed) →
-`rsvg-convert` (`brew install librsvg`) → `magick` (ImageMagick) — and skips with
-a message if none is present. It is **non-destructive**: it only writes an output
-when its SVG source exists (`icon.svg` → icon master + favicons; `og.svg` →
-`web/og-image.jpg`), or composes a default under `--compose`. A brand with
-hand-designed raster art ships no source SVGs and is never touched.
+`gen-raster` is optional; the normal `pnpm brand` path does not overwrite the
+app-icon master or `web/og-image.jpg`. It uses the project-installed
+`@resvg/resvg-js`, with `rsvg-convert` or ImageMagick as fallbacks. It is
+**non-destructive**: it only writes an output when its SVG source exists
+(`icon.svg` → icon master + favicons; `og.svg` → `web/og-image.jpg`), or composes
+a default under `--compose`. A brand with hand-designed raster art can omit
+those SVG sources.
 
 ## OAuth (per deployment)
 

@@ -16,7 +16,6 @@ import {
 } from '#/lib/routes/types'
 import {useInterfaceStyle, useSetInterfaceStyle} from '#/state/preferences'
 import {useSetThemePrefs, useThemePrefs} from '#/state/shell'
-import {SettingsListItem as AppIconSettingsListItem} from '#/screens/Settings/AppIconSettings/SettingsListItem'
 import {type Alf, atoms as a, native, useAlf, useTheme} from '#/alf'
 import * as SegmentedControl from '#/components/forms/SegmentedControl'
 import * as Toggle from '#/components/forms/Toggle'
@@ -30,7 +29,6 @@ import {TitleCase_Stroke2_Corner0_Rounded as Aa} from '#/components/icons/TitleC
 import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
 import {ACCENTS, DEFAULT_ACCENT} from '#/config/brand-theme'
-import {IS_INTERNAL, IS_NATIVE} from '#/env'
 import * as SettingsList from './components/SettingsList'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'AppearanceSettings'>
@@ -200,12 +198,12 @@ export function AppearanceSettingsScreen({}: Props) {
                 onChange={onChangeFontScale}
               />
 
-              {IS_NATIVE && IS_INTERNAL && (
+              {/*{IS_NATIVE && IS_INTERNAL && (
                 <>
                   <SettingsList.Divider />
                   <AppIconSettingsListItem />
                 </>
-              )}
+              )}*/}
             </Animated.View>
           </SettingsList.Container>
         </Layout.Content>

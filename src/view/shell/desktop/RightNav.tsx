@@ -4,7 +4,6 @@ import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
 import {useSession} from '#/state/session'
-import {useLogoVariant} from '#/view/icons/useLogoVariant'
 import {DesktopFeeds} from '#/view/shell/desktop/Feeds'
 import {DesktopSearch} from '#/view/shell/desktop/Search'
 import {
@@ -29,7 +28,6 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
   const t = useTheme()
   const {_} = useLingui()
   const {hasSession} = useSession()
-  const logoVariant = useLogoVariant()
   const gutters = useGutters(['base', 0, 'base', 'wide'])
   const isSearchScreen = routeName === 'Search'
   const isMessagesRelatedScreen = routeName.startsWith('Messages')
@@ -155,19 +153,6 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
           {_(msg`Terms`)}
         </InlineLinkText>
       </Text>
-
-      {logoVariant === 'kawaii' && (
-        <Text style={[t.atoms.text_contrast_medium, {marginTop: 12}]}>
-          <Trans>
-            Logo by{' '}
-            <InlineLinkText
-              label={_(msg`Logo by @sawaratsuki.bsky.social`)}
-              to="/profile/sawaratsuki.bsky.social">
-              @sawaratsuki.bsky.social
-            </InlineLinkText>
-          </Trans>
-        </Text>
-      )}
 
       {!hasSession && leftNavMinimal && (
         <View style={[a.w_full, {height: 32}]}>

@@ -26,7 +26,6 @@ import {type SessionAccount, useSession} from '#/state/session'
 import {useSetDrawerOpen} from '#/state/shell'
 import {formatCount} from '#/view/com/util/numeric/format'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
-import {useLogoVariant} from '#/view/icons/useLogoVariant'
 import {NavSignupCard} from '#/view/shell/NavSignupCard'
 import {atoms as a, tokens, useTheme, web} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
@@ -62,6 +61,7 @@ import {
   UserCircle_Stroke2_Corner0_Rounded as UserCircle,
 } from '#/components/icons/UserCircle'
 import {InlineLinkText} from '#/components/Link'
+import {OTAChannelNotice} from '#/components/OTAChannelNotice'
 import {ProfileBadges} from '#/components/ProfileBadges'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
@@ -344,6 +344,8 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
               <NavSignupCard />
             </View>
           )}
+
+          <OTAChannelNotice style={[a.mt_lg]} />
 
           <Divider style={[a.mt_xl, a.mb_sm]} />
         </View>
@@ -771,8 +773,6 @@ function MenuItem({icon, label, count, bold, onPress}: MenuItemProps) {
 
 function ExtraLinks() {
   const {_} = useLingui()
-  const t = useTheme()
-  const logoVariant = useLogoVariant()
 
   return (
     <View style={[a.flex_col, a.gap_md, a.flex_wrap]}>
@@ -788,19 +788,6 @@ function ExtraLinks() {
         label={_(msg`Privacy Policy`)}>
         <Trans>Privacy Policy</Trans>
       </InlineLinkText>
-      {logoVariant === 'kawaii' && (
-        <Text style={t.atoms.text_contrast_medium}>
-          <Trans>
-            Logo by{' '}
-            <InlineLinkText
-              style={[a.text_md]}
-              to="/profile/sawaratsuki.bsky.social"
-              label="@sawaratsuki.bsky.social">
-              @sawaratsuki.bsky.social
-            </InlineLinkText>
-          </Trans>
-        </Text>
-      )}
     </View>
   )
 }

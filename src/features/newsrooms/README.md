@@ -64,7 +64,10 @@ the rail is where they surface as people), then the cross-network context: a
 "Your News" link to the custom news feed (`/news`) and the live sports widget
 (`features/liveSports`). It renders in the shell's right column on wide screens
 (`RightNav` branches on the route) and inline above the conversation when that
-column is hidden; it resolves the focused org from the navigation state.
+column is hidden - where the rail adapts to the scroll: the reporters list
+collapses to a preview of the first few, fading out under a gradient with a
+"Show all" toggle, and the "Your News" callout tightens to a single tappable
+row. It resolves the focused org from the navigation state.
 
 ## RSS
 
@@ -86,20 +89,38 @@ feed simply renders no front page - the page still works as the conversation.
 ## Roadmap
 
 - A real entry point into `/newsroom` (left nav item); today the hub is reached
-  by URL, the news feed's cross-links, and publisher profiles.
+  by URL, the news feed's cross-links, publisher profiles, and the link chip on
+  posts (below).
 - Working category filter chips (filter both articles and the conversation).
 - Production RSS edge proxy (see `services/rss/README.md`).
 - Later, behind real demand: more `NewsroomSource` adapters (podcast, YouTube),
   an aggregate dashboard across newsrooms.
+
+## Discovery from posts
+
+Newsrooms surface from ordinary posts across the app: when any post's external
+link embed points at a registered publisher's site (matched against the
+registry's `domains`, subdomains included), the embed grows a small accent-tinted
+chip (`components/NewsroomLinkChip.tsx`) linking to that org's newsroom. The
+chip renders inside the embed's `ContentHider`, so moderated links hide it too.
 
 ## Article anchoring
 
 Each article maps to a Bluesky thread by link match: `useArticleDiscussionQuery`
 searches posts for the article URL and, when one of them is the publisher's own
 post, treats it as the article's canonical thread (`anchor`). The discussion
-block pins it first and its "Join the conversation" link lands in that thread,
-"Share this story" becomes a quote of it (so shares grow one conversation
-instead of scattering), and secondary articles show their post counts. The
+block pins the anchor first - the publisher's post always wins the top slot -
+and ranks the rest by their Atmosphere interactions (likes, reposts, replies,
+quotes). The anchor also drives the social plumbing: "Join the conversation"
+opens the composer as a reply into that thread, "Open the thread" beside it
+links into the thread itself, and "Share this story" becomes a quote of it, so
+all three grow one conversation instead of scattering. Every
+navigation into the discussion - the block's header, and the post counts on
+secondary articles - lands on a URL search showing all posts that feature the
+article. The front page's featured story follows the same signal:
+`useArticleDiscussionsQuery` totals each article's interactions,
+decayed with a 24h half-life so fresher news can take the hero slot, and ties
+fall back to newest. The
 match depends on the publisher actually posting its articles; an explicit
 article<->thread pairing (e.g. a record the publisher writes) can replace the
 heuristic later without changing the UI.

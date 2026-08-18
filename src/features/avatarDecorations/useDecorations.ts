@@ -3,8 +3,9 @@ import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 
 import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
-import {useAgent, useSession} from '#/state/session'
+import {usePdsClient, useSession} from '#/state/session'
 import {BRAND} from '#/config/brand'
+import {com} from '#/lexicons'
 import {type DecorationFrame, getFrame} from './catalog'
 import {getNameGradient, type NameGradient} from './nameGradients'
 import {nameGradientTextStyle} from './nameGradientStyle'
@@ -104,7 +105,7 @@ const INDEX_DELAY = 8e3
  * write). Pass a slot as undefined to clear it, e.g. `{name: undefined}`.
  */
 export function useSetDecorations() {
-  const agent = useAgent()
+  const pdsClient = usePdsClient()
   const qc = useQueryClient()
   const {currentAccount} = useSession()
 
@@ -114,7 +115,7 @@ export function useSetDecorations() {
       const did = currentAccount.did
       const current = await getDecorationSettings(did)
       const next: DecorationSettings = {...current, ...patch}
-      await agent.com.atproto.repo.putRecord({
+      await pdsClient.call(com.atproto.repo.putRecord, {
         repo: did,
         collection: SETTINGS_COLLECTION,
         rkey: SETTINGS_RKEY,

@@ -1,5 +1,4 @@
 import {ScrollView, View} from 'react-native'
-import {type AppBskyActorDefs} from '@atproto/api'
 import {useLingui} from '@lingui/react/macro'
 
 import {useProfilesQuery} from '#/state/queries/profile'
@@ -7,6 +6,8 @@ import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
 import {Text} from '#/components/Typography'
+import {type app} from '#/lexicons'
+import {readableAccent} from '../accent'
 import {getPublisherName, type NewsroomPublisher} from '../publishers'
 
 /**
@@ -27,7 +28,7 @@ export function NewsroomSwitcher({
   const t = useTheme()
   // Live org profiles: avatar and display name both come from the network.
   const {data} = useProfilesQuery({handles: publishers.map(p => p.did)})
-  const profileByDid = new Map(
+  const profileByDid = new Map<string, app.bsky.actor.defs.ProfileViewDetailed>(
     data?.profiles.map(profile => [profile.did, profile]) ?? [],
   )
 
@@ -60,13 +61,13 @@ function OrgTab({
   onPress,
 }: {
   publisher: NewsroomPublisher
-  profile?: AppBskyActorDefs.ProfileViewDetailed
+  profile?: app.bsky.actor.defs.ProfileViewDetailed
   active: boolean
   onPress: () => void
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
-  const accent = publisher.accent ?? t.palette.primary_500
+  const accent = readableAccent(publisher.accent, t)
   const name = getPublisherName(profile)
 
   return (

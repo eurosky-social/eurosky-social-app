@@ -1,10 +1,9 @@
-import {type AppBskyActorDefs} from '@atproto/api'
-
 import {
   INCLUDE_BLUESKY_VERIFICATIONS,
   VERIFICATION_DENYLIST_DIDS,
 } from '#/lib/constants'
 import {useMuVerificationQuery} from '#/state/queries/verification/useMuVerificationQuery'
+import {type app} from '#/lexicons'
 import type * as bsky from '#/types/bsky'
 
 /**
@@ -26,7 +25,7 @@ export function useMergedVerificationState({
   profile,
 }: {
   profile?: bsky.profile.AnyProfileView
-}): AppBskyActorDefs.VerificationState | undefined {
+}): app.bsky.actor.defs.VerificationState | undefined {
   const {data: mu} = useMuVerificationQuery({did: profile?.did})
 
   // Never surface verification for denylisted accounts, regardless of what

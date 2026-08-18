@@ -1,13 +1,13 @@
 import {useState} from 'react'
 import {Pressable, View} from 'react-native'
-import {type AppBskyActorDefs} from '@atproto/api'
+import {type AtIdentifierString} from '@atproto/syntax'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {useQueries} from '@tanstack/react-query'
 import chunk from 'lodash.chunk'
 
 import {STALE} from '#/state/queries'
 import {profilesQueryKey} from '#/state/queries/profile'
-import {useAgent} from '#/state/session'
+import {useAppviewClient} from '#/state/session'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
@@ -18,6 +18,7 @@ import {Newspaper_Stroke2_Corner2_Rounded as Newspaper} from '#/components/icons
 import * as Layout from '#/components/Layout'
 import {ProfileBadges} from '#/components/ProfileBadges'
 import {Text} from '#/components/Typography'
+import {app} from '#/lexicons'
 import {type NewsSource, selectSources, sourceTagLabels} from '../sources'
 import {type NewsFeedPrefs} from '../state/prefs'
 import {SetupFooter} from './SetupFooter'
@@ -147,7 +148,7 @@ function SourceCard({
   onPress,
 }: {
   source: NewsSource
-  profile?: AppBskyActorDefs.ProfileViewDetailed
+  profile?: app.bsky.actor.defs.ProfileViewDetailed
   selected: boolean
   onPress: () => void
 }) {
@@ -222,21 +223,22 @@ function SourceCard({
  */
 function useSourceProfiles(
   dids: string[],
-): Map<string, AppBskyActorDefs.ProfileViewDetailed> {
-  const agent = useAgent()
+): Map<string, app.bsky.actor.defs.ProfileViewDetailed> {
+  const appviewClient = useAppviewClient()
   const results = useQueries({
     queries: chunk(dids, 25).map(actors => ({
       enabled: actors.length > 0,
       staleTime: STALE.MINUTES.FIVE,
       queryKey: profilesQueryKey(actors),
       queryFn: async () => {
-        const res = await agent.getProfiles({actors})
-        return res.data
+        return appviewClient.call(app.bsky.actor.getProfiles, {
+          actors: actors as AtIdentifierString[],
+        })
       },
     })),
   })
 
-  const map = new Map<string, AppBskyActorDefs.ProfileViewDetailed>()
+  const map = new Map<string, app.bsky.actor.defs.ProfileViewDetailed>()
   for (const result of results) {
     for (const profile of result.data?.profiles ?? []) {
       map.set(profile.did, profile)

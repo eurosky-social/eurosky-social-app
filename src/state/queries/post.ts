@@ -1,10 +1,8 @@
 import {useCallback} from 'react'
-import {
-  type AppBskyActorDefs,
-  type AppBskyFeedDefs,
-  AtUri,
-  type RichText,
-} from '@atproto/api'
+import {type Client} from '@atproto/lex'
+import {AtUri, type AtUriString, type HandleString} from '@atproto/syntax'
+import {deleteLike, deletePost, deleteRepost, like, repost} from '@bsky/sdk'
+import {type RichText} from '@bsky/sdk/richtext'
 import {
   type QueryClient,
   useMutation,
@@ -19,10 +17,11 @@ import {updatePostShadow} from '#/state/cache/post-shadow'
 import {type Shadow} from '#/state/cache/types'
 import {RQKEY_ROOT as POST_FEED_RQKEY_ROOT} from '#/state/queries/post-feed'
 import {postThreadQueryKeyRoot} from '#/state/queries/usePostThread/types'
-import {useAgent, useSession} from '#/state/session'
+import {useAppviewClient, usePdsClient, useSession} from '#/state/session'
 import * as userActionHistory from '#/state/userActionHistory'
 import {useAnalytics} from '#/analytics'
 import {type Metrics, toClout} from '#/analytics/metrics'
+import {app, com} from '#/lexicons'
 import {useIsThreadMuted, useSetThreadMute} from '../cache/thread-mutes'
 import {findProfileQueryData} from './profile'
 
@@ -30,25 +29,15 @@ const RQKEY_ROOT = 'post'
 export const RQKEY = (postUri: string) => [RQKEY_ROOT, postUri]
 
 export function usePostQuery(uri: string | undefined) {
-  const agent = useAgent()
-  return useQuery<AppBskyFeedDefs.PostView>({
+  const client = useAppviewClient()
+  return useQuery<app.bsky.feed.defs.PostView>({
     queryKey: RQKEY(uri || ''),
     queryFn: async () => {
       if (!uri) throw new Error('[unreachable] No URI provided')
 
-      const urip = new AtUri(uri)
-
-      if (!urip.host.startsWith('did:')) {
-        const res = await agent.resolveHandle({
-          handle: urip.host,
-        })
-        // @ts-expect-error TODO new-sdk-migration
-        urip.host = res.data.did
-      }
-
-      const res = await agent.getPosts({uris: [urip.toString()]})
-      if (res.success && res.data.posts[0]) {
-        return res.data.posts[0]
+      const post = await fetchPost(client, uri)
+      if (post) {
+        return post
       }
 
       throw new Error('No data')
@@ -57,74 +46,83 @@ export function usePostQuery(uri: string | undefined) {
   })
 }
 
+/**
+ * Read one post by AT-URI, resolving a handle authority first when the URI
+ * carries one.
+ *
+ * The appview response is asserted to the generated view at this single
+ * boundary rather than at every consumer.
+ */
+async function fetchPost(
+  client: Client,
+  uri: string,
+): Promise<app.bsky.feed.defs.PostView | undefined> {
+  const urip = new AtUri(uri)
+
+  if (!urip.host.startsWith('did:')) {
+    const data = await client.call(com.atproto.identity.resolveHandle, {
+      handle: urip.host as HandleString,
+    })
+    urip.host = data.did
+  }
+
+  const data = await client.call(app.bsky.feed.getPosts, {
+    uris: [urip.toString()],
+  })
+  return data.posts[0]
+}
+
 export function precachePost(
   queryClient: QueryClient,
   uri: string,
-  post: AppBskyFeedDefs.PostView,
+  post: app.bsky.feed.defs.PostView,
 ) {
   queryClient.setQueryData(RQKEY(uri), post)
 }
 
 export function useGetPost() {
   const queryClient = useQueryClient()
-  const agent = useAgent()
+  const client = useAppviewClient()
   return useCallback(
     async ({uri}: {uri: string}) => {
       return queryClient.fetchQuery({
         queryKey: RQKEY(uri || ''),
         async queryFn() {
-          const urip = new AtUri(uri)
-
-          if (!urip.host.startsWith('did:')) {
-            const res = await agent.resolveHandle({
-              handle: urip.host,
-            })
-            // @ts-expect-error TODO new-sdk-migration
-            urip.host = res.data.did
-          }
-
-          const res = await agent.getPosts({
-            uris: [urip.toString()],
-          })
-
-          if (res.success && res.data.posts[0]) {
-            return res.data.posts[0]
+          const post = await fetchPost(client, uri)
+          if (post) {
+            return post
           }
 
           throw new Error('useGetPost: post not found')
         },
       })
     },
-    [queryClient, agent],
+    [queryClient, client],
   )
 }
 
 export function useGetPosts() {
   const queryClient = useQueryClient()
-  const agent = useAgent()
+  const client = useAppviewClient()
   return useCallback(
     async ({uris}: {uris: string[]}) => {
       return queryClient.fetchQuery({
         queryKey: RQKEY(uris.join(',') || ''),
         async queryFn() {
-          const res = await agent.getPosts({
-            uris,
+          const data = await client.call(app.bsky.feed.getPosts, {
+            uris: uris as AtUriString[],
           })
-
-          if (res.success) {
-            return res.data.posts
-          } else {
-            throw new Error('useGetPosts failed')
-          }
+          // See the note on `fetchPost` about the view shapes.
+          return data.posts
         },
       })
     },
-    [queryClient, agent],
+    [queryClient, client],
   )
 }
 
 export function usePostLikeMutationQueue(
-  post: Shadow<AppBskyFeedDefs.PostView>,
+  post: Shadow<app.bsky.feed.defs.PostView>,
   viaRepost: {uri: string; cid: string} | undefined,
   feedDescriptor: string | undefined,
   logContext: Metrics['post:like']['logContext'],
@@ -188,20 +186,20 @@ export function usePostLikeMutationQueue(
 function usePostLikeMutation(
   feedDescriptor: string | undefined,
   logContext: Metrics['post:like']['logContext'],
-  post: Shadow<AppBskyFeedDefs.PostView>,
+  post: Shadow<app.bsky.feed.defs.PostView>,
 ) {
   const {currentAccount} = useSession()
   const queryClient = useQueryClient()
   const postAuthor = post.author
-  const agent = useAgent()
+  const pdsClient = usePdsClient()
   const ax = useAnalytics()
   return useMutation<
-    {uri: string}, // responds with the uri of the like
+    {uri: AtUriString}, // responds with the uri of the like
     Error,
     {uri: string; cid: string; via?: {uri: string; cid: string}} // the post's uri and cid, and the repost uri/cid if present
   >({
     mutationFn: ({uri, cid, via}) => {
-      let ownProfile: AppBskyActorDefs.ProfileViewDetailed | undefined
+      let ownProfile: app.bsky.actor.defs.ProfileViewDetailed | undefined
       if (currentAccount) {
         ownProfile = findProfileQueryData(queryClient, currentAccount.did)
       }
@@ -224,7 +222,11 @@ function usePostLikeMutation(
             : undefined,
         feedDescriptor: feedDescriptor,
       })
-      return agent.like(uri, cid, via)
+      return pdsClient.call(like, {
+        uri: uri as AtUriString,
+        cid: cid,
+        via: via ? {uri: via.uri as AtUriString, cid: via.cid} : undefined,
+      })
     },
   })
 }
@@ -232,9 +234,9 @@ function usePostLikeMutation(
 function usePostUnlikeMutation(
   feedDescriptor: string | undefined,
   logContext: Metrics['post:unlike']['logContext'],
-  post: Shadow<AppBskyFeedDefs.PostView>,
+  post: Shadow<app.bsky.feed.defs.PostView>,
 ) {
-  const agent = useAgent()
+  const pdsClient = usePdsClient()
   const ax = useAnalytics()
   return useMutation<void, Error, {postUri: string; likeUri: string}>({
     mutationFn: ({postUri, likeUri}) => {
@@ -244,13 +246,13 @@ function usePostUnlikeMutation(
         logContext,
         feedDescriptor,
       })
-      return agent.deleteLike(likeUri)
+      return pdsClient.call(deleteLike, likeUri as AtUriString)
     },
   })
 }
 
 export function usePostRepostMutationQueue(
-  post: Shadow<AppBskyFeedDefs.PostView>,
+  post: Shadow<app.bsky.feed.defs.PostView>,
   viaRepost: {uri: string; cid: string} | undefined,
   feedDescriptor: string | undefined,
   logContext: Metrics['post:repost']['logContext'],
@@ -316,12 +318,12 @@ export function usePostRepostMutationQueue(
 function usePostRepostMutation(
   feedDescriptor: string | undefined,
   logContext: Metrics['post:repost']['logContext'],
-  post: Shadow<AppBskyFeedDefs.PostView>,
+  post: Shadow<app.bsky.feed.defs.PostView>,
 ) {
-  const agent = useAgent()
+  const pdsClient = usePdsClient()
   const ax = useAnalytics()
   return useMutation<
-    {uri: string}, // responds with the uri of the repost
+    {uri: AtUriString}, // responds with the uri of the repost
     Error,
     {uri: string; cid: string; via?: {uri: string; cid: string}} // the post's uri and cid, and the repost uri/cid if present
   >({
@@ -332,7 +334,11 @@ function usePostRepostMutation(
         logContext,
         feedDescriptor,
       })
-      return agent.repost(uri, cid, via)
+      return pdsClient.call(repost, {
+        uri: uri as AtUriString,
+        cid: cid,
+        via: via ? {uri: via.uri as AtUriString, cid: via.cid} : undefined,
+      })
     },
   })
 }
@@ -340,9 +346,9 @@ function usePostRepostMutation(
 function usePostUnrepostMutation(
   feedDescriptor: string | undefined,
   logContext: Metrics['post:unrepost']['logContext'],
-  post: Shadow<AppBskyFeedDefs.PostView>,
+  post: Shadow<app.bsky.feed.defs.PostView>,
 ) {
-  const agent = useAgent()
+  const pdsClient = usePdsClient()
   const ax = useAnalytics()
   return useMutation<void, Error, {postUri: string; repostUri: string}>({
     mutationFn: ({postUri, repostUri}) => {
@@ -352,17 +358,17 @@ function usePostUnrepostMutation(
         logContext,
         feedDescriptor,
       })
-      return agent.deleteRepost(repostUri)
+      return pdsClient.call(deleteRepost, repostUri as AtUriString)
     },
   })
 }
 
 export function usePostDeleteMutation() {
   const queryClient = useQueryClient()
-  const agent = useAgent()
+  const pdsClient = usePdsClient()
   return useMutation<void, Error, {uri: string}>({
     mutationFn: async ({uri}) => {
-      await agent.deletePost(uri)
+      await pdsClient.call(deletePost, uri as AtUriString)
     },
     onSuccess(_, variables) {
       updatePostShadow(queryClient, variables.uri, {isDeleted: true})
@@ -372,20 +378,26 @@ export function usePostDeleteMutation() {
 
 export function useEditPostMutation() {
   const queryClient = useQueryClient()
-  const agent = useAgent()
+  const appviewClient = useAppviewClient()
+  const pdsClient = usePdsClient()
   return useMutation<{uri: string}, Error, {uri: string; richtext: RichText}>({
     mutationFn: async ({uri, richtext}) => {
-      const res = await editPost(agent, {uri, richtext})
+      const res = await editPost(appviewClient, pdsClient, {uri, richtext})
       // The delete+recreate takes a moment to re-index. Wait for the edit to
       // land (it carries `updatedAt`) so the refetch doesn't pull the old one.
       await until(
         5,
         1e3,
-        (posts: AppBskyFeedDefs.PostView[]) =>
+        (posts: app.bsky.feed.defs.PostView[]) =>
           posts.length > 0 &&
           typeof (posts[0].record as {updatedAt?: unknown}).updatedAt ===
             'string',
-        async () => (await agent.getPosts({uris: [uri]})).data.posts,
+        async () =>
+          (
+            await appviewClient.call(app.bsky.feed.getPosts, {
+              uris: [uri as AtUriString],
+            })
+          ).posts,
       )
       return res
     },
@@ -399,7 +411,7 @@ export function useEditPostMutation() {
 }
 
 export function useThreadMuteMutationQueue(
-  post: Shadow<AppBskyFeedDefs.PostView>,
+  post: Shadow<app.bsky.feed.defs.PostView>,
   rootUri: string,
 ) {
   const threadMuteMutation = useThreadMuteMutation()
@@ -444,23 +456,29 @@ export function useThreadMuteMutationQueue(
 }
 
 function useThreadMuteMutation() {
-  const agent = useAgent()
+  const appviewClient = useAppviewClient()
   return useMutation<
     {},
     Error,
     {uri: string} // the root post's uri
   >({
-    mutationFn: ({uri}) => {
-      return agent.api.app.bsky.graph.muteThread({root: uri})
+    mutationFn: async ({uri}) => {
+      await appviewClient.call(app.bsky.graph.muteThread, {
+        root: uri as AtUriString,
+      })
+      return {}
     },
   })
 }
 
 function useThreadUnmuteMutation() {
-  const agent = useAgent()
+  const appviewClient = useAppviewClient()
   return useMutation<{}, Error, {uri: string}>({
-    mutationFn: ({uri}) => {
-      return agent.api.app.bsky.graph.unmuteThread({root: uri})
+    mutationFn: async ({uri}) => {
+      await appviewClient.call(app.bsky.graph.unmuteThread, {
+        root: uri as AtUriString,
+      })
+      return {}
     },
   })
 }

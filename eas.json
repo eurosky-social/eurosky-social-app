@@ -21,6 +21,17 @@
         "EXPO_PUBLIC_ENV": "production"
       }
     },
+    "e2e": {
+      "extends": "development",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_ENV": "e2e",
+        "NODE_ENV": "development",
+        "RN_SRC_EXT": "e2e.ts,e2e.tsx"
+      }
+    },
     "preview": {
       "extends": "base",
       "distribution": "internal",
@@ -80,7 +91,7 @@
     "production": {
       "ios": {
         "ascAppId": "REPLACE_WITH_EUROSKY_ASC_APP_ID",
-        "appleTeamId": "REPLACE_WITH_APPLE_TEAM_ID",
+        "appleTeamId": "2472Y2UN4X",
         "ascApiKeyPath": "./credentials/asc-api-key.p8",
         "ascApiKeyId": "REPLACE_WITH_ASC_API_KEY_ID",
         "ascApiKeyIssuerId": "REPLACE_WITH_ASC_API_KEY_ISSUER_ID"

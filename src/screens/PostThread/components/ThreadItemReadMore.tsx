@@ -9,6 +9,7 @@ import {
   type ThreadItem,
 } from '#/state/queries/usePostThread'
 import {
+  getReplyLineColor,
   LINEAR_AVI_WIDTH,
   REPLY_LINE_WIDTH,
   TREE_AVI_WIDTH,
@@ -37,14 +38,12 @@ export const ThreadItemReadMore = memo(function ThreadItemReadMore({
         return (
           <View
             key={`${item.key}-padding-${n}`}
-            style={[
-              t.atoms.border_contrast_low,
-              {
-                borderRightWidth: isSkipped ? 0 : REPLY_LINE_WIDTH,
-                width: TREE_INDENT + TREE_AVI_WIDTH / 2,
-                left: 1,
-              },
-            ]}
+            style={{
+              borderColor: getReplyLineColor(t),
+              borderRightWidth: isSkipped ? 0 : REPLY_LINE_WIDTH,
+              width: TREE_INDENT + TREE_AVI_WIDTH / 2,
+              left: 1,
+            }}
           />
         )
       })
@@ -55,8 +54,8 @@ export const ThreadItemReadMore = memo(function ThreadItemReadMore({
       {spacers}
       <View
         style={[
-          t.atoms.border_contrast_low,
           {
+            borderColor: getReplyLineColor(t),
             marginLeft: isTreeView
               ? TREE_INDENT + TREE_AVI_WIDTH / 2 - 1
               : (LINEAR_AVI_WIDTH - REPLY_LINE_WIDTH) / 2 + 16,

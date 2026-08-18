@@ -1,13 +1,12 @@
-import {
-  AppBskyEmbedExternal,
-  type AppBskyFeedDefs,
-  type AppBskyFeedPost,
-} from '@atproto/api'
-import {useQuery} from '@tanstack/react-query'
+import {type Client, type UriString} from '@atproto/lex'
+import {type DidString} from '@atproto/syntax'
+import {useQueries, useQuery} from '@tanstack/react-query'
 
 import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
-import {useAgent} from '#/state/session'
+import {useAppviewClient} from '#/state/session'
+import {app} from '#/lexicons'
+import * as bsky from '#/types/bsky'
 import {buildRssFetchUrl} from './rss/config'
 import {extractOgImage, parseRssFeed} from './rss/parse'
 import {type RssItem} from './rss/types'
@@ -69,41 +68,30 @@ export const createArticleDiscussionQueryKey = (args: {
 }) => createQueryKey('newsroomArticleDiscussion', args)
 
 /**
- * The in-network conversation about a specific article: posts across the network
- * that link to its URL. This is the page's reason to exist - the discussion the
- * publisher's own site and the scattered home feed don't put next to the piece.
- *
- * `searchPosts` indexes link facets, so a URL query surfaces posts that shared
- * it; we then keep only posts that genuinely reference the URL (rather than
- * merely matching its tokens) and rank by engagement.
- *
- * When the publisher itself posted the article, that post is the article's
- * canonical thread: it is pinned first and returned as `anchor`, so sharing can
- * quote it (growing one conversation) instead of starting a parallel one.
+ * Shared query definition for an article's discussion, so the single-article
+ * hook and the front page's all-articles lookup hit one cache entry per URL.
  */
-export function useArticleDiscussionQuery({
+function articleDiscussionQueryOptions({
   url,
   publisherDid,
-  enabled = true,
+  client,
 }: {
   url: string
   publisherDid?: string
-  enabled?: boolean
+  client: Client
 }) {
-  const agent = useAgent()
-
-  return useQuery({
+  return {
     queryKey: createArticleDiscussionQueryKey({url, publisherDid}),
     staleTime: STALE.MINUTES.FIVE,
-    enabled: enabled && !!url,
+    enabled: !!url,
     queryFn: async () => {
-      const res = await agent.app.bsky.feed.searchPosts({
+      const data = await client.call(app.bsky.feed.searchPosts, {
         q: url,
-        url,
+        url: url as UriString,
         sort: 'top',
         limit: 25,
       })
-      const posts = res.data.posts.filter(post => postReferencesUrl(post, url))
+      const posts = data.posts.filter(post => postReferencesUrl(post, url))
       let anchor = publisherDid
         ? (posts.find(post => post.author.did === publisherDid) ?? null)
         : null
@@ -115,34 +103,107 @@ export function useArticleDiscussionQuery({
        */
       if (!anchor && publisherDid) {
         try {
-          const publisherRes = await agent.app.bsky.feed.searchPosts({
+          const publisherData = await client.call(app.bsky.feed.searchPosts, {
             q: url,
-            url,
-            author: publisherDid,
+            url: url as UriString,
+            author: publisherDid as DidString,
             sort: 'latest',
             limit: 100,
           })
           anchor =
-            publisherRes.data.posts.find(post =>
-              postReferencesUrl(post, url),
-            ) ?? null
+            publisherData.posts.find(post => postReferencesUrl(post, url)) ??
+            null
         } catch {
           /* A failed anchor lookup should not hide the broader discussion. */
         }
       }
 
-      const ordered = anchor
-        ? [anchor, ...posts.filter(post => post.uri !== anchor.uri)]
+      /*
+       * The publisher's own post wins the top slot - it is the article's
+       * canonical thread - and the rest of the conversation ranks by its
+       * interactions in the Atmosphere.
+       */
+      const rest = anchor
+        ? posts.filter(post => post.uri !== anchor.uri)
         : posts
-      const total = Math.max(res.data.hitsTotal ?? posts.length, ordered.length)
-      return {posts: ordered, total, anchor}
+      const orderedRest = [...rest].sort(
+        (a, b) => engagementScore(b) - engagementScore(a),
+      )
+      const ordered = anchor ? [anchor, ...orderedRest] : orderedRest
+      const total = Math.max(data.hitsTotal ?? posts.length, ordered.length)
+      /* The article's pull in the Atmosphere; picks the front page's featured
+       * story. */
+      const interactions = ordered.reduce(
+        (sum, post) => sum + engagementScore(post),
+        0,
+      )
+      return {posts: ordered, total, anchor, interactions}
     },
+  }
+}
+
+/**
+ * The in-network conversation about a specific article: posts across the network
+ * that link to its URL. This is the page's reason to exist - the discussion the
+ * publisher's own site and the scattered home feed don't put next to the piece.
+ *
+ * `searchPosts` indexes link facets, so a URL query surfaces posts that shared
+ * it; we then keep only posts that genuinely reference the URL (rather than
+ * merely matching its tokens).
+ *
+ * When the publisher itself posted the article, that post is the article's
+ * canonical thread: it is pinned first and returned as `anchor`, so sharing can
+ * quote it (growing one conversation) instead of starting a parallel one. The
+ * remaining posts rank by their Atmosphere interactions (likes, reposts,
+ * replies, quotes).
+ */
+export function useArticleDiscussionQuery({
+  url,
+  publisherDid,
+  enabled = true,
+}: {
+  url: string
+  publisherDid?: string
+  enabled?: boolean
+}) {
+  const client = useAppviewClient()
+  const options = articleDiscussionQueryOptions({url, publisherDid, client})
+  return useQuery({...options, enabled: enabled && options.enabled})
+}
+
+/**
+ * The discussions for a whole front page of articles at once, one cache-shared
+ * query per URL. The front page uses the per-article `interactions` totals to
+ * feature the story the Atmosphere engaged with most.
+ */
+export function useArticleDiscussionsQuery({
+  urls,
+  publisherDid,
+}: {
+  urls: string[]
+  publisherDid?: string
+}) {
+  const client = useAppviewClient()
+  return useQueries({
+    queries: urls.map(url =>
+      articleDiscussionQueryOptions({url, publisherDid, client}),
+    ),
   })
+}
+
+/** A post's total interactions in the Atmosphere; ranks the discussion. */
+function engagementScore(post: app.bsky.feed.defs.PostView): number {
+  return (
+    (post.likeCount ?? 0) +
+    (post.repostCount ?? 0) +
+    (post.replyCount ?? 0) +
+    (post.quoteCount ?? 0)
+  )
 }
 
 /** Whether a post links to `url`, comparing normalized host + path. */
 function postReferencesUrl(
-  post: AppBskyFeedDefs.PostView,
+  post: app.bsky.feed.defs.PostView,
   url: string,
 ): boolean {
   const target = normalizeUrl(url)
@@ -154,14 +215,18 @@ function postReferencesUrl(
 }
 
 /** All URLs a post points at: external embed, link facets, and raw text. */
-function postUrls(post: AppBskyFeedDefs.PostView): string[] {
+function postUrls(post: app.bsky.feed.defs.PostView): string[] {
   const urls: string[] = []
 
-  if (AppBskyEmbedExternal.isView(post.embed) && post.embed.external?.uri) {
+  if (
+    bsky.isType(app.bsky.embed.external.view, post.embed) &&
+    post.embed.external?.uri
+  ) {
     urls.push(post.embed.external.uri)
   }
 
-  const record = post.record as AppBskyFeedPost.Record
+  if (!bsky.isType(app.bsky.feed.post, post.record)) return urls
+  const record = post.record
   for (const facet of record.facets ?? []) {
     for (const feature of facet.features) {
       const uri = (feature as {uri?: string}).uri

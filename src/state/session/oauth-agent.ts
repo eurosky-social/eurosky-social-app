@@ -1,142 +1,110 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  Agent,
-  type AtpSessionData,
-  type ComAtprotoServerGetSession,
-} from '@atproto/api'
+import {type Client} from '@atproto/lex'
 import {type OAuthSession} from '@atproto/oauth-client-browser'
 
-import {BLUESKY_PROXY_HEADER, BSKY_SERVICE} from '#/lib/constants'
+import {BSKY_SERVICE} from '#/lib/constants'
 import {logger} from '#/logger'
-import {sessionAccountToSession} from './agent'
+import {prefetchAgeAssuranceServerData} from '#/ageAssurance/data'
+import {com} from '#/lexicons'
 import {configureModerationForAccount} from './moderation'
 import {describeOAuthError, getWebOAuthClient} from './oauth-web-client'
+import {buildClientSurfaces, type OAuthSessionBundle} from './session-core'
 import {type SessionAccount} from './types'
 
 const OAUTH_RESTORE_TIMEOUT_MS = 10_000
 
-export async function oauthCreateAgent(session: OAuthSession) {
-  const agent = new OauthBskyAppAgent(session)
-  const account = await oauthAgentAndSessionToSessionAccountOrThrow(
-    agent,
+/** Build the same client bundle used by password sessions over an OAuth core. */
+export async function createOAuthSessionBundle(
+  session: OAuthSession,
+): Promise<{account: SessionAccount; bundle: OAuthSessionBundle}> {
+  const bundle: OAuthSessionBundle = {
+    session,
+    ...buildClientSurfaces(session),
+    service: new URL(session.serverMetadata.issuer),
+  }
+  const account = await oauthSessionToSessionAccountOrThrow(
+    bundle.pdsClient,
     session,
   )
-  const gates = Promise.resolve()
-  const moderation = configureModerationForAccount(agent, account)
-  return agent.prepare(account, gates, moderation)
+
+  configureModerationForAccount(bundle, account)
+  await prefetchAgeAssuranceServerData({
+    appviewClient: bundle.appviewClient,
+    accountClient: bundle.pdsClient,
+  })
+
+  return {account, bundle}
 }
 
-export async function oauthResumeSession(account: SessionAccount) {
+export async function resumeOAuthSessionBundle(account: SessionAccount) {
   const client = getWebOAuthClient()
   let session: OAuthSession
   try {
-    session = await Promise.race([
+    session = await withTimeout(
       client.restore(account.did),
-      new Promise<never>((_, reject) =>
-        setTimeout(
-          () => reject(new Error('OAuth session restore timed out')),
-          OAUTH_RESTORE_TIMEOUT_MS,
-        ),
-      ),
-    ])
+      'OAuth session restore timed out',
+    )
   } catch (e) {
-    // No DID/raw error: this goes to the live Sentry transport. A raw
-    // atproto/XRPC error can carry request/response context (URLs, headers).
-    logger.error('oauthResumeSession: restore failed', describeOAuthError(e))
+    /*
+     * No DID or raw error: this reaches the live Sentry transport. Raw OAuth
+     * errors may carry request URLs or headers.
+     */
+    logger.error('resumeOAuthSessionBundle: restore failed', describeOAuthError(e))
     throw e
   }
-  return await oauthCreateAgent(session)
+  return createOAuthSessionBundle(session)
 }
 
-export async function oauthAgentAndSessionToSessionAccountOrThrow(
-  agent: Agent,
+export async function oauthSessionToSessionAccountOrThrow(
+  pdsClient: Client,
   session: OAuthSession,
 ): Promise<SessionAccount> {
-  const account = await oauthAgentAndSessionToSessionAccount(agent, session)
+  const account = await oauthSessionToSessionAccount(pdsClient, session)
   if (!account) {
-    throw Error('Expected an active session')
+    throw Error('Expected an active OAuth session')
   }
   return account
 }
 
-export async function oauthAgentAndSessionToSessionAccount(
-  agent: Agent,
+export async function oauthSessionToSessionAccount(
+  pdsClient: Client,
   session: OAuthSession,
 ): Promise<SessionAccount | undefined> {
-  let data: ComAtprotoServerGetSession.OutputSchema
   try {
-    const res = await Promise.race([
-      agent.com.atproto.server.getSession(),
-      new Promise<never>((_, reject) =>
-        setTimeout(
-          () => reject(new Error('getSession timed out')),
-          OAUTH_RESTORE_TIMEOUT_MS,
-        ),
+    const [data, tokenInfo] = await Promise.all([
+      withTimeout(
+        pdsClient.call(com.atproto.server.getSession, {}),
+        'getSession timed out',
       ),
+      withTimeout(session.getTokenInfo(false), 'getTokenInfo timed out'),
     ])
-    data = res.data
-  } catch (e: any) {
+    const service = new URL(session.serverMetadata.issuer).toString()
+    return {
+      service,
+      did: session.did,
+      handle: data.handle,
+      email: data.email,
+      emailConfirmed: data.emailConfirmed,
+      emailAuthFactor: data.emailAuthFactor,
+      active: data.active,
+      status: data.status,
+      pdsUrl: tokenInfo.aud,
+      isSelfHosted: !service.startsWith(BSKY_SERVICE),
+      isOauthSession: true,
+    }
+  } catch (e) {
     logger.error(
-      'oauthAgentAndSessionToSessionAccount: getSession failed',
+      'oauthSessionToSessionAccount: snapshot failed',
       describeOAuthError(e),
     )
     return undefined
-  }
-  let aud: string
-  try {
-    const tokenInfo = await Promise.race([
-      session.getTokenInfo(false),
-      new Promise<never>((_, reject) =>
-        setTimeout(
-          () => reject(new Error('getTokenInfo timed out')),
-          OAUTH_RESTORE_TIMEOUT_MS,
-        ),
-      ),
-    ])
-    aud = tokenInfo.aud
-  } catch (e: any) {
-    logger.error(
-      'oauthAgentAndSessionToSessionAccount: getTokenInfo failed',
-      describeOAuthError(e),
-    )
-    return undefined
-  }
-  return {
-    service: session.serverMetadata.issuer,
-    did: session.did,
-    handle: data.handle,
-    email: data.email,
-    emailConfirmed: data.emailConfirmed,
-    emailAuthFactor: data.emailAuthFactor,
-    active: data.active,
-    status: data.status,
-    pdsUrl: aud,
-    isSelfHosted: !session.server.issuer.startsWith(BSKY_SERVICE),
-    isOauthSession: true,
   }
 }
 
-export class OauthBskyAppAgent extends Agent {
-  session?: AtpSessionData
-  dispatchUrl?: string
-
-  constructor(session: OAuthSession) {
-    super(session)
-  }
-
-  async prepare(
-    account: SessionAccount,
-    gates: Promise<void>,
-    moderation: Promise<void>,
-  ) {
-    this.session = sessionAccountToSession(account)
-    this.dispatchUrl = account.pdsUrl
-    this.configureProxy(BLUESKY_PROXY_HEADER.get())
-
-    await Promise.all([gates, moderation])
-
-    return {account, agent: this}
-  }
-
-  dispose() {}
+function withTimeout<T>(promise: Promise<T>, message: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(message)), OAUTH_RESTORE_TIMEOUT_MS),
+    ),
+  ])
 }

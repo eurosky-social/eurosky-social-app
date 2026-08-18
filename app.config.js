@@ -30,6 +30,7 @@ const GOOGLE_SERVICES_FILE = (() => {
 const brand = require('./src/config/brand.json')
 const brandMeta = brand
 const BRAND_ACCENT = brand.colors.accents[brand.colors.defaultAccent]
+const APPLE_TEAM_ID = process.env.EXPO_APPLE_TEAM_ID ?? '2472Y2UN4X'
 
 /**
  * @param {import('@expo/config-types').ExpoConfig} _config
@@ -91,11 +92,11 @@ module.exports = function (_config) {
       icon: './assets/app-icons/ios_icon_default_next.png',
       userInterfaceStyle: 'automatic',
       primaryColor: BRAND_ACCENT.primary_500,
-      newArchEnabled: false,
       ios: {
         supportsTablet: false,
         bundleIdentifier: 'social.mu.app',
-        appleTeamId: process.env.EXPO_APPLE_TEAM_ID,
+        buildNumber: process.env.BSKY_IOS_BUILD_NUMBER ?? '1',
+        appleTeamId: APPLE_TEAM_ID,
         config: {
           usesNonExemptEncryption: false,
         },
@@ -347,7 +348,9 @@ module.exports = function (_config) {
             networkInstrumentation: true,
           },
         ],
-        './plugins/starterPackAppClipExtension/withStarterPackAppClip.js',
+        ...(!IS_DEV
+          ? ['./plugins/starterPackAppClipExtension/withStarterPackAppClip.js']
+          : []),
         './plugins/withGradleJVMHeapSizeIncrease.js',
         './plugins/withAndroidManifestLargeHeapPlugin.js',
         './plugins/withAndroidManifestFCMIconPlugin.js',
@@ -417,55 +420,6 @@ module.exports = function (_config) {
               android: './assets/app-icons/android_icon_legacy_dark.png',
               prerendered: true,
             },
-
-            /**
-             * Bluesky+ core set
-             */
-            core_aurora: {
-              ios: './assets/app-icons/ios_icon_core_aurora.png',
-              android: './assets/app-icons/android_icon_core_aurora.png',
-              prerendered: true,
-            },
-            core_bonfire: {
-              ios: './assets/app-icons/ios_icon_core_bonfire.png',
-              android: './assets/app-icons/android_icon_core_bonfire.png',
-              prerendered: true,
-            },
-            core_sunrise: {
-              ios: './assets/app-icons/ios_icon_core_sunrise.png',
-              android: './assets/app-icons/android_icon_core_sunrise.png',
-              prerendered: true,
-            },
-            core_sunset: {
-              ios: './assets/app-icons/ios_icon_core_sunset.png',
-              android: './assets/app-icons/android_icon_core_sunset.png',
-              prerendered: true,
-            },
-            core_midnight: {
-              ios: './assets/app-icons/ios_icon_core_midnight.png',
-              android: './assets/app-icons/android_icon_core_midnight.png',
-              prerendered: true,
-            },
-            core_flat_blue: {
-              ios: './assets/app-icons/ios_icon_core_flat_blue.png',
-              android: './assets/app-icons/android_icon_core_flat_blue.png',
-              prerendered: true,
-            },
-            core_flat_white: {
-              ios: './assets/app-icons/ios_icon_core_flat_white.png',
-              android: './assets/app-icons/android_icon_core_flat_white.png',
-              prerendered: true,
-            },
-            core_flat_black: {
-              ios: './assets/app-icons/ios_icon_core_flat_black.png',
-              android: './assets/app-icons/android_icon_core_flat_black.png',
-              prerendered: true,
-            },
-            core_classic: {
-              ios: './assets/app-icons/ios_icon_core_classic.png',
-              android: './assets/app-icons/android_icon_core_classic.png',
-              prerendered: true,
-            },
           },
         ],
         ['expo-screen-orientation', {initialOrientation: 'PORTRAIT_UP'}],
@@ -502,10 +456,14 @@ module.exports = function (_config) {
                       ],
                     },
                   },
-                  {
-                    targetName: 'BlueskyClip',
-                    bundleIdentifier: 'social.mu.app.AppClip',
-                  },
+                  ...(!IS_DEV
+                    ? [
+                        {
+                          targetName: 'BlueskyClip',
+                          bundleIdentifier: 'social.mu.app.AppClip',
+                        },
+                      ]
+                    : []),
                 ],
               },
             },

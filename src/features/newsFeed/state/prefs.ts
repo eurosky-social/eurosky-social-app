@@ -1,10 +1,12 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {z} from 'zod'
 
+import {isRecordNotFoundError} from '#/lib/xrpc-error'
 import {logger} from '#/logger'
 import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
-import {useAgent, useSession} from '#/state/session'
+import {usePdsClient, useSession} from '#/state/session'
+import {com} from '#/lexicons'
 
 /**
  * Collection NSID for the per-user news feed preferences record, stored as a
@@ -44,7 +46,7 @@ export const createNewsFeedPrefsQueryKey = (args: {did?: string}) =>
  * record does not exist yet (i.e. the user has not set up the news feed).
  */
 export function useNewsFeedPrefsQuery() {
-  const agent = useAgent()
+  const pdsClient = usePdsClient()
   const {currentAccount} = useSession()
   const did = currentAccount?.did
 
@@ -54,12 +56,12 @@ export function useNewsFeedPrefsQuery() {
     enabled: !!did,
     queryFn: async () => {
       try {
-        const res = await agent.com.atproto.repo.getRecord({
+        const data = await pdsClient.call(com.atproto.repo.getRecord, {
           repo: did!,
           collection: NEWS_FEED_PREFS_NSID,
           rkey: NEWS_FEED_PREFS_RKEY,
         })
-        const parsed = newsFeedPrefsSchema.safeParse(res.data.value)
+        const parsed = newsFeedPrefsSchema.safeParse(data.value)
         if (!parsed.success) {
           logger.error('newsFeedPrefs: record failed validation', {
             safeMessage: parsed.error.message,
@@ -68,12 +70,7 @@ export function useNewsFeedPrefsQuery() {
         }
         return parsed.data
       } catch (e) {
-        if (
-          e instanceof Error &&
-          e.message.includes('Could not locate record:')
-        ) {
-          return null
-        }
+        if (isRecordNotFoundError(e)) return null
         throw e
       }
     },
@@ -81,7 +78,7 @@ export function useNewsFeedPrefsQuery() {
 }
 
 export function useNewsFeedPrefsMutation() {
-  const agent = useAgent()
+  const pdsClient = usePdsClient()
   const queryClient = useQueryClient()
   const {currentAccount} = useSession()
 
@@ -95,7 +92,7 @@ export function useNewsFeedPrefsMutation() {
   >({
     mutationFn: async prefs => {
       if (!currentAccount) throw new Error('Not signed in')
-      await agent.com.atproto.repo.putRecord({
+      await pdsClient.call(com.atproto.repo.putRecord, {
         repo: currentAccount.did,
         collection: NEWS_FEED_PREFS_NSID,
         rkey: NEWS_FEED_PREFS_RKEY,
@@ -124,14 +121,14 @@ export function useNewsFeedPrefsMutation() {
 }
 
 export function useNewsFeedPrefsDeleteMutation() {
-  const agent = useAgent()
+  const pdsClient = usePdsClient()
   const queryClient = useQueryClient()
   const {currentAccount} = useSession()
 
   return useMutation({
     mutationFn: async () => {
       if (!currentAccount) throw new Error('Not signed in')
-      await agent.com.atproto.repo.deleteRecord({
+      await pdsClient.call(com.atproto.repo.deleteRecord, {
         repo: currentAccount.did,
         collection: NEWS_FEED_PREFS_NSID,
         rkey: NEWS_FEED_PREFS_RKEY,

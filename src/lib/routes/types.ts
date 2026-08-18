@@ -41,12 +41,12 @@ export type CommonNavigatorParams = {
   PostLikedBy: {name: string; rkey: string}
   PostRepostedBy: {name: string; rkey: string}
   PostQuotes: {name: string; rkey: string}
-  ProfileFeed: {
+  CustomFeed: {
     name: string
     rkey: string
     feedCacheKey?: 'discover' | 'explore' | undefined
   }
-  ProfileFeedLikedBy: {name: string; rkey: string}
+  CustomFeedLikedBy: {name: string; rkey: string}
   ProfileLabelerLikedBy: {name: string}
   Debug: undefined
   DebugMod: undefined
@@ -65,6 +65,9 @@ export type CommonNavigatorParams = {
   PreferencesExternalEmbeds: undefined
   AccessibilitySettings: undefined
   AppearanceSettings: undefined
+  NetworkServicesSettings: undefined
+  ContentServiceSettings: undefined
+  AppViewTransferSettings: undefined
   PetCompanionSettings: undefined
   DecorationsSettings: undefined
   BetaFeaturesSettings: undefined
@@ -74,6 +77,7 @@ export type CommonNavigatorParams = {
   ActivityPrivacySettings: undefined
   ContentAndMediaSettings: undefined
   NotificationSettings: undefined
+  ActivityNotificationSettings: undefined
   InterestsSettings: undefined
   AboutSettings: undefined
   AppIconSettings: undefined
@@ -172,8 +176,7 @@ export type AllNavigatorParams = CommonNavigatorParams & {
 export type NavigationProp = NativeStackNavigationProp<AllNavigatorParams>
 
 export type State =
-  | NavigationState
-  | Omit<PartialState<NavigationState>, 'stale'>
+  NavigationState | Omit<PartialState<NavigationState>, 'stale'>
 
 export type RouteParams = Record<string, string>
 export type MatchResult = {params: RouteParams}

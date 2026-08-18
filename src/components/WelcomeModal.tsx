@@ -1,8 +1,6 @@
 import {useEffect, useState} from 'react'
 import {Pressable, View} from 'react-native'
-import {msg} from '@lingui/core/macro'
-import {useLingui} from '@lingui/react'
-import {Trans} from '@lingui/react/macro'
+import {Trans, useLingui} from '@lingui/react/macro'
 import {FocusGuards, FocusScope} from 'radix-ui/internal'
 
 import {useLoggedOutViewControls} from '#/state/shell/logged-out'
@@ -21,7 +19,7 @@ interface WelcomeModalProps {
 }
 
 export function WelcomeModal({control}: WelcomeModalProps) {
-  const {_} = useLingui()
+  const {t: l} = useLingui()
   const t = useTheme()
   const ax = useAnalytics()
   const {requestSwitchToAccount} = useLoggedOutViewControls()
@@ -123,7 +121,7 @@ export function WelcomeModal({control}: WelcomeModalProps) {
                 <View>
                   <Button
                     onPress={onPressCreateAccount}
-                    label={_(msg`Create account`)}
+                    label={l`Create account`}
                     size="large"
                     color="primary"
                     style={{
@@ -136,7 +134,7 @@ export function WelcomeModal({control}: WelcomeModalProps) {
                   </Button>
                   <Button
                     onPress={onPressExplore}
-                    label={_(msg`Explore the app`)}
+                    label={l`Explore the app`}
                     size="large"
                     color="primary"
                     variant="ghost"
@@ -160,18 +158,18 @@ export function WelcomeModal({control}: WelcomeModalProps) {
                     ]}>
                     <Trans>Already have an account?</Trans>{' '}
                     <Pressable
+                      onPress={onPressSignIn}
                       onPointerEnter={() => setSignInLinkHovered(true)}
                       onPointerLeave={() => setSignInLinkHovered(false)}
                       accessibilityRole="button"
-                      accessibilityLabel={_(msg`Sign in`)}
+                      accessibilityLabel={l`Sign in`}
                       accessibilityHint="">
                       <Text
                         style={[
                           a.font_medium,
                           {color: linkColor, fontSize: undefined},
                           signInLinkHovered && a.underline,
-                        ]}
-                        onPress={onPressSignIn}>
+                        ]}>
                         <Trans>Sign in</Trans>
                       </Text>
                     </Pressable>
@@ -180,7 +178,7 @@ export function WelcomeModal({control}: WelcomeModalProps) {
               </View>
             </View>
             <Button
-              label={_(msg`Close welcome modal`)}
+              label={l`Close welcome modal`}
               style={[
                 a.absolute,
                 {

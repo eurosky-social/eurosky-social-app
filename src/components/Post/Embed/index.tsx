@@ -1,13 +1,9 @@
 import {useCallback, useMemo} from 'react'
 import {View} from 'react-native'
-import {
-  type $Typed,
-  type AppBskyFeedDefs,
-  AppBskyFeedPost,
-  AtUri,
-  moderatePost,
-  RichText as RichTextAPI,
-} from '@atproto/api'
+import {type $Typed} from '@atproto/lex'
+import {AtUri} from '@atproto/syntax'
+import {moderatePost} from '@bsky/sdk/moderation'
+import {RichText as RichTextAPI} from '@bsky/sdk/richtext'
 import {Trans} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
 
@@ -23,12 +19,15 @@ import {useInteractionState} from '#/components/hooks/useInteractionState'
 import {GalleryBleed} from '#/components/images/Gallery'
 import {ContentHider} from '#/components/moderation/ContentHider'
 import {PostAlerts} from '#/components/moderation/PostAlerts'
+import * as ReportDialogMetadataContext from '#/components/moderation/ReportDialog/ReportDialogMetadataContext'
 import {StandardSiteEmbed} from '#/components/Post/Embed/StandardSiteEmbed'
 import {isStandardSiteEmbed} from '#/components/Post/Embed/StandardSiteEmbed/utils'
 import {RichText} from '#/components/RichText'
 import {Embed as StarterPackCard} from '#/components/StarterPack/StarterPackCard'
 import {SubtleHover} from '#/components/SubtleHover'
 import {matchCustomEmbed} from '#/features/customEmbeds/registry'
+import {NewsroomLinkChip} from '#/features/newsrooms/components/NewsroomLinkChip'
+import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {
   type Embed as TEmbed,
@@ -68,7 +67,11 @@ export function Embed({embed: rawEmbed, ...rest}: EmbedProps) {
     }
     case 'post_with_media': {
       return (
-        <View style={rest.style}>
+        <View
+          style={[
+            rest.style,
+            rest.viewContext === PostEmbedViewContext.ChatMessage && a.gap_sm,
+          ]}>
           <MediaEmbed embed={embed.media} {...rest} />
           <RecordEmbed embed={embed.view} {...rest} />
         </View>
@@ -151,6 +154,8 @@ function MediaEmbed({
             onOpen={rest.onOpen}
             style={[a.mt_sm, rest.style]}
           />
+          {/* EUROSKY: links a post to the newsroom of the org it links to. */}
+          <NewsroomLinkChip url={embed.view.external.uri} style={[a.mt_xs]} />
         </ContentHider>
       )
     }
@@ -278,7 +283,7 @@ export function QuoteEmbed({
   linkDisabled?: boolean
 }) {
   const moderationOpts = useModerationOpts()
-  const quote = useMemo<$Typed<AppBskyFeedDefs.PostView>>(
+  const quote = useMemo<$Typed<app.bsky.feed.defs.PostView>>(
     () => ({
       ...embed.view,
       $type: 'app.bsky.feed.defs#postView',
@@ -298,13 +303,7 @@ export function QuoteEmbed({
   const itemTitle = `Post by ${quote.author.handle}`
 
   const richText = useMemo(() => {
-    if (
-      !bsky.dangerousIsType<AppBskyFeedPost.Record>(
-        quote.record,
-        AppBskyFeedPost.isRecord,
-      )
-    )
-      return undefined
+    if (!bsky.isType(app.bsky.feed.post, quote.record)) return undefined
     const {text, facets} = quote.record
     return text.trim()
       ? new RichTextAPI({text: text, facets: facets})
@@ -328,7 +327,7 @@ export function QuoteEmbed({
   } = useInteractionState()
 
   const contents = (
-    <>
+    <ReportDialogMetadataContext.Provider key={quote.uri}>
       <PostMeta
         author={quote.author}
         moderation={moderation}
@@ -367,7 +366,7 @@ export function QuoteEmbed({
           post={quote}
         />
       )}
-    </>
+    </ReportDialogMetadataContext.Provider>
   )
 
   return (

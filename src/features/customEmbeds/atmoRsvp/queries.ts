@@ -1,10 +1,10 @@
-import {AtUri} from '@atproto/api'
+import {AtUri, type HandleString} from '@atproto/syntax'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 
 import {STALE} from '#/state/queries'
-import {useAgent, useSession} from '#/state/session'
+import {useAppviewClient, usePdsClient, useSession} from '#/state/session'
 import * as Toast from '#/components/Toast'
 import {
   type AtmoEventResponse,
@@ -18,6 +18,7 @@ import {
   type RsvpStatus,
   rsvpStatusFromToken,
 } from '#/features/customEmbeds/atmoRsvp/lexicon'
+import {com} from '#/lexicons'
 
 export type ViewerRsvp = {
   uri: string
@@ -39,15 +40,19 @@ export function useAtmoEventQuery({
   rkey: string
   enabled?: boolean
 }) {
-  const agent = useAgent()
+  const appviewClient = useAppviewClient()
   return useQuery({
     queryKey: eventQueryKey(actor, rkey),
     enabled: enabled && !!actor && !!rkey,
     queryFn: async ({signal}) => {
       let did = actor
       if (!did.startsWith('did:')) {
-        const res = await agent.resolveHandle({handle: actor})
-        did = res.data.did
+        const data = await appviewClient.call(
+          com.atproto.identity.resolveHandle,
+          {handle: actor as HandleString},
+          {signal},
+        )
+        did = data.did
       }
       const eventUri = `at://${did}/${EVENT_COLLECTION}/${rkey}`
       return getAtmoEvent(eventUri, {signal})
@@ -103,7 +108,7 @@ export function useRsvpMutation({
   eventUri: string
   eventCid: string
 }) {
-  const agent = useAgent()
+  const pdsClient = usePdsClient()
   const queryClient = useQueryClient()
   const {currentAccount} = useSession()
   const {_} = useLingui()
@@ -118,7 +123,7 @@ export function useRsvpMutation({
 
       if (next === null) {
         if (current?.rkey) {
-          await agent.com.atproto.repo.deleteRecord({
+          await pdsClient.call(com.atproto.repo.deleteRecord, {
             repo: did,
             collection: RSVP_COLLECTION,
             rkey: current.rkey,
@@ -135,23 +140,23 @@ export function useRsvpMutation({
       }
 
       if (current?.rkey) {
-        const res = await agent.com.atproto.repo.putRecord({
+        const data = await pdsClient.call(com.atproto.repo.putRecord, {
           repo: did,
           collection: RSVP_COLLECTION,
           rkey: current.rkey,
           record,
         })
-        return {uri: res.data.uri, rkey: current.rkey, status: next}
+        return {uri: data.uri, rkey: current.rkey, status: next}
       }
 
-      const res = await agent.com.atproto.repo.createRecord({
+      const data = await pdsClient.call(com.atproto.repo.createRecord, {
         repo: did,
         collection: RSVP_COLLECTION,
         record,
       })
       return {
-        uri: res.data.uri,
-        rkey: new AtUri(res.data.uri).rkey,
+        uri: data.uri,
+        rkey: new AtUri(data.uri).rkey,
         status: next,
       }
     },
