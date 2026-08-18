@@ -1,14 +1,24 @@
 import {sha256} from 'js-sha256'
 
+const RAW_DID_RE = /did:[a-z0-9%._:-]+/gi
+const URL_ENCODED_DID_RE =
+  /did%3a(?:[a-z0-9._:-]|%(?:25|2d|2e|3[0-9a]|4[1-9a-f]|5[0-9a]|5f|6[1-9a-f]|7[0-9a]))+/gi
+
+function redactMatchedDid(did: string): string {
+  const fingerprint = sha256.create().update(did).hex().slice(0, 5)
+  return `did:[redacted-${fingerprint}]`
+}
+
 /**
- * Replace DIDs with stable short fingerprints so logs can distinguish accounts
- * without storing the identifiers themselves.
+ * Replace raw or URL-encoded DIDs with stable short fingerprints so logs can
+ * distinguish accounts without storing the identifiers themselves.
  */
 export function redactDid(text: string): string {
-  return text.replace(/did:[a-z0-9%._:-]+/gi, did => {
-    const fingerprint = sha256.create().update(did).hex().slice(0, 5)
-    return `did:[redacted-${fingerprint}]`
-  })
+  return text
+    .replace(URL_ENCODED_DID_RE, did =>
+      redactMatchedDid(decodeURIComponent(did)),
+    )
+    .replace(RAW_DID_RE, redactMatchedDid)
 }
 
 /**
@@ -61,7 +71,7 @@ export function describeOAuthError(cause: unknown): {
   return {
     kind,
     ...(safeMessage ? {safeMessage} : {}),
-    ...(oauth?.error ? {oauthError: oauth.error} : {}),
+    ...(oauth?.error ? {oauthError: redactDid(oauth.error)} : {}),
     ...(oauth?.status != null ? {status: oauth.status} : {}),
     ...(oauth?.detail ? {detail: redactDid(oauth.detail)} : {}),
   }

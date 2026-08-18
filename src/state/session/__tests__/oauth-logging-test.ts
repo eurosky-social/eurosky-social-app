@@ -18,12 +18,23 @@ describe('OAuth error logging', () => {
     expect(description).not.toContain(SECOND_DID)
   })
 
+  it('redacts URL-encoded DIDs with the same fingerprints', () => {
+    const encodedFirstDid = encodeURIComponent(FIRST_DID)
+    const encodedSecondDid = encodeURIComponent(SECOND_DID).replace('.', '%2E')
+
+    expect(
+      redactDid(
+        `first=${encodedFirstDid}&second=${encodedSecondDid}&next=value`,
+      ),
+    ).toBe('first=did:[redacted-e6722]&second=did:[redacted-c2b22]&next=value')
+  })
+
   it('unwraps OAuth response fields and redacts messages', () => {
     const responseError = Object.assign(
       new Error(`OAuth error for ${SECOND_DID}`),
       {
-        error: 'invalid_grant',
-        errorDescription: `Token revoked for ${SECOND_DID}`,
+        error: `invalid_grant:${FIRST_DID}`,
+        errorDescription: `Token revoked for ${encodeURIComponent(SECOND_DID)}`,
         status: 400,
       },
     )
@@ -34,7 +45,7 @@ describe('OAuth error logging', () => {
     expect(describeOAuthError(refreshError)).toEqual({
       kind: 'Error',
       safeMessage: 'Refresh failed for did:[redacted-e6722]',
-      oauthError: 'invalid_grant',
+      oauthError: 'invalid_grant:did:[redacted-e6722]',
       status: 400,
       detail: 'Token revoked for did:[redacted-c2b22]',
     })
