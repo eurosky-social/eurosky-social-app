@@ -37,6 +37,7 @@ import {
   OAUTH_SIGNUP_PDS_HOST,
 } from '#/config/oauth'
 import {createIdentityResolver} from './identity-resolver'
+import {describeOAuthError} from './oauth-logging'
 import {
   createEuroskyOAuthRuntime,
   createOAuthSessionStore,
@@ -78,14 +79,7 @@ function isLoopback(): boolean {
 // must keep PII (DID/sub) and raw error objects out of it (MED-1).
 const sessionHooks = {
   onDelete(_sub: string, cause: unknown) {
-    logger.warn('oauth: session deleted', {
-      safeMessage:
-        cause instanceof Error
-          ? cause.message
-          : typeof cause === 'string'
-            ? cause
-            : 'unknown',
-    })
+    logger.warn('oauth: session deleted', describeOAuthError(cause))
   },
   onUpdate(_sub: string) {},
 }
@@ -215,14 +209,9 @@ function createConfidentialClient(): WebOAuthClient {
 
   client.addEventListener('deleted', ({detail: {cause}}) => {
     // No `sub` (DID) - this reaches the live Sentry transport (MED-1).
-    logger.warn('oauth: session deleted', {
-      safeMessage:
-        cause instanceof Error
-          ? cause.message
-          : typeof cause === 'string'
-            ? cause
-            : 'unknown',
-    })
+    // describeOAuthError surfaces kind/oauthError/status so the true first
+    // deletion can be told apart from a trailing "another process" read.
+    logger.warn('oauth: session deleted', describeOAuthError(cause))
   })
 
   return {

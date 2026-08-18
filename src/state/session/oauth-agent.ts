@@ -6,6 +6,7 @@ import {logger} from '#/logger'
 import {prefetchAgeAssuranceServerData} from '#/ageAssurance/data'
 import {com} from '#/lexicons'
 import {configureModerationForAccount} from './moderation'
+import {describeOAuthError} from './oauth-logging'
 import {getWebOAuthClient} from './oauth-web-client'
 import {buildClientSurfaces, type OAuthSessionBundle} from './session-core'
 import {type SessionAccount} from './types'
@@ -48,9 +49,10 @@ export async function resumeOAuthSessionBundle(account: SessionAccount) {
      * No DID or raw error: this reaches the live Sentry transport. Raw OAuth
      * errors may carry request URLs or headers.
      */
-    logger.error('resumeOAuthSessionBundle: restore failed', {
-      safeMessage: e instanceof Error ? e.message : String(e),
-    })
+    logger.error(
+      'resumeOAuthSessionBundle: restore failed',
+      describeOAuthError(e),
+    )
     throw e
   }
   return createOAuthSessionBundle(session)
@@ -94,9 +96,10 @@ export async function oauthSessionToSessionAccount(
       isOauthSession: true,
     }
   } catch (e) {
-    logger.error('oauthSessionToSessionAccount: snapshot failed', {
-      safeMessage: e instanceof Error ? e.message : String(e),
-    })
+    logger.error(
+      'oauthSessionToSessionAccount: snapshot failed',
+      describeOAuthError(e),
+    )
     return undefined
   }
 }
