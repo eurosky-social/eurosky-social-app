@@ -37,6 +37,7 @@ import {
   OAUTH_SIGNUP_PDS_HOST,
 } from '#/config/oauth'
 import {createIdentityResolver} from './identity-resolver'
+import {describeOAuthError} from './oauth-logging'
 import {
   createEuroskyOAuthRuntime,
   createOAuthSessionStore,
@@ -69,65 +70,6 @@ function isLoopback(): boolean {
     host === '[::1]' ||
     host === '::1'
   )
-}
-
-/** Replace any DID occurrences so error strings never leak identity (MED-1). */
-function redactDid(text: string): string {
-  return text.replace(/did:[a-z0-9%._:-]+/gi, 'did:[redacted]')
-}
-
-/**
- * The OAuth error code and HTTP status live on an `OAuthResponseError`,
- * which may be the thrown error itself or be
- * wrapped as the `cause` of a `TokenRefreshError`.
- */
-function extractOAuthResponseFields(
-  err: unknown,
-): {error?: string; status?: number; detail?: string} | undefined {
-  let cur: unknown = err
-  for (let depth = 0; depth < 4 && cur != null; depth++) {
-    if (typeof cur !== 'object') break
-    const o = cur as Record<string, unknown>
-    const error = typeof o.error === 'string' ? o.error : undefined
-    const status = typeof o.status === 'number' ? o.status : undefined
-    const detail =
-      typeof o.errorDescription === 'string' ? o.errorDescription : undefined
-    if (error != null || status != null || detail != null) {
-      return {error, status, detail}
-    }
-    cur = o.cause
-  }
-  return undefined
-}
-
-/**
- * PII-safe breakdown of an OAuth error for logging.
- */
-export function describeOAuthError(cause: unknown): {
-  kind: string
-  reason?: string
-  oauthError?: string
-  status?: number
-  detail?: string
-} {
-  const kind =
-    cause instanceof Error
-      ? cause.constructor?.name || cause.name
-      : typeof cause
-  const reason =
-    cause instanceof Error && typeof cause.message === 'string'
-      ? redactDid(cause.message)
-      : typeof cause === 'string'
-        ? redactDid(cause)
-        : undefined
-  const oauth = extractOAuthResponseFields(cause)
-  return {
-    kind,
-    ...(reason ? {reason} : {}),
-    ...(oauth?.error ? {oauthError: oauth.error} : {}),
-    ...(oauth?.status != null ? {status: oauth.status} : {}),
-    ...(oauth?.detail ? {detail: redactDid(oauth.detail)} : {}),
-  }
 }
 
 // Session lifecycle hooks. @atproto/oauth-client-browser ^0.3 exposes

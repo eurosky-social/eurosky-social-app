@@ -25,6 +25,7 @@ import {
 } from '@atproto/oauth-client'
 
 import {logger} from '#/logger'
+import {describeOAuthError} from './oauth-logging'
 
 // -- Runtime -----------------------------------------------------------------
 
@@ -155,24 +156,16 @@ async function pruneExpired(store: StoreName, ttlMs: number): Promise<void> {
   }
 }
 
-/**
- * store read/write failures are otherwise invisible.
- *  This is purely additive: the error is still rethrown, so behavior
- * is unchanged.
- */
+/** Report store read/write failures before rethrowing them unchanged. */
 function logStoreError(
   op: 'get' | 'set',
   store: StoreName,
-  err: unknown,
+  error: unknown,
 ): void {
-  logger.error('oauth: session store operation failed', {
+  logger.error('oauth: store operation failed', {
     op,
     store,
-    kind: err instanceof Error ? err.constructor?.name || err.name : typeof err,
-    reason:
-      err instanceof Error && typeof err.message === 'string'
-        ? redactDid(err.message)
-        : undefined,
+    ...describeOAuthError(error),
   })
 }
 
