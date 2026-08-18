@@ -432,19 +432,13 @@ export function createBskyAppAbsoluteUrl(path: string): string {
   return `${BSKY_APP_HOST.replace(/\/$/, '')}/${sanitizedPath}`
 }
 
+/**
+ * Returns an external URL unchanged. The upstream link components call this
+ * helper when they would normally use Bluesky's redirect service, but Eurosky
+ * opens external links directly instead.
+ */
 export function createProxiedUrl(url: string): string {
-  let u
-  try {
-    u = new URL(url)
-  } catch {
-    return url
-  }
-
-  if (u?.protocol !== 'http:' && u?.protocol !== 'https:') {
-    return url
-  }
-
-  return `https://go.bsky.app/redirect?u=${encodeURIComponent(url)}`
+  return url
 }
 
 export function isShortLink(url: string): boolean {
