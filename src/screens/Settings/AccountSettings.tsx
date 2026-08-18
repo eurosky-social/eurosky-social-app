@@ -34,11 +34,8 @@ import {DeactivateAccountDialog} from './components/DeactivateAccountDialog'
 import {DeleteAccountDialog} from './components/DeleteAccountDialog'
 import {ExportCarDialog} from './components/ExportCarDialog'
 
-/**
- * mu fork: account deactivation and deletion are temporarily hidden during the
- * beta. Flip to `true` to restore both the menu items and their dialogs.
- */
-const SHOW_ACCOUNT_DELETION: boolean = false
+/** Account deletion must remain available anywhere account creation is offered. */
+const SHOW_ACCOUNT_DELETION: boolean = true
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'AccountSettings'>
 export function AccountSettingsScreen({}: Props) {

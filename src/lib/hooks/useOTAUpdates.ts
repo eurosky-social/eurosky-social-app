@@ -392,14 +392,16 @@ export function useOTAUpdates() {
       return
     }
 
+    if (!shouldReceiveUpdates || ranInitialCheck.current) {
+      return
+    }
+
     // We use this setTimeout to allow analytics to initialize before we check for an update
     // For Testflight users, we can prompt the user to update immediately whenever there's an available update. This
     // is suspect however with the Apple App Store guidelines, so we don't want to prompt production users to update
     // immediately.
     if (IS_TESTFLIGHT) {
       onIsTestFlight()
-      return
-    } else if (!shouldReceiveUpdates || ranInitialCheck.current) {
       return
     }
 
