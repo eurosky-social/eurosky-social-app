@@ -77,12 +77,17 @@ function extractNormalizedHandle(document: DidDocument) {
 
 function findService(doc: DidDocument, id: string, type?: string) {
   if (!Array.isArray(doc?.service)) return
-  return doc.service.find(
-    service =>
+  return doc.service.find(service => {
+    const serviceIdMatches =
+      service?.id === id ||
+      (id.startsWith('#') && service?.id === `${doc.id}${id}`)
+
+    return (
       service?.serviceEndpoint &&
-      service?.id === id &&
-      (!type || service?.type === type),
-  )
+      serviceIdMatches &&
+      (!type || service?.type === type)
+    )
+  })
 }
 
 async function resolveHandleUsingAppView(
@@ -303,4 +308,24 @@ export function getPdsServiceUrlFromIdentityInfo(
     '#atproto_pds',
     'AtprotoPersonalDataServer',
   )?.serviceEndpoint
+}
+
+/** Resolve a service endpoint from a DID document without resolving a handle. */
+export async function resolveDidServiceEndpoint({
+  did,
+  id,
+  type,
+  signal,
+}: {
+  did: string
+  id: `#${string}`
+  type?: string
+  signal?: AbortSignal
+}) {
+  if (!isValidDid(did)) {
+    throw new Error(`Invalid service DID "${did}"`)
+  }
+
+  const didDoc = await resolveDidDocument(did as AtprotoDid, signal)
+  return findService(didDoc, id, type)?.serviceEndpoint
 }
