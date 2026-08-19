@@ -94,8 +94,10 @@ web-build/
 /android/
 /ios/
 
-# environment variables
+# environment variables and submission credentials
+.env
 .env.*
+credentials/
 
 # Firebase (Android) Google services
 # INCLUDED: google-services.json

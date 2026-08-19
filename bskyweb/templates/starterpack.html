@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 
 {% block html_head_extra -%}
-  <meta name="apple-itunes-app" content="app-id=xyz.blueskyweb.app, app-clip-bundle-id=xyz.blueskyweb.app.AppClip, app-clip-display=card">
   {%- if requestURI %}
   <meta property="og:url" content="{{ requestURI }}">
   {% endif -%}

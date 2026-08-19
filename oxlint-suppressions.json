@@ -70,11 +70,6 @@
       "count": 1
     }
   },
-  "src/Splash.tsx": {
-    "typescript/no-floating-promises": {
-      "count": 1
-    }
-  },
   "src/ageAssurance/components/RedirectOverlay.tsx": {
     "typescript/require-await": {
       "count": 1

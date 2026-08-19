@@ -33,7 +33,7 @@ import * as Prompt from '#/components/Prompt'
 import {RichText} from '#/components/RichText'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
-import {IS_WEB, IS_WEB_MOBILE_ANDROID} from '#/env'
+import {IS_WEB_MOBILE_ANDROID} from '#/env'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 
@@ -351,12 +351,6 @@ function LandingScreenLoaded({
           />
         </Prompt.Actions>
       </Prompt.Outer>
-      {IS_WEB && (
-        <meta
-          name="apple-itunes-app"
-          content="app-id=social.mu.app, app-clip-bundle-id=social.mu.app.AppClip, app-clip-display=card"
-        />
-      )}
     </View>
   )
 }
