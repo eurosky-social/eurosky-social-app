@@ -66,6 +66,12 @@ export type Device = {
   activitySubscriptionsNudged?: boolean
   threadgateNudged?: boolean
   inviteFriendsFollowersPromoDismissed?: boolean
+  /**
+   * Dismiss state for the policy update feed banner. Device-scoped rather than
+   * NUX-backed so dismissing is synchronous and works offline - see
+   * `#/components/PolicyUpdateBanner`.
+   */
+  policyUpdateBannerDismissed?: boolean
   /** Device-wide override for public and authenticated AppView requests. */
   appViewOverride: AppViewPreference | undefined
   pendingOTAUpdate?: {
