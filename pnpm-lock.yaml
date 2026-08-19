@@ -387,6 +387,12 @@ importers:
       '@sentry/react-native':
         specifier: ~8.18.0
         version: 8.18.0(61f03fc01fabd5cbd0e83cc2a57309d9)
+      '@social-app-community/embed-kit':
+        specifier: workspace:*
+        version: link:../social-app-community-packages/packages/embed-kit
+      '@social-app-community/embed-tangled-string':
+        specifier: workspace:*
+        version: file:../social-app-community-packages/packages/embed-tangled-string(@tanstack/react-query@5.100.10(react@19.1.0))(react-native@0.81.5(patch_hash=91fd85363059530dea649a5ca6012b933f79c8491737fbfdc685abc727e48403)(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.86.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.1.17)(react@19.1.0)(supports-color@8.1.1))(react@19.1.0)
       '@tanstack/query-async-storage-persister':
         specifier: ^5.96.2
         version: 5.100.10
@@ -762,6 +768,11 @@ importers:
       zod:
         specifier: 3.24.4
         version: 3.24.4
+    dependenciesMeta:
+      '@social-app-community/embed-kit':
+        injected: true
+      '@social-app-community/embed-tangled-string':
+        injected: true
     devDependencies:
       '@babel/core':
         specifier: ^7.26.0
@@ -901,6 +912,30 @@ importers:
       webpack-bundle-analyzer:
         specifier: ^4.10.1
         version: 4.10.2
+
+  ../social-app-community-packages/packages/embed-kit:
+    dependencies:
+      react:
+        specifier: '>=18'
+        version: 19.1.0
+      react-native:
+        specifier: '>=0.73'
+        version: 0.81.5(patch_hash=91fd85363059530dea649a5ca6012b933f79c8491737fbfdc685abc727e48403)(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.86.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.1.17)(react@19.1.0)(supports-color@8.1.1)
+
+  ../social-app-community-packages/packages/embed-tangled-string:
+    dependencies:
+      '@social-app-community/embed-kit':
+        specifier: workspace:*
+        version: link:../embed-kit
+      '@tanstack/react-query':
+        specifier: '>=5 <6'
+        version: 5.100.10(react@19.1.0)
+      react:
+        specifier: '>=18'
+        version: 19.1.0
+      react-native:
+        specifier: '>=0.73'
+        version: 0.81.5(patch_hash=91fd85363059530dea649a5ca6012b933f79c8491737fbfdc685abc727e48403)(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.86.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.1.17)(react@19.1.0)(supports-color@8.1.1)
 
 packages:
 
@@ -3741,6 +3776,14 @@ packages:
 
   '@sinonjs/fake-timers@10.3.0':
     resolution: {integrity: sha512-V4BG07kuYSUkTCSBHG8G8TNhM+F19jXFWnQtzj+we8DrkpSBCee9Z3Ms8yiGer/dlmhe35/Xdgyo3/0rQKg7YA==}
+
+  '@social-app-community/embed-tangled-string@file:../social-app-community-packages/packages/embed-tangled-string':
+    resolution: {directory: ../social-app-community-packages/packages/embed-tangled-string, type: directory}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@tanstack/react-query': '>=5 <6'
+      react: '>=18'
+      react-native: '>=0.73'
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
@@ -13179,6 +13222,13 @@ snapshots:
   '@sinonjs/fake-timers@10.3.0':
     dependencies:
       '@sinonjs/commons': 3.0.1
+
+  '@social-app-community/embed-tangled-string@file:../social-app-community-packages/packages/embed-tangled-string(@tanstack/react-query@5.100.10(react@19.1.0))(react-native@0.81.5(patch_hash=91fd85363059530dea649a5ca6012b933f79c8491737fbfdc685abc727e48403)(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.86.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.1.17)(react@19.1.0)(supports-color@8.1.1))(react@19.1.0)':
+    dependencies:
+      '@social-app-community/embed-kit': link:../social-app-community-packages/packages/embed-kit
+      '@tanstack/react-query': 5.100.10(react@19.1.0)
+      react: 19.1.0
+      react-native: 0.81.5(patch_hash=91fd85363059530dea649a5ca6012b933f79c8491737fbfdc685abc727e48403)(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.86.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.1.17)(react@19.1.0)(supports-color@8.1.1)
 
   '@standard-schema/spec@1.1.0': {}
 

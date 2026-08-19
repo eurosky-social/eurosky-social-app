@@ -18,6 +18,7 @@ import {StandardSiteEmbed} from '#/components/Post/Embed/StandardSiteEmbed'
 import {isStandardSiteEmbed} from '#/components/Post/Embed/StandardSiteEmbed/utils'
 import {Embed as StarterPackEmbed} from '#/components/StarterPack/StarterPackCard'
 import {Text} from '#/components/Typography'
+import {matchCustomEmbedPreview} from '#/features/customEmbeds/registry'
 import {type Gif} from '#/features/gifPicker/types'
 
 export const ExternalEmbedGif = ({
@@ -90,34 +91,28 @@ export const ExternalEmbedLink = ({
   const linkComponent = useMemo(() => {
     if (data) {
       if (data.type === 'external') {
-        if (data.view && isStandardSiteEmbed(data.view.external)) {
+        const externalView = {
+          ...data.view?.external,
+          title: data.view?.external?.title || data.title || uri,
+          uri,
+          description: data.view?.external?.description || data.description,
+          // prefer opengraph data to atproto record-derived image
+          thumb: (data.thumb?.source.path || data.view?.external?.thumb) as
+            UriString | undefined,
+        }
+        const customEmbed = matchCustomEmbedPreview(externalView)
+        if (customEmbed) {
           return (
-            <StandardSiteEmbed
-              preview
-              view={{
-                ...data.view?.external,
-                title: data.view?.external?.title || data.title || uri,
-                uri,
-                description:
-                  data.view?.external?.description || data.description,
-                // prefer opengraph data to atproto record-derived image
-                thumb: (data.thumb?.source.path ||
-                  data.view?.external?.thumb) as UriString | undefined,
-              }}
+            <customEmbed.Component
+              view={externalView}
+              match={customEmbed.data}
             />
           )
         }
-        return (
-          <ExternalEmbed
-            link={{
-              title: data.title || uri,
-              uri,
-              description: data.description,
-              thumb: data.thumb?.source.path as UriString | undefined,
-            }}
-            hideAlt
-          />
-        )
+        if (data.view && isStandardSiteEmbed(externalView)) {
+          return <StandardSiteEmbed preview view={externalView} />
+        }
+        return <ExternalEmbed link={externalView} hideAlt />
       } else if (data.type === 'chat-invite') {
         return <JoinRequestEmbed code={data.code} preview={data.view} />
       } else if (data.kind === 'feed') {

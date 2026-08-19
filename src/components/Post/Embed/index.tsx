@@ -111,6 +111,7 @@ function MediaEmbed({
             activeStyle={[a.mt_sm]}>
             <customEmbed.Component
               view={embed.view.external}
+              match={customEmbed.data}
               onOpen={rest.onOpen}
               style={[a.mt_sm, rest.style]}
             />

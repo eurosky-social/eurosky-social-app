@@ -1,4 +1,5 @@
 // Learn more https://docs.expo.io/guides/customizing-metro
+import {existsSync} from 'node:fs'
 import {createRequire} from 'node:module'
 import {dirname, resolve} from 'node:path'
 import {type CustomResolver} from '@expo/metro/metro-resolver'
@@ -6,6 +7,10 @@ import {getDefaultConfig} from '@expo/metro-config'
 import {getSentryExpoConfig} from '@sentry/react-native/metro.js'
 
 const require = createRequire(import.meta.url)
+const communityPackagesRoot = resolve(
+  import.meta.dirname,
+  '../social-app-community-packages',
+)
 const joseBrowserEntry = resolve(
   dirname(require.resolve('jose')),
   '../../browser/index.js',
@@ -26,6 +31,14 @@ const config = getSentryExpoConfig(import.meta.dirname, {
     }
 
     config.resolver.assetExts = [...config.resolver.assetExts, 'woff2']
+
+    /* Allow Metro to follow local community-package workspace links. */
+    if (existsSync(communityPackagesRoot)) {
+      config.watchFolders = [
+        ...(config.watchFolders ?? []),
+        communityPackagesRoot,
+      ]
+    }
 
     if (config.resolver.resolveRequest) {
       throw Error('Update this override because it is conflicting now.')

@@ -1,9 +1,9 @@
-import {type CustomEmbedHandler} from '#/features/customEmbeds/types'
-import {isTangledStringUrl} from './detect'
-import {TangledStringEmbed} from './TangledStringEmbed'
+import {createTangledStringEmbed} from '@social-app-community/embed-tangled-string'
 
-export const tangledStringHandler: CustomEmbedHandler = {
-  id: 'tangledString',
-  match: view => isTangledStringUrl(view.uri),
-  Component: TangledStringEmbed,
-}
+import {readTangledStringRecord} from './readRecord'
+import {tangledStringUi} from './ui'
+
+export const tangledStringHandler = createTangledStringEmbed({
+  readRecord: readTangledStringRecord,
+  ui: tangledStringUi,
+})

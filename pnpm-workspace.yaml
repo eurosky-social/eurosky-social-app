@@ -1,3 +1,11 @@
+# Local development only: these packages are injected into node_modules so
+# Metro/Webpack use this app's React singleton instead of the sibling repo's.
+# Replace the workspace ranges in package.json with published versions once the
+# packages are available from npm.
+packages:
+  - '.'
+  - '../social-app-community-packages/packages/*'
+
 nodeLinker: 'hoisted'
 autoInstallPeers: true # default: true
 strictPeerDependencies: false # default: false

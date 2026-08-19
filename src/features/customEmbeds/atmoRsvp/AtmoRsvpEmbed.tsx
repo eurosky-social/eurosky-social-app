@@ -2,6 +2,7 @@ import {View} from 'react-native'
 import {Image} from 'expo-image'
 import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
+import {type ExternalEmbedComponentProps} from '@social-app-community/embed-kit'
 
 import {useHaptics} from '#/lib/haptics'
 import {toNiceDomain} from '#/lib/strings/url-helpers'
@@ -18,7 +19,6 @@ import {Star_Stroke2_Corner0_Rounded as InterestedIcon} from '#/components/icons
 import {Link} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
-import {type CustomEmbedComponentProps} from '#/features/customEmbeds/types'
 import {type AtmoEventValue, getGoingAttendees} from './api'
 import {parseAtmoRsvpEvent} from './detect'
 import {EVENT_MODE, EVENT_STATUS_CANCELLED, type RsvpStatus} from './lexicon'
@@ -33,7 +33,7 @@ export function AtmoRsvpEmbed({
   view,
   onOpen,
   style,
-}: CustomEmbedComponentProps) {
+}: ExternalEmbedComponentProps<true>) {
   const t = useTheme()
   const {t: l, i18n} = useLingui()
   const playHaptic = useHaptics()

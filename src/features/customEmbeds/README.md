@@ -1,62 +1,57 @@
 # Custom embeds
 
-Fork-owned, client-side enhancement of external link embeds (`app.bsky.embed.external`).
+Compile-time extensions of external link embeds (`app.bsky.embed.external`).
+The host integration uses the portable contracts from
+`@social-app-community/embed-kit`; app-specific record access, ALF components,
+navigation, and translations stay in this directory as host adapters.
 
-Upstream renders external links as a plain card (`ExternalEmbed`) or, for
-`standard.site` links, as a `StandardSiteEmbed`. That richer card relies on the
-**appview** enriching the embed with `associatedRefs`/`source`. Our custom
-embeds instead work **purely client-side**: we match on the link URL and fetch
-everything ourselves, so they render even when the post was authored from the
-vanilla Bluesky app (which never sets `associatedRefs`).
+The ordered registry in `registry.ts` contains both app-owned handlers and
+handlers created by community packages. A failed or malformed matcher is
+isolated by embed-kit, and an unmatched embed continues through the upstream
+Standard Site, chat-invite, or generic external-card paths.
 
-## How it plugs in
+## Local community-package development
 
-There is a single, additive touchpoint in upstream code: the top of the `link`
-case in `src/components/Post/Embed/index.tsx` calls `matchCustomEmbed(view)`.
-If a handler matches, its component renders; otherwise upstream's default
-external embed rendering runs unchanged. Keeping the integration to one
-clearly-marked block minimizes merge conflicts when syncing with upstream.
+The sibling `social-app-community-packages` repository is included in this
+app's pnpm workspace. UI packages are injected rather than symlinked so Metro
+and Webpack resolve React, React Native, and TanStack Query from this app. Metro
+also conditionally watches the sibling repository for workspace links. This
+avoids duplicate React instances while still testing the package's built
+publishable output.
 
-## Adding a new custom embed
+After changing the sibling packages, rebuild and reinject them:
 
-1. Create a directory under `customEmbeds/` (e.g. `myEmbed/`).
-2. Implement a `CustomEmbedHandler` (see `types.ts`): a `match(view)` predicate
-   (usually a URL host check) and a `Component` rendering the card.
-3. Register it in `registry.ts`. First match in the list wins.
+```sh
+pnpm -C ../social-app-community-packages check
+pnpm install --ignore-scripts
+```
 
-## atmoRsvp
+The first command builds each package's `dist` directory. The second command,
+run from `eurosky-social-app`, refreshes the injected copies in `node_modules`.
+Once the packages are published, replace the `workspace:*` dependency ranges
+with released versions and remove the sibling package globs and
+`dependenciesMeta` injection settings.
 
-Renders [atmo.rsvp](https://atmo.rsvp) calendar events
-(`community.lexicon.calendar.event`) with in-app RSVP.
+## Integration points
 
-- **Detect**: `https://atmo.rsvp/p/{handle}/e/{rkey}` (`detect.ts`).
-- **Read**: atmo's public XRPC for event details + aggregate counts + attendee
-  faces (`rsvp.atmo.event.getRecord`). Images are built as `cdn.bsky.app` URLs,
-  matching how atmo serves them. The viewer's own RSVP status comes from atmo's
-  `subjectUri`-filtered `rsvp.atmo.rsvp.listRecords` (a targeted lookup). The
-  mutation writes the result into cache without invalidating, so the button
-  stays correct during atmo's brief post-write indexing lag.
-- **Write**: RSVPs are `community.lexicon.calendar.rsvp` records written
-  directly to the user's repo via their agent. atmo indexes them off the
-  firehose, so the aggregate going-count is updated optimistically and
-  reconciles on the next refetch.
+- Post embeds: `src/components/Post/Embed/index.tsx` calls
+  `matchCustomEmbed(view)` at the top of the external-link path.
+- Composer: `src/view/com/composer/ExternalEmbed.tsx` calls
+  `matchCustomEmbedPreview(view)` before the normal preview renderers.
+- Host adapters: each packaged handler is configured in its feature directory.
 
-## tangledString
+## Handlers
 
-Renders [Tangled](https://tangled.org) "strings" (`sh.tangled.string`) - shared
-code snippets/pastes - as a syntax-highlighted code card.
+### atmoRsvp
 
-- **Detect**: `https://tangled.org/strings/{actor}/{rkey}` (also `tangled.sh`),
-  where `{actor}` is a handle or DID (`detect.ts`).
-- **Read**: the snippet text lives inline in the record, so a single
-  `com.atproto.repo.getRecord` is all the card needs (`queries.ts`). The owner
-  profile is fetched alongside it for the byline, best-effort.
-- **Highlight**: `highlight.ts` runs the code through `lowlight` (highlight.js
-  grammars, pure JS so it works on web and native) and flattens the result into
-  lines of scoped spans; `CodeBlock.tsx` renders those into ALF-themed `Text`.
-  The language is inferred from the filename extension, falling back to
-  highlight.js auto-detection. Feed cards show a `PREVIEW_LINES` preview and
-  link out for the rest.
+An app-owned handler for [atmo.rsvp](https://atmo.rsvp) events
+(`community.lexicon.calendar.event`) with in-app RSVP controls. It implements
+the embed-kit handler contract directly.
 
-> `lowlight` and its `devlop` dependency are ESM-only, so both are added to
-> `transformIgnorePatterns` in `package.json` for Jest.
+### tangledString
+
+`@social-app-community/embed-tangled-string` owns Tangled URL/associated-record
+matching, trust-boundary validation, querying, card layout, and composer
+preview. The files under `tangledString/` supply Eurosky's PDS record reader,
+ALF components and theme, syntax-highlighted `CodeBlock`, profile byline, links,
+and Lingui strings; `index.ts` only assembles those adapters into the handler.

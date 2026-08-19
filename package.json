@@ -160,6 +160,8 @@
     "@react-navigation/native": "^7.1.33",
     "@react-navigation/native-stack": "^7.14.4",
     "@sentry/react-native": "~8.18.0",
+    "@social-app-community/embed-kit": "workspace:*",
+    "@social-app-community/embed-tangled-string": "workspace:*",
     "@tanstack/query-async-storage-persister": "^5.96.2",
     "@tanstack/react-query": "^5.96.2",
     "@tanstack/react-query-persist-client": "^5.96.2",
@@ -285,6 +287,14 @@
     "tldts": "^6.1.46",
     "unicode-segmenter": "0.14.5",
     "zod": "^3.25.76"
+  },
+  "dependenciesMeta": {
+    "@social-app-community/embed-kit": {
+      "injected": true
+    },
+    "@social-app-community/embed-tangled-string": {
+      "injected": true
+    }
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
