@@ -1,14 +1,18 @@
 import {useCallback, useRef, useState} from 'react'
 import {type TextInput, View} from 'react-native'
+import {type Client} from '@atproto/lex'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
-import {DM_SERVICE_HEADERS} from '#/lib/constants'
+import {timeout} from '#/lib/async/timeout'
 import {useCleanError} from '#/lib/hooks/useCleanError'
+import {createLexClient} from '#/lib/lexClient'
+import {isNetworkError, shouldRetryError} from '#/lib/strings/errors'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {logger} from '#/logger'
-import {useAgent, useSession, useSessionApi} from '#/state/session'
+import {usePdsClient, useSession, useSessionApi} from '#/state/session'
+import {resolveDidServiceEndpoint} from '#/state/session/identity-resolver'
 import {atoms as a, useTheme} from '#/alf'
 import {Admonition} from '#/components/Admonition'
 import {type DialogOuterProps} from '#/components/Dialog'
@@ -25,10 +29,17 @@ import * as Prompt from '#/components/Prompt'
 import * as toast from '#/components/Toast'
 import {Span, Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
+import {CHAT_PROXY_DID} from '#/env'
+import {chat, com} from '#/lexicons'
 import {resetToTab} from '#/Navigation'
+import {OAuthAccountActionPasswordRequired} from './OAuthAccountActionPasswordRequired'
 
 const WHITESPACE_RE = /\s/gu
 const PASSWORD_MIN_LENGTH = 8
+const CHAT_SERVICE_RESOLVE_TIMEOUT_MS = 5e3
+const CHAT_DELETE_TIMEOUT_MS = 3e3
+const CHAT_DELETE_ATTEMPTS = 3
+const CHAT_DELETE_RETRY_DELAY_MS = 500
 
 enum Step {
   SEND_CODE,
@@ -45,6 +56,61 @@ function isPasswordValid(password: string) {
   return password.length >= PASSWORD_MIN_LENGTH
 }
 
+async function resolveChatServiceEndpoint() {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    CHAT_SERVICE_RESOLVE_TIMEOUT_MS,
+  )
+
+  try {
+    const endpoint = await resolveDidServiceEndpoint({
+      did: CHAT_PROXY_DID,
+      id: '#bsky_chat',
+      type: 'BskyChatService',
+      signal: controller.signal,
+    })
+    if (!endpoint) {
+      throw new Error(
+        `Chat service ${CHAT_PROXY_DID} has no #bsky_chat endpoint`,
+      )
+    }
+    return endpoint
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
+async function deleteChatAccountWithRetry(client: Client) {
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= CHAT_DELETE_ATTEMPTS; attempt++) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      CHAT_DELETE_TIMEOUT_MS,
+    )
+
+    try {
+      await client.call(chat.bsky.actor.deleteAccount, undefined, {
+        signal: controller.signal,
+      })
+      return
+    } catch (e) {
+      lastError = e
+      const canRetry =
+        attempt < CHAT_DELETE_ATTEMPTS &&
+        (isNetworkError(e) || shouldRetryError(e))
+      if (!canRetry) throw e
+      await timeout(CHAT_DELETE_RETRY_DELAY_MS)
+    } finally {
+      clearTimeout(timeoutId)
+    }
+  }
+
+  throw lastError
+}
+
 export function DeleteAccountDialog({
   control,
   deactivateDialogControl,
@@ -52,12 +118,18 @@ export function DeleteAccountDialog({
   control: DialogOuterProps['control']
   deactivateDialogControl: DialogOuterProps['control']
 }) {
+  const {currentAccount} = useSession()
+
   return (
     <Prompt.Outer control={control}>
-      <DeleteAccountDialogInner
-        control={control}
-        deactivateDialogControl={deactivateDialogControl}
-      />
+      {currentAccount?.isOauthSession ? (
+        <OAuthAccountActionPasswordRequired action="delete" />
+      ) : (
+        <DeleteAccountDialogInner
+          control={control}
+          deactivateDialogControl={deactivateDialogControl}
+        />
+      )}
     </Prompt.Outer>
   )
 }
@@ -73,7 +145,7 @@ function DeleteAccountDialogInner({
   const t = useTheme()
   const {_} = useLingui()
   const cleanError = useCleanError()
-  const agent = useAgent()
+  const client = usePdsClient()
   const {currentAccount} = useSession()
   const {removeAccount} = useSessionApi()
 
@@ -90,7 +162,7 @@ function DeleteAccountDialogInner({
     }
     try {
       setEmailState(EmailState.PENDING)
-      await agent.com.atproto.server.requestAccountDelete()
+      await client.call(com.atproto.server.requestAccountDelete)
       setError('')
       setEmailSentCount(prevCount => prevCount + 1)
       setStep(Step.VERIFY_CODE)
@@ -104,7 +176,7 @@ function DeleteAccountDialogInner({
     } finally {
       setEmailState(EmailState.DEFAULT)
     }
-  }, [agent, cleanError, emailState, setEmailState])
+  }, [client, cleanError, emailState, setEmailState])
 
   const confirmDeletion = useCallback(async () => {
     try {
@@ -113,23 +185,52 @@ function DeleteAccountDialogInner({
         throw new Error('Invalid did')
       }
       const token = confirmCode.replace(WHITESPACE_RE, '')
-      // Inform chat service of intent to delete account.
-      const {success} = await agent.chat.bsky.actor.deleteAccount(undefined, {
-        headers: DM_SERVICE_HEADERS,
-      })
-      if (!success) {
-        throw new Error('Failed to inform chat service of account deletion')
-      }
-      await agent.com.atproto.server.deleteAccount({
+      /*
+       * Resolve the configured chat DID and mint authorization while the PDS
+       * account still exists, but do not delete the chat account until the PDS
+       * has validated the password and deletion token. This prevents invalid
+       * credentials or a failed PDS request from deleting only the chat account.
+       */
+      const chatServiceEndpoint = await resolveChatServiceEndpoint()
+      const {token: chatDeletionToken} = await client.call(
+        com.atproto.server.getServiceAuth,
+        {
+          aud: CHAT_PROXY_DID,
+          lxm: chat.bsky.actor.deleteAccount.$nsid,
+        },
+      )
+      const chatDeletionClient = createLexClient(
+        {
+          service: chatServiceEndpoint,
+          headers: {authorization: `Bearer ${chatDeletionToken}`},
+        },
+        {appLabelers: null},
+      )
+
+      await client.call(com.atproto.server.deleteAccount, {
         did: currentAccount.did,
         password,
         token,
       })
-      control.close(() => {
-        toast.show(_(msg`Your account has been deleted, see ya! ✌️`))
-        resetToTab('HomeTab')
-        removeAccount(currentAccount)
-      })
+
+      /*
+       * The PDS account is now gone, so retry chat cleanup with strict per-call
+       * timeouts. Local finalization belongs in `finally`: chat downtime must
+       * never strand a deleted PDS account in the signed-in UI.
+       */
+      try {
+        await deleteChatAccountWithRetry(chatDeletionClient)
+      } catch (e) {
+        logger.error('Failed to delete chat account after bounded retries', {
+          safeMessage: e,
+        })
+      } finally {
+        control.close(() => {
+          toast.show(_(msg`Your account has been deleted, see ya! ✌️`))
+          resetToTab('HomeTab')
+          removeAccount(currentAccount)
+        })
+      }
     } catch (e: any) {
       const {clean, raw} = cleanError(e)
       const error = clean || raw || e
@@ -143,8 +244,8 @@ function DeleteAccountDialogInner({
     }
   }, [
     _,
-    agent,
     cleanError,
+    client,
     confirmCode,
     control,
     currentAccount,

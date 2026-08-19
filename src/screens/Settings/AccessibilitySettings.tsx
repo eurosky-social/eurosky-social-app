@@ -21,6 +21,7 @@ import {Accessibility_Stroke2_Corner2_Rounded as AccessibilityIcon} from '#/comp
 import {Haptic_Stroke2_Corner2_Rounded as HapticIcon} from '#/components/icons/Haptic'
 import * as Layout from '#/components/Layout'
 import {IS_NATIVE} from '#/env'
+import {KeyboardShortcutsSettings} from '#/features/keyboardShortcuts/SettingsSection'
 
 type Props = NativeStackScreenProps<
   CommonNavigatorParams,
@@ -77,6 +78,7 @@ export function AccessibilitySettingsScreen({}: Props) {
               <Toggle.Platform />
             </Toggle.Item>
           </SettingsList.Group>
+          <KeyboardShortcutsSettings />
           {IS_NATIVE && (
             <>
               <SettingsList.Divider />

@@ -10,7 +10,6 @@ import Animated, {
   SlideOutLeft,
   SlideOutRight,
 } from 'react-native-reanimated'
-import {type ComAtprotoServerDescribeServer} from '@atproto/api'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
@@ -48,6 +47,7 @@ import {InlineLinkText} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
 import {useSimpleVerificationState} from '#/components/verification'
+import {type com} from '#/lexicons'
 import {CopyButton} from './CopyButton'
 
 export function ChangeHandleDialog({
@@ -66,11 +66,10 @@ function ChangeHandleDialogInner() {
   const control = Dialog.useDialogContext()
   const {_} = useLingui()
   const {currentAccount} = useSession()
-  // mu fork: OAuth sessions use a generic Agent that has no `serviceUrl` (only
-  // password sessions' BskyAppAgent does), so reading agent.serviceUrl crashed
-  // the dialog (blank page) for OAuth users. currentAccount.service is the
-  // correct describeServer target for both: the entryway for password sessions
-  // and the OAuth issuer otherwise.
+  /*
+   * currentAccount.service is the correct describeServer target for both
+   * password sessions and OAuth sessions.
+   */
   const {
     data: serviceInfo,
     error: serviceInfoError,
@@ -242,7 +241,7 @@ function ProvidedHandlePage({
   serviceInfo,
   goToOwnHandle,
 }: {
-  serviceInfo: ComAtprotoServerDescribeServer.OutputSchema
+  serviceInfo: com.atproto.server.describeServer.$OutputBody
   goToOwnHandle: () => void
 }) {
   const {_} = useLingui()
@@ -268,9 +267,8 @@ function ProvidedHandlePage({
           queryKey: RQKEY_PROFILE(currentAccount.did),
         })
       }
-      // mu fork: partialRefreshSession works for both password and OAuth
-      // agents (the old agent.resumeSession is AtpAgent-only) and now refreshes
-      // the session handle too, so the new handle reflects everywhere.
+      // OAuth tokens live outside the password-session store; refresh account
+      // metadata directly so the new handle appears for either session type.
       partialRefreshSession().then(() => control.close())
     },
   })
@@ -436,8 +434,7 @@ function OwnHandlePage({goToServiceHandle}: {goToServiceHandle: () => void}) {
           queryKey: RQKEY_PROFILE(currentAccount.did),
         })
       }
-      // mu fork: see ProvidedHandlePage - partialRefreshSession is OAuth-safe
-      // and refreshes the session handle.
+      // See ProvidedHandlePage: this refresh path also supports OAuth.
       partialRefreshSession().then(() => control.close())
     },
   })

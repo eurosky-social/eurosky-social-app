@@ -7,6 +7,7 @@ import {
 import {h} from 'preact'
 
 import logo from '../../assets/logo_full_name.svg'
+import {isSupportedAppUrl} from '../brand'
 import {Like as LikeIcon} from '../icons/Like'
 import {Reply as ReplyIcon} from '../icons/Reply'
 import {Repost as RepostIcon} from '../icons/Repost'
@@ -176,10 +177,7 @@ function PostContent({record}: {record: AppBskyFeedPost.Record | null}) {
           key={counter}
           href={segment.link.uri}
           className="text-brand hover:underline"
-          disableTracking={
-            !segment.link.uri.startsWith('https://bsky.app') &&
-            !segment.link.uri.startsWith('https://go.bsky.app')
-          }>
+          disableTracking={!isSupportedAppUrl(segment.link.uri)}>
           {segment.text}
         </Link>,
       )

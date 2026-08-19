@@ -1,4 +1,6 @@
 import {type ID as PolicyUpdate202508} from '#/components/PolicyUpdateOverlay/updates/202508/config'
+import {type AppViewPreference} from '#/features/appView/types'
+import {type AppViewTransferCheckpoint} from '#/features/appViewTransfer/types'
 import {type Gif} from '#/features/gifPicker/types'
 import {type InviteThemeKey} from '#/features/inviteFriends/themes'
 import {type Geolocation} from '#/geolocation/types'
@@ -58,11 +60,20 @@ export type Device = {
   mergedGeolocation?: Geolocation
 
   trendingBetaEnabled: boolean
+  keyboardShortcutsEnabled?: boolean
   devMode: boolean
   demoMode: boolean
   activitySubscriptionsNudged?: boolean
   threadgateNudged?: boolean
   inviteFriendsFollowersPromoDismissed?: boolean
+  /**
+   * Dismiss state for the policy update feed banner. Device-scoped rather than
+   * NUX-backed so dismissing is synchronous and works offline - see
+   * `#/components/PolicyUpdateBanner`.
+   */
+  policyUpdateBannerDismissed?: boolean
+  /** Device-wide override for public and authenticated AppView requests. */
+  appViewOverride: AppViewPreference | undefined
   pendingOTAUpdate?: {
     attemptedAt: number
     channel: string
@@ -108,4 +119,18 @@ export type Account = {
    * account after a switch, until that account's preferences loaded.
    */
   isBetaUser?: boolean
+
+  /** The latest resumable private-data transfer between AppViews. */
+  appViewTransfer?: AppViewTransferCheckpoint
+
+  /**
+   * The account's subscribed labeler DIDs, cached from preferences so the
+   * `atproto-accept-labelers` header can be configured synchronously at
+   * session start, before preferences load. Eventually consistent: rewritten
+   * on every preferences fetch (see `saveLabelers` in
+   * `#/state/session/moderation`). Until the first fetch lands there is
+   * simply no cache entry and initial requests go out without per-account
+   * labeler headers.
+   */
+  labelers?: string[]
 }

@@ -1,5 +1,4 @@
-import {type AppBskyFeedPost} from '@atproto/api'
-
+import {type app} from '#/lexicons'
 import {
   canEditPost,
   EDIT_WINDOW_MS,
@@ -72,7 +71,7 @@ describe('getPostEditInfo', () => {
       $type: 'app.bsky.feed.post',
       text: 'hello',
       createdAt: new Date(NOW).toISOString(),
-    } as AppBskyFeedPost.Record
+    } as app.bsky.feed.post.Main
     expect(getPostEditInfo(record)).toEqual({
       isEdited: false,
       updatedAt: undefined,
@@ -87,7 +86,7 @@ describe('getPostEditInfo', () => {
       createdAt: new Date(NOW - 1000).toISOString(),
       updatedAt: new Date(NOW).toISOString(),
       originalText: 'old text',
-    } as AppBskyFeedPost.Record
+    } as app.bsky.feed.post.Main
     expect(getPostEditInfo(record)).toEqual({
       isEdited: true,
       updatedAt: new Date(NOW).toISOString(),

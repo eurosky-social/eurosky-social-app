@@ -65,6 +65,9 @@ export type CommonNavigatorParams = {
   PreferencesExternalEmbeds: undefined
   AccessibilitySettings: undefined
   AppearanceSettings: undefined
+  NetworkServicesSettings: undefined
+  ContentServiceSettings: undefined
+  AppViewTransferSettings: undefined
   PetCompanionSettings: undefined
   DecorationsSettings: undefined
   BetaFeaturesSettings: undefined
@@ -173,8 +176,7 @@ export type AllNavigatorParams = CommonNavigatorParams & {
 export type NavigationProp = NativeStackNavigationProp<AllNavigatorParams>
 
 export type State =
-  | NavigationState
-  | Omit<PartialState<NavigationState>, 'stale'>
+  NavigationState | Omit<PartialState<NavigationState>, 'stale'>
 
 export type RouteParams = Record<string, string>
 export type MatchResult = {params: RouteParams}

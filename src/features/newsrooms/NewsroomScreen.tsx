@@ -20,6 +20,7 @@ import {Link} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import * as Menu from '#/components/Menu'
 import {Text} from '#/components/Typography'
+import {type app} from '#/lexicons'
 import {NewsroomFrontPage} from './components/NewsroomFrontPage'
 import {NewsroomMasthead} from './components/NewsroomMasthead'
 import {NewsroomRightRail} from './components/NewsroomRightRail'
@@ -63,7 +64,7 @@ export function NewsroomScreen({route, navigation}: Props) {
   const {data: profiles} = useProfilesQuery({
     handles: NEWSROOM_PUBLISHERS.map(p => p.did),
   })
-  const profileByDid = new Map(
+  const profileByDid = new Map<string, app.bsky.actor.defs.ProfileViewDetailed>(
     profiles?.profiles.map(profile => [profile.did, profile]) ?? [],
   )
   const publisherName = getPublisherName(profileByDid.get(publisher.did))

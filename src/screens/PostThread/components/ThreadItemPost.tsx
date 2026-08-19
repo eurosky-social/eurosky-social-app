@@ -1,11 +1,7 @@
 import {memo, type ReactNode, useCallback, useMemo, useState} from 'react'
 import {type StyleProp, View, type ViewStyle} from 'react-native'
-import {
-  type AppBskyFeedDefs,
-  type AppBskyFeedThreadgate,
-  AtUri,
-  RichText as RichTextAPI,
-} from '@atproto/api'
+import {AtUri} from '@atproto/syntax'
+import {RichText as RichTextAPI} from '@bsky/sdk/richtext'
 import {Trans} from '@lingui/react/macro'
 
 import {MAX_POST_LINES} from '#/lib/constants'
@@ -29,6 +25,7 @@ import {
   useHasThreadItemPostNumber,
 } from '#/screens/PostThread/components/ThreadItemPostNumber'
 import {
+  getReplyLineColor,
   LINEAR_AVI_WIDTH,
   OUTER_SPACE,
   REPLY_LINE_WIDTH,
@@ -54,6 +51,7 @@ import * as Skele from '#/components/Skeleton'
 import {SubtleHover} from '#/components/SubtleHover'
 import {Text} from '#/components/Typography'
 import {useActorStatus} from '#/features/liveNow'
+import {type app} from '#/lexicons'
 
 export type ThreadItemPostProps = {
   item: Extract<ThreadItem, {type: 'threadPost'}>
@@ -66,7 +64,7 @@ export type ThreadItemPostProps = {
    */
   hoverStyle?: StyleProp<ViewStyle>
   onPostSuccess?: (data: OnPostSuccessData) => void
-  threadgateRecord?: AppBskyFeedThreadgate.Record
+  threadgateRecord?: app.bsky.feed.threadgate.Main
 }
 
 export function ThreadItemPost({
@@ -184,7 +182,7 @@ const ThreadItemPostParentReplyLine = memo(
                 a.mb_xs,
                 {
                   width: REPLY_LINE_WIDTH,
-                  backgroundColor: t.atoms.border_contrast_low.borderColor,
+                  backgroundColor: getReplyLineColor(t),
                 },
               ]}
             />
@@ -203,7 +201,7 @@ const ThreadItemPostInner = memo(function ThreadItemPostInner({
   onPostSuccess,
   threadgateRecord,
 }: ThreadItemPostProps & {
-  postShadow: Shadow<AppBskyFeedDefs.PostView>
+  postShadow: Shadow<app.bsky.feed.defs.PostView>
 }) {
   const t = useTheme()
   const {openComposer} = useOpenComposer()
@@ -276,6 +274,11 @@ const ThreadItemPostInner = memo(function ThreadItemPostInner({
         <PostHider
           testID={`postThreadItem-by-${post.author.handle}`}
           href={postHref}
+          dataSet={{
+            keyboardNavigationPost: post.uri,
+            keyboardNavigationHref: postHref,
+            keyboardNavigationClickable: 'true',
+          }}
           disabled={overrides?.moderation === true}
           modui={moderation.ui('contentList')}
           hiderStyle={[a.pl_0, a.pr_2xs, a.bg_transparent]}
@@ -304,7 +307,7 @@ const ThreadItemPostInner = memo(function ThreadItemPostInner({
                     a.flex_1,
                     {
                       width: REPLY_LINE_WIDTH,
-                      backgroundColor: t.atoms.border_contrast_low.borderColor,
+                      backgroundColor: getReplyLineColor(t),
                     },
                   ]}
                 />

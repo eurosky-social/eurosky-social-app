@@ -16,16 +16,17 @@
  * wired into both web OAuth client paths via the `identityResolver` option
  * (supported by the base OAuthClient).
  *
- * Self-contained: only `@atproto/api` + fetch + the fork's createPublicAgent.
+ * Self-contained: only the public lex client plus direct fetch fallbacks.
  */
-import {type ComAtprotoIdentityDefs, isDid} from '@atproto/api'
+import {type HandleString, isValidDid} from '@atproto/syntax'
 import {
   type IdentityInfo,
   type IdentityResolver,
 } from '@atproto-labs/identity-resolver'
 
 import {getDidDocumentUrl} from '#/lib/atproto/did'
-import {createPublicAgent} from './agent'
+import {com} from '#/lexicons'
+import {getPublicAppviewClient} from './clients'
 
 // did:plc documents are fetched from the PLC directory (CORS-friendly). The
 // fork has no custom-PLC-directory preference, so this is the canonical one.
@@ -39,6 +40,12 @@ type DidDocument = {
   id?: string
   alsoKnownAs?: string[]
   service?: Service[]
+}
+
+type ResolvedIdentity = {
+  did: AtprotoDid
+  didDoc: DidDocument
+  handle: string
 }
 
 type Service = {
@@ -70,26 +77,29 @@ function extractNormalizedHandle(document: DidDocument) {
 
 function findService(doc: DidDocument, id: string, type?: string) {
   if (!Array.isArray(doc?.service)) return
-  return doc.service.find(
-    service =>
+  return doc.service.find(service => {
+    const serviceIdMatches =
+      service?.id === id ||
+      (id.startsWith('#') && service?.id === `${doc.id}${id}`)
+
+    return (
       service?.serviceEndpoint &&
-      service?.id === id &&
-      (!type || service?.type === type),
-  )
+      serviceIdMatches &&
+      (!type || service?.type === type)
+    )
+  })
 }
 
 async function resolveHandleUsingAppView(
   handle: string,
   signal?: AbortSignal,
 ): Promise<AtprotoDid> {
-  const agent = createPublicAgent()
-
-  try {
-    const res = await agent.resolveHandle({handle}, {signal})
-    return res.data.did as AtprotoDid
-  } finally {
-    agent.dispose()
-  }
+  const data = await getPublicAppviewClient().call(
+    com.atproto.identity.resolveHandle,
+    {handle: handle as HandleString},
+    {signal},
+  )
+  return data.did as AtprotoDid
 }
 
 async function resolveHandleUsingDoh(
@@ -126,7 +136,7 @@ async function resolveHandleUsingDoh(
     if (!record.startsWith('did=')) continue
 
     const nextDid = record.slice(4)
-    if (!isDid(nextDid)) {
+    if (!isValidDid(nextDid)) {
       return null
     }
 
@@ -151,7 +161,7 @@ async function resolveHandleUsingWellKnown(
     })
     const text = await response.text()
     const firstLine = text.split('\n')[0]?.trim()
-    return firstLine && isDid(firstLine) ? (firstLine as AtprotoDid) : null
+    return firstLine && isValidDid(firstLine) ? (firstLine as AtprotoDid) : null
   } catch {
     signal?.throwIfAborted()
     return null
@@ -217,13 +227,12 @@ async function resolveDidDocument(
       throw err
     }
 
-    const agent = createPublicAgent()
-    try {
-      const res = await agent.com.atproto.identity.resolveDid({did}, {signal})
-      return res.data.didDoc
-    } finally {
-      agent.dispose()
-    }
+    const data = await getPublicAppviewClient().call(
+      com.atproto.identity.resolveDid,
+      {did},
+      {signal},
+    )
+    return data.didDoc
   }
 }
 
@@ -246,8 +255,8 @@ async function getValidatedHandleFromDidDocument(
 export async function resolveIdentityUsingAppView(
   identifier: string,
   signal?: AbortSignal,
-): Promise<ComAtprotoIdentityDefs.IdentityInfo> {
-  if (isDid(identifier)) {
+): Promise<ResolvedIdentity> {
+  if (isValidDid(identifier)) {
     const did = identifier as AtprotoDid
     const didDoc = await resolveDidDocument(did, signal)
     const handle = await getValidatedHandleFromDidDocument(did, didDoc, signal)
@@ -283,7 +292,7 @@ export function createIdentityResolver(): IdentityResolver {
       const identity = await resolveIdentityUsingAppView(input, options?.signal)
 
       return {
-        did: identity.did as AtprotoDid,
+        did: identity.did,
         didDoc: identity.didDoc as IdentityInfo['didDoc'],
         handle: identity.handle,
       }
@@ -292,11 +301,31 @@ export function createIdentityResolver(): IdentityResolver {
 }
 
 export function getPdsServiceUrlFromIdentityInfo(
-  identity: Pick<ComAtprotoIdentityDefs.IdentityInfo, 'didDoc'>,
+  identity: Pick<ResolvedIdentity, 'didDoc'>,
 ) {
   return findService(
     identity.didDoc,
     '#atproto_pds',
     'AtprotoPersonalDataServer',
   )?.serviceEndpoint
+}
+
+/** Resolve a service endpoint from a DID document without resolving a handle. */
+export async function resolveDidServiceEndpoint({
+  did,
+  id,
+  type,
+  signal,
+}: {
+  did: string
+  id: `#${string}`
+  type?: string
+  signal?: AbortSignal
+}) {
+  if (!isValidDid(did)) {
+    throw new Error(`Invalid service DID "${did}"`)
+  }
+
+  const didDoc = await resolveDidDocument(did as AtprotoDid, signal)
+  return findService(didDoc, id, type)?.serviceEndpoint
 }

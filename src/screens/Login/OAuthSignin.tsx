@@ -1,6 +1,5 @@
 import {useState} from 'react'
 import {View} from 'react-native'
-import {type ComAtprotoServerDescribeServer} from '@atproto/api'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
@@ -16,10 +15,11 @@ import {At_Stroke2_Corner0_Rounded as At} from '#/components/icons/At'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
+import {type com} from '#/lexicons'
 import {FormContainer} from './FormContainer'
 import {PasswordSignin} from './PasswordSignin'
 
-type ServiceDescription = ComAtprotoServerDescribeServer.OutputSchema
+type ServiceDescription = com.atproto.server.describeServer.$OutputBody
 
 type Props = {
   error: string

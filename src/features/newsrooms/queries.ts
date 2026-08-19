@@ -1,13 +1,12 @@
-import {
-  AppBskyEmbedExternal,
-  type AppBskyFeedDefs,
-  type AppBskyFeedPost,
-} from '@atproto/api'
+import {type Client, type UriString} from '@atproto/lex'
+import {type DidString} from '@atproto/syntax'
 import {useQueries, useQuery} from '@tanstack/react-query'
 
 import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
-import {useAgent} from '#/state/session'
+import {useAppviewClient} from '#/state/session'
+import {app} from '#/lexicons'
+import * as bsky from '#/types/bsky'
 import {buildRssFetchUrl} from './rss/config'
 import {extractOgImage, parseRssFeed} from './rss/parse'
 import {type RssItem} from './rss/types'
@@ -75,24 +74,24 @@ export const createArticleDiscussionQueryKey = (args: {
 function articleDiscussionQueryOptions({
   url,
   publisherDid,
-  agent,
+  client,
 }: {
   url: string
   publisherDid?: string
-  agent: ReturnType<typeof useAgent>
+  client: Client
 }) {
   return {
     queryKey: createArticleDiscussionQueryKey({url, publisherDid}),
     staleTime: STALE.MINUTES.FIVE,
     enabled: !!url,
     queryFn: async () => {
-      const res = await agent.app.bsky.feed.searchPosts({
+      const data = await client.call(app.bsky.feed.searchPosts, {
         q: url,
-        url,
+        url: url as UriString,
         sort: 'top',
         limit: 25,
       })
-      const posts = res.data.posts.filter(post => postReferencesUrl(post, url))
+      const posts = data.posts.filter(post => postReferencesUrl(post, url))
       let anchor = publisherDid
         ? (posts.find(post => post.author.did === publisherDid) ?? null)
         : null
@@ -104,17 +103,16 @@ function articleDiscussionQueryOptions({
        */
       if (!anchor && publisherDid) {
         try {
-          const publisherRes = await agent.app.bsky.feed.searchPosts({
+          const publisherData = await client.call(app.bsky.feed.searchPosts, {
             q: url,
-            url,
-            author: publisherDid,
+            url: url as UriString,
+            author: publisherDid as DidString,
             sort: 'latest',
             limit: 100,
           })
           anchor =
-            publisherRes.data.posts.find(post =>
-              postReferencesUrl(post, url),
-            ) ?? null
+            publisherData.posts.find(post => postReferencesUrl(post, url)) ??
+            null
         } catch {
           /* A failed anchor lookup should not hide the broader discussion. */
         }
@@ -132,7 +130,7 @@ function articleDiscussionQueryOptions({
         (a, b) => engagementScore(b) - engagementScore(a),
       )
       const ordered = anchor ? [anchor, ...orderedRest] : orderedRest
-      const total = Math.max(res.data.hitsTotal ?? posts.length, ordered.length)
+      const total = Math.max(data.hitsTotal ?? posts.length, ordered.length)
       /* The article's pull in the Atmosphere; picks the front page's featured
        * story. */
       const interactions = ordered.reduce(
@@ -168,8 +166,8 @@ export function useArticleDiscussionQuery({
   publisherDid?: string
   enabled?: boolean
 }) {
-  const agent = useAgent()
-  const options = articleDiscussionQueryOptions({url, publisherDid, agent})
+  const client = useAppviewClient()
+  const options = articleDiscussionQueryOptions({url, publisherDid, client})
   return useQuery({...options, enabled: enabled && options.enabled})
 }
 
@@ -185,16 +183,16 @@ export function useArticleDiscussionsQuery({
   urls: string[]
   publisherDid?: string
 }) {
-  const agent = useAgent()
+  const client = useAppviewClient()
   return useQueries({
     queries: urls.map(url =>
-      articleDiscussionQueryOptions({url, publisherDid, agent}),
+      articleDiscussionQueryOptions({url, publisherDid, client}),
     ),
   })
 }
 
 /** A post's total interactions in the Atmosphere; ranks the discussion. */
-function engagementScore(post: AppBskyFeedDefs.PostView): number {
+function engagementScore(post: app.bsky.feed.defs.PostView): number {
   return (
     (post.likeCount ?? 0) +
     (post.repostCount ?? 0) +
@@ -205,7 +203,7 @@ function engagementScore(post: AppBskyFeedDefs.PostView): number {
 
 /** Whether a post links to `url`, comparing normalized host + path. */
 function postReferencesUrl(
-  post: AppBskyFeedDefs.PostView,
+  post: app.bsky.feed.defs.PostView,
   url: string,
 ): boolean {
   const target = normalizeUrl(url)
@@ -217,14 +215,18 @@ function postReferencesUrl(
 }
 
 /** All URLs a post points at: external embed, link facets, and raw text. */
-function postUrls(post: AppBskyFeedDefs.PostView): string[] {
+function postUrls(post: app.bsky.feed.defs.PostView): string[] {
   const urls: string[] = []
 
-  if (AppBskyEmbedExternal.isView(post.embed) && post.embed.external?.uri) {
+  if (
+    bsky.isType(app.bsky.embed.external.view, post.embed) &&
+    post.embed.external?.uri
+  ) {
     urls.push(post.embed.external.uri)
   }
 
-  const record = post.record as AppBskyFeedPost.Record
+  if (!bsky.isType(app.bsky.feed.post, post.record)) return urls
+  const record = post.record
   for (const facet of record.facets ?? []) {
     for (const feature of facet.features) {
       const uri = (feature as {uri?: string}).uri

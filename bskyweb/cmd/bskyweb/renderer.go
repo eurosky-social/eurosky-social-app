@@ -47,9 +47,21 @@ type Renderer struct {
 	Debug       bool
 }
 
+func brandTemplateContext() pongo2.Context {
+	return pongo2.Context{
+		"brandName":          brandName,
+		"brandHost":          brandHost,
+		"brandHomeURL":       brandHomeURL,
+		"brandSocialCardURL": brandSocialCardURL,
+		"brandEmbedService":  brandEmbedService,
+	}
+}
+
 func NewRenderer(prefix string, fs *embed.FS, debug bool) *Renderer {
+	templateSet := pongo2.NewSet(prefix, NewRendererLoader(prefix, fs))
+	templateSet.Globals = brandTemplateContext()
 	return &Renderer{
-		TemplateSet: pongo2.NewSet(prefix, NewRendererLoader(prefix, fs)),
+		TemplateSet: templateSet,
 		Debug:       debug,
 	}
 }
@@ -62,6 +74,14 @@ func (r Renderer) Render(w io.Writer, name string, data any, c echo.Context) err
 		ctx, ok = data.(pongo2.Context)
 		if !ok {
 			return errors.New("no pongo2.Context data was passed")
+		}
+	}
+	if ctx == nil {
+		ctx = pongo2.Context{}
+	}
+	for key, value := range brandTemplateContext() {
+		if _, exists := ctx[key]; !exists {
+			ctx[key] = value
 		}
 	}
 

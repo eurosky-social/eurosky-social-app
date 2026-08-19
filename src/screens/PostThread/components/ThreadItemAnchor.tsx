@@ -1,11 +1,7 @@
 import {memo, useMemo} from 'react'
 import {View} from 'react-native'
-import {
-  type AppBskyFeedDefs,
-  type AppBskyFeedThreadgate,
-  AtUri,
-  RichText as RichTextAPI,
-} from '@atproto/api'
+import {AtUri} from '@atproto/syntax'
+import {RichText as RichTextAPI} from '@bsky/sdk/richtext'
 import {Trans} from '@lingui/react/macro'
 
 import {makeProfileLink} from '#/lib/routes/links'
@@ -35,6 +31,7 @@ import {
   useHasThreadItemPostNumber,
 } from '#/screens/PostThread/components/ThreadItemPostNumber'
 import {
+  getReplyLineColor,
   LINEAR_AVI_WIDTH,
   OUTER_SPACE,
   READER_LINE_INDENT,
@@ -64,6 +61,7 @@ import * as Skele from '#/components/Skeleton'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {useActorStatus} from '#/features/liveNow'
+import {type app} from '#/lexicons'
 
 export type ThreadItemAnchorReaderSeam = ReaderSeamData & {
   onToggle: () => void
@@ -84,7 +82,7 @@ export function ThreadItemAnchor({
    */
   readerSeam?: ThreadItemAnchorReaderSeam
   onPostSuccess?: (data: OnPostSuccessData) => void
-  threadgateRecord?: AppBskyFeedThreadgate.Record
+  threadgateRecord?: app.bsky.feed.threadgate.Main
   postSource?: PostSource
 }) {
   const postShadow = usePostShadow(item.value.post)
@@ -167,7 +165,7 @@ function ThreadItemAnchorParentReplyLine({isRoot}: {isRoot: boolean}) {
               marginLeft: 'auto',
               marginRight: 'auto',
               flexGrow: 1,
-              backgroundColor: t.atoms.border_contrast_low.borderColor,
+              backgroundColor: getReplyLineColor(t),
             },
           ]}
         />
@@ -188,9 +186,9 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
   item: ThreadPostItem
   isRoot: boolean
   readerSeam?: ThreadItemAnchorReaderSeam
-  postShadow: Shadow<AppBskyFeedDefs.PostView>
+  postShadow: Shadow<app.bsky.feed.defs.PostView>
   onPostSuccess?: (data: OnPostSuccessData) => void
-  threadgateRecord?: AppBskyFeedThreadgate.Record
+  threadgateRecord?: app.bsky.feed.threadgate.Main
   postSource?: PostSource
 }) {
   const inReader = !!readerSeam
@@ -281,6 +279,15 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
       <GalleryBleed>
         <View
           testID={`postThreadItem-by-${post.author.handle}`}
+          // @ts-expect-error web only
+          dataSet={{
+            keyboardNavigationPost: post.uri,
+            keyboardNavigationHref: makeProfileLink(
+              post.author,
+              'post',
+              new AtUri(post.uri).rkey,
+            ),
+          }}
           style={[
             {
               paddingHorizontal: OUTER_SPACE,

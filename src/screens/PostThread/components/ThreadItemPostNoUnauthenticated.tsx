@@ -3,6 +3,7 @@ import {Trans} from '@lingui/react/macro'
 
 import {type ThreadItem} from '#/state/queries/usePostThread/types'
 import {
+  getReplyLineColor,
   LINEAR_AVI_WIDTH,
   OUTER_SPACE,
   REPLY_LINE_WIDTH,
@@ -31,7 +32,7 @@ export function ThreadItemPostNoUnauthenticated({
                 a.mb_xs,
                 {
                   width: REPLY_LINE_WIDTH,
-                  backgroundColor: t.atoms.border_contrast_low.borderColor,
+                  backgroundColor: getReplyLineColor(t),
                 },
               ]}
             />
@@ -66,7 +67,7 @@ export function ThreadItemPostNoUnauthenticated({
               a.h_full,
               {
                 width: REPLY_LINE_WIDTH,
-                backgroundColor: t.atoms.border_contrast_low.borderColor,
+                backgroundColor: getReplyLineColor(t),
               },
             ]}
           />

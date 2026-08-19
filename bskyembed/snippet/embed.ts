@@ -15,7 +15,7 @@ const IS_DEV =
 const EMBED_URL =
   IS_DEV && window.BSKY_DEV_EMBED_URL
     ? window.BSKY_DEV_EMBED_URL
-    : 'https://embed.bsky.app'
+    : DEFAULT_EMBED_URL
 
 window.bluesky = window.bluesky || {
   scan,

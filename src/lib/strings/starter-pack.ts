@@ -1,4 +1,4 @@
-import {AtUri} from '@atproto/api'
+import {AtUri} from '@atproto/syntax'
 
 import {OG_CARD_SERVICE} from '#/lib/constants'
 import type * as bsky from '#/types/bsky'

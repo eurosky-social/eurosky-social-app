@@ -1,4 +1,4 @@
-import {type Did} from '@atproto/api'
+import {type DidString} from '@atproto/syntax'
 
 /**
  * Build the URL where a DID document can be fetched.
@@ -11,7 +11,7 @@ import {type Did} from '@atproto/api'
  * `localhost` (with optional port) is served over http for local dev.
  */
 export function getDidDocumentUrl(
-  did: Did,
+  did: DidString,
   plcDirectory: string,
 ): string | undefined {
   if (did.startsWith('did:plc:')) {

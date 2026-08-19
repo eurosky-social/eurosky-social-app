@@ -1,10 +1,6 @@
 import {useCallback, useMemo, useRef} from 'react'
-import {
-  type AppBskyFeedDefs,
-  type AppBskyFeedSearchPostsV2,
-  AtUri,
-  moderatePost,
-} from '@atproto/api'
+import {AtUri} from '@atproto/syntax'
+import {moderatePost} from '@bsky/sdk/moderation'
 import {
   type InfiniteData,
   type QueryClient,
@@ -12,9 +8,11 @@ import {
   useInfiniteQuery,
 } from '@tanstack/react-query'
 
+import {BLUESKY_APPVIEW_SERVICE} from '#/lib/constants'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
-import {useAgent} from '#/state/session'
+import {useAppviewClient, useSession} from '#/state/session'
 import {type SearchFilters} from '#/screens/Search/searchParams'
+import {app} from '#/lexicons'
 import {
   appendFromMe,
   buildSearchPostsV2Filters,
@@ -48,7 +46,8 @@ export function useSearchPostsV2Query({
   enabled?: boolean
   filters?: SearchFilters
 }) {
-  const agent = useAgent()
+  const client = useAppviewClient()
+  const {hasSession} = useSession()
   const moderationOpts = useModerationOpts()
   const selectArgs = useMemo(
     () => ({
@@ -59,15 +58,15 @@ export function useSearchPostsV2Query({
     [query, filters?.author, filters?.from, moderationOpts],
   )
   const lastRun = useRef<{
-    data: InfiniteData<AppBskyFeedSearchPostsV2.OutputSchema>
+    data: InfiniteData<app.bsky.feed.searchPostsV2.$OutputBody>
     args: typeof selectArgs
-    result: InfiniteData<AppBskyFeedSearchPostsV2.OutputSchema>
+    result: InfiniteData<app.bsky.feed.searchPostsV2.$OutputBody>
   } | null>(null)
 
   return useInfiniteQuery<
-    AppBskyFeedSearchPostsV2.OutputSchema,
+    app.bsky.feed.searchPostsV2.$OutputBody,
     Error,
-    InfiniteData<AppBskyFeedSearchPostsV2.OutputSchema>,
+    InfiniteData<app.bsky.feed.searchPostsV2.$OutputBody>,
     QueryKey,
     string | undefined
   >({
@@ -79,27 +78,45 @@ export function useSearchPostsV2Query({
        * dialog; see buildSearchPostsV2Filters for how the two sources combine.
        */
       const {q, ...embedded} = extractSearchPostsParams(query)
-      const builtFilters = buildSearchPostsV2Filters(embedded, filters)
+      /*
+       * The generated params brand format-constrained strings (uri,
+       * at-identifier, language) as template-literal types. The builder emits
+       * plain strings parsed from user input, which are runtime-identical, so
+       * the brand is asserted rather than re-validated here.
+       */
+      const builtFilters = buildSearchPostsV2Filters(
+        embedded,
+        filters,
+      ) as app.bsky.feed.searchPostsV2.$Params
       const finalQuery = appendFromMe(q, filters?.from === 'me')
-      const res = await agent.app.bsky.feed.searchPostsV2({
-        ...builtFilters,
-        query: finalQuery,
-        limit: 25,
-        cursor: pageParam,
-        /*
-         * v2 calls the recency sort 'recent'; the rest of the app still uses
-         * the v1 'latest' label.
-         */
-        sort: sort === 'latest' ? 'recent' : sort,
-        allTime: true,
-      })
-      return res.data
+      /*
+       * Eurosky does not yet implement the complete v2 search behavior. Pin
+       * this endpoint to Bluesky without changing the configured AppView for
+       * other reads.
+       */
+      return await client.call(
+        app.bsky.feed.searchPostsV2,
+        {
+          ...builtFilters,
+          query: finalQuery,
+          limit: 25,
+          cursor: pageParam,
+          /*
+           * v2 calls the recency sort 'recent'; the rest of the app still uses
+           * the v1 'latest' label.
+           */
+          sort: sort === 'latest' ? 'recent' : sort,
+          allTime: true,
+        },
+        {service: BLUESKY_APPVIEW_SERVICE},
+      )
     },
     initialPageParam: undefined,
     getNextPageParam: lastPage => lastPage.cursor,
-    enabled: enabled ?? !!moderationOpts,
+    /* Bluesky's post search requires authentication. */
+    enabled: hasSession && (enabled ?? !!moderationOpts),
     select: useCallback(
-      (data: InfiniteData<AppBskyFeedSearchPostsV2.OutputSchema>) => {
+      (data: InfiniteData<app.bsky.feed.searchPostsV2.$OutputBody>) => {
         const {moderationOpts, isSearchingSpecificUser} = selectArgs
 
         /*
@@ -175,9 +192,9 @@ export function useSearchPostsV2Query({
 export function* findAllPostsInQueryData(
   queryClient: QueryClient,
   uri: string,
-): Generator<AppBskyFeedDefs.PostView, undefined> {
+): Generator<app.bsky.feed.defs.PostView, undefined> {
   const queryDatas = queryClient.getQueriesData<
-    InfiniteData<AppBskyFeedSearchPostsV2.OutputSchema>
+    InfiniteData<app.bsky.feed.searchPostsV2.$OutputBody>
   >({
     queryKey: [searchPostsQueryKeyRoot],
   })

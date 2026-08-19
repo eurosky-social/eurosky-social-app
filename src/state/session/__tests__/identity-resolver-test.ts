@@ -20,20 +20,19 @@ const mockResolveDid: jest.MockedFunction<
     }
   }>
 > = jest.fn()
-const mockDispose: jest.MockedFunction<() => void> = jest.fn()
-
-jest.mock('../agent', () => ({
-  createPublicAgent() {
+jest.mock('../clients', () => ({
+  getPublicAppviewClient() {
     return {
-      com: {
-        atproto: {
-          identity: {
-            resolveDid: mockResolveDid,
-          },
-        },
+      call(
+        _schema: unknown,
+        params: {handle: string} | {did: string},
+        options?: {signal?: AbortSignal},
+      ) {
+        if ('handle' in params) {
+          return mockResolveHandle(params, options).then(res => res.data)
+        }
+        return mockResolveDid(params, options).then(res => res.data)
       },
-      resolveHandle: mockResolveHandle,
-      dispose: mockDispose,
     }
   },
 }))
@@ -41,6 +40,7 @@ jest.mock('../agent', () => ({
 import {
   createIdentityResolver,
   getPdsServiceUrlFromIdentityInfo,
+  resolveDidServiceEndpoint,
   resolveIdentityUsingAppView,
 } from '../identity-resolver'
 
@@ -48,7 +48,6 @@ describe('appview identity resolver', () => {
   beforeEach(() => {
     mockResolveHandle.mockReset()
     mockResolveDid.mockReset()
-    mockDispose.mockReset()
     jest.restoreAllMocks()
   })
 
@@ -81,7 +80,6 @@ describe('appview identity resolver', () => {
       {handle: 'xan.lol'},
       {signal},
     )
-    expect(mockDispose).toHaveBeenCalled()
     expect(identity).toEqual({
       did: 'did:plc:alice12345678901234567890',
       handle: 'xan.lol',
@@ -256,9 +254,35 @@ describe('appview identity resolver', () => {
       {did: 'did:web:alice.example'},
       {signal: undefined},
     )
-    expect(mockDispose).toHaveBeenCalled()
     expect(identity.did).toBe('did:web:alice.example')
     expect(identity.handle).toBe('alice.example')
+  })
+
+  it('resolves a service endpoint from its configured DID', async () => {
+    const signal = new AbortController().signal
+    jest.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          id: 'did:web:chat.example',
+          service: [
+            {
+              id: 'did:web:chat.example#bsky_chat',
+              type: 'BskyChatService',
+              serviceEndpoint: 'https://chat.example',
+            },
+          ],
+        }),
+    } as Response)
+
+    await expect(
+      resolveDidServiceEndpoint({
+        did: 'did:web:chat.example',
+        id: '#bsky_chat',
+        type: 'BskyChatService',
+        signal,
+      }),
+    ).resolves.toBe('https://chat.example')
   })
 
   it('extracts the pds service url from resolved identity info', () => {

@@ -10,15 +10,16 @@ steps require external accounts and cannot be done from the repo alone.
 |-------|-------|
 | App display name | `mu` (`app.config.js` `expo.name`; matches `brand.json`) |
 | iOS bundle ID | `social.mu.app` |
-| iOS extension bundle IDs | `social.mu.app.Share-with-Bluesky`, `social.mu.app.BlueskyNSE`, `social.mu.app.AppClip` |
+| iOS extension bundle IDs | `social.mu.app.Share-with-Bluesky`, `social.mu.app.BlueskyNSE` |
 | Android package | `social.mu.app` |
 | App Group (iOS) | `group.social.mu.app` |
 | Expo owner (org slug) | `eurosky` (`app.config.js` `expo.owner`) |
+| Apple team | Stichting Modal (`2472Y2UN4X`) |
 | EAS project | `@eurosky/mu-social` (slug `mu-social`, id `52e14cdd-ab10-4b16-a0f4-fc918a9fa323`) |
 | Sentry org | `eurosky` (only used when `SENTRY_AUTH_TOKEN` is set) |
 
 Placeholders that still need real values (search the repo for `REPLACE_WITH_`):
-`eas.json` submit block (`ascAppId`, `appleTeamId`, ASC API key id/issuer).
+`eas.json` submit block (`ascAppId` and ASC API key id/issuer).
 
 ## Prerequisites
 
@@ -39,26 +40,25 @@ or EAS commands error with a slug-mismatch.
 
 1. In the Apple Developer portal, register **Identifiers**:
    - App ID `social.mu.app` — enable capabilities: App Groups, Push
-     Notifications, Communication Notifications, Associated Domains (later),
-     Increased Memory Limit, Extended Virtual Addressing.
-   - App IDs for the three extensions: `social.mu.app.Share-with-Bluesky`,
-     `social.mu.app.BlueskyNSE`, `social.mu.app.AppClip`.
-   - App Group `group.social.mu.app`, and attach it to the main app +
-     Share + NSE + Clip App IDs.
+     Notifications, Communication Notifications, Increased Memory Limit, and
+     Extended Virtual Addressing.
+   - App IDs for the two extensions: `social.mu.app.Share-with-Bluesky` and
+     `social.mu.app.BlueskyNSE`.
+   - App Group `group.social.mu.app`, and attach it to the main app + Share +
+     NSE App IDs.
 2. In **App Store Connect**, create a new app for `social.mu.app`. Copy its
    numeric **Apple ID** → `eas.json` `submit.production.ios.ascAppId`.
-   (Also update the App Clip smart-banner meta in
-   `src/screens/StarterPack/StarterPackLandingScreen.tsx` — the `app-id=` value
-   should be this numeric id.)
+   (Also add the numeric ID to any regular App Store smart-banner metadata if
+   that is restored.)
 3. Create an **App Store Connect API key** (Users and Access → Integrations →
    App Store Connect API, role: App Manager). Download the `.p8`. Fill
    `eas.json`: `ascApiKeyId`, `ascApiKeyIssuerId`, and place the file at
-   `ascApiKeyPath` (`./credentials/asc-api-key.p8`, git-ignored). Set
-   `appleTeamId` too.
+   `ascApiKeyPath` (`./credentials/asc-api-key.p8`, git-ignored). The Stichting
+   Modal Apple Team ID is already configured in `eas.json`.
 4. Let EAS manage signing certs + provisioning profiles:
    `eas credentials -p ios` (or it will prompt on first `eas build`). Sign in
    with the Apple account when asked; EAS creates the distribution cert and
-   profiles for the app + all extensions.
+   profiles for the app + retained extensions.
 
 ## 3. Google (Android)
 
@@ -73,16 +73,17 @@ or EAS commands error with a slug-mismatch.
 4. First upload to a track usually must be done manually (a first AAB via the
    Play Console UI) before `eas submit` can push to `internal`/`production`.
 
-## 4. Firebase (Android push / FCM) — required for Android builds
+## 4. Firebase (Android push / FCM)
 
-The committed `google-services.json` is the upstream example
-(`package_name: xyz.blueskyweb.app`) and will fail the Google Services Gradle
-plugin against `social.mu.app`.
+Firebase can be deferred while push is intentionally unsupported. The app
+config omits `googleServicesFile` when `google-services.json` is absent, so an
+Android build can still compile, but remote Android push will not work.
 
 1. Create a Firebase project for Eurosky, add an Android app with package
    `social.mu.app`.
-2. Download the real `google-services.json` and replace the file at repo root.
-   Its `package_name` must be `social.mu.app`.
+2. Download the real `google-services.json` to the repo root. Its
+   `package_name` must be `social.mu.app`; do not use the upstream
+   `google-services.json.example` unchanged.
 3. Upload the FCM/APNs keys to your push backend as needed (the app sends
    `appId: 'social.mu.app'` to the notification service —
    `src/lib/notifications/notifications.ts`; the backend must accept that topic).
@@ -126,13 +127,14 @@ the name differently, update those paths in
   hardcoded in `src/Navigation.tsx`, `src/lib/hooks/useIntentHandler.ts`,
   `src/lib/parseLinkingUrl.ts`, tests). Changing it avoids collision with the
   real Bluesky app on-device but touches many files — separate pass.
-- **Universal links / Associated Domains**: `applinks:bsky.app` etc. in
-  `app.config.js` point to Bluesky-controlled domains whose AASA we can't edit.
-  Point these at a Eurosky domain and host `/.well-known/apple-app-site-association`
-  there before enabling.
-- **OTA updates**: `updates.url` is `https://updates.bsky.app/manifest`
-  (Bluesky's). Stand up a Eurosky EAS Update / self-hosted manifest before
-  enabling `bundle-deploy-eas-update.yml`.
+- **App Clip**: removed from the v1 native targets and smart-banner metadata.
+  Restore it only after Mu owns the required web association and provisioning.
+- **Universal links / Associated Domains**: removed for v1 because Bluesky's
+  AASA and Android asset-links files do not authorize Mu. Point these at a
+  Mu-controlled domain and host the association files before restoring them.
+- **OTA updates**: disabled, with no update URL or signing certificate embedded.
+  Stand up a Mu-controlled update service and signing key before restoring the
+  config or enabling `bundle-deploy-eas-update.yml`.
 - **Internal identifiers left as-is (not user-visible, not blockers)**: the
   Android SharedPreferences file name `"xyz.blueskyweb.app"`
   (`modules/expo-background-notification-handler/.../NotificationPrefs.kt`,

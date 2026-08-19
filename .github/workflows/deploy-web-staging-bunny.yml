@@ -57,6 +57,12 @@ jobs:
           # Non-prod: ship the disallow-all robots.txt so staging stays out of
           # search (paired with the zone's noindex X-Robots-Tag edge rule).
           ROBOTS_MODE: disallow-all
+          # Route every AppView path to Eurosky: public/logged-out reads go
+          # directly to this URL, while authenticated reads go through the PDS
+          # with this DID's #bsky_appview proxy target. The configured AppView
+          # DID is also the default for EXPO_PUBLIC_BLUESKY_PROXY_DID.
+          EXPO_PUBLIC_APPVIEW_URL: https://api.eurosky.network
+          EXPO_PUBLIC_APPVIEW_DID: did:web:api.eurosky.network
           # Staging is its own atproto OAuth client: client_id derives from this
           # base URL (gen-oauth-metadata.js emits the metadata into the build,
           # so staging self-publishes it at /oauth-client-metadata.json).
@@ -71,6 +77,8 @@ jobs:
           EXPO_PUBLIC_ENABLE_GEOLOCATION: 'true'
           EXPO_PUBLIC_GEOLOCATION_URL: https://ip.mu.social
           EXPO_PUBLIC_ENABLE_LIVE_EVENTS: 'false'
+          # Seasonal sports module is currently retired.
+          EXPO_PUBLIC_ENABLE_SPORTS: 'false'
           EXPO_PUBLIC_ENABLE_APP_CONFIG: 'false'
           # Product-analytics events otherwise POST to events.bsky.app. Disabled;
           # GrowthBook flag fetching is unaffected (separate from this client).

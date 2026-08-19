@@ -1,12 +1,7 @@
 import {Fragment, type ReactNode, useMemo} from 'react'
 import {Text as RNText, View} from 'react-native'
-import {
-  AppBskyFeedDefs,
-  AppBskyFeedPost,
-  type AppBskyFeedThreadgate,
-  AtUri,
-  RichText as RichTextAPI,
-} from '@atproto/api'
+import {AtUri, type AtUriString} from '@atproto/syntax'
+import {RichText as RichTextAPI} from '@bsky/sdk/richtext'
 import {Plural, Trans, useLingui} from '@lingui/react/macro'
 import {useQuery} from '@tanstack/react-query'
 
@@ -22,7 +17,7 @@ import {FeedFeedbackProvider, useFeedFeedback} from '#/state/feed-feedback'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {sortAndAnnotateThreadItems} from '#/state/queries/usePostThread/traversal'
 import {postThreadQueryKeyRoot} from '#/state/queries/usePostThread/types'
-import {useAgent, useSession} from '#/state/session'
+import {useAppviewClient, useSession} from '#/state/session'
 import {type OnPostSuccessData} from '#/state/shell/composer'
 import {useMergedThreadgateHiddenReplies} from '#/state/threadgate-hidden-replies'
 import {type PostSource} from '#/state/unstable-post-source'
@@ -34,6 +29,7 @@ import {
 } from '#/screens/PostThread/components/ThreadItemPost'
 import {ThreadItemReadMore} from '#/screens/PostThread/components/ThreadItemReadMore'
 import {
+  getReplyLineColor,
   OUTER_SPACE,
   READER_BRACKET_WIDTH,
   READER_LINE_INDENT,
@@ -50,6 +46,7 @@ import {PostEditedIndicator} from '#/components/PostEditedIndicator'
 import * as Prompt from '#/components/Prompt'
 import {Text} from '#/components/Typography'
 import {WhoCanReply} from '#/components/WhoCanReply'
+import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 
 /**
@@ -80,7 +77,7 @@ export function ReaderBracket({
         borderLeftWidth: READER_BRACKET_WIDTH,
         borderTopWidth: READER_BRACKET_WIDTH,
         borderBottomWidth: READER_BRACKET_WIDTH,
-        borderColor: t.atoms.border_contrast_low.borderColor,
+        borderColor: getReplyLineColor(t),
       }}
     />
   )
@@ -109,7 +106,7 @@ export function ReaderSeamControls({
    */
   showDetails?: boolean
   onPostSuccess?: (data: OnPostSuccessData) => void
-  threadgateRecord?: AppBskyFeedThreadgate.Record
+  threadgateRecord?: app.bsky.feed.threadgate.Main
 }) {
   const postShadow = usePostShadow(postItem.value.post)
 
@@ -140,12 +137,12 @@ function ReaderSeamControlsInner({
   threadgateRecord,
 }: {
   post: ThreadPostItem
-  postShadow: Shadow<AppBskyFeedDefs.PostView>
+  postShadow: Shadow<app.bsky.feed.defs.PostView>
   postSource?: PostSource
   showComposePrompt?: boolean
   showDetails?: boolean
   onPostSuccess?: (data: OnPostSuccessData) => void
-  threadgateRecord?: AppBskyFeedThreadgate.Record
+  threadgateRecord?: app.bsky.feed.threadgate.Main
 }) {
   const t = useTheme()
   const {t: l, i18n} = useLingui()
@@ -176,7 +173,9 @@ function ReaderSeamControlsInner({
 
   const reason = postSource?.post.reason
   const viaRepost =
-    AppBskyFeedDefs.isReasonRepost(reason) && reason.uri && reason.cid
+    bsky.isType(app.bsky.feed.defs.reasonRepost, reason) &&
+    reason.uri &&
+    reason.cid
       ? {uri: reason.uri, cid: reason.cid}
       : undefined
 
@@ -334,16 +333,13 @@ function ReaderSeamControlsInner({
   )
 }
 
-function BackdatedPostIndicator({post}: {post: AppBskyFeedDefs.PostView}) {
+function BackdatedPostIndicator({post}: {post: app.bsky.feed.defs.PostView}) {
   const t = useTheme()
   const {t: l, i18n} = useLingui()
   const control = Prompt.usePromptControl()
 
   const indexedAt = new Date(post.indexedAt)
-  const createdAt = bsky.dangerousIsType<AppBskyFeedPost.Record>(
-    post.record,
-    AppBskyFeedPost.isRecord,
-  )
+  const createdAt = bsky.isType(app.bsky.feed.post, post.record)
     ? new Date(post.record.createdAt)
     : new Date(post.indexedAt)
 
@@ -444,11 +440,11 @@ export function ReaderSeamReplies({
   href: string
   sort: string
   onPostSuccess?: (data: OnPostSuccessData) => void
-  threadgateRecord?: AppBskyFeedThreadgate.Record
+  threadgateRecord?: app.bsky.feed.threadgate.Main
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
-  const agent = useAgent()
+  const appviewClient = useAppviewClient()
   const moderationOpts = useModerationOpts()
   const threadgateHiddenReplies = useMergedThreadgateHiddenReplies({
     threadgateRecord,
@@ -462,16 +458,19 @@ export function ReaderSeamReplies({
       {anchor: uri, sort},
     ],
     async queryFn() {
-      const {data: res} = await agent.app.bsky.unspecced.getPostThreadV2({
-        anchor: uri,
-        below: 1,
-        sort,
-      })
+      const data = await appviewClient.call(
+        app.bsky.unspecced.getPostThreadV2,
+        {
+          anchor: uri as AtUriString,
+          below: 1,
+          sort,
+        },
+      )
       /*
        * Everything under the `post-thread-v2` query key root gets scanned by
        * the post shadow cache integration, which expects a `{thread}` shape.
        */
-      return {thread: res.thread || []}
+      return {thread: data.thread || []}
     },
   })
 
@@ -566,7 +565,7 @@ export function ReaderSeamReplies({
         style={{
           height: REPLY_LINE_WIDTH,
           marginLeft: READER_LINE_INDENT,
-          backgroundColor: t.atoms.border_contrast_low.borderColor,
+          backgroundColor: getReplyLineColor(t),
         }}
       />
     </>

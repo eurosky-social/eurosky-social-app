@@ -7,14 +7,15 @@ import {
 import {getContentLanguages} from '#/state/preferences/languages'
 import {STALE} from '#/state/queries'
 import {usePreferencesQuery} from '#/state/queries/preferences'
-import {useAgent} from '#/state/session'
+import {useBlueskyAppviewRequestTarget} from '#/state/session'
+import {app} from '#/lexicons'
 
 export const DEFAULT_LIMIT = 15
 
 export const createGetSuggestedFeedsQueryKey = () => ['suggested-feeds']
 
 export function useGetSuggestedFeedsQuery({enabled}: {enabled?: boolean}) {
-  const agent = useAgent()
+  const {client, service} = useBlueskyAppviewRequestTarget()
   const {data: preferences} = usePreferencesQuery()
   const savedFeeds = preferences?.savedFeeds
 
@@ -24,16 +25,15 @@ export function useGetSuggestedFeedsQuery({enabled}: {enabled?: boolean}) {
     queryKey: createGetSuggestedFeedsQueryKey(),
     queryFn: async () => {
       const contentLangs = getContentLanguages().join(',')
-      const {data} = await agent.app.bsky.unspecced.getSuggestedFeeds(
-        {
-          limit: DEFAULT_LIMIT,
-        },
-        {
-          headers: {
-            ...createBskyTopicsHeader(aggregateUserInterests(preferences)),
-            'Accept-Language': contentLangs,
-          },
-        },
+      const params = {limit: DEFAULT_LIMIT}
+      const headers = {
+        ...createBskyTopicsHeader(aggregateUserInterests(preferences)),
+        'Accept-Language': contentLangs,
+      }
+      const data = await client.call(
+        app.bsky.unspecced.getSuggestedFeeds,
+        params,
+        {headers, service},
       )
 
       return {

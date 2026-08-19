@@ -19,9 +19,12 @@
  */
 import brand from '#/config/brand.json'
 
+const appViewUrlOverride = process.env.EXPO_PUBLIC_APPVIEW_URL as
+  string | undefined
+const appViewDidOverride = process.env.EXPO_PUBLIC_APPVIEW_DID as
+  string | undefined
 const decorationEnabledOverride = process.env.EXPO_PUBLIC_DECO_ENABLED as
-  | string
-  | undefined
+  string | undefined
 const decorationListUrisOverride = process.env
   .EXPO_PUBLIC_DECO_SUBSCRIBER_LIST_URIS as string | undefined
 
@@ -37,7 +40,17 @@ export const BRAND = {
     hosts: brand.hosts,
   },
   links: brand.links,
-  services: brand.services,
+  services: {
+    ...brand.services,
+    /*
+     * A self-hosted AppView commonly exposes one origin for both direct and
+     * public reads. Keep the two brand defaults distinct, but let a deployment
+     * move every AppView read with one URL override.
+     */
+    publicApi: appViewUrlOverride || brand.services.publicApi,
+    appView: appViewUrlOverride || brand.services.appView,
+    appViewDid: appViewDidOverride || brand.services.appViewDid,
+  },
   verification: brand.verification,
   decorations: {
     enabled:

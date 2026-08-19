@@ -34,11 +34,8 @@ import {DeactivateAccountDialog} from './components/DeactivateAccountDialog'
 import {DeleteAccountDialog} from './components/DeleteAccountDialog'
 import {ExportCarDialog} from './components/ExportCarDialog'
 
-/**
- * mu fork: account deactivation and deletion are temporarily hidden during the
- * beta. Flip to `true` to restore both the menu items and their dialogs.
- */
-const SHOW_ACCOUNT_DELETION: boolean = false
+/** Account deletion must remain available anywhere account creation is offered. */
+const SHOW_ACCOUNT_DELETION: boolean = true
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'AccountSettings'>
 export function AccountSettingsScreen({}: Props) {
@@ -196,45 +193,37 @@ export function AccountSettingsScreen({}: Props) {
             </SettingsList.ItemText>
             <SettingsList.Chevron />
           </SettingsList.PressableItem>
-          {SHOW_ACCOUNT_DELETION && (
-            <>
-              <SettingsList.PressableItem
-                label={l`Deactivate account`}
-                onPress={() => deactivateAccountControl.open()}
-                destructive>
-                <SettingsList.ItemIcon icon={FreezeIcon} />
-                <SettingsList.ItemText>
-                  <Trans>Deactivate account</Trans>
-                </SettingsList.ItemText>
-                <SettingsList.Chevron />
-              </SettingsList.PressableItem>
-              <SettingsList.PressableItem
-                label={l`Delete account`}
-                onPress={() => deleteAccountControl.open()}
-                destructive>
-                <SettingsList.ItemIcon icon={Trash_Stroke2_Corner2_Rounded} />
-                <SettingsList.ItemText>
-                  <Trans>Delete account</Trans>
-                </SettingsList.ItemText>
-                <SettingsList.Chevron />
-              </SettingsList.PressableItem>
-            </>
-          )}
+          <SettingsList.PressableItem
+            label={l`Deactivate account`}
+            onPress={() => deactivateAccountControl.open()}
+            destructive>
+            <SettingsList.ItemIcon icon={FreezeIcon} />
+            <SettingsList.ItemText>
+              <Trans>Deactivate account</Trans>
+            </SettingsList.ItemText>
+            <SettingsList.Chevron />
+          </SettingsList.PressableItem>
+          <SettingsList.PressableItem
+            label={l`Delete account`}
+            onPress={() => deleteAccountControl.open()}
+            destructive>
+            <SettingsList.ItemIcon icon={Trash_Stroke2_Corner2_Rounded} />
+            <SettingsList.ItemText>
+              <Trans>Delete account</Trans>
+            </SettingsList.ItemText>
+            <SettingsList.Chevron />
+          </SettingsList.PressableItem>
         </SettingsList.Container>
       </Layout.Content>
       <BirthDateSettingsDialog control={birthdayControl} />
       <ChangeHandleDialog control={changeHandleControl} />
       <ChangePasswordDialog control={changePasswordControl} />
       <ExportCarDialog control={exportCarControl} />
-      {SHOW_ACCOUNT_DELETION && (
-        <>
-          <DeactivateAccountDialog control={deactivateAccountControl} />
-          <DeleteAccountDialog
-            control={deleteAccountControl}
-            deactivateDialogControl={deactivateAccountControl}
-          />
-        </>
-      )}
+      <DeactivateAccountDialog control={deactivateAccountControl} />
+      <DeleteAccountDialog
+        control={deleteAccountControl}
+        deactivateDialogControl={deactivateAccountControl}
+      />
     </Layout.Screen>
   )
 }

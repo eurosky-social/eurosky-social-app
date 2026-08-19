@@ -8,6 +8,7 @@
  * artifact src/config/brand-logo.generated.json, consumed by:
  *   - <BrandLogo> (src/components/icons) via SvgXml,
  *   - the web pre-boot splash codegen (scripts/sync-brand-web.mjs),
+ *   - the external asset generator (scripts/gen-brand-assets.mjs),
  *   - the favicon/safari-mask generator (scripts/gen-brand-favicons.mjs).
  *
  * Logo fills follow a tiny convention so a single SVG can be themed:

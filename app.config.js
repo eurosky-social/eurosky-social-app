@@ -30,6 +30,7 @@ const GOOGLE_SERVICES_FILE = (() => {
 const brand = require('./src/config/brand.json')
 const brandMeta = brand
 const BRAND_ACCENT = brand.colors.accents[brand.colors.defaultAccent]
+const APPLE_TEAM_ID = process.env.EXPO_APPLE_TEAM_ID ?? '2472Y2UN4X'
 
 /**
  * @param {import('@expo/config-types').ExpoConfig} _config
@@ -51,17 +52,6 @@ module.exports = function (_config) {
   const IS_TESTFLIGHT = process.env.EXPO_PUBLIC_ENV === 'testflight'
   const IS_PRODUCTION = process.env.EXPO_PUBLIC_ENV === 'production'
   const IS_DEV = !IS_TESTFLIGHT && !IS_PRODUCTION
-
-  const ASSOCIATED_DOMAINS = [
-    'applinks:bsky.app',
-    'applinks:staging.bsky.app',
-    'appclips:bsky.app',
-    'appclips:go.bsky.app', // Allows App Clip to work when scanning QR codes
-    // When testing local services, enter an ngrok (et al) domain here. It must use a standard HTTP/HTTPS port.
-    ...(IS_DEV || IS_TESTFLIGHT ? [] : []),
-  ]
-
-  const UPDATES_ENABLED = IS_TESTFLIGHT || IS_PRODUCTION
 
   const USE_SENTRY = Boolean(process.env.SENTRY_AUTH_TOKEN)
 
@@ -94,7 +84,8 @@ module.exports = function (_config) {
       ios: {
         supportsTablet: false,
         bundleIdentifier: 'social.mu.app',
-        appleTeamId: process.env.EXPO_APPLE_TEAM_ID,
+        buildNumber: process.env.BSKY_IOS_BUILD_NUMBER ?? '1',
+        appleTeamId: APPLE_TEAM_ID,
         config: {
           usesNonExemptEncryption: false,
         },
@@ -111,7 +102,7 @@ module.exports = function (_config) {
             'Used to save images to your library.',
           NSPhotoLibraryUsageDescription:
             'Used for profile pictures, posts, and other kinds of content',
-          CFBundleSpokenName: 'Blue Sky',
+          CFBundleSpokenName: 'mu',
           CFBundleLocalizations: [
             'en',
             'an',
@@ -156,7 +147,6 @@ module.exports = function (_config) {
             'zh-Hant',
           ],
         },
-        associatedDomains: ASSOCIATED_DOMAINS,
         entitlements: {
           'com.apple.developer.kernel.increased-memory-limit': true,
           'com.apple.developer.kernel.extended-virtual-addressing': true,
@@ -233,27 +223,6 @@ module.exports = function (_config) {
         },
         googleServicesFile: GOOGLE_SERVICES_FILE,
         package: 'social.mu.app',
-        intentFilters: [
-          {
-            action: 'VIEW',
-            autoVerify: true,
-            data: [
-              {
-                scheme: 'https',
-                host: 'bsky.app',
-              },
-              ...(IS_DEV
-                ? [
-                    {
-                      scheme: 'http',
-                      host: 'localhost:19006',
-                    },
-                  ]
-                : []),
-            ],
-            category: ['BROWSABLE', 'DEFAULT'],
-          },
-        ],
       },
       web: {
         // Eurosky fork: web-only display name -> drives the static
@@ -272,20 +241,13 @@ module.exports = function (_config) {
         // (expo-pwa: theme_color = web.themeColor ?? primaryColor).
         themeColor: BRAND_ACCENT.primary_500,
       },
+      /*
+       * OTA delivery is intentionally disabled until Mu owns the update
+       * service and signing key. Keep expo-updates installed so this can be
+       * restored without changing the runtime integration.
+       */
       updates: {
-        url: 'https://updates.bsky.app/manifest',
-        enabled: UPDATES_ENABLED,
-        fallbackToCacheTimeout: 30000,
-        codeSigningCertificate: UPDATES_ENABLED
-          ? './code-signing/certificate.pem'
-          : undefined,
-        codeSigningMetadata: UPDATES_ENABLED
-          ? {
-              keyid: 'main',
-              alg: 'rsa-v1_5-sha256',
-            }
-          : undefined,
-        checkAutomatically: 'NEVER',
+        enabled: false,
       },
       plugins: [
         'expo-video',
@@ -346,7 +308,6 @@ module.exports = function (_config) {
             networkInstrumentation: true,
           },
         ],
-        './plugins/starterPackAppClipExtension/withStarterPackAppClip.js',
         './plugins/withGradleJVMHeapSizeIncrease.js',
         './plugins/withAndroidManifestLargeHeapPlugin.js',
         './plugins/withAndroidManifestFCMIconPlugin.js',
@@ -416,55 +377,6 @@ module.exports = function (_config) {
               android: './assets/app-icons/android_icon_legacy_dark.png',
               prerendered: true,
             },
-
-            /**
-             * Bluesky+ core set
-             */
-            core_aurora: {
-              ios: './assets/app-icons/ios_icon_core_aurora.png',
-              android: './assets/app-icons/android_icon_core_aurora.png',
-              prerendered: true,
-            },
-            core_bonfire: {
-              ios: './assets/app-icons/ios_icon_core_bonfire.png',
-              android: './assets/app-icons/android_icon_core_bonfire.png',
-              prerendered: true,
-            },
-            core_sunrise: {
-              ios: './assets/app-icons/ios_icon_core_sunrise.png',
-              android: './assets/app-icons/android_icon_core_sunrise.png',
-              prerendered: true,
-            },
-            core_sunset: {
-              ios: './assets/app-icons/ios_icon_core_sunset.png',
-              android: './assets/app-icons/android_icon_core_sunset.png',
-              prerendered: true,
-            },
-            core_midnight: {
-              ios: './assets/app-icons/ios_icon_core_midnight.png',
-              android: './assets/app-icons/android_icon_core_midnight.png',
-              prerendered: true,
-            },
-            core_flat_blue: {
-              ios: './assets/app-icons/ios_icon_core_flat_blue.png',
-              android: './assets/app-icons/android_icon_core_flat_blue.png',
-              prerendered: true,
-            },
-            core_flat_white: {
-              ios: './assets/app-icons/ios_icon_core_flat_white.png',
-              android: './assets/app-icons/android_icon_core_flat_white.png',
-              prerendered: true,
-            },
-            core_flat_black: {
-              ios: './assets/app-icons/ios_icon_core_flat_black.png',
-              android: './assets/app-icons/android_icon_core_flat_black.png',
-              prerendered: true,
-            },
-            core_classic: {
-              ios: './assets/app-icons/ios_icon_core_classic.png',
-              android: './assets/app-icons/android_icon_core_classic.png',
-              prerendered: true,
-            },
           },
         ],
         ['expo-screen-orientation', {initialOrientation: 'PORTRAIT_UP'}],
@@ -473,7 +385,7 @@ module.exports = function (_config) {
           'expo-contacts',
           {
             contactsPermission:
-              'I agree to allow Bluesky to use my contacts for friend discovery until I opt out.',
+              'Allow mu to access your contacts for friend discovery. You can opt out at any time.',
           },
         ],
       ],
@@ -500,10 +412,6 @@ module.exports = function (_config) {
                         'group.social.mu.app',
                       ],
                     },
-                  },
-                  {
-                    targetName: 'BlueskyClip',
-                    bundleIdentifier: 'social.mu.app.AppClip',
                   },
                 ],
               },

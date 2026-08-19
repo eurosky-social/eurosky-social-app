@@ -18,15 +18,7 @@ import {
   View,
   type ViewStyle,
 } from 'react-native'
-import {
-  type AppBskyActorDefs,
-  AppBskyEmbedExternal,
-  AppBskyEmbedGallery,
-  AppBskyEmbedImages,
-  AppBskyEmbedVideo,
-  type AppBskyFeedDefs,
-  type RichText as RichTextType,
-} from '@atproto/api'
+import {type RichText as RichTextType} from '@bsky/sdk/richtext'
 import {useLingui} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
 
@@ -72,6 +64,10 @@ import {
 import {FeedTrendingTopicsInterstitial} from '#/components/interstitials/FeedTrendingTopics'
 import {TrendingInterstitial} from '#/components/interstitials/Trending'
 import {TrendingVideos as TrendingVideosInterstitial} from '#/components/interstitials/TrendingVideos'
+import {
+  PolicyUpdateBanner,
+  usePolicyUpdateBannerState,
+} from '#/components/PolicyUpdateBanner'
 import {isStandardSiteEmbed} from '#/components/Post/Embed/StandardSiteEmbed/utils'
 import {RichText} from '#/components/RichText'
 import {useAnalytics} from '#/analytics'
@@ -82,6 +78,8 @@ import {
   isStatusValidForViewers,
   useLiveNowConfig,
 } from '#/features/liveNow'
+import {app} from '#/lexicons'
+import * as bsky from '#/types/bsky'
 import {ComposerPrompt} from '../feeds/ComposerPrompt'
 import {DiscoverFallbackHeader} from './DiscoverFallbackHeader'
 import {FeedShutdownMsg} from './FeedShutdownMsg'
@@ -174,6 +172,10 @@ type FeedRow =
       key: string
     }
   | {
+      type: 'policyUpdateBanner'
+      key: string
+    }
+  | {
       type: 'composerPrompt'
       key: string
     }
@@ -256,7 +258,7 @@ let PostFeed = ({
   desktopFixedHeightOffset?: number
   ListHeaderComponent?: React.ReactElement | (() => React.ReactElement)
   extraData?: Record<string, unknown>
-  savedFeedConfig?: AppBskyActorDefs.SavedFeed
+  savedFeedConfig?: app.bsky.actor.defs.SavedFeed
   initialNumToRender?: number
   isVideoFeed?: boolean
   lastFetchDate?: () => number
@@ -290,7 +292,7 @@ let PostFeed = ({
     () => new Set<string>(),
   )
   const onPressShowLess = useCallback(
-    (interaction: AppBskyFeedDefs.Interaction) => {
+    (interaction: app.bsky.feed.defs.Interaction) => {
       if (interaction.item) {
         const uri = interaction.item
         setHasPressedShowLessUris(prev => new Set([...prev, uri]))
@@ -418,6 +420,7 @@ let PostFeed = ({
   const {trendingVideoDisabled} = useTrendingSettings()
 
   const ageAssuranceBannerState = useAgeAssuranceBannerState()
+  const policyUpdateBannerState = usePolicyUpdateBannerState()
   const selectedFeed = useSelectedFeed()
   /**
    * Cached value of whether the current feed was selected at startup. We don't
@@ -492,7 +495,7 @@ let PostFeed = ({
               )
               if (
                 item &&
-                AppBskyEmbedVideo.isView(item.post.embed) &&
+                bsky.isType(app.bsky.embed.video.view, item.post.embed) &&
                 !blockedOrMutedAuthors.includes(item.post.author.did)
               ) {
                 videos.push({
@@ -544,6 +547,21 @@ let PostFeed = ({
               if (hasSession) {
                 if (feedKind === 'discover') {
                   if (sliceIndex === 0) {
+                    /*
+                     * Inserted before the progress guide branch, not inside
+                     * its `else` like the age assurance banner. That banner is
+                     * suppressed whenever the progress guide is showing; a
+                     * policy notice shouldn't be.
+                     */
+                    if (
+                      isCurrentFeedAtStartupSelected &&
+                      policyUpdateBannerState.visible
+                    ) {
+                      arr.push({
+                        type: 'policyUpdateBanner',
+                        key: 'policyUpdateBanner-' + sliceIndex,
+                      })
+                    }
                     if (showProgressInterstitial) {
                       arr.push({
                         type: 'interstitialProgressGuide',
@@ -601,6 +619,15 @@ let PostFeed = ({
                   }
                 } else if (feedKind === 'following') {
                   if (sliceIndex === 0) {
+                    if (
+                      isCurrentFeedAtStartupSelected &&
+                      policyUpdateBannerState.visible
+                    ) {
+                      arr.push({
+                        type: 'policyUpdateBanner',
+                        key: 'policyUpdateBanner-' + sliceIndex,
+                      })
+                    }
                     // Show composer prompt for Following feed
                     if (hasSession) {
                       arr.push({
@@ -622,6 +649,12 @@ let PostFeed = ({
                    * startup and the banner is eligible to be shown.
                    */
                   if (sliceIndex === 0 && isCurrentFeedAtStartupSelected) {
+                    if (policyUpdateBannerState.visible) {
+                      arr.push({
+                        type: 'policyUpdateBanner',
+                        key: 'policyUpdateBanner-' + sliceIndex,
+                      })
+                    }
                     arr.push({
                       type: 'ageAssuranceBanner',
                       key: 'ageAssuranceBanner-' + sliceIndex,
@@ -744,6 +777,7 @@ let PostFeed = ({
     areVideoFeedsEnabled,
     hasPressedShowLessUris,
     ageAssuranceBannerState,
+    policyUpdateBannerState.visible,
     isCurrentFeedAtStartupSelected,
     blockedOrMutedAuthors,
     trendingIndices,
@@ -857,6 +891,8 @@ let PostFeed = ({
         return <ProgressGuide />
       } else if (row.type === 'ageAssuranceBanner') {
         return <AgeAssuranceDismissibleFeedBanner />
+      } else if (row.type === 'policyUpdateBanner') {
+        return <PolicyUpdateBanner />
       } else if (row.type === 'interstitialTrending') {
         return <TrendingInterstitial />
       } else if (row.type === 'interstitialFeedTrendingTopics') {
@@ -1030,13 +1066,13 @@ let PostFeed = ({
 
       // Events that should fire exactly once for every new post, regardless of
       // its position within a slice or video grid row.
-      const onPostSeen = (post: AppBskyFeedDefs.PostView) => {
+      const onPostSeen = (post: app.bsky.feed.defs.PostView) => {
         if (seenPerPostUrisRef.current.has(post.uri)) return
         seenPerPostUrisRef.current.add(post.uri)
 
         // Standard site embed view tracking
         if (
-          AppBskyEmbedExternal.isView(post.embed) &&
+          bsky.isType(app.bsky.embed.external.view, post.embed) &&
           isStandardSiteEmbed(post.embed.external)
         ) {
           ax.metric('embed:standardSite:view', {url: post.embed.external.uri})
@@ -1044,13 +1080,21 @@ let PostFeed = ({
 
         // Photo embed impression tracking
         if (
-          AppBskyEmbedImages.isView(post.embed) ||
-          AppBskyEmbedGallery.isView(post.embed)
+          bsky.isType(app.bsky.embed.images.view, post.embed) ||
+          bsky.isType(app.bsky.embed.gallery.view, post.embed)
         ) {
-          const totalImages = AppBskyEmbedGallery.isView(post.embed)
-            ? post.embed.items.filter(AppBskyEmbedGallery.isViewImage).length
+          const totalImages = bsky.isType(
+            app.bsky.embed.gallery.view,
+            post.embed,
+          )
+            ? post.embed.items.filter(item =>
+                bsky.isType(app.bsky.embed.gallery.viewImage, item),
+              ).length
             : post.embed.images.length
-          const useExpandedLayout = AppBskyEmbedGallery.isView(post.embed)
+          const useExpandedLayout = bsky.isType(
+            app.bsky.embed.gallery.view,
+            post.embed,
+          )
             ? totalImages > 4
             : ax.features.enabled(ax.features.PostGalleryEmbedEnable)
           const layout =

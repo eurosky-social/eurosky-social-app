@@ -1,4 +1,3 @@
-import {type AppBskyGraphSearchStarterPacksV2} from '@atproto/api'
 import {
   type InfiniteData,
   keepPreviousData,
@@ -6,8 +5,14 @@ import {
   useInfiniteQuery,
 } from '@tanstack/react-query'
 
+import {BLUESKY_APPVIEW_SERVICE} from '#/lib/constants'
 import {STALE} from '#/state/queries'
-import {useAgent} from '#/state/session'
+import {
+  useAppviewClient,
+  usePublicBlueskyAppviewClient,
+  useSession,
+} from '#/state/session'
+import {app} from '#/lexicons'
 
 export const RQKEY_ROOT = 'starter-pack-search'
 export const RQKEY = (query: string, limit?: number) => [
@@ -27,23 +32,37 @@ export function useStarterPackSearch({
   maintainData?: boolean
   limit?: number
 }) {
-  const agent = useAgent()
+  const client = useAppviewClient()
+  const publicBlueskyClient = usePublicBlueskyAppviewClient()
+  const {hasSession} = useSession()
   return useInfiniteQuery<
-    AppBskyGraphSearchStarterPacksV2.OutputSchema,
+    app.bsky.graph.searchStarterPacksV2.$OutputBody,
     Error,
-    InfiniteData<AppBskyGraphSearchStarterPacksV2.OutputSchema>,
+    InfiniteData<app.bsky.graph.searchStarterPacksV2.$OutputBody>,
     QueryKey,
     string | undefined
   >({
     staleTime: STALE.MINUTES.FIVE,
     queryKey: RQKEY(query, limit),
     queryFn: async ({pageParam}) => {
-      const res = await agent.app.bsky.graph.searchStarterPacksV2({
+      const params = {
         q: query,
         limit,
         cursor: pageParam,
-      })
-      return res.data
+      }
+      /*
+       * Eurosky does not yet implement the complete v2 search behavior. Signed
+       * in, route through the PDS to Bluesky; logged out, use Bluesky's public
+       * AppView directly.
+       */
+      return hasSession
+        ? await client.call(app.bsky.graph.searchStarterPacksV2, params, {
+            service: BLUESKY_APPVIEW_SERVICE,
+          })
+        : await publicBlueskyClient.call(
+            app.bsky.graph.searchStarterPacksV2,
+            params,
+          )
     },
     enabled: enabled && !!query,
     initialPageParam: undefined,
@@ -54,7 +73,7 @@ export function useStarterPackSearch({
 }
 
 function select(
-  data: InfiniteData<AppBskyGraphSearchStarterPacksV2.OutputSchema>,
+  data: InfiniteData<app.bsky.graph.searchStarterPacksV2.$OutputBody>,
 ) {
   // enforce uniqueness
   const uris = new Set()
