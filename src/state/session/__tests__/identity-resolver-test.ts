@@ -40,6 +40,7 @@ jest.mock('../clients', () => ({
 import {
   createIdentityResolver,
   getPdsServiceUrlFromIdentityInfo,
+  resolveDidServiceEndpoint,
   resolveIdentityUsingAppView,
 } from '../identity-resolver'
 
@@ -255,6 +256,33 @@ describe('appview identity resolver', () => {
     )
     expect(identity.did).toBe('did:web:alice.example')
     expect(identity.handle).toBe('alice.example')
+  })
+
+  it('resolves a service endpoint from its configured DID', async () => {
+    const signal = new AbortController().signal
+    jest.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          id: 'did:web:chat.example',
+          service: [
+            {
+              id: 'did:web:chat.example#bsky_chat',
+              type: 'BskyChatService',
+              serviceEndpoint: 'https://chat.example',
+            },
+          ],
+        }),
+    } as Response)
+
+    await expect(
+      resolveDidServiceEndpoint({
+        did: 'did:web:chat.example',
+        id: '#bsky_chat',
+        type: 'BskyChatService',
+        signal,
+      }),
+    ).resolves.toBe('https://chat.example')
   })
 
   it('extracts the pds service url from resolved identity info', () => {
