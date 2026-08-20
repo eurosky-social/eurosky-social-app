@@ -73,6 +73,11 @@ export function filterUserFacingLabels(
   )
 }
 
+/** Whether a label applies to an account rather than a specific record. */
+export function isAccountLabel(label: com.atproto.label.defs.Label): boolean {
+  return label.uri.startsWith('did:')
+}
+
 export function getLabelingServiceTitle({
   displayName,
   handle,

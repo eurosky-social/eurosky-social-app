@@ -4,6 +4,7 @@ import {type ModerationCause} from '@bsky/sdk/moderation'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 
+import {isAccountLabel} from '#/lib/moderation'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useLabelDefinitions} from '#/state/preferences'
 import {useSession} from '#/state/session'
@@ -160,7 +161,7 @@ export function useModerationCauseDescription(
         sourceType: cause.source.type,
         sourceAvi: labeler?.creator.avatar,
         sourceDid: cause.label.src,
-        isSubjectAccount: cause.label.uri.startsWith('did:'),
+        isSubjectAccount: isAccountLabel(cause.label),
       }
     }
     // should never happen
