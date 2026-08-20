@@ -12,6 +12,7 @@ import {
   getAppViewProxyService,
   getPublicAppViewUrl,
 } from '#/features/appView/config'
+import {withAppViewShadowFetch} from '#/features/appView/shadow'
 import {networkAwareFetch} from './network'
 
 /**
@@ -149,7 +150,7 @@ let publicBlueskyLexClient: Client | undefined
 export function getPublicBlueskyAppviewClient(): Client {
   return (publicBlueskyLexClient ??= createLexClient({
     service: BLUESKY_PUBLIC_APPVIEW,
-    fetch: networkAwareFetch,
+    fetch: withAppViewShadowFetch(networkAwareFetch),
   }))
 }
 
@@ -172,6 +173,6 @@ export function getPublicBlueskyAppviewClient(): Client {
 export function getPublicAppviewClient(): Client {
   return (publicLexClient ??= createLexClient({
     service: getPublicAppViewUrl(PUBLIC_BSKY_SERVICE),
-    fetch: networkAwareFetch,
+    fetch: withAppViewShadowFetch(networkAwareFetch),
   }))
 }

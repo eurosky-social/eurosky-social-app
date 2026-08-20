@@ -11,6 +11,7 @@ import {canParseUrl} from '#/lib/strings/url-helpers'
 import {logger} from '#/logger'
 import {prefetchAgeAssuranceServerData} from '#/ageAssurance/data'
 import {features} from '#/analytics'
+import {withAppViewShadowFetch} from '#/features/appView/shadow'
 import {
   buildAppviewClient,
   buildChatClient,
@@ -166,6 +167,7 @@ export function makeSessionHooks({
 }) {
   let armed = false
   let killed = false
+  const sessionFetch = withAppViewShadowFetch(networkAwareFetch)
   const dispatch = (event: AtpSessionEvent, sessionData?: SessionData) => {
     if (!armed) {
       return
@@ -195,7 +197,7 @@ export function makeSessionHooks({
       if (killed) {
         throw new Error('session disposed')
       }
-      return networkAwareFetch(input, init)
+      return sessionFetch(input, init)
     },
     onUpdated(data) {
       dispatch('update', data)
