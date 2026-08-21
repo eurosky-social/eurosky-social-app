@@ -1,6 +1,8 @@
 import {
+  type AtIdentifierString,
   type Client,
   type Service,
+  XrpcError,
   XrpcFetchError,
   XrpcResponseError,
 } from '@atproto/lex'
@@ -14,6 +16,9 @@ import {
   type AppViewTransferCollectionProgress,
 } from './types'
 
+const MAX_PAGES = 500
+const PROFILE_BATCH_SIZE = 25
+
 type TransferItem = {
   key: string
   value: unknown
@@ -22,6 +27,8 @@ type TransferItem = {
 type TransferPage = {
   items: TransferItem[]
   cursor?: string
+  /** Keys the AppView listed but would not give a value for. */
+  hiddenKeys?: string[]
 }
 
 type RequestTarget = {
@@ -36,7 +43,25 @@ type CollectionAdapter = {
   write: (target: RequestTarget, item: TransferItem) => Promise<void>
   valuesEqual?: (left: unknown, right: unknown) => boolean
   mergeValues?: (source: unknown, destination: unknown) => unknown
-  writeConcurrency?: number
+  sortForWrite?: (items: TransferItem[]) => TransferItem[]
+  /**
+   * Stops after a retryable write failure when later writes must not overtake
+   * the failed item.
+   */
+  stopOnRetryableFailure?: boolean
+  /**
+   * Finds destination items that the collection's list endpoint does not
+   * expose, so the write pass can leave them unchanged.
+   */
+  findHiddenDestinationKeys?: (
+    target: RequestTarget,
+    keys: string[],
+  ) => Promise<string[]>
+}
+
+type MuteFlavor = {
+  onlyReposts: boolean
+  onlyQuoteposts: boolean
 }
 
 const collectionAdapters: Record<
@@ -59,23 +84,57 @@ const collectionAdapters: Record<
         cursor: data.cursor,
         items: data.mutes.map(profile => ({
           key: profile.did,
-          value: profile.did,
+          value: {
+            onlyReposts: Boolean(profile.viewer?.mutedOnlyReposts),
+            onlyQuoteposts: Boolean(profile.viewer?.mutedOnlyQuoteposts),
+          } satisfies MuteFlavor,
         })),
       }
     },
     async write(target, item) {
+      const flavor = item.value as MuteFlavor
       await callWithRetry(
         () =>
           target.client.call(
             app.bsky.graph.muteActor,
             {
-              actor:
-                item.value as app.bsky.graph.muteActor.$Input['body']['actor'],
+              actor: item.key as AtIdentifierString,
+              ...(flavor.onlyReposts ? {onlyReposts: true} : {}),
+              ...(flavor.onlyQuoteposts ? {onlyQuoteposts: true} : {}),
             },
             {service: target.service, signal: target.signal},
           ),
         target.signal,
       )
+    },
+    /** A mute present on both sides keeps its destination scope. */
+    valuesEqual: () => true,
+    async findHiddenDestinationKeys(target, keys) {
+      const hidden: string[] = []
+      for (let start = 0; start < keys.length; start += PROFILE_BATCH_SIZE) {
+        const actors = keys.slice(
+          start,
+          start + PROFILE_BATCH_SIZE,
+        ) as AtIdentifierString[]
+        const data = await callWithRetry(
+          () =>
+            target.client.call(
+              app.bsky.actor.getProfiles,
+              {actors},
+              {service: target.service, signal: target.signal},
+            ),
+          target.signal,
+        )
+        for (const profile of data.profiles) {
+          if (
+            profile.viewer?.mutedOnlyReposts ||
+            profile.viewer?.mutedOnlyQuoteposts
+          ) {
+            hidden.push(profile.did)
+          }
+        }
+      }
+      return hidden
     },
   },
   mutedLists: {
@@ -141,10 +200,15 @@ const collectionAdapters: Record<
         target.signal,
       )
     },
-    /* A bookmark is identified by URI; a differing historical CID is not a second bookmark. */
+    /** A bookmark is identified by URI; a historical CID is not a new item. */
     valuesEqual: () => true,
-    /* Bookmark writes are independent but numerous, so use a bounded pool. */
-    writeConcurrency: 5,
+    /**
+     * AppViews stamp bookmarks when they accept a write and list newest first.
+     * Writing the source's newest-first list in reverse preserves its order.
+     */
+    sortForWrite: items => [...items].reverse(),
+    /** A resume must write a transiently failed bookmark before newer ones. */
+    stopOnRetryableFailure: true,
   },
   activitySubscriptions: {
     id: 'activitySubscriptions',
@@ -158,22 +222,23 @@ const collectionAdapters: Record<
           ),
         target.signal,
       )
-      return {
-        cursor: data.cursor,
-        items: data.subscriptions.map(profile => {
-          const subscription = profile.viewer?.activitySubscription
-          if (!subscription) {
-            throw new UnsupportedCollectionDataError()
-          }
-          return {
-            key: profile.did,
-            value: {
-              post: subscription.post,
-              reply: subscription.reply,
-            } satisfies app.bsky.notification.defs.ActivitySubscription,
-          }
-        }),
+      const items: TransferItem[] = []
+      const hiddenKeys: string[] = []
+      for (const profile of data.subscriptions) {
+        const subscription = profile.viewer?.activitySubscription
+        if (!subscription) {
+          hiddenKeys.push(profile.did)
+          continue
+        }
+        items.push({
+          key: profile.did,
+          value: {
+            post: subscription.post,
+            reply: subscription.reply,
+          } satisfies app.bsky.notification.defs.ActivitySubscription,
+        })
       }
+      return {cursor: data.cursor, items, hiddenKeys}
     },
     async write(target, item) {
       await callWithRetry(
@@ -235,8 +300,6 @@ const collectionAdapters: Record<
   },
 }
 
-class UnsupportedCollectionDataError extends Error {}
-
 export function createTransferCheckpoint({
   accountDid,
   source,
@@ -249,17 +312,20 @@ export function createTransferCheckpoint({
   selectedCollections: AppViewTransferCollectionId[]
 }): AppViewTransferCheckpoint {
   const now = new Date().toISOString()
+  const ordered = APP_VIEW_TRANSFER_COLLECTIONS.filter(id =>
+    selectedCollections.includes(id),
+  )
   return {
     version: 1,
     accountDid,
     source,
     destination,
-    selectedCollections,
+    selectedCollections: ordered,
     status: 'paused',
     startedAt: now,
     updatedAt: now,
     collections: Object.fromEntries(
-      selectedCollections.map(id => [id, initialCollectionProgress()]),
+      ordered.map(id => [id, initialCollectionProgress()]),
     ),
   }
 }
@@ -323,6 +389,7 @@ export async function runAppViewTransfer({
         status: 'countingSource',
         sourceScanned: false,
         processedCount: 0,
+        failedCount: undefined,
         destinationScanned: false,
         destinationAfter: undefined,
         unsupportedAt: undefined,
@@ -330,37 +397,56 @@ export async function runAppViewTransfer({
         failureStatus: undefined,
         failureName: undefined,
       })
-      const sourceItems = await readAllItems({
+      const sourceRead = await readAllItems({
         adapter,
         target: makeTarget(client, checkpoint.source, signal),
       })
+      const sourceItems = sourceRead.items
       updateCollection(id, {
-        sourceCount: sourceItems.size,
+        sourceCount: sourceItems.size + sourceRead.hiddenKeys.size,
         sourceScanned: true,
       })
 
       endpoint = 'destination'
       updateCollection(id, {status: 'countingDestination'})
-      const destinationItems = await readAllItems({
+      const destinationRead = await readAllItems({
         adapter,
         target: makeTarget(client, checkpoint.destination, signal),
       })
+      const destinationItems = destinationRead.items
+      const listedHiddenCount = destinationRead.hiddenKeys.size
+      const destinationCount = () => destinationItems.size + listedHiddenCount
       const progressAfterCount =
         checkpoint.collections[id] ?? initialCollectionProgress()
       const destinationBefore =
-        progressAfterCount.destinationBefore ?? destinationItems.size
+        progressAfterCount.destinationBefore ?? destinationCount()
       updateCollection(id, {
         destinationBefore,
         destinationScanned: true,
-        destinationAfter: destinationItems.size,
+        destinationAfter: destinationCount(),
         status: 'transferring',
       })
 
-      await writeMissingItems({
+      const hiddenKeys = new Set(destinationRead.hiddenKeys)
+      if (adapter.findHiddenDestinationKeys) {
+        const candidates = [...sourceItems.keys()].filter(
+          key => !destinationItems.has(key),
+        )
+        if (candidates.length > 0) {
+          const hidden = await adapter.findHiddenDestinationKeys(
+            makeTarget(client, checkpoint.destination, signal),
+            candidates,
+          )
+          for (const key of hidden) hiddenKeys.add(key)
+        }
+      }
+
+      const {failedCount, firstError} = await writeMissingItems({
         adapter,
         items: [...sourceItems.values()],
         target: makeTarget(client, checkpoint.destination, signal),
         destinationItems,
+        hiddenKeys,
         onPrepared(pendingCount) {
           updateCollection(id, {
             processedCount: sourceItems.size - pendingCount,
@@ -372,16 +458,31 @@ export async function runAppViewTransfer({
           updateCollection(id, {
             processedCount: (progress.processedCount ?? 0) + 1,
             transferredCount: progress.transferredCount + 1,
-            destinationAfter: destinationItems.size,
+            destinationAfter: destinationCount(),
           })
         },
       })
 
-      /* Successful idempotent writes update the in-memory destination set, so
-       * another full pagination pass would only slow large collections down. */
+      const missedCount = failedCount + sourceRead.hiddenKeys.size
+      if (missedCount > 0) {
+        if (firstError) onCollectionError?.(id, firstError)
+        updateCollection(id, {
+          status: 'failed',
+          failedCount: missedCount,
+          failureAt: failedCount > 0 ? 'destination' : 'source',
+          destinationAfter: destinationCount(),
+          ...(firstError ? safeFailureDetails(firstError) : {}),
+        })
+        continue
+      }
+
+      /**
+       * Successful idempotent writes update the in-memory destination set, so
+       * another full pagination pass would only slow large collections down.
+       */
       updateCollection(id, {
         status: 'complete',
-        destinationAfter: destinationItems.size,
+        destinationAfter: destinationCount(),
       })
     } catch (error) {
       if (signal.aborted) throw error
@@ -433,6 +534,7 @@ async function writeMissingItems({
   items,
   target,
   destinationItems,
+  hiddenKeys,
   onPrepared,
   onWritten,
 }: {
@@ -440,11 +542,13 @@ async function writeMissingItems({
   items: TransferItem[]
   target: RequestTarget
   destinationItems: Map<string, TransferItem>
+  hiddenKeys: Set<string>
   onPrepared: (pendingCount: number) => void
   onWritten: () => void
-}): Promise<void> {
+}): Promise<{failedCount: number; firstError?: unknown}> {
   const valuesEqual = adapter.valuesEqual ?? deepEqual
-  const pending = items.flatMap(item => {
+  const missing = items.flatMap(item => {
+    if (hiddenKeys.has(item.key)) return []
     const destinationItem = destinationItems.get(item.key)
     const desiredItem =
       destinationItem && adapter.mergeValues
@@ -458,34 +562,28 @@ async function writeMissingItems({
       ? [desiredItem]
       : []
   })
+  const pending = adapter.sortForWrite?.(missing) ?? missing
   onPrepared(pending.length)
-  let nextIndex = 0
   let firstError: unknown
-  let failed = false
+  let writtenCount = 0
 
-  const worker = async () => {
-    while (!failed) {
-      const index = nextIndex++
-      const item = pending[index]
-      if (!item) return
-      try {
-        throwIfAborted(target.signal)
-        await adapter.write(target, item)
-        destinationItems.set(item.key, item)
-        onWritten()
-      } catch (error) {
-        if (!failed) firstError = error
-        failed = true
+  for (const item of pending) {
+    throwIfAborted(target.signal)
+    try {
+      await adapter.write(target, item)
+      destinationItems.set(item.key, item)
+      writtenCount++
+      onWritten()
+    } catch (error) {
+      if (target.signal.aborted || isUnsupportedCollectionError(error)) {
+        throw error
       }
+      firstError ??= error
+      if (adapter.stopOnRetryableFailure && isRetryableError(error)) break
     }
   }
 
-  const concurrency = Math.min(
-    adapter.writeConcurrency ?? 1,
-    Math.max(1, pending.length),
-  )
-  await Promise.all(Array.from({length: concurrency}, worker))
-  if (failed) throw firstError
+  return {failedCount: pending.length - writtenCount, firstError}
 }
 
 async function readAllItems({
@@ -494,8 +592,9 @@ async function readAllItems({
 }: {
   adapter: CollectionAdapter
   target: RequestTarget
-}): Promise<Map<string, TransferItem>> {
+}): Promise<{items: Map<string, TransferItem>; hiddenKeys: Set<string>}> {
   const items = new Map<string, TransferItem>()
+  const hiddenKeys = new Set<string>()
   const seenCursors = new Set<string>()
   let cursor: string | undefined
 
@@ -504,10 +603,17 @@ async function readAllItems({
     const page = await adapter.readPage(target, cursor)
     for (const item of page.items) {
       items.set(item.key, item)
+      hiddenKeys.delete(item.key)
     }
-    if (!page.cursor) return items
+    for (const key of page.hiddenKeys ?? []) {
+      if (!items.has(key)) hiddenKeys.add(key)
+    }
+    if (!page.cursor) return {items, hiddenKeys}
     if (seenCursors.has(page.cursor)) {
       throw new Error('AppView returned a repeated pagination cursor')
+    }
+    if (seenCursors.size >= MAX_PAGES) {
+      throw new Error('AppView exceeded the pagination page limit')
     }
     seenCursors.add(page.cursor)
     cursor = page.cursor
@@ -540,11 +646,7 @@ function maxRetries(error: unknown): number {
 }
 
 function isRetryableError(error: unknown): boolean {
-  if (error instanceof XrpcFetchError) return true
-  return (
-    error instanceof XrpcResponseError &&
-    [408, 425, 429, 500, 502, 503, 504].includes(error.status)
-  )
+  return error instanceof XrpcError && error.shouldRetry()
 }
 
 function retryDelay(error: unknown, attempt: number): number {
@@ -586,13 +688,12 @@ function throwIfAborted(signal: AbortSignal) {
 
 function isUnsupportedCollectionError(error: unknown): boolean {
   return (
-    error instanceof UnsupportedCollectionDataError ||
-    (error instanceof XrpcResponseError &&
-      (error.status === 404 ||
-        error.status === 501 ||
-        ['XRPCNotSupported', 'MethodNotFound', 'NotSupported'].includes(
-          error.error,
-        )))
+    error instanceof XrpcResponseError &&
+    (error.status === 404 ||
+      error.status === 501 ||
+      ['XRPCNotSupported', 'MethodNotFound', 'NotSupported'].includes(
+        error.error,
+      ))
   )
 }
 

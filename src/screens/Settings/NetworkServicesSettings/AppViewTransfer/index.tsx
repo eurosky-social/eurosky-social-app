@@ -1,5 +1,6 @@
 import {useEffect, useRef, useState} from 'react'
 import {View} from 'react-native'
+import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 import {useQueryClient} from '@tanstack/react-query'
@@ -14,8 +15,8 @@ import * as Admonition from '#/components/Admonition'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {FormError} from '#/components/forms/FormError'
 import * as Toggle from '#/components/forms/Toggle'
-import {ArrowBoxRight_Stroke2_Corner3_Rounded as TransferIcon} from '#/components/icons/ArrowBoxRight'
 import {ArrowRotateClockwise_Stroke2_Corner0_Rounded as ProgressIcon} from '#/components/icons/ArrowRotate'
+import {ArrowsLeftRight_Stroke2_Corner0_Rounded as TransferIcon} from '#/components/icons/ArrowsLeftRight'
 import {BulletList_Stroke2_Corner0_Rounded as ListIcon} from '#/components/icons/BulletList'
 import {Check_Stroke2_Corner0_Rounded as CheckIcon} from '#/components/icons/Check'
 import * as Layout from '#/components/Layout'
@@ -38,6 +39,7 @@ import {
   type AppViewTransferCheckpoint,
   type AppViewTransferCollectionId,
   type AppViewTransferCollectionProgress,
+  DEFAULT_TRANSFER_COLLECTIONS,
 } from '#/features/appViewTransfer/types'
 import {account} from '#/storage'
 import {AppViewSelector, type AppViewSelectorValue} from './AppViewSelector'
@@ -70,6 +72,7 @@ export function AppViewTransferSettingsScreen({}: Props) {
   const checkpointRef = useRef(checkpoint)
   const mountedRef = useRef(false)
   const runningRef = useRef(false)
+  const lastWriteRef = useRef(0)
   const abortRef = useRef<AbortController | undefined>(undefined)
   const confirmControl = Prompt.usePromptControl()
   const [pendingTransfer, setPendingTransfer] = useState<PendingTransfer>()
@@ -84,11 +87,7 @@ export function AppViewTransferSettingsScreen({}: Props) {
     )
   const [selectedCollections, setSelectedCollections] = useState<
     AppViewTransferCollectionId[]
-  >(
-    initialCheckpoint?.selectedCollections ?? [
-      ...APP_VIEW_TRANSFER_COLLECTIONS,
-    ],
-  )
+  >(initialCheckpoint?.selectedCollections ?? [...DEFAULT_TRANSFER_COLLECTIONS])
 
   const collectionNames = useCollectionNames()
   const isRunning = checkpoint?.status === 'running'
@@ -103,7 +102,11 @@ export function AppViewTransferSettingsScreen({}: Props) {
 
   const saveCheckpoint = (next: AppViewTransferCheckpoint) => {
     checkpointRef.current = next
-    account.set([accountDid, 'appViewTransfer'], next)
+    const now = Date.now()
+    if (next.status !== 'running' || now - lastWriteRef.current >= 1000) {
+      lastWriteRef.current = now
+      account.set([accountDid, 'appViewTransfer'], next)
+    }
     if (mountedRef.current) setCheckpoint(next)
   }
 
@@ -111,7 +114,11 @@ export function AppViewTransferSettingsScreen({}: Props) {
     mountedRef.current = true
     const current = checkpointRef.current
     if (current?.status === 'running') {
-      saveCheckpoint({...current, status: 'paused'})
+      saveCheckpoint({
+        ...current,
+        status: 'paused',
+        updatedAt: new Date().toISOString(),
+      })
     }
     return () => {
       mountedRef.current = false
@@ -215,8 +222,12 @@ export function AppViewTransferSettingsScreen({}: Props) {
           })
         },
       })
-      invalidateAppViewQueries()
-    } catch {
+    } catch (cause) {
+      if (!controller.signal.aborted) {
+        logger.error('AppView transfer stopped unexpectedly', {
+          safeMessage: cause,
+        })
+      }
       const latest = checkpointRef.current
       if (latest?.status === 'running') {
         saveCheckpoint({
@@ -226,6 +237,7 @@ export function AppViewTransferSettingsScreen({}: Props) {
         })
       }
     } finally {
+      invalidateAppViewQueries()
       if (abortRef.current === controller) {
         abortRef.current = undefined
         runningRef.current = false
@@ -269,13 +281,16 @@ export function AppViewTransferSettingsScreen({}: Props) {
   const startOver = () => {
     abortRef.current?.abort()
     checkpointRef.current = undefined
+    lastWriteRef.current = 0
     account.remove([accountDid, 'appViewTransfer'])
     setCheckpoint(undefined)
     setError(undefined)
   }
 
   const confirmationDescription = pendingTransfer
-    ? l`Copy the selected data from ${displayName(pendingTransfer.source)} to ${displayName(pendingTransfer.destination)}? Existing items at the destination will be kept. Notification preferences at the destination will be replaced.`
+    ? selectedCollections.includes('notificationPreferences')
+      ? l`Copy the selected data from ${displayName(pendingTransfer.source)} to ${displayName(pendingTransfer.destination)}? No destination items will be deleted. Notification preferences at the destination will be replaced.`
+      : l`Copy the selected data from ${displayName(pendingTransfer.source)} to ${displayName(pendingTransfer.destination)}? No destination items will be deleted.`
     : ''
 
   return (
@@ -312,10 +327,11 @@ export function AppViewTransferSettingsScreen({}: Props) {
                 </Text>
                 <Admonition.Admonition type="info">
                   <Trans>
-                    This is an import, not a sync. Existing destination data is
-                    kept, and later removals do not carry between services.
-                    Drafts and account mutes limited to reposts or quote posts
-                    are not included in this version.
+                    This is an import, not a sync. No destination items are
+                    deleted, and later removals do not carry between services.
+                    Drafts aren’t included. Account mutes limited to reposts or
+                    quote posts can’t be copied, and existing scoped mutes at
+                    the destination are left unchanged.
                   </Trans>
                 </Admonition.Admonition>
               </SettingsList.Group>
@@ -382,7 +398,20 @@ export function AppViewTransferSettingsScreen({}: Props) {
                   <Trans>
                     Notification preferences from the source replace
                     notification preferences at the destination. Other selected
-                    data is added without removing destination-only items.
+                    data is added without removing destination-only items. An
+                    activity subscription that exists on both sides keeps the
+                    notifications from both.
+                  </Trans>
+                </Text>
+                <Text
+                  style={[
+                    a.text_xs,
+                    a.leading_snug,
+                    t.atoms.text_contrast_medium,
+                  ]}>
+                  <Trans>
+                    Imported bookmarks appear above bookmarks already at the
+                    destination.
                   </Trans>
                 </Text>
               </SettingsList.Group>
@@ -437,7 +466,8 @@ export function AppViewTransferSettingsScreen({}: Props) {
                 label={l`Pause transfer`}
                 size="large"
                 color="secondary"
-                onPress={pauseTransfer}>
+                onPress={pauseTransfer}
+                testID="pauseAppViewTransferButton">
                 <ButtonText>
                   <Trans>Pause transfer</Trans>
                 </ButtonText>
@@ -449,7 +479,8 @@ export function AppViewTransferSettingsScreen({}: Props) {
                   label={l`Resume transfer`}
                   size="large"
                   color="primary"
-                  onPress={resumeTransfer}>
+                  onPress={resumeTransfer}
+                  testID="resumeAppViewTransferButton">
                   <ButtonText>
                     <Trans>Resume transfer</Trans>
                   </ButtonText>
@@ -458,7 +489,8 @@ export function AppViewTransferSettingsScreen({}: Props) {
                   label={l`Start over`}
                   size="large"
                   color="secondary"
-                  onPress={startOver}>
+                  onPress={startOver}
+                  testID="startOverAppViewTransferButton">
                   <ButtonText>
                     <Trans>Start over</Trans>
                   </ButtonText>
@@ -470,7 +502,8 @@ export function AppViewTransferSettingsScreen({}: Props) {
                 label={l`Retry incomplete items`}
                 size="large"
                 color="primary"
-                onPress={resumeTransfer}>
+                onPress={resumeTransfer}
+                testID="retryAppViewTransferButton">
                 <ButtonText>
                   <Trans>Retry incomplete items</Trans>
                 </ButtonText>
@@ -481,7 +514,8 @@ export function AppViewTransferSettingsScreen({}: Props) {
                 label={l`Start a new transfer`}
                 size="large"
                 color={hasFailedCollections ? 'secondary' : 'primary'}
-                onPress={startOver}>
+                onPress={startOver}
+                testID="newAppViewTransferButton">
                 <ButtonText>
                   <Trans>Start a new transfer</Trans>
                 </ButtonText>
@@ -534,12 +568,13 @@ function TransferProgress({
 }) {
   const {t: l} = useLingui()
   const t = useTheme()
+  const ordered = orderedCollections(checkpoint)
   const activeId =
-    checkpoint.selectedCollections.find(id => {
+    ordered.find(id => {
       const status = checkpoint.collections[id]?.status ?? 'pending'
       return !['complete', 'failed', 'unsupported'].includes(status)
-    }) ?? checkpoint.selectedCollections.at(-1)
-  const totalProgress = checkpoint.selectedCollections.reduce((total, id) => {
+    }) ?? ordered.at(-1)
+  const totalProgress = ordered.reduce((total, id) => {
     const progress = checkpoint.collections[id] ?? emptyProgress()
     return total + collectionProgress(progress)
   }, 0)
@@ -592,6 +627,12 @@ function TransferProgress({
         )}
       </Text>
     </SettingsList.Group>
+  )
+}
+
+function orderedCollections(checkpoint: AppViewTransferCheckpoint) {
+  return APP_VIEW_TRANSFER_COLLECTIONS.filter(id =>
+    checkpoint.selectedCollections.includes(id),
   )
 }
 
@@ -649,6 +690,17 @@ function TransferStatus({
       case 'complete':
         return l`Complete`
       case 'failed':
+        if (progress.failedCount) {
+          return l`${plural(progress.failedCount, {
+            one: 'Couldn’t copy # item',
+            other: 'Couldn’t copy # items',
+          })}`
+        }
+        if (progress.failureName === 'UnexpectedError') {
+          return progress.failureAt === 'source'
+            ? l`Couldn’t read the data from ${sourceName}`
+            : l`Couldn’t write the data to ${destinationName}`
+        }
         return progress.failureAt === 'source'
           ? l`${sourceName} unavailable`
           : l`${destinationName} unavailable`
@@ -670,7 +722,7 @@ function TransferStatus({
         )}
       </SettingsList.ItemText>
       <View style={[a.w_full]}>
-        {checkpoint.selectedCollections.map((id, index) => {
+        {orderedCollections(checkpoint).map((id, index) => {
           const progress = checkpoint.collections[id] ?? emptyProgress()
           const before = progress.destinationBefore
           const current = progress.destinationAfter ?? before

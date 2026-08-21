@@ -11,6 +11,14 @@ export const APP_VIEW_TRANSFER_COLLECTIONS = [
 export type AppViewTransferCollectionId =
   (typeof APP_VIEW_TRANSFER_COLLECTIONS)[number]
 
+/** Additive collections selected by default for a new transfer. */
+export const DEFAULT_TRANSFER_COLLECTIONS: AppViewTransferCollectionId[] = [
+  'mutedAccounts',
+  'mutedLists',
+  'bookmarks',
+  'activitySubscriptions',
+]
+
 export type AppViewTransferCollectionStatus =
   | 'pending'
   | 'countingDestination'
@@ -27,6 +35,8 @@ export type AppViewTransferCollectionProgress = {
   sourceScanned?: boolean
   processedCount?: number
   transferredCount: number
+  /** Items the latest pass could not copy after retries. */
+  failedCount?: number
   destinationBefore?: number
   destinationScanned?: boolean
   destinationAfter?: number

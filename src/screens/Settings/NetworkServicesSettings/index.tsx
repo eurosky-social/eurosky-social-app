@@ -3,7 +3,7 @@ import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 
 import {type CommonNavigatorParams} from '#/lib/routes/types'
 import * as SettingsList from '#/screens/Settings/components/SettingsList'
-import {Download_Stroke2_Corner0_Rounded as DownloadIcon} from '#/components/icons/Download'
+import {ArrowsLeftRight_Stroke2_Corner0_Rounded as TransferIcon} from '#/components/icons/ArrowsLeftRight'
 import {Earth_Stroke2_Corner2_Rounded as EarthIcon} from '#/components/icons/Globe'
 import * as Layout from '#/components/Layout'
 
@@ -39,7 +39,7 @@ export function NetworkServicesSettingsScreen({}: Props) {
           <SettingsList.LinkItem
             to="/settings/network-services/transfer-app-data"
             label={l`Transfer app data`}>
-            <SettingsList.ItemIcon icon={DownloadIcon} />
+            <SettingsList.ItemIcon icon={TransferIcon} />
             <SettingsList.ItemText>
               <Trans>Transfer app data</Trans>
             </SettingsList.ItemText>

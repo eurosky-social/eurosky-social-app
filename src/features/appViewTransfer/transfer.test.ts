@@ -52,6 +52,13 @@ test('transfers every supported collection with per-request service targets', as
       if (!state) throw new Error(`Unexpected service: ${options.service}`)
 
       switch (method.main.nsid) {
+        case 'app.bsky.actor.getProfiles':
+          return {
+            profiles: (input.actors as string[]).map(did => ({
+              did,
+              viewer: {muted: state.mutes.has(did)},
+            })),
+          }
         case 'app.bsky.graph.getMutes':
           return {
             mutes: [...state.mutes].map(did => ({did})),
@@ -180,6 +187,11 @@ test('resumes an interrupted page without duplicating writes or counts', async (
   const call = jest.fn<ReturnType<FakeCall>, Parameters<FakeCall>>(
     async (method, input, options) => {
       await Promise.resolve()
+      if (method.main.nsid === 'app.bsky.actor.getProfiles') {
+        return {
+          profiles: (input.actors as string[]).map(did => ({did, viewer: {}})),
+        }
+      }
       if (method.main.nsid === 'app.bsky.graph.getMutes') {
         const mutes =
           options.service === SOURCE_SERVICE ? sourceMutes : destinationMutes
@@ -340,4 +352,426 @@ test('marks an unsupported destination collection without failing the run', asyn
     unsupportedAt: 'destination',
   })
   expect(call).toHaveBeenCalledTimes(2)
+})
+
+test('stops and marks the collection unsupported when its write endpoint is unavailable', async () => {
+  let writeCalls = 0
+  const call = jest.fn<ReturnType<FakeCall>, Parameters<FakeCall>>(
+    async (method, _input, options) => {
+      await Promise.resolve()
+      if (method.main.nsid === 'app.bsky.bookmark.getBookmarks') {
+        return options.service === SOURCE_SERVICE
+          ? {
+              bookmarks: ['three', 'two', 'one'].map(id => ({
+                subject: {uri: postUri(id), cid: `bafy${id}`},
+              })),
+            }
+          : {bookmarks: []}
+      }
+      if (method.main.nsid === 'app.bsky.bookmark.createBookmark') {
+        writeCalls++
+        throw bookmarkResponseError(404, 'XRPCNotSupported')
+      }
+      throw new Error(`Unexpected method: ${method.main.nsid}`)
+    },
+  )
+
+  const result = await runAppViewTransfer({
+    client: {call} as unknown as Client,
+    initialCheckpoint: createTransferCheckpoint({
+      accountDid: 'did:plc:account',
+      source: SOURCE,
+      destination: DESTINATION,
+      selectedCollections: ['bookmarks'],
+    }),
+    signal: new AbortController().signal,
+    onProgress: () => {},
+  })
+
+  expect(result.collections.bookmarks).toMatchObject({
+    status: 'unsupported',
+    unsupportedAt: 'destination',
+  })
+  expect(writeCalls).toBe(1)
+})
+
+function postUri(id: string) {
+  return `at://did:plc:alice/app.bsky.feed.post/${id}`
+}
+
+function bookmarkResponseError(status: number, error: string) {
+  const body = {error, message: error}
+  return new XrpcResponseError(
+    app.bsky.bookmark.createBookmark.main,
+    new Response(JSON.stringify(body), {
+      status,
+      headers: {
+        'content-type': 'application/json',
+        'retry-after': '0',
+      },
+    }),
+    {encoding: 'application/json', body},
+  )
+}
+
+test('continues after a destination permanently rejects one item', async () => {
+  const written: string[] = []
+  const call = jest.fn<ReturnType<FakeCall>, Parameters<FakeCall>>(
+    async (method, input, options) => {
+      await Promise.resolve()
+      if (method.main.nsid === 'app.bsky.bookmark.getBookmarks') {
+        return options.service === SOURCE_SERVICE
+          ? {
+              bookmarks: ['three', 'two', 'one'].map(id => ({
+                subject: {uri: postUri(id), cid: `bafy${id}`},
+              })),
+            }
+          : {bookmarks: []}
+      }
+      if (method.main.nsid === 'app.bsky.bookmark.createBookmark') {
+        if (input.uri === postUri('two')) {
+          throw bookmarkResponseError(400, 'InvalidRequest')
+        }
+        written.push(input.uri as string)
+        return undefined
+      }
+      throw new Error(`Unexpected method: ${method.main.nsid}`)
+    },
+  )
+
+  const result = await runAppViewTransfer({
+    client: {call} as unknown as Client,
+    initialCheckpoint: createTransferCheckpoint({
+      accountDid: 'did:plc:account',
+      source: SOURCE,
+      destination: DESTINATION,
+      selectedCollections: ['bookmarks'],
+    }),
+    signal: new AbortController().signal,
+    onProgress: () => {},
+  })
+
+  expect(result.collections.bookmarks).toMatchObject({
+    status: 'failed',
+    sourceCount: 3,
+    transferredCount: 2,
+    failedCount: 1,
+  })
+  expect(written).toEqual([postUri('one'), postUri('three')])
+})
+
+test('writes bookmarks oldest first and preserves their order on resume', async () => {
+  const sourceNewestFirst = ['four', 'three', 'two', 'one'].map(postUri)
+  const destinationWriteOrder = [postUri('one'), postUri('two')]
+  const call = jest.fn<ReturnType<FakeCall>, Parameters<FakeCall>>(
+    async (method, input, options) => {
+      await Promise.resolve()
+      if (method.main.nsid === 'app.bsky.bookmark.getBookmarks') {
+        const uris =
+          options.service === SOURCE_SERVICE
+            ? sourceNewestFirst
+            : [...destinationWriteOrder].reverse()
+        return {
+          bookmarks: uris.map(uri => ({subject: {uri, cid: `bafy${uri}`}})),
+        }
+      }
+      if (method.main.nsid === 'app.bsky.bookmark.createBookmark') {
+        destinationWriteOrder.push(input.uri as string)
+        return undefined
+      }
+      throw new Error(`Unexpected method: ${method.main.nsid}`)
+    },
+  )
+
+  const result = await runAppViewTransfer({
+    client: {call} as unknown as Client,
+    initialCheckpoint: createTransferCheckpoint({
+      accountDid: 'did:plc:account',
+      source: SOURCE,
+      destination: DESTINATION,
+      selectedCollections: ['bookmarks'],
+    }),
+    signal: new AbortController().signal,
+    onProgress: () => {},
+  })
+
+  expect(result.collections.bookmarks).toMatchObject({
+    status: 'complete',
+    transferredCount: 2,
+  })
+  expect([...destinationWriteOrder].reverse()).toEqual(sourceNewestFirst)
+})
+
+test('halts bookmarks on a retryable failure so a resume keeps their order', async () => {
+  const sourceNewestFirst = ['four', 'three', 'two', 'one'].map(postUri)
+  const destinationWriteOrder: string[] = []
+  let rateLimited = true
+  const call = jest.fn<ReturnType<FakeCall>, Parameters<FakeCall>>(
+    async (method, input, options) => {
+      await Promise.resolve()
+      if (method.main.nsid === 'app.bsky.bookmark.getBookmarks') {
+        const uris =
+          options.service === SOURCE_SERVICE
+            ? sourceNewestFirst
+            : [...destinationWriteOrder].reverse()
+        return {
+          bookmarks: uris.map(uri => ({subject: {uri, cid: `bafy${uri}`}})),
+        }
+      }
+      if (method.main.nsid === 'app.bsky.bookmark.createBookmark') {
+        if (rateLimited && input.uri === postUri('two')) {
+          throw bookmarkResponseError(429, 'RateLimitExceeded')
+        }
+        destinationWriteOrder.push(input.uri as string)
+        return undefined
+      }
+      throw new Error(`Unexpected method: ${method.main.nsid}`)
+    },
+  )
+  const client = {call} as unknown as Client
+  const first = await runAppViewTransfer({
+    client,
+    initialCheckpoint: createTransferCheckpoint({
+      accountDid: 'did:plc:account',
+      source: SOURCE,
+      destination: DESTINATION,
+      selectedCollections: ['bookmarks'],
+    }),
+    signal: new AbortController().signal,
+    onProgress: () => {},
+  })
+
+  expect(destinationWriteOrder).toEqual([postUri('one')])
+  expect(first.collections.bookmarks).toMatchObject({
+    status: 'failed',
+    transferredCount: 1,
+    failedCount: 3,
+  })
+
+  rateLimited = false
+  const second = await runAppViewTransfer({
+    client,
+    initialCheckpoint: first,
+    signal: new AbortController().signal,
+    onProgress: () => {},
+  })
+
+  expect(second.collections.bookmarks).toMatchObject({status: 'complete'})
+  expect([...destinationWriteOrder].reverse()).toEqual(sourceNewestFirst)
+})
+
+test('leaves a scoped mute at the destination unchanged', async () => {
+  const writes: string[] = []
+  const call = jest.fn<ReturnType<FakeCall>, Parameters<FakeCall>>(
+    async (method, input, options) => {
+      await Promise.resolve()
+      if (method.main.nsid === 'app.bsky.graph.getMutes') {
+        return options.service === SOURCE_SERVICE
+          ? {mutes: [{did: 'did:plc:alice'}, {did: 'did:plc:bob'}]}
+          : {mutes: []}
+      }
+      if (method.main.nsid === 'app.bsky.actor.getProfiles') {
+        return {
+          profiles: [
+            {did: 'did:plc:alice', viewer: {mutedOnlyReposts: true}},
+            {did: 'did:plc:bob', viewer: {}},
+          ],
+        }
+      }
+      if (method.main.nsid === 'app.bsky.graph.muteActor') {
+        writes.push(input.actor as string)
+        return undefined
+      }
+      throw new Error(`Unexpected method: ${method.main.nsid}`)
+    },
+  )
+
+  const result = await runAppViewTransfer({
+    client: {call} as unknown as Client,
+    initialCheckpoint: createTransferCheckpoint({
+      accountDid: 'did:plc:account',
+      source: SOURCE,
+      destination: DESTINATION,
+      selectedCollections: ['mutedAccounts'],
+    }),
+    signal: new AbortController().signal,
+    onProgress: () => {},
+  })
+
+  expect(writes).toEqual(['did:plc:bob'])
+  expect(result.collections.mutedAccounts).toMatchObject({
+    status: 'complete',
+    transferredCount: 1,
+  })
+})
+
+test('copies readable activity subscriptions and reports hidden ones', async () => {
+  const writes: string[] = []
+  const call = jest.fn<ReturnType<FakeCall>, Parameters<FakeCall>>(
+    async (method, input, options) => {
+      await Promise.resolve()
+      if (
+        method.main.nsid === 'app.bsky.notification.listActivitySubscriptions'
+      ) {
+        return options.service === SOURCE_SERVICE
+          ? {
+              subscriptions: [
+                {
+                  did: 'did:plc:alice',
+                  viewer: {
+                    activitySubscription: {post: true, reply: false},
+                  },
+                },
+                {did: 'did:plc:bob', viewer: {}},
+              ],
+            }
+          : {subscriptions: []}
+      }
+      if (
+        method.main.nsid === 'app.bsky.notification.putActivitySubscription'
+      ) {
+        writes.push(input.subject as string)
+        return {
+          subject: input.subject,
+          activitySubscription: input.activitySubscription,
+        }
+      }
+      throw new Error(`Unexpected method: ${method.main.nsid}`)
+    },
+  )
+
+  const result = await runAppViewTransfer({
+    client: {call} as unknown as Client,
+    initialCheckpoint: createTransferCheckpoint({
+      accountDid: 'did:plc:account',
+      source: SOURCE,
+      destination: DESTINATION,
+      selectedCollections: ['activitySubscriptions'],
+    }),
+    signal: new AbortController().signal,
+    onProgress: () => {},
+  })
+
+  expect(writes).toEqual(['did:plc:alice'])
+  expect(result.collections.activitySubscriptions).toMatchObject({
+    status: 'failed',
+    sourceCount: 2,
+    transferredCount: 1,
+    failedCount: 1,
+    failureAt: 'source',
+  })
+})
+
+test('preserves a hidden activity subscription at the destination', async () => {
+  const writes: string[] = []
+  const sourceSubscriptions = [
+    {
+      did: 'did:plc:alice',
+      viewer: {activitySubscription: {post: true, reply: false}},
+    },
+    {
+      did: 'did:plc:bob',
+      viewer: {activitySubscription: {post: true, reply: false}},
+    },
+  ]
+  const call = jest.fn<ReturnType<FakeCall>, Parameters<FakeCall>>(
+    async (method, input, options) => {
+      await Promise.resolve()
+      if (
+        method.main.nsid === 'app.bsky.notification.listActivitySubscriptions'
+      ) {
+        return options.service === SOURCE_SERVICE
+          ? {subscriptions: sourceSubscriptions}
+          : {subscriptions: [{did: 'did:plc:alice', viewer: {}}]}
+      }
+      if (
+        method.main.nsid === 'app.bsky.notification.putActivitySubscription'
+      ) {
+        writes.push(input.subject as string)
+        return {
+          subject: input.subject,
+          activitySubscription: input.activitySubscription,
+        }
+      }
+      throw new Error(`Unexpected method: ${method.main.nsid}`)
+    },
+  )
+
+  const result = await runAppViewTransfer({
+    client: {call} as unknown as Client,
+    initialCheckpoint: createTransferCheckpoint({
+      accountDid: 'did:plc:account',
+      source: SOURCE,
+      destination: DESTINATION,
+      selectedCollections: ['activitySubscriptions'],
+    }),
+    signal: new AbortController().signal,
+    onProgress: () => {},
+  })
+
+  expect(writes).toEqual(['did:plc:bob'])
+  expect(result.collections.activitySubscriptions).toMatchObject({
+    status: 'complete',
+    sourceCount: 2,
+    destinationBefore: 1,
+    destinationAfter: 2,
+    transferredCount: 1,
+  })
+})
+
+test('reads past an empty page that has another cursor', async () => {
+  const pages: Record<string, {lists: {uri: string}[]; cursor?: string}> = {
+    start: {lists: [{uri: 'at://did:plc:alice/list/one'}], cursor: 'second'},
+    second: {lists: [], cursor: 'third'},
+    third: {lists: [{uri: 'at://did:plc:alice/list/two'}]},
+  }
+  const call = jest.fn<ReturnType<FakeCall>, Parameters<FakeCall>>(
+    async (method, input, options) => {
+      await Promise.resolve()
+      if (method.main.nsid === 'app.bsky.graph.muteActorList') return undefined
+      if (method.main.nsid === 'app.bsky.graph.getListMutes') {
+        return options.service === SOURCE_SERVICE
+          ? pages[(input.cursor as string) ?? 'start']
+          : {lists: []}
+      }
+      throw new Error(`Unexpected method: ${method.main.nsid}`)
+    },
+  )
+
+  const result = await runAppViewTransfer({
+    client: {call} as unknown as Client,
+    initialCheckpoint: createTransferCheckpoint({
+      accountDid: 'did:plc:account',
+      source: SOURCE,
+      destination: DESTINATION,
+      selectedCollections: ['mutedLists'],
+    }),
+    signal: new AbortController().signal,
+    onProgress: () => {},
+  })
+
+  expect(result.collections.mutedLists).toMatchObject({
+    status: 'complete',
+    sourceCount: 2,
+    transferredCount: 2,
+  })
+})
+
+test('sorts selected collections into transfer order', () => {
+  const checkpoint = createTransferCheckpoint({
+    accountDid: 'did:plc:account',
+    source: SOURCE,
+    destination: DESTINATION,
+    selectedCollections: [
+      'notificationPreferences',
+      'mutedAccounts',
+      'bookmarks',
+    ],
+  })
+
+  expect(checkpoint.selectedCollections).toEqual([
+    'mutedAccounts',
+    'bookmarks',
+    'notificationPreferences',
+  ])
 })

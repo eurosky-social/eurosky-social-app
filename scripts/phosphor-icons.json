@@ -125,6 +125,13 @@
         "weight": "regular"
       }
     ],
+    "ArrowsLeftRight": [
+      {
+        "name": "ArrowsLeftRight_Stroke2_Corner0_Rounded",
+        "icon": "arrows-left-right",
+        "weight": "regular"
+      }
+    ],
     "At": [
       {
         "name": "At_Stroke2_Corner0_Rounded",
