@@ -3,14 +3,13 @@
 The [MIT license](./LICENSE) in this repository covers our source code. It does not cover
 every file in the tree.
 
-Some of the images, icons, fonts, and brand assets here are licensed to Bluesky Social PBC
-by third parties, or are our trademarks, or are third-party trademarks. We cannot pass those
-rights on to you. This document identifies them.
+The tree also includes third-party assets, assets licensed to Bluesky Social PBC, and Mu
+product marks. Rights to those files do not flow from the MIT software license. This document
+identifies them and records which restricted upstream assets this fork removed or replaced.
 
-We should have written this down sooner. If you have already forked this repository and
-shipped one of the assets listed below, we are not treating that as bad faith on your part —
-the repository did not tell you, and that is our fault. Please work through the
-[If you are forking](#if-you-are-forking) checklist when you can.
+The upstream project added explicit asset licensing notices in August 2026. This fork carries
+those notices forward where they still apply. If you have already shipped one of the assets
+listed below, work through the [If you are forking](#if-you-are-forking) checklist.
 
 Assets are scoped by directory wherever possible, so that adding a file to a carved-out
 directory does not require an edit here. Individual paths are listed only where an asset does
@@ -72,37 +71,40 @@ not ours.
 ## 6. Third-party assets you may redistribute
 
 These are licensed on terms that permit redistribution. Nothing in this document restricts them.
-Their license text travels with the files, and you must keep it there.
+Keep the applicable notices with redistributed copies.
 
-| Asset | Path | License | Notice |
-|---|---|---|---|
-| Inter typeface | `assets/fonts/inter/` | SIL Open Font License 1.1 | [`OFL.txt`](./assets/fonts/inter/OFL.txt) |
-| Inter typeface (OG card service) | `bskyogcard/src/assets/fonts/` | SIL Open Font License 1.1 | [`README.md`](./bskyogcard/src/assets/fonts/README.md) |
-| country-flag-icons | `assets/icons/flags/` | MIT, © @catamphetamine | [`README.md`](./assets/icons/flags/README.md) |
-| Phosphor UI icons | `src/components/icons/`<br>`bskyembed/src/icons/Phosphor.tsx` | MIT, © Phosphor Icons | [`NOTICE.md`](./NOTICE.md) |
-| Material Icons | `bskyweb/static/media/MaterialIcons.*.ttf` | Apache License 2.0 | [`NOTICE.md`](./NOTICE.md) |
+| Asset | Path | Rights holder | License | Notice |
+|---|---|---|---|---|
+| Inter typeface | `assets/fonts/inter/`, `bskyogcard/src/assets/fonts/Inter-*.ttf` | The Inter Project Authors | SIL Open Font License 1.1 | [`OFL.txt`](./assets/fonts/inter/OFL.txt) |
+| Noto Sans families (OG card service) | Downloaded by `bskyogcard/scripts/install-fonts.ts` | Adobe, Google LLC, and The Noto Project Authors | SIL Open Font License 1.1 | [`README.md`](./bskyogcard/src/assets/fonts/README.md) |
+| country-flag-icons | `assets/icons/flags/` | @catamphetamine | MIT | [`LICENSE`](./assets/icons/flags/LICENSE) |
+| Phosphor UI icons | `src/components/icons/`<br>`bskyembed/src/icons/Phosphor.tsx` | Phosphor Icons | MIT | [`NOTICE.md`](./NOTICE.md) |
+| Material Icons | `bskyweb/static/media/MaterialIcons.*.ttf` | Google, Inc. | Apache License 2.0 | [`NOTICE.md`](./NOTICE.md) |
 
 Build output under `bskyweb/static/media/` also contains compiled Inter files. They are the same
-OFL-licensed typeface, emitted by the web build.
+OFL-licensed typeface, emitted by the web build. The bundled Inter license does not designate a
+Reserved Font Name.
 
-**One thing to watch on Inter:** OFL 1.1 includes a Reserved Font Name provision. If you modify
-or subset the font, the result cannot be distributed under the name "Inter."
+The OG card build downloads Noto Sans fonts into `bskyogcard/src/assets/fonts/` and copies them
+into its build output. Their copyright notices and OFL text are in
+[`bskyogcard/src/assets/fonts/OFL-NOTO.txt`](./bskyogcard/src/assets/fonts/OFL-NOTO.txt). The CJK
+fonts reserve the name "Source."
 
 See [`NOTICE.md`](./NOTICE.md) for the consolidated third-party notices.
 
-## 7. Product imagery — treat as not licensed to you
+## 7. Product imagery — provenance being documented
 
 **`assets/images/`**
 
-Product illustration and announcement imagery — onboarding value-prop art, chat backgrounds,
-feature announcement graphics, and similar.
+Product illustration and announcement imagery — onboarding art, chat backgrounds, feature
+announcement graphics, and similar.
 
-**Treat everything in this directory as outside the MIT license and not licensed for your use.**
-Some of it is commissioned work. Rather than have you guess file by file which is which, we are
-drawing the line at the directory.
+**Rights holder: mixed, and not yet fully documented.** Some of this is Bluesky's own work. Some
+was commissioned from outside illustrators on terms that do not allow sublicensing.
 
-If you are forking, replace these or ship without them.
-See [`assets/images/README.md`](./assets/images/README.md).
+Until that provenance is complete, **treat the whole directory as outside the MIT license and not
+licensed for your use.** If you are forking, replace these assets or ship without them. See
+[`assets/images/README.md`](./assets/images/README.md).
 
 ## 8. Licensed pet artwork — not ours to pass on
 
@@ -139,8 +141,8 @@ You have our blessing to fork this application. To do it cleanly:
    [Section 1](#1-commissioned-bluesky-artwork--removed).
 2. **Keep the Phosphor notice if you redistribute the generated UI icons.** See
    [Section 6](#6-third-party-assets-you-may-redistribute).
-3. **Replace `assets/images/`.** Treat as not licensed to you. See
-   [Section 7](#7-product-imagery--treat-as-not-licensed-to-you).
+3. **Replace `assets/images/`.** Treat as not licensed to you until its provenance is fully
+   documented. See [Section 7](#7-product-imagery--provenance-being-documented).
 4. **License or replace the pet artwork.** Our ToffeeCraft license does not transfer to forks.
    See [Section 8](#8-licensed-pet-artwork--not-ours-to-pass-on).
 5. **Do not restore the removed Bluesky marks** described in
