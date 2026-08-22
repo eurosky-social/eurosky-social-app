@@ -1,6 +1,6 @@
 import {lazy, Suspense, useRef} from 'react'
 import {View} from 'react-native'
-import type ViewShot from 'react-native-view-shot'
+import {type ViewShotRef} from 'react-native-view-shot'
 import {requestPermissionsAsync, saveToLibraryAsync} from 'expo-media-library'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
@@ -23,10 +23,7 @@ import {useAnalytics} from '#/analytics'
 import {IS_NATIVE, IS_WEB} from '#/env'
 import {type app} from '#/lexicons'
 
-const LazyViewShot = lazy(
-  // @ts-expect-error dynamic import
-  () => import('react-native-view-shot/src/index'),
-)
+const LazyViewShot = lazy(() => import('react-native-view-shot'))
 
 interface Props {
   starterPack: app.bsky.graph.defs.StarterPackView
@@ -57,7 +54,7 @@ function ShareDialogInner({
   const t = useTheme()
   const {gtMobile} = useBreakpoints()
 
-  const ref = useRef<ViewShot>(null)
+  const ref = useRef<ViewShotRef>(null)
 
   const onShareLink = async () => {
     if (!link) return
@@ -72,7 +69,7 @@ function ShareDialogInner({
   // Native-only: capture the rendered card (no remote image service) and save
   // it to the photo library.
   const onSave = async () => {
-    const uri = await ref.current?.capture?.()
+    const uri = await ref.current?.capture()
     if (!uri) return
 
     // Write-only permission - saving does not require read access.

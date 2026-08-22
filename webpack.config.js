@@ -67,6 +67,13 @@ module.exports = async function (env, argv) {
     'react-native-gesture-handler': false, // RNGH should not be used on web, so let's cause a build error if it sneaks in
     '@sentry-internal/replay': false, // not used, ~300kb of dead weight
     /*
+     * @sentry/react-native's tracing integration probes for expo-router via a
+     * try/catch require(). We don't use expo-router, so the module can't
+     * resolve and webpack warns on every build. Stubbing it to an empty
+     * module makes the probe return null (`mod?.store ?? null`) silently.
+     */
+    'expo-router/build/global-state/router-store': false,
+    /*
      * react-native-svg's fetchData util imports the ~55KB `buffer` polyfill,
      * but is only needed by SvgUri/SvgXml remote loading, which we don't use.
      * Stubbing it out makes fetchText undefined, so it throws if ever called.
@@ -77,6 +84,18 @@ module.exports = async function (env, argv) {
       __dirname,
       'node_modules/react-native-svg/lib/module/utils/fetchData',
     )]: false,
+    /*
+     * reanimated's webUtils.web.js mixes ESM exports with bare CommonJS
+     * require() calls in try/catch, which webpack leaves untranspiled - they
+     * throw at runtime and createReactDOMStyle & co. silently stay undefined,
+     * making _updatePropsJS crash on every animated style update. The shim
+     * imports the same react-native-web internals statically. See the shim
+     * file for details.
+     */
+    [path.join(
+      __dirname,
+      'node_modules/react-native-reanimated/lib/module/ReanimatedModule/js-reanimated/webUtils',
+    )]: path.join(__dirname, 'web/reanimatedWebUtilsShim.js'),
   })
 
   /*
@@ -102,6 +121,23 @@ module.exports = async function (env, argv) {
       ),
     ),
   )
+
+  /*
+   * expo-font's serverContext.web.js imports `node:async_hooks` for SSR-only
+   * font collection, but webpack can't resolve `node:` URIs for web targets.
+   * Every call site is guarded by `typeof window === 'undefined'`, so in the
+   * browser bundle the module is dead code - strip the scheme prefix and stub
+   * the builtin out with an empty module.
+   */
+  config.plugins.push(
+    new webpack.NormalModuleReplacementPlugin(
+      /^node:async_hooks$/,
+      resource => {
+        resource.request = 'async_hooks'
+      },
+    ),
+  )
+  config.resolve.fallback = {...config.resolve.fallback, async_hooks: false}
 
   // react-native-uuid ships sourceMappingURL comments but no .map files.
   patchSourceMapFilter(config.module.rules, /react-native-uuid/)
@@ -133,6 +169,8 @@ module.exports = async function (env, argv) {
         statsFilename: '../stats.json',
         analyzerMode: OPEN_ANALYZER ? 'server' : 'json',
         defaultSizes: 'parsed',
+        // reasons balloon stats.json past Node's max string length, breaking bundle-size-diff in CI
+        statsOptions: OPEN_ANALYZER ? null : {reasons: false},
       }),
     )
   }
