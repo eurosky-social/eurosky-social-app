@@ -11,6 +11,15 @@ import * as env from '#/env'
  * with pageviews auto-captured by the library) and `index.ts` (native, a no-op
  * for now).
  */
+export const APPVIEW_SHADOW_EVENTS = {
+  success: 'appview:shadow:success',
+  failure: 'appview:shadow:failure',
+} as const
+
+type PlausibleEvent =
+  | keyof Metrics
+  | (typeof APPVIEW_SHADOW_EVENTS)[keyof typeof APPVIEW_SHADOW_EVENTS]
+
 export interface PlausibleClient {
   /**
    * Initialize the sink. Safe to call when disabled (no domain configured) and
@@ -19,11 +28,12 @@ export interface PlausibleClient {
    */
   init(): void
   /**
-   * Forward an allowlisted metric event to Plausible as a custom goal. The
-   * payload is sanitized into low-cardinality string props first.
+   * Forward an allowlisted metric or explicit operational event to Plausible
+   * as a custom goal. The payload is sanitized into low-cardinality string
+   * props first.
    */
   track(
-    event: keyof Metrics,
+    event: PlausibleEvent,
     payload: Record<string, unknown>,
     metadata?: Partial<Metadata>,
   ): void

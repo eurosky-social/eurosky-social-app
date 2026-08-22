@@ -5,6 +5,7 @@ import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
 import {useGetTimeAgo} from '#/lib/hooks/useTimeAgo'
+import {isAccountLabel} from '#/lib/moderation'
 import {useLabelInfo} from '#/lib/moderation/useLabelInfo'
 import {makeProfileLink} from '#/lib/routes/links'
 import {sanitizeHandle} from '#/lib/strings/handles'
@@ -98,7 +99,7 @@ function LabelsOnMeDialogInner(props: LabelsOnMeDialogProps) {
                 key={`${label.val}-${label.src}-${label.uri}`}
                 label={label}
                 isSelfLabel={label.src === currentAccount?.did}
-                showAccountCallout={!isAccount && label.uri.startsWith('did:')}
+                showAccountCallout={!isAccount && isAccountLabel(label)}
                 control={props.control}
                 onPressAppeal={setAppealingLabel}
               />

@@ -34,9 +34,6 @@ import {DeactivateAccountDialog} from './components/DeactivateAccountDialog'
 import {DeleteAccountDialog} from './components/DeleteAccountDialog'
 import {ExportCarDialog} from './components/ExportCarDialog'
 
-/** Account deletion must remain available anywhere account creation is offered. */
-const SHOW_ACCOUNT_DELETION: boolean = true
-
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'AccountSettings'>
 export function AccountSettingsScreen({}: Props) {
   const t = useTheme()

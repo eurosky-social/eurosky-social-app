@@ -8,11 +8,37 @@ import {
   PUBLIC_BSKY_SERVICE,
 } from '#/lib/constants'
 import {createLexClient} from '#/lib/lexClient'
+import {getCachedIsBetaUser} from '#/state/preferences/beta-user-cache'
 import {
   getAppViewProxyService,
   getPublicAppViewUrl,
 } from '#/features/appView/config'
+import {withAppViewShadowFetch} from '#/features/appView/shadow'
 import {networkAwareFetch} from './network'
+
+const IS_BETA_USER_HEADER = 'X-Bsky-Is-Beta-User'
+
+/**
+ * Add account-scoped headers to appview requests.
+ *
+ * Values are read from memory per request so preference changes are reflected
+ * immediately without rebuilding the session bundle.
+ */
+function withAppviewRequestHeaders(agent: Agent): Agent {
+  return {
+    get did() {
+      return agent.did
+    },
+    fetchHandler(path, init) {
+      const headers = new Headers(init?.headers)
+      const isBetaUser = agent.did ? getCachedIsBetaUser(agent.did) : undefined
+      if (isBetaUser !== undefined) {
+        headers.set(IS_BETA_USER_HEADER, String(isBetaUser))
+      }
+      return agent.fetchHandler(path, {...init, headers})
+    },
+  }
+}
 
 /**
  * Build the signed-in appview {@link Client}.
@@ -34,7 +60,7 @@ import {networkAwareFetch} from './network'
  * fetch, which is `networkAwareFetch` wrapped in the disposal kill switch.
  */
 export function buildAppviewClient(agent: Agent): Client {
-  return createLexClient(agent, {
+  return createLexClient(withAppviewRequestHeaders(agent), {
     service: getAppViewProxyService(BLUESKY_PROXY_HEADER.get()) as Service,
   })
 }
@@ -149,7 +175,7 @@ let publicBlueskyLexClient: Client | undefined
 export function getPublicBlueskyAppviewClient(): Client {
   return (publicBlueskyLexClient ??= createLexClient({
     service: BLUESKY_PUBLIC_APPVIEW,
-    fetch: networkAwareFetch,
+    fetch: withAppViewShadowFetch(networkAwareFetch),
   }))
 }
 
@@ -172,6 +198,6 @@ export function getPublicBlueskyAppviewClient(): Client {
 export function getPublicAppviewClient(): Client {
   return (publicLexClient ??= createLexClient({
     service: getPublicAppViewUrl(PUBLIC_BSKY_SERVICE),
-    fetch: networkAwareFetch,
+    fetch: withAppViewShadowFetch(networkAwareFetch),
   }))
 }

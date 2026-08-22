@@ -10,7 +10,12 @@ and [`licenses/PHOSPHOR-MIT.txt`](../../licenses/PHOSPHOR-MIT.txt). See
 
 The remaining assets here have separate licensing considerations:
 
-- `flags/` — country-flag-icons, MIT licensed; see [`flags/README.md`](./flags/README.md)
-- `community/` — third-party service marks; see [`community/README.md`](./community/README.md)
-- `apple_logo.svg`, `android_logo.svg` — Apple and Google trademarks used to identify their
-  services; see [`ASSETS.md`](../../ASSETS.md)
+| Asset | Rights holder | See |
+|---|---|---|
+| `flags/` | @catamphetamine, MIT licensed | [`flags/README.md`](./flags/README.md) |
+| `community/` | Third-party services | [`community/README.md`](./community/README.md) |
+| `apple_logo.svg` | Apple Inc. | [`ASSETS.md`](../../ASSETS.md#5-third-party-trademarks) |
+| `android_logo.svg` | Google LLC | [`ASSETS.md`](../../ASSETS.md#5-third-party-trademarks) |
+
+Adding or changing a UI icon? Follow [`docs/icons.md`](../../docs/icons.md). For other assets,
+update [`ASSETS.md`](../../ASSETS.md) when their licensing is not already covered.

@@ -5,6 +5,8 @@ import {
   type ClientOptions,
 } from '@atproto/lex'
 
+import {withAppViewShadowFetch} from '#/features/appView/shadow'
+
 /**
  * App-standard factory for lex {@link Client}s. Use this instead of `new
  * Client(...)` so every client shares the same lenient response processing.
@@ -39,7 +41,9 @@ export function createLexClient(
  *
  * Requests use PLAIN `fetch`, not `networkAwareFetch`: the host is untrusted
  * input, and a typo'd or dead service must not be reported as the app losing
- * network reachability.
+ * network reachability. The fetch wrapper remains inert for untrusted hosts; it
+ * only shadows read calls when this factory is deliberately pointed at a
+ * canonical Bluesky AppView.
  *
  * `appLabelers: null` suppresses the global `Client.appLabelers` static: these
  * are `com.atproto.server` calls to a host the user typed, which have no use
@@ -47,5 +51,8 @@ export function createLexClient(
  * moderation authorities to an arbitrary third-party server.
  */
 export function createServiceClient(service: string): Client {
-  return createLexClient({service}, {appLabelers: null})
+  return createLexClient(
+    {service, fetch: withAppViewShadowFetch(globalThis.fetch)},
+    {appLabelers: null},
+  )
 }
