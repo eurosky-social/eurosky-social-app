@@ -460,6 +460,15 @@ describe('parseEmbedPlayerFromUrl', () => {
     'https://static.klipy.com/ii/abc123/73/ac/someFile.gif',
     'https://static.klipy.com/other/path.gif?hh=200&ww=300',
     'https://static.klipy.com',
+
+    'https://plyr.fm/track/1250',
+    'https://www.plyr.fm/track/1250',
+    'https://plyr.fm/playlist/0d6d5f8e-0c9a-4b2e-9c1a-4f5a2b3c4d5e',
+    'https://plyr.fm/u/artwo.xyz/album/emo-dance-music',
+    'https://plyr.fm/u/artwo.xyz',
+    'https://plyr.fm/u/artwo.xyz/album',
+    'https://plyr.fm/track',
+    'https://plyr.fm/',
   ]
 
   const outputs = [
@@ -879,6 +888,33 @@ describe('parseEmbedPlayerFromUrl', () => {
         width: 300,
         height: 200,
       },
+    },
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+
+    {
+      type: 'plyr_track',
+      source: 'plyr',
+      playerUri: 'https://plyr.fm/embed/track/1250?autoplay=1',
+    },
+    {
+      type: 'plyr_track',
+      source: 'plyr',
+      playerUri: 'https://plyr.fm/embed/track/1250?autoplay=1',
+    },
+    {
+      type: 'plyr_playlist',
+      source: 'plyr',
+      playerUri:
+        'https://plyr.fm/embed/playlist/0d6d5f8e-0c9a-4b2e-9c1a-4f5a2b3c4d5e?autoplay=1',
+    },
+    {
+      type: 'plyr_album',
+      source: 'plyr',
+      playerUri:
+        'https://plyr.fm/embed/album/artwo.xyz/emo-dance-music?autoplay=1',
     },
     undefined,
     undefined,

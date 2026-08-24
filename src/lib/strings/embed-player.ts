@@ -52,6 +52,8 @@ export type EmbedPlayerType =
   | 'bandcamp_album'
   | 'bandcamp_track'
   | 'plyr_track'
+  | 'plyr_album'
+  | 'plyr_playlist'
 
 export const externalEmbedLabels: Record<EmbedPlayerSource, string> = {
   youtube: 'YouTube',
@@ -113,13 +115,29 @@ export function parseEmbedPlayerFromUrl(
 
   // plyr.fm
   if (urlp.hostname === 'plyr.fm' || urlp.hostname === 'www.plyr.fm') {
-    const [__, type, id] = urlp.pathname.split('/')
+    const [__, type, id, albumSegment, slug] = urlp.pathname.split('/')
 
     if (type === 'track' && id) {
       return {
         type: 'plyr_track',
         source: 'plyr',
         playerUri: `https://plyr.fm/embed/track/${id}?autoplay=1`,
+      }
+    }
+
+    if (type === 'playlist' && id) {
+      return {
+        type: 'plyr_playlist',
+        source: 'plyr',
+        playerUri: `https://plyr.fm/embed/playlist/${id}?autoplay=1`,
+      }
+    }
+
+    if (type === 'u' && id && albumSegment === 'album' && slug) {
+      return {
+        type: 'plyr_album',
+        source: 'plyr',
+        playerUri: `https://plyr.fm/embed/album/${id}/${slug}?autoplay=1`,
       }
     }
   }
@@ -570,6 +588,8 @@ export function getPlayerAspect({
     case 'apple_music_playlist':
     case 'spotify_playlist':
     case 'soundcloud_set':
+    case 'plyr_album':
+    case 'plyr_playlist':
       return {height: 380}
     case 'spotify_song':
       if (width <= 300) {
