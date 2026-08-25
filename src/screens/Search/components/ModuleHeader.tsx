@@ -4,6 +4,7 @@ import {AtUri} from '@atproto/syntax'
 
 import {PressableScale} from '#/lib/custom-animations/PressableScale'
 import {makeCustomFeedLink} from '#/lib/routes/links'
+import {feedDisplayName} from '#/state/queries/feed'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, native, useTheme, type ViewStyleProp} from '#/alf'
 import {Button, ButtonIcon} from '#/components/Button'
@@ -55,7 +56,7 @@ export function FeedLink({
   return (
     <Link
       to={makeCustomFeedLink(did, rkey)}
-      label={feed.displayName}
+      label={feedDisplayName(feed)}
       style={[a.flex_1]}>
       {({focused, hovered, pressed}) => (
         <View

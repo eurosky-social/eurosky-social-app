@@ -13,7 +13,11 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 
-import {DISCOVER_FEED_URI, DISCOVER_SAVED_FEED} from '#/lib/constants'
+import {
+  DISCOVER_FEED_URI,
+  DISCOVER_SAVED_FEED,
+  FU_FEED_URI,
+} from '#/lib/constants'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {GCTIME, STALE} from '#/state/queries'
@@ -92,6 +96,23 @@ const feedSourceNSIDs = {
   list: 'app.bsky.graph.list',
 }
 
+/**
+ * The name to show for a feed generator. Normally the record's own displayName,
+ * but the Eurosky "fu" feed is surfaced as a localized "For you" throughout mu:
+ * it ships as the default home feed (see the selected-feed provider), where the
+ * publisher's terse record name reads as a typo rather than a feed.
+ */
+export function feedDisplayName(
+  view: app.bsky.feed.defs.GeneratorView,
+): string {
+  if (view.uri === FU_FEED_URI) {
+    return t`For you`
+  }
+  return view.displayName
+    ? sanitizeDisplayName(view.displayName)
+    : t`Feed by ${sanitizeHandle(view.creator.handle, '@')}`
+}
+
 export function hydrateFeedGenerator(
   view: app.bsky.feed.defs.GeneratorView,
 ): FeedSourceInfo {
@@ -122,9 +143,7 @@ export function hydrateFeedGenerator(
       params: route[1],
     },
     avatar: view.avatar,
-    displayName: view.displayName
-      ? sanitizeDisplayName(view.displayName)
-      : t`Feed by ${sanitizeHandle(view.creator.handle, '@')}`,
+    displayName: feedDisplayName(view),
     description,
     creatorDid: view.creator.did,
     creatorHandle: view.creator.handle,
