@@ -59,6 +59,8 @@ export const fox: Species = {
     walk: 'Walk',
     walkSpeed: 60,
     walkFacesRight: true,
+    sleep: 'Sleeping',
+    sleepEnter: 'LieDown',
     // A quick playful pounce when tapped.
     reactions: ['Attack'],
   },

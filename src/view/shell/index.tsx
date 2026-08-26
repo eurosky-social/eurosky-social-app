@@ -45,6 +45,11 @@ import {RedirectOverlay} from '#/ageAssurance/components/RedirectOverlay'
 import {PassiveAnalytics} from '#/analytics/PassiveAnalytics'
 import {IS_ANDROID, IS_IOS, IS_LIQUID_GLASS} from '#/env'
 import {PetCompanion} from '#/features/petCompanion'
+import {
+  PetRestBreakOverlay,
+  PetRestBreaksTracker,
+  useIsPetResting,
+} from '#/features/petRestBreaks'
 import {RoutesContainer, TabsNavigator} from '#/Navigation'
 import {BottomSheetOutlet} from '../../../modules/bottom-sheet'
 import {updateActiveViewAsync} from '../../../modules/expo-bluesky-swiss-army/src/VisibilityView'
@@ -54,6 +59,7 @@ import {DrawerContent} from './Drawer'
 function ShellInner() {
   const insets = useSafeAreaInsets()
   const {state: policyUpdateState} = usePolicyUpdateContext()
+  const isPetResting = useIsPetResting()
 
   const closeAnyActiveElement = useCloseAnyActiveElement()
 
@@ -102,32 +108,41 @@ function ShellInner() {
 
   return (
     <>
-      <View style={[a.h_full]}>
-        <ErrorBoundary
-          style={{paddingTop: insets.top, paddingBottom: insets.bottom}}>
-          <TabsNavigator layout={drawerLayout} />
-        </ErrorBoundary>
+      <View
+        accessibilityElementsHidden={isPetResting}
+        importantForAccessibility={
+          isPetResting ? 'no-hide-descendants' : 'auto'
+        }
+        pointerEvents={isPetResting ? 'none' : 'auto'}
+        style={[a.flex_1]}>
+        <View style={[a.h_full]}>
+          <ErrorBoundary
+            style={{paddingTop: insets.top, paddingBottom: insets.bottom}}>
+            <TabsNavigator layout={drawerLayout} />
+          </ErrorBoundary>
+        </View>
+        <PetCompanion />
+        <Composer />
+        <MutedWordsDialog />
+        <SigninDialog />
+        <EmailDialog />
+        <AgeAssuranceRedirectDialog />
+        <InAppBrowserConsentDialog />
+        <LinkWarningDialog />
+        <Lightbox />
+        <NuxDialogs />
+        <GlobalReportDialog />
+
+        {/* Until policy update has been completed by the user, don't render anything that is portaled */}
+        {policyUpdateState.completed && (
+          <>
+            <PortalOutlet />
+            <BottomSheetOutlet />
+          </>
+        )}
       </View>
-      <PetCompanion />
-      <Composer />
-      <MutedWordsDialog />
-      <SigninDialog />
-      <EmailDialog />
-      <AgeAssuranceRedirectDialog />
-      <InAppBrowserConsentDialog />
-      <LinkWarningDialog />
-      <Lightbox />
-      <NuxDialogs />
-      <GlobalReportDialog />
 
-      {/* Until policy update has been completed by the user, don't render anything that is portaled */}
-      {policyUpdateState.completed && (
-        <>
-          <PortalOutlet />
-          <BottomSheetOutlet />
-        </>
-      )}
-
+      <PetRestBreakOverlay />
       <PolicyUpdateOverlayPortalOutlet />
     </>
   )
@@ -157,58 +172,61 @@ function DrawerLayout({children}: {children: React.ReactNode}) {
   )
 
   return (
-    <Drawer
-      renderDrawerContent={renderDrawerContent}
-      drawerStyle={{width: Math.min(400, winDim.width * 0.8)}}
-      configureGestureHandler={handler => {
-        handler = handler.requireExternalGestureToFail(trendingScrollGesture)
+    <>
+      <Drawer
+        renderDrawerContent={renderDrawerContent}
+        drawerStyle={{width: Math.min(400, winDim.width * 0.8)}}
+        configureGestureHandler={handler => {
+          handler = handler.requireExternalGestureToFail(trendingScrollGesture)
 
-        if (swipeEnabled) {
-          if (isDrawerOpen) {
-            return handler.activeOffsetX([-1, 1])
+          if (swipeEnabled) {
+            if (isDrawerOpen) {
+              return handler.activeOffsetX([-1, 1])
+            } else {
+              return (
+                handler
+                  // Any movement to the left is a pager swipe
+                  // so fail the drawer gesture immediately.
+                  .failOffsetX(-1)
+                  // Don't rush declaring that a movement to the right
+                  // is a drawer swipe. It could be a vertical scroll, or a
+                  // slow horizontal carousel swipe. On Android a child
+                  // `blocksExternalGesture` only holds the drawer off once the
+                  // native scroll has activated, which on a slow swipe doesn't
+                  // happen until movement crosses the native touch slop
+                  // (~8-16px). Activating the drawer below that lets a slow
+                  // carousel swipe pop the drawer open (APP-2119), so require
+                  // more travel before claiming on Android.
+                  .activeOffsetX(IS_ANDROID ? 20 : 5)
+              )
+            }
           } else {
-            return (
-              handler
-                // Any movement to the left is a pager swipe
-                // so fail the drawer gesture immediately.
-                .failOffsetX(-1)
-                // Don't rush declaring that a movement to the right
-                // is a drawer swipe. It could be a vertical scroll, or a
-                // slow horizontal carousel swipe. On Android a child
-                // `blocksExternalGesture` only holds the drawer off once the
-                // native scroll has activated, which on a slow swipe doesn't
-                // happen until movement crosses the native touch slop
-                // (~8-16px). Activating the drawer below that lets a slow
-                // carousel swipe pop the drawer open (APP-2119), so require
-                // more travel before claiming on Android.
-                .activeOffsetX(IS_ANDROID ? 20 : 5)
-            )
+            // Fail the gesture immediately.
+            // This seems more reliable than the `swipeEnabled` prop.
+            // With `swipeEnabled` alone, the gesture may freeze after toggling off/on.
+            return handler.failOffsetX([0, 0]).failOffsetY([0, 0])
           }
-        } else {
-          // Fail the gesture immediately.
-          // This seems more reliable than the `swipeEnabled` prop.
-          // With `swipeEnabled` alone, the gesture may freeze after toggling off/on.
-          return handler.failOffsetX([0, 0]).failOffsetY([0, 0])
-        }
-      }}
-      open={isDrawerOpen}
-      onOpen={onOpenDrawer}
-      onClose={onCloseDrawer}
-      swipeEdgeWidth={winDim.width}
-      swipeMinVelocity={100}
-      swipeMinDistance={10}
-      drawerType={IS_IOS ? 'slide' : 'front'}
-      overlayStyle={{
-        backgroundColor: select(t.name, {
-          light: 'rgba(0, 57, 117, 0.1)',
-          dark: IS_ANDROID
-            ? 'rgba(16, 133, 254, 0.1)'
-            : 'rgba(1, 82, 168, 0.1)',
-          dim: 'rgba(10, 13, 16, 0.8)',
-        }),
-      }}>
-      {children}
-    </Drawer>
+        }}
+        open={isDrawerOpen}
+        onOpen={onOpenDrawer}
+        onClose={onCloseDrawer}
+        swipeEdgeWidth={winDim.width}
+        swipeMinVelocity={100}
+        swipeMinDistance={10}
+        drawerType={IS_IOS ? 'slide' : 'front'}
+        overlayStyle={{
+          backgroundColor: select(t.name, {
+            light: 'rgba(0, 57, 117, 0.1)',
+            dark: IS_ANDROID
+              ? 'rgba(16, 133, 254, 0.1)'
+              : 'rgba(1, 82, 168, 0.1)',
+            dim: 'rgba(10, 13, 16, 0.8)',
+          }),
+        }}>
+        {children}
+      </Drawer>
+      <PetRestBreaksTracker />
+    </>
   )
 }
 

@@ -8,11 +8,17 @@ import {
   usePetCompanion,
   useSetPetCompanion,
 } from '#/state/preferences/pet-companion'
+import {
+  usePetRestBreaks,
+  useSetPetRestBreaks,
+} from '#/state/preferences/pet-rest-breaks'
 import * as SettingsList from '#/screens/Settings/components/SettingsList'
 import {atoms as a, useTheme} from '#/alf'
 import * as Toggle from '#/components/forms/Toggle'
+import {Clock_Stroke2_Corner0_Rounded as ClockIcon} from '#/components/icons/Clock'
 import {Heart2_Stroke2_Corner0_Rounded as HeartIcon} from '#/components/icons/Heart2'
 import * as Layout from '#/components/Layout'
+import * as Select from '#/components/Select'
 import {Text} from '#/components/Typography'
 import {PetSprite} from '#/features/petCompanion/PetSprite'
 import {
@@ -21,6 +27,11 @@ import {
   resolveVariant,
 } from '#/features/petCompanion/registry'
 import {type Species} from '#/features/petCompanion/types'
+import {
+  BROWSING_DURATION_OPTIONS,
+  MINUTE,
+  SLEEP_DURATION_OPTIONS,
+} from '#/features/petRestBreaks/constants'
 
 const SWATCH_SIZE = 64
 
@@ -33,9 +44,39 @@ export function PetCompanionSettingsScreen({}: Props) {
   const t = useTheme()
   const {enabled, species: speciesId, variant} = usePetCompanion()
   const setPetCompanion = useSetPetCompanion()
+  const restBreaks = usePetRestBreaks()
+  const setRestBreaks = useSetPetRestBreaks()
 
   const species = getSpecies(speciesId)
   const currentVariant = resolveVariant(species, variant)
+  const browsingDurationOptions = BROWSING_DURATION_OPTIONS.map(minutes => ({
+    value: String(minutes),
+    label: minutes === 60 ? l`1 hour` : l`${minutes} minutes`,
+  }))
+  const sleepDurationOptions = SLEEP_DURATION_OPTIONS.map(hours => ({
+    value: String(hours),
+    label: hours === 1 ? l`1 hour` : l`${hours} hours`,
+  }))
+
+  const onToggleRestBreaks = (value: boolean) => {
+    setRestBreaks({
+      enabled: value,
+      remainingBrowsingMs: restBreaks.browsingDurationMinutes * MINUTE,
+      browsingEndsAt: null,
+      browsingOwnerId: null,
+      sleepUntil: null,
+    })
+  }
+  const onChangeBrowsingDuration = (value: string) => {
+    const browsingDurationMinutes = Number(value)
+    setRestBreaks({
+      browsingDurationMinutes,
+      remainingBrowsingMs: browsingDurationMinutes * MINUTE,
+      browsingEndsAt: null,
+      browsingOwnerId: null,
+      sleepUntil: null,
+    })
+  }
 
   // Switching species keeps the current coat if that species has it, otherwise
   // falls back to its default.
@@ -117,6 +158,96 @@ export function PetCompanionSettingsScreen({}: Props) {
               <Toggle.Platform />
             </Toggle.Item>
           </SettingsList.Group>
+
+          {enabled && (
+            <>
+              <SettingsList.Divider />
+              <SettingsList.Group contentContainerStyle={[a.gap_md]}>
+                <SettingsList.ItemIcon icon={ClockIcon} />
+                <SettingsList.ItemText>
+                  <Trans>Pet rest breaks</Trans>
+                </SettingsList.ItemText>
+                <Text
+                  style={[
+                    a.text_sm,
+                    a.leading_snug,
+                    t.atoms.text_contrast_medium,
+                    a.w_full,
+                  ]}>
+                  <Trans>
+                    Choose when your companion takes a nap while you browse.
+                    This feature is optional, and all rest break data stays on
+                    this device.
+                  </Trans>
+                </Text>
+                <Toggle.Item
+                  name="pet_rest_breaks_enabled"
+                  label={l`Take pet rest breaks`}
+                  value={restBreaks.enabled}
+                  onChange={onToggleRestBreaks}
+                  style={[a.w_full]}>
+                  <Toggle.LabelText style={[a.flex_1]}>
+                    <Trans>Take pet rest breaks</Trans>
+                  </Toggle.LabelText>
+                  <Toggle.Platform />
+                </Toggle.Item>
+
+                {restBreaks.enabled && (
+                  <View style={[a.w_full, a.gap_lg]}>
+                    <View style={[a.w_full, a.gap_sm]}>
+                      <Text style={[a.text_sm, a.font_bold]}>
+                        <Trans>Browsing time</Trans>
+                      </Text>
+                      <Select.Root
+                        value={String(restBreaks.browsingDurationMinutes)}
+                        onValueChange={onChangeBrowsingDuration}>
+                        <Select.Trigger label={l`Select browsing time`}>
+                          <Select.ValueText />
+                          <Select.Icon />
+                        </Select.Trigger>
+                        <Select.Content
+                          label={l`Browsing time`}
+                          items={browsingDurationOptions}
+                          renderItem={({label, value}) => (
+                            <Select.Item value={value} label={label}>
+                              <Select.ItemIndicator />
+                              <Select.ItemText>{label}</Select.ItemText>
+                            </Select.Item>
+                          )}
+                        />
+                      </Select.Root>
+                    </View>
+
+                    <View style={[a.w_full, a.gap_sm]}>
+                      <Text style={[a.text_sm, a.font_bold]}>
+                        <Trans>Sleep time</Trans>
+                      </Text>
+                      <Select.Root
+                        value={String(restBreaks.sleepDurationHours)}
+                        onValueChange={value =>
+                          setRestBreaks({sleepDurationHours: Number(value)})
+                        }>
+                        <Select.Trigger label={l`Select sleep time`}>
+                          <Select.ValueText />
+                          <Select.Icon />
+                        </Select.Trigger>
+                        <Select.Content
+                          label={l`Sleep time`}
+                          items={sleepDurationOptions}
+                          renderItem={({label, value}) => (
+                            <Select.Item value={value} label={label}>
+                              <Select.ItemIndicator />
+                              <Select.ItemText>{label}</Select.ItemText>
+                            </Select.Item>
+                          )}
+                        />
+                      </Select.Root>
+                    </View>
+                  </View>
+                )}
+              </SettingsList.Group>
+            </>
+          )}
 
           {enabled && animalOptions.length > 1 && (
             <>

@@ -90,6 +90,7 @@ export const cat: Species = {
     walk: 'Running',
     walkSpeed: 60,
     walkFacesRight: true,
+    sleep: 'Sleeping',
     reactions: ['Excited', 'Happy'],
   },
 }

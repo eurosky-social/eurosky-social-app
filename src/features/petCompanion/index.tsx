@@ -15,6 +15,7 @@ import {usePetCompanion} from '#/state/preferences/pet-companion'
 import {useSession} from '#/state/session'
 import {useShellLayout} from '#/state/shell/shell-layout'
 import {IS_WEB} from '#/env'
+import {useIsPetResting} from '#/features/petRestBreaks'
 import {PetSprite} from './PetSprite'
 import {getSpecies, resolveVariant} from './registry'
 import {type Species} from './types'
@@ -39,8 +40,9 @@ const pick = <T,>(arr: readonly T[]): T =>
 export function PetCompanion() {
   const {enabled, species: speciesId, variant} = usePetCompanion()
   const {hasSession} = useSession()
+  const isPetResting = useIsPetResting()
 
-  if (!enabled || !hasSession) return null
+  if (!enabled || !hasSession || isPetResting) return null
 
   const species = getSpecies(speciesId)
   return (

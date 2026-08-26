@@ -8,6 +8,7 @@ import {Provider as InterfaceStyleProvider} from './interface-style'
 import {Provider as LanguagesProvider} from './languages'
 import {Provider as LargeAltBadgeProvider} from './large-alt-badge'
 import {Provider as PetCompanionProvider} from './pet-companion'
+import {Provider as PetRestBreaksProvider} from './pet-rest-breaks'
 import {Provider as SubtitlesProvider} from './subtitles'
 import {Provider as TranslationProviderProvider} from './translation-provider'
 import {Provider as TrendingSettingsProvider} from './trending'
@@ -28,6 +29,7 @@ export {useInterfaceStyle, useSetInterfaceStyle} from './interface-style'
 export {useLabelDefinitions} from './label-defs'
 export {useLanguagePrefs, useLanguagePrefsApi} from './languages'
 export {usePetCompanion, useSetPetCompanion} from './pet-companion'
+export {usePetRestBreaks, useSetPetRestBreaks} from './pet-rest-breaks'
 export {useSetSubtitlesEnabled, useSubtitlesEnabled} from './subtitles'
 export {
   useLibreTranslateInstance,
@@ -50,11 +52,13 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
                       <SubtitlesProvider>
                         <TrendingSettingsProvider>
                           <PetCompanionProvider>
-                            <TranslationProviderProvider>
-                              <InterfaceStyleProvider>
-                                {children}
-                              </InterfaceStyleProvider>
-                            </TranslationProviderProvider>
+                            <PetRestBreaksProvider>
+                              <TranslationProviderProvider>
+                                <InterfaceStyleProvider>
+                                  {children}
+                                </InterfaceStyleProvider>
+                              </TranslationProviderProvider>
+                            </PetRestBreaksProvider>
                           </PetCompanionProvider>
                         </TrendingSettingsProvider>
                       </SubtitlesProvider>

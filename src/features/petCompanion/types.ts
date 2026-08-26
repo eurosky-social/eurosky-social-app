@@ -34,6 +34,10 @@ export interface PetBehavior {
   // Whether the walk art is authored facing right. Default true; set false for
   // packs whose walk cycle gallops left, so the director mirrors correctly.
   walkFacesRight?: boolean
+  /** The looping state used while a rest break is active. */
+  sleep: string
+  /** Optional one-shot transition before settling into the sleeping state. */
+  sleepEnter?: string
   // States played when the pet is tapped. May be loop or one-shot states; the
   // director holds loops briefly and lets one-shots resume via onAnimationEnd.
   reactions: string[]

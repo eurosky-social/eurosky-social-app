@@ -34,6 +34,11 @@ import {NoAccessScreen} from '#/ageAssurance/components/NoAccessScreen'
 import {RedirectOverlay} from '#/ageAssurance/components/RedirectOverlay'
 import {PassiveAnalytics} from '#/analytics/PassiveAnalytics'
 import {PetCompanion} from '#/features/petCompanion'
+import {
+  PetRestBreakOverlay,
+  PetRestBreaksTracker,
+  useIsPetResting,
+} from '#/features/petRestBreaks'
 import {FlatNavigator, RoutesContainer} from '#/Navigation'
 import {Composer} from './Composer'
 import {DrawerContent} from './Drawer'
@@ -43,6 +48,7 @@ function ShellInner() {
   const closeAllActiveElements = useCloseAllActiveElements()
   const {state: policyUpdateState} = usePolicyUpdateContext()
   const welcomeModalControl = useWelcomeModal()
+  const isPetResting = useIsPetResting()
 
   useIntentHandler()
 
@@ -61,31 +67,36 @@ function ShellInner() {
   )
   return (
     <>
-      <ErrorBoundary>
-        <FlatNavigator layout={drawerLayout} />
-      </ErrorBoundary>
-      <PetCompanion />
-      <Composer />
-      <MutedWordsDialog />
-      <SigninDialog />
-      <EmailDialog />
-      <AgeAssuranceRedirectDialog />
-      <LinkWarningDialog />
-      <Lightbox />
-      <NuxDialogs />
-      <GlobalReportDialog />
+      <View
+        accessibilityElementsHidden={isPetResting}
+        importantForAccessibility={
+          isPetResting ? 'no-hide-descendants' : 'auto'
+        }
+        pointerEvents={isPetResting ? 'none' : 'auto'}
+        style={[a.flex_1]}>
+        <ErrorBoundary>
+          <FlatNavigator layout={drawerLayout} />
+        </ErrorBoundary>
+        <PetCompanion />
+        <Composer />
+        <MutedWordsDialog />
+        <SigninDialog />
+        <EmailDialog />
+        <AgeAssuranceRedirectDialog />
+        <LinkWarningDialog />
+        <Lightbox />
+        <NuxDialogs />
+        <GlobalReportDialog />
 
-      {welcomeModalControl.isOpen && (
-        <WelcomeModal control={welcomeModalControl} />
-      )}
+        {welcomeModalControl.isOpen && (
+          <WelcomeModal control={welcomeModalControl} />
+        )}
 
-      {/* Until policy update has been completed by the user, don't render anything that is portaled */}
-      {policyUpdateState.completed && (
-        <>
-          <PortalOutlet />
-        </>
-      )}
+        {/* Until policy update has been completed by the user, don't render anything that is portaled */}
+        {policyUpdateState.completed && <PortalOutlet />}
+      </View>
 
+      <PetRestBreakOverlay />
       <PolicyUpdateOverlayPortalOutlet />
     </>
   )
@@ -153,6 +164,7 @@ function DrawerLayout({children}: {children: React.ReactNode}) {
           </TouchableWithoutFeedback>
         </>
       )}
+      <PetRestBreaksTracker />
     </>
   )
 }

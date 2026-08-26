@@ -4,6 +4,11 @@ import {z} from 'zod'
 import {deviceLanguageCodes, deviceLocales} from '#/locale/deviceLocales'
 import {findSupportedAppLanguage} from '#/locale/helpers'
 import {logger} from '#/logger'
+import {
+  DEFAULT_BROWSING_DURATION_MINUTES,
+  DEFAULT_SLEEP_DURATION_HOURS,
+  MINUTE,
+} from '#/features/petRestBreaks/constants'
 import {PlatformInfo} from '../../../modules/expo-bluesky-swiss-army'
 
 const externalEmbedOptions = ['show', 'hide'] as const
@@ -170,6 +175,19 @@ const schema = z.object({
       variant: z.string(),
     })
     .optional(),
+  // Eurosky: optional, device-local breaks prompted by the companion pet.
+  petRestBreaks: z
+    .object({
+      enabled: z.boolean(),
+      browsingDurationMinutes: z.number().int().positive(),
+      sleepDurationHours: z.number().positive(),
+      remainingBrowsingMs: z.number().nonnegative(),
+      browsingEndsAt: z.number().nullable(),
+      /** Optional for compatibility with data saved before ownership. */
+      browsingOwnerId: z.string().nullable().optional(),
+      sleepUntil: z.number().nullable(),
+    })
+    .optional(),
   hasCheckedForStarterPack: z.boolean().optional(),
   subtitlesEnabled: z.boolean().optional(),
   /** @deprecated */
@@ -225,6 +243,15 @@ export const defaults: Schema = {
   disableHaptics: false,
   disableAutoplay: PlatformInfo.getIsReducedMotionEnabled(),
   petCompanion: {enabled: false, species: 'cat', variant: 'orange'},
+  petRestBreaks: {
+    enabled: false,
+    browsingDurationMinutes: DEFAULT_BROWSING_DURATION_MINUTES,
+    sleepDurationHours: DEFAULT_SLEEP_DURATION_HOURS,
+    remainingBrowsingMs: DEFAULT_BROWSING_DURATION_MINUTES * MINUTE,
+    browsingEndsAt: null,
+    browsingOwnerId: null,
+    sleepUntil: null,
+  },
   hasCheckedForStarterPack: false,
   subtitlesEnabled: true,
   trendingDisabled: false,

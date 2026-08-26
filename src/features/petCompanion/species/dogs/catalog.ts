@@ -134,6 +134,8 @@ function makeDog(spec: {
       // pixel of body: ~120px/s for a size-137 dog vs the cat's 60).
       walkSpeed: Math.round(size * 0.9),
       walkFacesRight: true,
+      sleep: 'Sleeping',
+      sleepEnter: 'LieDown',
       reactions: ['Bark'],
     },
   }
