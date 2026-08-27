@@ -2,6 +2,7 @@ import {type DidString} from '@atproto/syntax'
 
 import packageJson from '#/../package.json'
 import {BRAND} from '#/config/brand'
+import {OAUTH_SIGNUP_PDS_HOST} from '#/config/oauth'
 
 /**
  * The semver version of the app, as defined in `package.json.`
@@ -102,6 +103,21 @@ export const APPVIEW_SHADOW_DID: string =
  */
 export const CHAT_PROXY_DID: DidString =
   process.env.EXPO_PUBLIC_CHAT_PROXY_DID || 'did:web:api.bsky.chat'
+
+/**
+ * Service whose `/xrpc/_health` decides whether the app considers itself
+ * online (see lib/react-query.tsx). This gates TanStack Query's global
+ * `onlineManager`, so it must point at a service we operate.
+ *
+ * It previously used the Bluesky public AppView. That made an AppView outage
+ * fatal to the whole app: one failed request flipped `onlineManager` offline,
+ * which pauses every query - including authed ones bound for our own AppView -
+ * and recovery was gated on a probe against the very service that was down.
+ * Defaults to the signup PDS because it is first-party and always reachable
+ * when the network is. Override per-deploy with EXPO_PUBLIC_HEALTH_PROBE_SERVICE.
+ */
+export const HEALTH_PROBE_SERVICE: string =
+  process.env.EXPO_PUBLIC_HEALTH_PROBE_SERVICE || OAUTH_SIGNUP_PDS_HOST
 
 /**
  * Metrics API host
