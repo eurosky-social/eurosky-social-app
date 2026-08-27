@@ -13,6 +13,7 @@ import {type Props as SVGIconProps} from '#/components/icons/common'
 import {EyeSlash_Stroke2_Corner0_Rounded as EyeSlash} from '#/components/icons/EyeSlash'
 import {Warning_Stroke2_Corner0_Rounded as Warning} from '#/components/icons/Warning'
 import {type AppModerationCause} from '#/components/Pills'
+import {isAccountLabel} from '../moderation'
 import {useGlobalLabelStrings} from './useGlobalLabelStrings'
 import {getDefinition, getLabelStrings} from './useLabelInfo'
 
@@ -160,7 +161,7 @@ export function useModerationCauseDescription(
         sourceType: cause.source.type,
         sourceAvi: labeler?.creator.avatar,
         sourceDid: cause.label.src,
-        isSubjectAccount: cause.label.uri.startsWith('did:'),
+        isSubjectAccount: isAccountLabel(cause.label),
       }
     }
     // should never happen

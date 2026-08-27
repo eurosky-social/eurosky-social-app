@@ -57,6 +57,9 @@ jobs:
           # Seasonal sports module is currently retired.
           EXPO_PUBLIC_ENABLE_SPORTS: 'false'
           EXPO_PUBLIC_ENABLE_APP_CONFIG: 'false'
+          # Temporary pre-cutover validation: copy 10% of eligible Bluesky
+          # AppView reads to api.eurosky.network and discard the response.
+          EXPO_PUBLIC_APPVIEW_SHADOW_PERCENTAGE: '10'
           # Product-analytics events otherwise POST to events.bsky.app. Disabled;
           # GrowthBook flag fetching is unaffected (separate from this client).
           EXPO_PUBLIC_ENABLE_METRICS: 'false'

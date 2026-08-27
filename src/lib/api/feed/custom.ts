@@ -11,6 +11,7 @@ import {
   getContentLanguages,
 } from '#/state/preferences/languages'
 import {getPublicAppViewUrl} from '#/features/appView/config'
+import {withAppViewShadowFetch} from '#/features/appView/shadow'
 import {app} from '#/lexicons'
 import {type FeedAPI, type FeedAPIResponse} from './types'
 import {createBskyTopicsHeader, isBlueskyOwnedFeed} from './utils'
@@ -123,6 +124,7 @@ let loggedOutAppviewClient: Client | undefined
 function getLoggedOutAppviewClient(): Client {
   return (loggedOutAppviewClient ??= createLexClient({
     service: getPublicAppViewUrl(PUBLIC_APPVIEW),
+    fetch: withAppViewShadowFetch(globalThis.fetch),
   }))
 }
 

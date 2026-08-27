@@ -2,6 +2,7 @@ import {type DidString} from '@atproto/syntax'
 
 import packageJson from '#/../package.json'
 import {BRAND} from '#/config/brand'
+import {OAUTH_SIGNUP_PDS_HOST} from '#/config/oauth'
 
 /**
  * The semver version of the app, as defined in `package.json.`
@@ -76,10 +77,47 @@ export const BLUESKY_PROXY_DID: DidString =
   process.env.EXPO_PUBLIC_BLUESKY_PROXY_DID || BRAND.services.appViewDid
 
 /**
+ * Percentage (0-100) of eligible read-only Bluesky AppView calls also sent to
+ * the candidate AppView. OAuth/DPoP calls are excluded because their proofs
+ * cannot be safely replayed. Invalid values disable shadowing; out-of-range
+ * values are clamped so rollout configuration cannot amplify traffic above
+ * 100%.
+ */
+const requestedAppViewShadowPercentage = Number(
+  process.env.EXPO_PUBLIC_APPVIEW_SHADOW_PERCENTAGE,
+)
+export const APPVIEW_SHADOW_PERCENTAGE: number = Number.isFinite(
+  requestedAppViewShadowPercentage,
+)
+  ? Math.min(100, Math.max(0, requestedAppViewShadowPercentage))
+  : 0
+
+/** Candidate AppView used for sampled shadow reads. */
+export const APPVIEW_SHADOW_URL: string =
+  process.env.EXPO_PUBLIC_APPVIEW_SHADOW_URL || 'https://api.eurosky.network'
+export const APPVIEW_SHADOW_DID: string =
+  process.env.EXPO_PUBLIC_APPVIEW_SHADOW_DID || 'did:web:api.eurosky.network'
+
+/**
  * The DID of the chat service to proxy to
  */
 export const CHAT_PROXY_DID: DidString =
   process.env.EXPO_PUBLIC_CHAT_PROXY_DID || 'did:web:api.bsky.chat'
+
+/**
+ * Service whose `/xrpc/_health` decides whether the app considers itself
+ * online (see lib/react-query.tsx). This gates TanStack Query's global
+ * `onlineManager`, so it must point at a service we operate.
+ *
+ * It previously used the Bluesky public AppView. That made an AppView outage
+ * fatal to the whole app: one failed request flipped `onlineManager` offline,
+ * which pauses every query - including authed ones bound for our own AppView -
+ * and recovery was gated on a probe against the very service that was down.
+ * Defaults to the signup PDS because it is first-party and always reachable
+ * when the network is. Override per-deploy with EXPO_PUBLIC_HEALTH_PROBE_SERVICE.
+ */
+export const HEALTH_PROBE_SERVICE: string =
+  process.env.EXPO_PUBLIC_HEALTH_PROBE_SERVICE || OAUTH_SIGNUP_PDS_HOST
 
 /**
  * Metrics API host
