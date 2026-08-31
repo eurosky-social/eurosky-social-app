@@ -7,7 +7,10 @@ import {useQueryClient} from '@tanstack/react-query'
 
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {logger} from '#/logger'
-import {precacheFeedFromGeneratorView} from '#/state/queries/feed'
+import {
+  feedDisplayName,
+  precacheFeedFromGeneratorView,
+} from '#/state/queries/feed'
 import {
   useAddSavedFeedsMutation,
   usePreferencesQuery,
@@ -48,7 +51,7 @@ export function Default(props: Props) {
         <Header>
           <Avatar src={view.avatar} />
           <TitleAndByline
-            title={view.displayName}
+            title={feedDisplayName(view)}
             creator={view.creator}
             uri={view.uri}
           />
@@ -78,7 +81,7 @@ export function Link({
 
   return (
     <InternalLink
-      label={view.displayName}
+      label={feedDisplayName(view)}
       to={href}
       style={[a.flex_col]}
       {...props}>

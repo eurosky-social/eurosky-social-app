@@ -14,7 +14,7 @@ import {
   type FeedPreviewItem,
   useFeedPreviews,
 } from '#/state/queries/explore-feed-previews'
-import {useGetPopularFeedsQuery} from '#/state/queries/feed'
+import {feedDisplayName, useGetPopularFeedsQuery} from '#/state/queries/feed'
 import {Nux, useNux} from '#/state/queries/nuxs'
 import {usePreferencesQuery} from '#/state/queries/preferences'
 import {
@@ -956,7 +956,7 @@ export function Explore({
                 <ModuleHeader.FeedAvatar feed={item.feed} />
                 <View style={[a.flex_1, a.gap_2xs]}>
                   <ModuleHeader.TitleText style={[a.text_lg]}>
-                    {item.feed.displayName}
+                    {feedDisplayName(item.feed)}
                   </ModuleHeader.TitleText>
                   <ModuleHeader.SubtitleText>
                     <Trans>

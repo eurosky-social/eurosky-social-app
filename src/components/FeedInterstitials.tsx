@@ -12,7 +12,7 @@ import {useNavigation} from '@react-navigation/native'
 
 import {type NavigationProp} from '#/lib/routes/types'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
-import {useGetPopularFeedsQuery} from '#/state/queries/feed'
+import {feedDisplayName, useGetPopularFeedsQuery} from '#/state/queries/feed'
 import {type FeedDescriptor} from '#/state/queries/post-feed'
 import {useSuggestedFollowsByActorWithDismiss} from '#/state/queries/suggested-follows'
 import {useGetSuggestedUsersForDiscoverQuery} from '#/state/queries/trending/useGetSuggestedUsersForDiscoverQuery'
@@ -602,7 +602,7 @@ export function SuggestedFeeds() {
                 <FeedCard.Header>
                   <FeedCard.Avatar src={feed.avatar} />
                   <FeedCard.TitleAndByline
-                    title={feed.displayName}
+                    title={feedDisplayName(feed)}
                     creator={feed.creator}
                     uri={feed.uri}
                   />

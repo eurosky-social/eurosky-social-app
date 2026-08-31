@@ -13,7 +13,11 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 
-import {DISCOVER_FEED_URI, DISCOVER_SAVED_FEED} from '#/lib/constants'
+import {
+  DISCOVER_FEED_URI,
+  DISCOVER_SAVED_FEED,
+  FU_FEED_URI,
+} from '#/lib/constants'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {GCTIME, STALE} from '#/state/queries'
@@ -27,6 +31,7 @@ import {
 } from '#/state/session'
 import {app} from '#/lexicons'
 import {router} from '#/routes'
+import {account} from '#/storage'
 import {useModerationOpts} from '../preferences/moderation-opts'
 import {type FeedDescriptor} from './post-feed'
 import {precacheResolvedUri} from './resolve-uri'
@@ -91,6 +96,23 @@ const feedSourceNSIDs = {
   list: 'app.bsky.graph.list',
 }
 
+/**
+ * The name to show for a feed generator. Normally the record's own displayName,
+ * but the Eurosky "fu" feed is surfaced as a localized "For you" throughout mu:
+ * it ships as the default home feed (see the selected-feed provider), where the
+ * publisher's terse record name reads as a typo rather than a feed.
+ */
+export function feedDisplayName(
+  view: app.bsky.feed.defs.GeneratorView,
+): string {
+  if (view.uri === FU_FEED_URI) {
+    return t`For you`
+  }
+  return view.displayName
+    ? sanitizeDisplayName(view.displayName)
+    : t`Feed by ${sanitizeHandle(view.creator.handle, '@')}`
+}
+
 export function hydrateFeedGenerator(
   view: app.bsky.feed.defs.GeneratorView,
 ): FeedSourceInfo {
@@ -121,9 +143,7 @@ export function hydrateFeedGenerator(
       params: route[1],
     },
     avatar: view.avatar,
-    displayName: view.displayName
-      ? sanitizeDisplayName(view.displayName)
-      : t`Feed by ${sanitizeHandle(view.creator.handle, '@')}`,
+    displayName: feedDisplayName(view),
     description,
     creatorDid: view.creator.did,
     creatorHandle: view.creator.handle,
@@ -472,10 +492,33 @@ const createPinnedFeedInfosQueryKey = (
   )
 
 export function usePinnedFeedsInfos() {
-  const {hasSession} = useSession()
+  const {hasSession, currentAccount} = useSession()
   const client = useAppviewClient()
   const {data: preferences, isLoading: isLoadingPrefs} = usePreferencesQuery()
-  const pinnedItems = preferences?.savedFeeds.filter(feed => feed.pinned) ?? []
+  let pinnedItems = preferences?.savedFeeds.filter(feed => feed.pinned) ?? []
+
+  // Local-only default feed: the first time an account opens mu on this device
+  // we adopt the "fu" feed as a pinned tab (see the selected-feed provider),
+  // without ever writing it to the account's server-side saved feeds. Prepend it
+  // here so it is the first tab and the default landing feed, unless the account
+  // has already pinned it server-side.
+  const localDefaultFeed = currentAccount?.did
+    ? account.get([currentAccount.did, 'localDefaultFeed'])
+    : undefined
+  if (
+    localDefaultFeed &&
+    !pinnedItems.some(feed => feed.value === localDefaultFeed)
+  ) {
+    pinnedItems = [
+      {
+        type: 'feed',
+        value: localDefaultFeed,
+        pinned: true,
+        id: 'local-default-feed',
+      },
+      ...pinnedItems,
+    ]
+  }
 
   return useQuery({
     queryKey: createPinnedFeedInfosQueryKey(

@@ -183,10 +183,14 @@ export const VIDEO_SAVED_FEED = {
 }
 
 /**
- * Eurosky "fu feed" personalized feed generator. Intended to become the default
- * home feed for new users once interest-post-seeded personalization is validated
- * (see StepFinished onboarding). Publisher DID + rkey `fu` are fixed by the
- * feedgen deployment (feed1.eurosky.network).
+ * Eurosky "fu feed" personalized feed generator. Publisher DID + rkey `fu` are
+ * fixed by the feedgen deployment (feed1.eurosky.network).
+ *
+ * Injected as a local-only default home feed the first time an account opens mu
+ * on a device (see the selected-feed provider and usePinnedFeedsInfos). It is
+ * never written to the account's server-side saved feeds. Personalization is
+ * seeded during onboarding by liking one interest post per selected interest
+ * (see StepFinished / euroskyInterestPosts).
  */
 export const FU_FEED_URI =
   'at://did:plc:ooensn4mr5mhznzypvxelfa3/app.bsky.feed.generator/fu'
