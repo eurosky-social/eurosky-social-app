@@ -325,6 +325,7 @@ export const OAUTH_HANDLE_STEPUP_STATE = 'handle-stepup'
  * (localStorage); the consumer no-ops elsewhere.
  */
 const HANDLE_STEPUP_REOPEN_KEY = '@eurosky/reopen-change-handle'
+const HANDLE_STEPUP_ORDER_KEY = '@eurosky/handle-stepup-order'
 
 /**
  * Re-authorize the CURRENT account with the wider handle scope so the user can
@@ -334,23 +335,33 @@ const HANDLE_STEPUP_REOPEN_KEY = '@eurosky/reopen-change-handle'
  * the callback's `login()` replaces the existing session in place with the
  * upgraded tokens.
  *
+ * `pendingOrderUrl` preserves a buy-domain flow across the redirect.
+ *
  * Redirects on success and never resolves (the page is navigating away).
  * Rejects synchronously if the PDS refuses the granular scope (e.g. a PAR
  * `invalid_scope`), so the caller can explain that this server can't do it.
  */
-export async function oauthUpgradeForHandle(did: string): Promise<void> {
+export async function oauthUpgradeForHandle(
+  did: string,
+  pendingOrderUrl?: string,
+): Promise<void> {
   try {
     window.localStorage.setItem(HANDLE_STEPUP_REOPEN_KEY, '1')
+    if (pendingOrderUrl) {
+      window.localStorage.setItem(HANDLE_STEPUP_ORDER_KEY, pendingOrderUrl)
+    }
   } catch {}
   try {
     await getWebOAuthClient().signIn(did, {
       scope: OAUTH_HANDLE_SCOPE,
+      prompt: 'consent',
       state: OAUTH_HANDLE_STEPUP_STATE,
     })
   } catch (e) {
     // No redirect happened; don't leave the reopen flag set.
     try {
       window.localStorage.removeItem(HANDLE_STEPUP_REOPEN_KEY)
+      window.localStorage.removeItem(HANDLE_STEPUP_ORDER_KEY)
     } catch {}
     throw e
   }
@@ -368,4 +379,16 @@ export function consumePendingHandleStepUp(): boolean {
     }
   } catch {}
   return false
+}
+
+/** Read and clear the buy-domain return URL saved during handle step-up. */
+export function consumePendingHandleStepUpOrder(): string | null {
+  try {
+    const url = window.localStorage.getItem(HANDLE_STEPUP_ORDER_KEY)
+    if (url) {
+      window.localStorage.removeItem(HANDLE_STEPUP_ORDER_KEY)
+      return url
+    }
+  } catch {}
+  return null
 }
