@@ -28,6 +28,7 @@ export const embedPlayerSources = [
   'flickr',
   'bandcamp',
   'plyr',
+  'streamplace', // EUROSKY: live video on the AT Protocol
 ] as const
 
 export type EmbedPlayerSource = (typeof embedPlayerSources)[number]
@@ -52,6 +53,7 @@ export type EmbedPlayerType =
   | 'bandcamp_album'
   | 'bandcamp_track'
   | 'plyr_track'
+  | 'streamplace_live'
 
 export const externalEmbedLabels: Record<EmbedPlayerSource, string> = {
   youtube: 'YouTube',
@@ -67,6 +69,7 @@ export const externalEmbedLabels: Record<EmbedPlayerSource, string> = {
   flickr: 'Flickr',
   bandcamp: 'Bandcamp',
   plyr: 'plyr.fm',
+  streamplace: 'Streamplace',
 }
 
 /**
@@ -109,6 +112,26 @@ export function parseEmbedPlayerFromUrl(
     urlp = new URL(url)
   } catch (e) {
     return undefined
+  }
+
+  // EUROSKY: Streamplace. A channel lives at stream.place/<handle> and its
+  // embeddable player at stream.place/embed/<handle>. Handles are domains,
+  // so a first path segment without a dot is one of the site's own pages.
+  if (
+    urlp.hostname === 'stream.place' ||
+    urlp.hostname === 'www.stream.place'
+  ) {
+    const [__, first, second, third] = urlp.pathname.split('/')
+    const handle = first === 'embed' ? second : first
+    // Only channels: stream.place/<handle>/video/<id> is a recording.
+    const isChannel = first === 'embed' ? !third : !second
+    if (handle && handle.includes('.') && isChannel) {
+      return {
+        type: 'streamplace_live',
+        source: 'streamplace',
+        playerUri: `https://stream.place/embed/${handle}`,
+      }
+    }
   }
 
   // plyr.fm
@@ -558,6 +581,7 @@ export function getPlayerAspect({
     case 'youtube_video':
     case 'twitch_video':
     case 'vimeo_video':
+    case 'streamplace_live':
       return {aspectRatio: 16 / 9}
     case 'youtube_short':
       if (SCREEN_HEIGHT < 600) {

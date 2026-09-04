@@ -1,5 +1,6 @@
 import {
   getStreamPlayer,
+  liveEventFromPost,
   parsePostReference,
   streamKey,
   streamUrlVariants,
@@ -25,6 +26,15 @@ describe('streamKey', () => {
     )
     expect(streamKey('https://twitch.tv/videos/123')).toBe('twitch:video:123')
     expect(streamKey('https://twitch.tv/chan/clip/Abc')).toBe('twitch:clip:Abc')
+  })
+
+  it('canonicalizes Streamplace channels and their embed pages', () => {
+    expect(streamKey('https://stream.place/iame.li')).toBe(
+      'streamplace:iame.li',
+    )
+    expect(streamKey('https://stream.place/embed/iame.li')).toBe(
+      'streamplace:iame.li',
+    )
   })
 
   it('falls back to host and path for other hosts', () => {
@@ -62,7 +72,17 @@ describe('getStreamPlayer', () => {
     expect(getStreamPlayer('https://www.twitch.tv/monstercat')?.type).toBe(
       'twitch_video',
     )
-    expect(getStreamPlayer('https://stream.place/someone')).toBeUndefined()
+    expect(getStreamPlayer('https://stream.place/iame.li')).toEqual({
+      type: 'streamplace_live',
+      source: 'streamplace',
+      playerUri: 'https://stream.place/embed/iame.li',
+    })
+    // Site pages are not channels: handles are domains.
+    expect(getStreamPlayer('https://stream.place/docs')).toBeUndefined()
+    // Recordings are not the live channel.
+    expect(
+      getStreamPlayer('https://stream.place/atproto.nyc/video/3mtyot3tqhw77'),
+    ).toBeUndefined()
     expect(getStreamPlayer('nonsense')).toBeUndefined()
   })
 })
@@ -80,5 +100,42 @@ describe('parsePostReference', () => {
     expect(parsePostReference('https://bsky.app/profile/x.bsky.social')).toBe(
       undefined,
     )
+  })
+})
+
+describe('liveEventFromPost', () => {
+  it('turns a post with a playable link into an event anchored on the post', () => {
+    const event = liveEventFromPost({
+      uri: 'at://did:plc:abc/app.bsky.feed.post/3k2',
+      authorDid: 'did:plc:abc',
+      createdAt: '2026-09-04T12:00:00.000Z',
+      text: 'Go Everton! www.youtube.com/watch?v=WQ_y...',
+      external: {
+        uri: 'https://www.youtube.com/watch?v=WQ_yEcikVDw',
+        title: 'Press conference',
+      },
+      links: ['https://www.youtube.com/watch?v=WQ_yEcikVDw'],
+    })
+    expect(event).toMatchObject({
+      id: '3k2',
+      title: 'Press conference',
+      description: 'Go Everton!',
+      hostDid: 'did:plc:abc',
+      anchorPostUri: 'at://did:plc:abc/app.bsky.feed.post/3k2',
+      startsAt: '2026-09-04T12:00:00.000Z',
+    })
+    expect(event?.endsAt).toBe('2026-09-05T00:00:00.000Z')
+  })
+
+  it('ignores posts without a playable link', () => {
+    expect(
+      liveEventFromPost({
+        uri: 'at://did:plc:abc/app.bsky.feed.post/3k3',
+        authorDid: 'did:plc:abc',
+        createdAt: '2026-09-04T12:00:00.000Z',
+        text: 'read this',
+        links: ['https://example.org/article'],
+      }),
+    ).toBeUndefined()
   })
 })

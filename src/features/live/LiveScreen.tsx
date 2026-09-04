@@ -14,27 +14,28 @@ import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
 import {LiveEventCard} from './components/LiveEventCard'
 import {LiveEventEditorDialog} from './components/LiveEventEditorDialog'
-import {groupLiveEvents, type LiveEvent} from './events'
 import {
   useIsLiveCurator,
   useLiveCuratorQuery,
   useLiveEventsQuery,
+  useLiveSourcesQuery,
 } from './queries'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'Live'>
 
-/** The Live index: what is on now, what is coming, what can be replayed. */
+/** The Live index: every curated broadcast, newest first. */
 export function LiveScreen({}: Props) {
   const t = useTheme()
   const {t: l} = useLingui()
   const curator = useLiveCuratorQuery()
+  const sources = useLiveSourcesQuery()
   const eventsQuery = useLiveEventsQuery()
   const events = eventsQuery.data
-  const isLoading = curator.isLoading || eventsQuery.isLoading
-  const error = curator.error ?? eventsQuery.error
+  const isLoading =
+    curator.isLoading || sources.isLoading || eventsQuery.isLoading
+  const error = curator.error ?? sources.error ?? eventsQuery.error
   const isCurator = useIsLiveCurator()
   const editorControl = useDialogControl()
-  const {live, upcoming, ended} = groupLiveEvents(events ?? [])
 
   return (
     <Layout.Screen testID="liveScreen">
@@ -85,35 +86,14 @@ export function LiveScreen({}: Props) {
             </Text>
           </View>
         ) : (
-          <View style={[a.px_lg, a.py_lg, a.gap_2xl]}>
-            <Section titleText={<Trans>Live now</Trans>} events={live} />
-            <Section titleText={<Trans>Upcoming</Trans>} events={upcoming} />
-            <Section titleText={<Trans>Recent</Trans>} events={ended} />
+          <View style={[a.px_lg, a.py_lg, a.gap_md]}>
+            {events.map(event => (
+              <LiveEventCard key={event.id} event={event} />
+            ))}
           </View>
         )}
       </Layout.Content>
       {isCurator && <LiveEventEditorDialog control={editorControl} />}
     </Layout.Screen>
-  )
-}
-
-function Section({
-  titleText,
-  events,
-}: {
-  titleText: React.ReactNode
-  events: LiveEvent[]
-}) {
-  const t = useTheme()
-  if (events.length === 0) return null
-  return (
-    <View style={[a.gap_md]}>
-      <Text style={[a.text_lg, a.font_bold, t.atoms.text]}>{titleText}</Text>
-      <View style={[a.gap_md]}>
-        {events.map(event => (
-          <LiveEventCard key={event.id} event={event} />
-        ))}
-      </View>
-    </View>
   )
 }

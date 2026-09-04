@@ -2,6 +2,7 @@ import {TID} from '@atproto/common-web'
 import {type UriString} from '@atproto/lex'
 import {type DidString} from '@atproto/syntax'
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
+import chunk from 'lodash.chunk'
 import {z} from 'zod'
 
 import {createServiceClient} from '#/lib/lexClient'
@@ -10,14 +11,15 @@ import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
 import {useAppviewClient, usePdsClient, useSession} from '#/state/session'
 import {resolveDidServiceEndpoint} from '#/state/session/identity-resolver'
-import {engagementScore} from '#/features/newsrooms/postLinks'
+import {engagementScore, postUrls} from '#/features/newsrooms/postLinks'
 import {app, com, social} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {
-  getStreamPlayer,
   LIVE_CURATOR_HANDLE,
   LIVE_EVENT_NSID,
+  LIVE_SOURCES_LIST_URI,
   type LiveEvent,
+  liveEventFromPost,
   liveEventFromRecord,
   postReferencesStream,
   streamKey,
@@ -66,31 +68,92 @@ export function useIsLiveCurator(): boolean {
 }
 
 /* -------------------------------------------------------------------------
+ * Sources: the list of accounts whose stream posts are events
+ * ---------------------------------------------------------------------- */
+
+export const createLiveSourcesQueryKey = () =>
+  createQueryKey('liveSources', {list: LIVE_SOURCES_LIST_URI})
+
+/**
+ * The DIDs on the curated accounts list, read from the list owner's repo
+ * (`app.bsky.graph.listitem` records for that list) so a change to the list
+ * shows up without waiting for an appview to index it.
+ */
+export function useLiveSourcesQuery() {
+  return useQuery({
+    queryKey: createLiveSourcesQueryKey(),
+    staleTime: STALE.MINUTES.FIVE,
+    queryFn: async (): Promise<string[]> => {
+      const [, ownerDid] = LIVE_SOURCES_LIST_URI.replace('at://', '/').split(
+        '/',
+      )
+      const pdsUrl = await resolveDidServiceEndpoint({
+        did: ownerDid,
+        id: '#atproto_pds',
+        type: 'AtprotoPersonalDataServer',
+      })
+      if (!pdsUrl) throw new Error('The list owner has no PDS endpoint')
+      const pds = createServiceClient(pdsUrl)
+      const dids = new Set<string>()
+      let cursor: string | undefined
+      do {
+        const data = await pds.call(com.atproto.repo.listRecords, {
+          repo: ownerDid as DidString,
+          collection: 'app.bsky.graph.listitem',
+          limit: 100,
+          cursor,
+        })
+        for (const {value} of data.records) {
+          const parsed = listItemSchema.safeParse(value)
+          if (parsed.success && parsed.data.list === LIVE_SOURCES_LIST_URI) {
+            dids.add(parsed.data.subject)
+          }
+        }
+        cursor = data.cursor
+      } while (cursor)
+      return Array.from(dids)
+    },
+  })
+}
+
+const listItemSchema = z.object({list: z.string(), subject: z.string()})
+
+/* -------------------------------------------------------------------------
  * Events
  * ---------------------------------------------------------------------- */
 
-export const createLiveEventsQueryKey = (args: {curatorDid?: string}) =>
-  createQueryKey('liveEvents', args)
+export const createLiveEventsQueryKey = (args: {
+  curatorDid?: string
+  sources?: string[]
+}) => createQueryKey('liveEvents', args)
+
+/** Author feeds are fetched in parallel; bound how many run at once. */
+const FEED_CONCURRENCY = 8
+/** How many recent posts per source account to scan for stream links. */
+const POSTS_PER_SOURCE = 30
 
 /**
- * The programme: every `social.mu.live.event` record in the curator's repo,
- * plus an event for each curator post that links a playable stream. Both
- * are read from the PDS, so a change shows up without waiting for an
- * appview. Keyed by stream, so a record for a stream the curator already
+ * The programme, newest first: every `social.mu.live.event` record in the
+ * curator's repo, plus an event for each stream post from the curator (read
+ * from its PDS) and from every account on the sources list (read from the
+ * appview). Keyed by stream, so a record for a stream someone already
  * posted supersedes the post-derived event and keeps its id as an alias.
  */
 export function useLiveEventsQuery() {
+  const client = useAppviewClient()
   const {data: curator} = useLiveCuratorQuery()
+  const {data: sources} = useLiveSourcesQuery()
   return useQuery({
-    queryKey: createLiveEventsQueryKey({curatorDid: curator?.did}),
+    queryKey: createLiveEventsQueryKey({curatorDid: curator?.did, sources}),
     staleTime: STALE.MINUTES.ONE,
     refetchInterval: STALE.MINUTES.FIVE,
-    enabled: !!curator,
+    enabled: !!curator && !!sources,
     queryFn: async (): Promise<LiveEvent[]> => {
       const pds = createServiceClient(curator!.pds)
-      const [records, fromPosts] = await Promise.all([
+      const [records, curatorPosts, sourcePosts] = await Promise.all([
         listEventRecords(pds, curator!),
-        listPostEvents(pds, curator!),
+        listCuratorPostEvents(pds, curator!),
+        listSourcePostEvents(client, sources!, curator!.did),
       ])
 
       const byStream = new Map<string, LiveEvent>()
@@ -106,8 +169,14 @@ export function useLiveEventsQuery() {
           byStream.set(key, event)
           return
         }
-        // Records win over posts; among posts the first (newest) wins.
-        const winner = existing.fromRecord ? existing : event
+        // Records win over posts; among posts the newest wins.
+        const winner = existing.fromRecord
+          ? existing
+          : event.fromRecord
+            ? event
+            : new Date(event.startsAt) > new Date(existing.startsAt)
+              ? event
+              : existing
         const loser = winner === existing ? event : existing
         byStream.set(key, {
           ...winner,
@@ -120,7 +189,8 @@ export function useLiveEventsQuery() {
         })
       }
       for (const event of records) place(event)
-      for (const event of fromPosts) place(event)
+      for (const event of curatorPosts) place(event)
+      for (const event of sourcePosts) place(event)
 
       return [...byStream.values(), ...loose].sort(
         (a, b) =>
@@ -133,6 +203,7 @@ export function useLiveEventsQuery() {
 /** One event by id (a record key or a post key), from the cached list. */
 export function useLiveEventQuery(id: string | undefined) {
   const curator = useLiveCuratorQuery()
+  const sources = useLiveSourcesQuery()
   const events = useLiveEventsQuery()
   const data = id
     ? (events.data?.find(
@@ -141,8 +212,8 @@ export function useLiveEventQuery(id: string | undefined) {
     : null
   return {
     data,
-    isLoading: curator.isLoading || events.isLoading,
-    error: curator.error ?? events.error,
+    isLoading: curator.isLoading || sources.isLoading || events.isLoading,
+    error: curator.error ?? sources.error ?? events.error,
   }
 }
 
@@ -197,29 +268,18 @@ const postRecordSchema = z.object({
     .optional(),
 })
 
-/** How many recent curator posts to scan for stream links. */
-const POST_SCAN_LIMIT = 50
-
 /**
- * A post carries no end time, so a post-derived event counts as live for
- * this long after it was posted, then moves to "Recent". A record sets its
- * own times.
+ * Events implied by the curator's own posts, read from its PDS so a post
+ * shows up the moment it is made, ahead of any appview indexing.
  */
-const POST_EVENT_DURATION_MS = 12 * 60 * 60 * 1000
-
-/**
- * Events implied by the curator's own posts: the latest posts (not replies)
- * whose link plays inline. The post is the anchor, its link-card title the
- * event title, its text the description.
- */
-async function listPostEvents(
+async function listCuratorPostEvents(
   pds: ReturnType<typeof createServiceClient>,
   curator: LiveCurator,
 ): Promise<LiveEvent[]> {
   const data = await pds.call(com.atproto.repo.listRecords, {
     repo: curator.did as DidString,
     collection: 'app.bsky.feed.post',
-    limit: POST_SCAN_LIMIT,
+    limit: POSTS_PER_SOURCE,
   })
   const events: LiveEvent[] = []
   for (const {uri, value} of data.records) {
@@ -230,47 +290,77 @@ async function listPostEvents(
     }
     if (parsed.data.reply) continue
     const record = parsed.data
-    const candidates = [
-      record.embed?.external?.uri,
-      ...(record.facets ?? []).flatMap(f => f.features.map(x => x.uri)),
-    ].filter((u): u is string => !!u)
-    const streamUrl = candidates.find(u => !!getStreamPlayer(u))
-    if (!streamUrl) continue
-
-    const external =
-      record.embed?.external?.uri === streamUrl
-        ? record.embed.external
-        : undefined
-    // Drop the link itself, including the shortened form the composer writes.
-    const text = record.text
-      .replace(/https?:\/\/\S+/gi, '')
-      .replace(/\bwww\.\S+/gi, '')
-      .trim()
-    const firstLine = text.split('\n')[0]?.trim()
-    const title = external?.title?.trim() || firstLine || streamUrl
-    const thumbCid = blobCid(external?.thumb)
-    const image =
-      thumbCid && !streamKey(streamUrl)?.startsWith('youtube:')
-        ? `${curator.pds}/xrpc/com.atproto.sync.getBlob?did=${curator.did}&cid=${thumbCid}`
-        : undefined
-    const rkey = uri.split('/').pop() ?? uri
-    const startsAt = record.createdAt
-    const endsAt = new Date(
-      new Date(startsAt).getTime() + POST_EVENT_DURATION_MS,
-    ).toISOString()
-
-    events.push({
-      id: rkey,
+    const thumbCid = blobCid(record.embed?.external?.thumb)
+    const event = liveEventFromPost({
       uri,
-      title,
-      description: title === firstLine ? undefined : text || undefined,
-      hostDid: curator.did,
-      streamUrl,
-      anchorPostUri: uri,
-      startsAt,
-      endsAt,
-      image,
+      authorDid: curator.did,
+      createdAt: record.createdAt,
+      text: record.text,
+      external: record.embed?.external
+        ? {
+            uri: record.embed.external.uri,
+            title: record.embed.external.title,
+            thumb: thumbCid
+              ? `${curator.pds}/xrpc/com.atproto.sync.getBlob?did=${curator.did}&cid=${thumbCid}`
+              : undefined,
+          }
+        : undefined,
+      links: [
+        record.embed?.external?.uri,
+        ...(record.facets ?? []).flatMap(f => f.features.map(x => x.uri)),
+      ].filter((u): u is string => !!u),
     })
+    if (event) events.push(event)
+  }
+  return events
+}
+
+/**
+ * Events implied by the sources' posts: each account's latest posts (not
+ * replies or reposts) from the appview, a few accounts at a time.
+ */
+async function listSourcePostEvents(
+  client: ReturnType<typeof useAppviewClient>,
+  sources: string[],
+  curatorDid: string,
+): Promise<LiveEvent[]> {
+  const dids = sources.filter(did => did !== curatorDid)
+  const events: LiveEvent[] = []
+  for (const batch of chunk(dids, FEED_CONCURRENCY)) {
+    const feeds = await Promise.all(
+      batch.map(did =>
+        client
+          .call(app.bsky.feed.getAuthorFeed, {
+            actor: did as DidString,
+            filter: 'posts_no_replies',
+            limit: POSTS_PER_SOURCE,
+          })
+          .then(data => data.feed)
+          .catch(() => {
+            logger.warn('live: could not read a source feed', {did})
+            return []
+          }),
+      ),
+    )
+    for (const item of feeds.flat()) {
+      if (item.reason) continue
+      const post = item.post
+      if (!bsky.isType(app.bsky.feed.post, post.record)) continue
+      const external = bsky.isType(app.bsky.embed.external.view, post.embed)
+        ? post.embed.external
+        : undefined
+      const event = liveEventFromPost({
+        uri: post.uri,
+        authorDid: post.author.did,
+        createdAt: post.record.createdAt,
+        text: post.record.text,
+        external: external
+          ? {uri: external.uri, title: external.title, thumb: external.thumb}
+          : undefined,
+        links: postUrls(post),
+      })
+      if (event) events.push(event)
+    }
   }
   return events
 }

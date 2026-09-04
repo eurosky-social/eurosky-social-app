@@ -13,6 +13,13 @@ import {type app, type social} from '#/lexicons'
 export const LIVE_CURATOR_HANDLE = 'liveonmu.eurosky.social'
 export const LIVE_EVENT_NSID = 'social.mu.live.event'
 
+/**
+ * The list of accounts whose stream posts appear in the Live section, kept
+ * by the mu.social account. Membership is read from that account's repo.
+ */
+export const LIVE_SOURCES_LIST_URI =
+  'at://did:plc:fivmz34azxgjafrk6ogns7k5/app.bsky.graph.list/3mup7zx7bd42o'
+
 /** A curated live event, as the app uses it: the record plus its address. */
 export interface LiveEvent {
   /** The record key; also the id in `/live/:id`. */
@@ -72,6 +79,7 @@ const PLAYABLE_TYPES = new Set<EmbedPlayerParams['type']>([
   'youtube_video',
   'twitch_video',
   'vimeo_video',
+  'streamplace_live',
 ])
 
 export function getLiveEventState(
@@ -111,20 +119,6 @@ export function getLiveEventThumb(event: LiveEvent): string | undefined {
   return undefined
 }
 
-/** Events grouped for the index: live first, then upcoming, then ended. */
-export function groupLiveEvents(events: LiveEvent[], now: number = Date.now()) {
-  const byStart = (a: LiveEvent, b: LiveEvent) =>
-    new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()
-  const live = events.filter(e => getLiveEventState(e, now) === 'live')
-  const upcoming = events
-    .filter(e => getLiveEventState(e, now) === 'upcoming')
-    .sort(byStart)
-  const ended = events
-    .filter(e => getLiveEventState(e, now) === 'ended')
-    .sort((a, b) => byStart(b, a))
-  return {live, upcoming, ended}
-}
-
 /**
  * A canonical key for a stream URL, so the different ways people paste the
  * same stream compare equal: `youtube:<id>`, `twitch:<channel>`, otherwise
@@ -156,6 +150,15 @@ export function streamKey(url: string): string | undefined {
     if (first === 'videos' && second) return `twitch:video:${second}`
     if (second === 'clip' && third) return `twitch:clip:${third}`
     return first ? `twitch:${first.toLowerCase()}` : undefined
+  }
+  if (host === 'stream.place') {
+    const [first, second, third] = segments
+    const handle = first === 'embed' ? second : first
+    const isChannel = first === 'embed' ? !third : !second
+    if (!handle || !handle.includes('.')) return undefined
+    return isChannel
+      ? `streamplace:${handle.toLowerCase()}`
+      : `streamplace:${handle.toLowerCase()}:${segments.slice(1).join('/')}`
   }
   return host + u.pathname.replace(/\/+$/, '').toLowerCase()
 }
@@ -189,7 +192,65 @@ export function streamUrlVariants(url: string): string[] {
       `https://m.twitch.tv/${channel}`,
     ]
   }
+  if (key.startsWith('streamplace:')) {
+    const handle = key.slice('streamplace:'.length)
+    return [
+      `https://stream.place/${handle}`,
+      `https://stream.place/embed/${handle}`,
+    ]
+  }
   return [url]
+}
+
+/**
+ * A post carries no end time, so a post-derived event counts as live for
+ * this long after it was posted. A record sets its own times.
+ */
+export const POST_EVENT_DURATION_MS = 12 * 60 * 60 * 1000
+
+/** What a post needs to become an event, whichever way it was fetched. */
+export type PostSource = {
+  uri: string
+  authorDid: string
+  createdAt: string
+  text: string
+  /** The link card, when the post has one. */
+  external?: {uri: string; title?: string; thumb?: string}
+  /** Every link the post points at, link card included. */
+  links: string[]
+}
+
+/**
+ * The event a post implies, or undefined when none of its links plays
+ * inline. The post is the anchor, its link-card title the event title, its
+ * text the description, its author the host.
+ */
+export function liveEventFromPost(post: PostSource): LiveEvent | undefined {
+  const streamUrl = post.links.find(u => !!getStreamPlayer(u))
+  if (!streamUrl) return undefined
+  const external = post.external?.uri === streamUrl ? post.external : undefined
+  // Drop the link itself, including the shortened form the composer writes.
+  const text = post.text
+    .replace(/https?:\/\/\S+/gi, '')
+    .replace(/\bwww\.\S+/gi, '')
+    .trim()
+  const firstLine = text.split('\n')[0]?.trim()
+  const title = external?.title?.trim() || firstLine || streamUrl
+  const rkey = post.uri.split('/').pop() ?? post.uri
+  return {
+    id: rkey,
+    uri: post.uri,
+    title,
+    description: title === firstLine ? undefined : text || undefined,
+    hostDid: post.authorDid,
+    streamUrl,
+    anchorPostUri: post.uri,
+    startsAt: post.createdAt,
+    endsAt: new Date(
+      new Date(post.createdAt).getTime() + POST_EVENT_DURATION_MS,
+    ).toISOString(),
+    image: external?.thumb,
+  }
 }
 
 /** Whether a post links the stream, under any of its URL forms. */

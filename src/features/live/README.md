@@ -7,32 +7,36 @@ the network.
 
 ## Data model
 
-Events are `social.mu.live.event` records (lexicon in
-`lexicons/social/mu/live/event.json`) in the repo of the curator account,
-`liveonmu.eurosky.social`. `useLiveCuratorQuery` resolves that handle to its
-DID and PDS once an hour; `useLiveEventsQuery` lists the collection straight
-from the PDS with `com.atproto.repo.listRecords`, so no appview or edge
-service is involved and any client can read the programme. The record key is
-the id in `/live/:id`.
+Three sources, merged into one programme and shown newest first:
 
-The simplest curation is a post: any post from the curator account (not a
-reply) whose link plays inline is an event too, read from the same PDS, with
-the post as anchor, its embed title as the event title and its creation time
-as the start. A post carries no end, so a post-derived event counts as live
-for twelve hours. Events are keyed by stream: a record for a stream the
-curator already posted supersedes the post-derived event, inherits its anchor,
-and keeps the post's key as an alias so shared links stay valid.
+1. **Posts from the curated accounts list.** `LIVE_SOURCES_LIST_URI` names
+   a list kept by the mu.social account. `useLiveSourcesQuery` reads the
+   membership straight from that account's repo (`app.bsky.graph.listitem`
+   records), so a change to the list shows up without waiting for an
+   appview. Each member's latest posts (not replies or reposts) come from
+   the appview's author feed; any post whose link plays inline is an event,
+   anchored on that post, hosted by its author, titled from its link card.
+   A post carries no end, so a post-derived event counts as live for twelve
+   hours.
+2. **Posts from the curator account** (`liveonmu.eurosky.social`), read from
+   its PDS so they appear the moment they are made, ahead of indexing.
+3. **`social.mu.live.event` records** in the curator's repo (lexicon in
+   `lexicons/social/mu/live/event.json`), for the metadata a post cannot
+   carry: times, running order, speakers, an explicit anchor. Signed in as
+   the curator, the Live index shows "New event" and each event page shows
+   "Edit" (`LiveEventEditorDialog`); records are validated against the
+   lexicon before they are written.
 
-Richer curation is done inside mu: signed in as the curator account, the Live index
-shows "New event" and each event page shows "Edit"
-(`LiveEventEditorDialog`). The form resolves handles to DIDs, converts a
-pasted post link into the anchor at-uri, and refuses stream links that do
-not play inline. Records are written with the normal PDS client
-(`useLiveEventMutation`), so "who can curate" is whoever holds the account.
+Events are keyed by stream (`streamKey`): a record supersedes a post for the
+same stream, inherits its anchor, and keeps the post's key as an alias so
+shared links stay valid. The record or post key is the id in `/live/:id`.
 
 A stream must play inline: `getStreamPlayer` runs the link through the same
-parser ordinary posts use (`parseEmbedPlayerFromUrl`) and accepts only
-YouTube, Twitch and Vimeo.
+parser ordinary posts use (`parseEmbedPlayerFromUrl`) and accepts YouTube,
+Twitch, Vimeo and Streamplace. Streamplace (`stream.place/<handle>`) plays
+through its embed page, `stream.place/embed/<handle>`, which is a new
+external-embed source in `embed-player.ts` with its own consent entry, so
+Streamplace links play inline in ordinary posts too.
 
 ## The two conversations
 
@@ -56,7 +60,8 @@ appview supports. The pure link helpers (`postUrls`, `engagementScore`, URL
 normalization) are shared with newsrooms in
 `src/features/newsrooms/postLinks.ts`.
 
-Both routes require a session, like the news surfaces.
+Both routes require a session, like the news surfaces. The index is a single
+chronological list, newest first; each card carries a LIVE or REPLAY badge.
 
 ## Layout
 
