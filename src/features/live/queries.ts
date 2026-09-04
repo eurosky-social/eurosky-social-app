@@ -11,7 +11,7 @@ import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
 import {useAppviewClient, usePdsClient, useSession} from '#/state/session'
 import {resolveDidServiceEndpoint} from '#/state/session/identity-resolver'
-import {engagementScore, postUrls} from '#/features/newsrooms/postLinks'
+import {engagementScore} from '#/features/newsrooms/postLinks'
 import {app, com, social} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {
@@ -127,20 +127,20 @@ export const createLiveEventsQueryKey = (args: {
   sources?: string[]
 }) => createQueryKey('liveEvents', args)
 
-/** Author feeds are fetched in parallel; bound how many run at once. */
+/** Accounts are read in parallel; bound how many run at once. */
 const FEED_CONCURRENCY = 8
 /** How many recent posts per source account to scan for stream links. */
 const POSTS_PER_SOURCE = 30
 
 /**
  * The programme, newest first: every `social.mu.live.event` record in the
- * curator's repo, plus an event for each stream post from the curator (read
- * from its PDS) and from every account on the sources list (read from the
- * appview). Keyed by stream, so a record for a stream someone already
+ * curator's repo, plus an event for each stream post from the curator and
+ * from every account on the sources list. Posts are read from each
+ * account's own PDS rather than the appview, which can lag hours behind for
+ * some hosts. Keyed by stream, so a record for a stream someone already
  * posted supersedes the post-derived event and keeps its id as an alias.
  */
 export function useLiveEventsQuery() {
-  const client = useAppviewClient()
   const {data: curator} = useLiveCuratorQuery()
   const {data: sources} = useLiveSourcesQuery()
   return useQuery({
@@ -150,10 +150,10 @@ export function useLiveEventsQuery() {
     enabled: !!curator && !!sources,
     queryFn: async (): Promise<LiveEvent[]> => {
       const pds = createServiceClient(curator!.pds)
-      const [records, curatorPosts, sourcePosts] = await Promise.all([
+      const accounts = Array.from(new Set([curator!.did, ...sources!]))
+      const [records, posts] = await Promise.all([
         listEventRecords(pds, curator!),
-        listCuratorPostEvents(pds, curator!),
-        listSourcePostEvents(client, sources!, curator!.did),
+        listAccountPostEvents(accounts),
       ])
 
       const byStream = new Map<string, LiveEvent>()
@@ -189,8 +189,7 @@ export function useLiveEventsQuery() {
         })
       }
       for (const event of records) place(event)
-      for (const event of curatorPosts) place(event)
-      for (const event of sourcePosts) place(event)
+      for (const event of posts) place(event)
 
       return [...byStream.values(), ...loose].sort(
         (a, b) =>
@@ -268,16 +267,48 @@ const postRecordSchema = z.object({
     .optional(),
 })
 
+/** PDS endpoints by DID, so a refresh does not re-resolve every account. */
+const pdsByDid = new Map<string, string>()
+
+async function resolvePds(did: string): Promise<string | undefined> {
+  const cached = pdsByDid.get(did)
+  if (cached) return cached
+  const pds = await resolveDidServiceEndpoint({
+    did,
+    id: '#atproto_pds',
+    type: 'AtprotoPersonalDataServer',
+  })
+  if (pds) pdsByDid.set(did, pds)
+  return pds
+}
+
 /**
- * Events implied by the curator's own posts, read from its PDS so a post
- * shows up the moment it is made, ahead of any appview indexing.
+ * Events implied by these accounts' own posts, a few accounts at a time.
+ * Each account's latest posts (not replies) are read from its PDS, so a
+ * post shows up the moment it is made, ahead of any appview indexing.
  */
-async function listCuratorPostEvents(
-  pds: ReturnType<typeof createServiceClient>,
-  curator: LiveCurator,
-): Promise<LiveEvent[]> {
+async function listAccountPostEvents(dids: string[]): Promise<LiveEvent[]> {
+  const events: LiveEvent[] = []
+  for (const batch of chunk(dids, FEED_CONCURRENCY)) {
+    const perAccount = await Promise.all(
+      batch.map(did =>
+        listOneAccountPostEvents(did).catch(() => {
+          logger.warn("live: could not read an account's posts", {did})
+          return [] as LiveEvent[]
+        }),
+      ),
+    )
+    events.push(...perAccount.flat())
+  }
+  return events
+}
+
+async function listOneAccountPostEvents(did: string): Promise<LiveEvent[]> {
+  const pdsUrl = await resolvePds(did)
+  if (!pdsUrl) return []
+  const pds = createServiceClient(pdsUrl)
   const data = await pds.call(com.atproto.repo.listRecords, {
-    repo: curator.did as DidString,
+    repo: did as DidString,
     collection: 'app.bsky.feed.post',
     limit: POSTS_PER_SOURCE,
   })
@@ -293,7 +324,7 @@ async function listCuratorPostEvents(
     const thumbCid = blobCid(record.embed?.external?.thumb)
     const event = liveEventFromPost({
       uri,
-      authorDid: curator.did,
+      authorDid: did,
       createdAt: record.createdAt,
       text: record.text,
       external: record.embed?.external
@@ -301,7 +332,7 @@ async function listCuratorPostEvents(
             uri: record.embed.external.uri,
             title: record.embed.external.title,
             thumb: thumbCid
-              ? `${curator.pds}/xrpc/com.atproto.sync.getBlob?did=${curator.did}&cid=${thumbCid}`
+              ? `${pdsUrl}/xrpc/com.atproto.sync.getBlob?did=${did}&cid=${thumbCid}`
               : undefined,
           }
         : undefined,
@@ -311,56 +342,6 @@ async function listCuratorPostEvents(
       ].filter((u): u is string => !!u),
     })
     if (event) events.push(event)
-  }
-  return events
-}
-
-/**
- * Events implied by the sources' posts: each account's latest posts (not
- * replies or reposts) from the appview, a few accounts at a time.
- */
-async function listSourcePostEvents(
-  client: ReturnType<typeof useAppviewClient>,
-  sources: string[],
-  curatorDid: string,
-): Promise<LiveEvent[]> {
-  const dids = sources.filter(did => did !== curatorDid)
-  const events: LiveEvent[] = []
-  for (const batch of chunk(dids, FEED_CONCURRENCY)) {
-    const feeds = await Promise.all(
-      batch.map(did =>
-        client
-          .call(app.bsky.feed.getAuthorFeed, {
-            actor: did as DidString,
-            filter: 'posts_no_replies',
-            limit: POSTS_PER_SOURCE,
-          })
-          .then(data => data.feed)
-          .catch(() => {
-            logger.warn('live: could not read a source feed', {did})
-            return []
-          }),
-      ),
-    )
-    for (const item of feeds.flat()) {
-      if (item.reason) continue
-      const post = item.post
-      if (!bsky.isType(app.bsky.feed.post, post.record)) continue
-      const external = bsky.isType(app.bsky.embed.external.view, post.embed)
-        ? post.embed.external
-        : undefined
-      const event = liveEventFromPost({
-        uri: post.uri,
-        authorDid: post.author.did,
-        createdAt: post.record.createdAt,
-        text: post.record.text,
-        external: external
-          ? {uri: external.uri, title: external.title, thumb: external.thumb}
-          : undefined,
-        links: postUrls(post),
-      })
-      if (event) events.push(event)
-    }
   }
   return events
 }

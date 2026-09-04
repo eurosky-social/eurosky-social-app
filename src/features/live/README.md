@@ -13,13 +13,14 @@ Three sources, merged into one programme and shown newest first:
    a list kept by the mu.social account. `useLiveSourcesQuery` reads the
    membership straight from that account's repo (`app.bsky.graph.listitem`
    records), so a change to the list shows up without waiting for an
-   appview. Each member's latest posts (not replies or reposts) come from
-   the appview's author feed; any post whose link plays inline is an event,
+   appview. Each member's latest posts (not replies) are read from the
+   member's own PDS, since the appview can lag hours behind for some hosts;
+   any post whose link plays inline is an event,
    anchored on that post, hosted by its author, titled from its link card.
    A post carries no end, so a post-derived event counts as live for twelve
    hours.
-2. **Posts from the curator account** (`liveonmu.eurosky.social`), read from
-   its PDS so they appear the moment they are made, ahead of indexing.
+2. **Posts from the curator account** (`liveonmu.eurosky.social`), read the
+   same way; the curator is always a source, listed or not.
 3. **`social.mu.live.event` records** in the curator's repo (lexicon in
    `lexicons/social/mu/live/event.json`), for the metadata a post cannot
    carry: times, running order, speakers, an explicit anchor. Signed in as
