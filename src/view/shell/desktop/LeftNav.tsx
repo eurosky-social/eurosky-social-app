@@ -77,6 +77,7 @@ import {
   SettingsGear2_Filled_Corner0_Rounded as SettingsFilledIcon,
   SettingsGear2_Stroke2_Corner0_Rounded as SettingsIcon,
 } from '#/components/icons/SettingsGear2'
+import {StreamingLive_Stroke2_Corner0_Rounded as LiveIcon} from '#/components/icons/StreamingLive'
 import {
   UserCircle_Filled_Corner0_Rounded as UserCircleFilledIcon,
   UserCircle_Stroke2_Corner0_Rounded as UserCircleIcon,
@@ -616,7 +617,10 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
   // splitview uses the minimal variant of the leftnav. unfortunately there's no easy
   // way to thread this data through because of the view hierarchy, so just check the route name
   const isMessagesRelatedScreen =
-    routeName.startsWith('Messages') && aa.state.access === aa.Access.Full
+    (routeName.startsWith('Messages') && aa.state.access === aa.Access.Full) ||
+    /* EUROSKY: the live event page uses the same split view, so it takes the
+     * minimal left nav too. */
+    routeName === 'LiveEvent'
   const {leftNavMinimal: leftNavMinimalBreakpoint, centerColumnOffset} =
     useLayoutBreakpoints()
   const numUnreadNotifications = useUnreadNotifications()
@@ -685,6 +689,16 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             icons={{
               inactive: NewspaperIcon,
               active: NewspaperFilledIcon,
+            }}
+          />
+          <NavItem
+            label={l`Live`}
+            href="/live"
+            navItem="live"
+            minimal={leftNavMinimal}
+            icons={{
+              inactive: LiveIcon,
+              active: LiveIcon,
             }}
           />
           <NavItem

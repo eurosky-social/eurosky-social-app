@@ -143,6 +143,9 @@ import {setNavigationMetadata} from '#/analytics/metadata'
 import {BRAND} from '#/config/brand'
 import {IS_LIQUID_GLASS, IS_NATIVE, IS_WEB} from '#/env'
 import {InviteScannerScreen} from '#/features/inviteFriends'
+import {renderLiveSplitViewLayout} from '#/features/live/components/LiveSplitViewLayout'
+import {LiveEventScreen} from '#/features/live/LiveEventScreen'
+import {LiveScreen} from '#/features/live/LiveScreen'
 import {NewsFeedScreen} from '#/features/newsFeed/NewsFeedScreen'
 import {NewsroomScreen} from '#/features/newsrooms/NewsroomScreen'
 import {router} from '#/routes'
@@ -191,6 +194,20 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         getComponent={() => NewsroomScreen}
         options={{title: title(msg`Mu Newsrooms`), requireAuth: true}}
       />
+      {/* EUROSKY: the Live section. The event page gets the split view
+       * layout (thread beside the player) on wide screens. */}
+      <Stack.Screen
+        name="Live"
+        getComponent={() => LiveScreen}
+        options={{title: title(msg`Live`), requireAuth: true}}
+      />
+      <Stack.Group screenLayout={renderLiveSplitViewLayout}>
+        <Stack.Screen
+          name="LiveEvent"
+          getComponent={() => LiveEventScreen}
+          options={{title: title(msg`Live`), requireAuth: true}}
+        />
+      </Stack.Group>
       <Stack.Screen
         name="Moderation"
         getComponent={() => ModerationScreen}
