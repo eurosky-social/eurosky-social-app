@@ -131,6 +131,7 @@ const schema = z.object({
       flickr: z.enum(externalEmbedOptions).optional(),
       bandcamp: z.enum(externalEmbedOptions).optional(),
       plyr: z.enum(externalEmbedOptions).optional(),
+      streamplace: z.enum(externalEmbedOptions).optional(), // EUROSKY: live video on the AT Protocol
     })
     .optional(),
   invites: z.object({

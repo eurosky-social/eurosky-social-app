@@ -17,6 +17,8 @@ export const router = new Router<AllNavigatableRoutes>({
   Lists: '/lists',
   NewsFeed: '/news',
   Newsroom: ['/newsroom/:name', '/newsroom'],
+  Live: '/live',
+  LiveEvent: '/live/:id',
   // moderation
   Moderation: '/moderation',
   ModerationModlists: '/moderation/modlists',
