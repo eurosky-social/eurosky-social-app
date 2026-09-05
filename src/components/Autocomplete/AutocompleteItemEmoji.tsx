@@ -23,7 +23,9 @@ export function AutocompleteItemEmoji({
         a.gap_sm,
         active || s.hovered || s.pressed ? [t.atoms.bg_contrast_25] : [],
       ]}>
-      <Text style={[a.text_xl, a.leading_tight]}>{item.value}</Text>
+      <Text emoji style={[a.text_xl, a.leading_tight]}>
+        {item.value}
+      </Text>
       <Text style={[a.text_md, a.leading_tight]}>:{item.emoji.id}:</Text>
     </SiftItem>
   )
