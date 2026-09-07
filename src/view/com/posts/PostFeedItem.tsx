@@ -513,6 +513,7 @@ let PostContent = ({
           <RichText
             enableTags
             enableCode
+            enableMath
             testID="postText"
             value={richText}
             numberOfLines={limitLines ? MAX_POST_LINES : undefined}

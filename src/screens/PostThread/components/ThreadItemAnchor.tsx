@@ -388,6 +388,7 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
                       <RichText
                         enableTags
                         enableCode
+                        enableMath
                         selectable
                         value={richText}
                         style={[a.flex_1, a.text_lg]}

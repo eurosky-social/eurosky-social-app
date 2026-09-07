@@ -360,3 +360,17 @@ input[type='range'][orient='vertical']::-moz-range-thumb {
     opacity: 0;
   }
 }
+
+/*
+ * TeX math in posts (src/components/RichTextMath). KaTeX's own stylesheet is
+ * lazy loaded with the library; these only shape the display-math wrapper so
+ * a wide equation scrolls instead of overflowing the post.
+ */
+.mu-math-block {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.mu-math-block .katex-display {
+  margin: 0.25em 0;
+}
