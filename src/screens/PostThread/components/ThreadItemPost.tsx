@@ -341,6 +341,7 @@ const ThreadItemPostInner = memo(function ThreadItemPostInner({
                   <RichText
                     enableTags
                     enableCode
+                    enableMath
                     value={richText}
                     style={[a.flex_1, a.text_md]}
                     numberOfLines={limitLines ? MAX_POST_LINES : undefined}

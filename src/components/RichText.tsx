@@ -3,12 +3,14 @@ import {type StyleProp, type TextStyle, View} from 'react-native'
 import {RichText as RichTextAPI} from '@bsky/sdk/richtext'
 
 import {hasCode} from '#/lib/code/parse'
+import {hasMath} from '#/lib/math/parse'
 import {toShortUrl} from '#/lib/strings/url-helpers'
 import {android, atoms as a, flatten, type TextStyleProp} from '#/alf'
 import {isOnlyEmoji} from '#/alf/typography'
 import {InlineLinkText, type LinkProps} from '#/components/Link'
 import {ProfileHoverCard} from '#/components/ProfileHoverCard'
 import {type CodePart, parseCodeParts} from '#/components/RichTextCode'
+import {parseMathParts} from '#/components/RichTextMath'
 import {RichTextTag} from '#/components/RichTextTag'
 import {Text, type TextProps} from '#/components/Typography'
 import {app} from '#/lexicons'
@@ -32,6 +34,12 @@ export type RichTextProps = TextStyleProp &
      * `#/components/RichTextCode`.
      */
     enableCode?: boolean
+    /**
+     * Render TeX math in the text: inline $x$ and display $$x$$ spans,
+     * typeset with KaTeX on web and MathJax (as SVG) on native. Opt-in;
+     * enabled for post bodies. See `#/components/RichTextMath`.
+     */
+    enableMath?: boolean
     authorHandle?: string
     onLinkPress?: LinkProps['onPress']
     interactiveStyle?: StyleProp<TextStyle>
@@ -70,6 +78,7 @@ export function RichText({
   selectable,
   enableTags = false,
   enableCode = false,
+  enableMath = false,
   authorHandle,
   onLinkPress,
   interactiveStyle,
@@ -103,11 +112,43 @@ export function RichText({
   // contains a backtick span. Plain posts (the overwhelming majority) skip the
   // parts-assembly machinery entirely and render exactly as before.
   const codeActive = enableCode && hasCode(text)
-  // Fenced blocks render as <View> panels only in full views. When the text is
-  // line-clamped (feed previews, quote embeds), keep them inline so
-  // `numberOfLines` still works - a block <View> can't be truncated by a parent
-  // <Text>.
-  const blockMode = codeActive && !numberOfLines
+  // Same guard for math: only posts with a real $...$ / $$...$$ span pay for
+  // tokenizing, and on web only those trigger the KaTeX chunk download.
+  const mathActive = enableMath && hasMath(text)
+  const richActive = codeActive || mathActive
+  // Native sizes its math SVGs from the text's font size; mirrors the
+  // emoji-only branch below.
+  const mathFontSize = mathActive
+    ? (flatten(style)?.fontSize ?? a.text_sm.fontSize)
+    : a.text_sm.fontSize
+  // Fenced blocks and display math render as <View> panels only in full views.
+  // When the text is line-clamped (feed previews, quote embeds), keep them
+  // inline so `numberOfLines` still works - a block <View> can't be truncated
+  // by a parent <Text>.
+  const blockMode = richActive && !numberOfLines
+
+  // Code first, then math on whatever prose is left, so a `$` inside a code
+  // span is never read as a math delimiter. Plain-text parts are the only
+  // string nodes `parseCodeParts` emits.
+  const parseSegmentParts = (
+    segmentText: string,
+    keyPrefix: string,
+  ): CodePart[] => {
+    const parts = codeActive
+      ? parseCodeParts(segmentText, keyPrefix, blockMode)
+      : [{block: false, node: segmentText}]
+    if (!mathActive) return parts
+    return parts.flatMap((part, i) =>
+      typeof part.node === 'string'
+        ? parseMathParts(
+            part.node,
+            `${keyPrefix}m${i}`,
+            blockMode,
+            mathFontSize,
+          )
+        : [part],
+    )
+  }
 
   // Assemble parts into the final tree. With no block parts this is the single
   // <Text> we've always rendered. With a block (a fenced code <View>, which
@@ -202,9 +243,7 @@ export function RichText({
       )
     }
     return renderParts(
-      codeActive
-        ? parseCodeParts(text, 'c', blockMode)
-        : [{block: false, node: text}],
+      richActive ? parseSegmentParts(text, 'c') : [{block: false, node: text}],
     )
   }
 
@@ -281,8 +320,8 @@ export function RichText({
           />
         ),
       })
-    } else if (codeActive) {
-      parts.push(...parseCodeParts(segment.text, `c${key}`, blockMode))
+    } else if (richActive) {
+      parts.push(...parseSegmentParts(segment.text, `c${key}`))
     } else {
       parts.push({block: false, node: segment.text})
     }
