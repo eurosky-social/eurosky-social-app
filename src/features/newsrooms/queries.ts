@@ -3,10 +3,16 @@ import {type DidString} from '@atproto/syntax'
 import {useQueries, useQuery} from '@tanstack/react-query'
 
 import {STALE} from '#/state/queries'
+import {useProfilesQuery} from '#/state/queries/profile'
 import {createQueryKey} from '#/state/queries/util'
 import {useAppviewClient} from '#/state/session'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
+import {
+  getPublisherRssUrls,
+  NEWSROOM_PUBLISHERS,
+  type NewsroomPublisher,
+} from './publishers'
 import {buildRssFetchUrl} from './rss/config'
 import {extractOgImage, parseRssFeed} from './rss/parse'
 import {type RssItem} from './rss/types'
@@ -22,7 +28,43 @@ export const createRssArticlesQueryKey = (args: {urls: string[]}) =>
  * published front page rather than reverse-chron social posts.
  */
 export function useRssArticlesQuery({urls}: {urls: string[]}) {
-  return useQuery({
+  return useQuery(rssArticlesQueryOptions({urls}))
+}
+
+/**
+ * Every registered publisher's latest articles, each set kept under its own
+ * publisher rather than merged, so the explore page can attribute a story to
+ * the outlet that ran it. Cache keys are per publisher feed URL set, so a
+ * newsroom's own front page and the explore page share one fetch.
+ */
+export function useAllPublisherArticlesQuery({
+  publishers,
+}: {
+  publishers: NewsroomPublisher[]
+}) {
+  const withFeeds = publishers.filter(p => getPublisherRssUrls(p).length > 0)
+  const results = useQueries({
+    queries: withFeeds.map(publisher =>
+      rssArticlesQueryOptions({urls: getPublisherRssUrls(publisher)}),
+    ),
+  })
+
+  return {
+    /* A publisher whose feed is unreachable simply contributes nothing. */
+    articlesByPublisher: withFeeds.map((publisher, i) => ({
+      publisher,
+      articles: results[i]?.data ?? [],
+    })),
+    isLoading: results.some(r => r.isLoading),
+  }
+}
+
+/**
+ * Shared query definition, so one publisher's feed is fetched once whether it
+ * is read by its own newsroom page or by the explore page.
+ */
+function rssArticlesQueryOptions({urls}: {urls: string[]}) {
+  return {
     queryKey: createRssArticlesQueryKey({urls}),
     staleTime: STALE.MINUTES.FIVE,
     enabled: urls.length > 0,
@@ -59,7 +101,18 @@ export function useRssArticlesQuery({urls}: {urls: string[]}) {
         )
         .slice(0, RSS_ARTICLES_TOTAL)
     },
+  }
+}
+
+/**
+ * The live profiles of every registered publisher, keyed by DID. Shares the
+ * profiles cache with the switcher rail and the mastheads.
+ */
+export function useNewsroomProfilesQuery() {
+  const {data} = useProfilesQuery({
+    handles: NEWSROOM_PUBLISHERS.map(p => p.did),
   })
+  return new Map(data?.profiles.map(p => [p.did, p]) ?? [])
 }
 
 export const createArticleDiscussionQueryKey = (args: {

@@ -144,6 +144,7 @@ import {BRAND} from '#/config/brand'
 import {IS_LIQUID_GLASS, IS_NATIVE, IS_WEB} from '#/env'
 import {InviteScannerScreen} from '#/features/inviteFriends'
 import {NewsFeedScreen} from '#/features/newsFeed/NewsFeedScreen'
+import {NewsroomExploreScreen} from '#/features/newsrooms/explore'
 import {NewsroomScreen} from '#/features/newsrooms/NewsroomScreen'
 import {router} from '#/routes'
 import {Referrer} from '../modules/expo-bluesky-swiss-army'
@@ -190,6 +191,11 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         name="Newsroom"
         getComponent={() => NewsroomScreen}
         options={{title: title(msg`Mu Newsrooms`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="NewsroomExplore"
+        getComponent={() => NewsroomExploreScreen}
+        options={{title: title(msg`Explore Newsrooms`), requireAuth: true}}
       />
       <Stack.Screen
         name="Moderation"

@@ -34,7 +34,13 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
   const {rightNavVisible, centerColumnOffset, leftNavMinimal} =
     useLayoutBreakpoints()
 
-  if (!rightNavVisible || isMessagesRelatedScreen) {
+  /*
+   * The newsroom explore spread lays itself out across the center and right
+   * columns, so the shell leaves the right column to it.
+   */
+  const isNewsroomExplore = routeName === 'NewsroomExplore'
+
+  if (!rightNavVisible || isMessagesRelatedScreen || isNewsroomExplore) {
     return null
   }
 
