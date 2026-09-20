@@ -7,9 +7,10 @@ import {Divider} from '#/components/Divider'
 import {InlineLinkText, Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {type app} from '#/lexicons'
+import {articleViewLink} from '../../article/articleLink'
 import {articleSearchPath} from '../../discussion'
 import {useArticleDiscussionsQuery} from '../../queries'
-import {type ExploreArticle, type ExploreStory} from '../cluster'
+import {type ExploreArticle, type ExploreStory, outletProfile} from '../cluster'
 import {ColumnRule, KickerText} from './Rules'
 import {PublisherLabel} from './StoryByline'
 import {StoryLead, StoryRow} from './StoryCard'
@@ -81,7 +82,7 @@ export function ExploreLeadBand({
                     {index > 0 && <Divider />}
                     <CoverageEntry
                       article={article}
-                      profile={profiles.get(article.publisher.did)}
+                      profile={outletProfile(profiles, article.publisher)}
                       postCount={discussions[index + 1]?.data?.total}
                     />
                   </View>
@@ -127,7 +128,7 @@ export function CoverageEntry({
     <View style={[a.gap_xs]}>
       <PublisherLabel article={article} profile={profile} />
       <Link
-        to={article.item.link}
+        to={articleViewLink(article)}
         label={article.item.title}
         style={[a.flex_col, a.align_start, a.w_full]}>
         <Text

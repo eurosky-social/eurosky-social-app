@@ -11,6 +11,7 @@ import {EditBig_Stroke2_Corner2_Rounded as ComposeIcon} from '#/components/icons
 import {InlineLinkText, Link} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
+import {articleViewLinkFor} from '../article/articleLink'
 import {articleSearchPath} from '../discussion'
 import {getPublisherRssUrls, type NewsroomPublisher} from '../publishers'
 import {
@@ -106,7 +107,10 @@ function HeroArticle({
 
   return (
     <View style={[a.gap_sm]}>
-      <Link to={item.link} label={item.title} style={[a.flex_col, a.gap_sm]}>
+      <Link
+        to={articleViewLinkFor(item, {did: publisher.did})}
+        label={item.title}
+        style={[a.flex_col, a.gap_sm]}>
         {!!heroImage && (
           <Image
             accessibilityIgnoresInvertColors
@@ -163,7 +167,9 @@ function SecondaryArticle({
     <View style={[a.flex_row, a.gap_md, a.align_start]}>
       <View style={[a.flex_1, a.flex_row, a.gap_md]}>
         {!!image && (
-          <Link to={item.link} label={item.title}>
+          <Link
+            to={articleViewLinkFor(item, {did: publisher.did})}
+            label={item.title}>
             <Image
               accessibilityIgnoresInvertColors
               source={{uri: image}}
@@ -175,7 +181,7 @@ function SecondaryArticle({
         )}
         <View style={[a.flex_1, a.gap_2xs]}>
           <Link
-            to={item.link}
+            to={articleViewLinkFor(item, {did: publisher.did})}
             label={item.title}
             style={[a.flex_col, a.gap_2xs, a.w_full]}>
             <Text

@@ -22,6 +22,7 @@ import {InlineLinkText, Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
 import {NewsFeedRightRail} from '#/features/newsFeed/components/NewsFeedRightRail'
+import {NewsroomArticleRightRail} from '#/features/newsrooms/article/NewsroomArticleRightRail'
 import {NewsroomRightRail} from '#/features/newsrooms/components/NewsroomRightRail'
 
 export function DesktopRightNav({routeName}: {routeName: string}) {
@@ -51,6 +52,8 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
   const railContent =
     routeName === 'Newsroom' ? (
       <NewsroomRightRail />
+    ) : routeName === 'NewsroomArticle' ? (
+      <NewsroomArticleRightRail />
     ) : routeName === 'NewsFeed' ? (
       <NewsFeedRightRail />
     ) : null

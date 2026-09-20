@@ -144,6 +144,7 @@ import {BRAND} from '#/config/brand'
 import {IS_LIQUID_GLASS, IS_NATIVE, IS_WEB} from '#/env'
 import {InviteScannerScreen} from '#/features/inviteFriends'
 import {NewsFeedScreen} from '#/features/newsFeed/NewsFeedScreen'
+import {NewsroomArticleScreen} from '#/features/newsrooms/article/NewsroomArticleScreen'
 import {NewsroomExploreScreen} from '#/features/newsrooms/explore'
 import {NewsroomScreen} from '#/features/newsrooms/NewsroomScreen'
 import {router} from '#/routes'
@@ -196,6 +197,11 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         name="NewsroomExplore"
         getComponent={() => NewsroomExploreScreen}
         options={{title: title(msg`Explore Newsrooms`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="NewsroomArticle"
+        getComponent={() => NewsroomArticleScreen}
+        options={{title: title(msg`Article`), requireAuth: true}}
       />
       <Stack.Screen
         name="Moderation"

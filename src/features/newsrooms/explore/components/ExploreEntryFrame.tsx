@@ -13,6 +13,7 @@ import {
   useArticleDiscussionsQuery,
   useNewsroomProfilesQuery,
 } from '../../queries'
+import {outletProfile} from '../cluster'
 import {useExploreStories} from '../useExploreStories'
 import {CoverageEntry} from './ExploreLeadBand'
 import {KickerText} from './Rules'
@@ -83,7 +84,7 @@ export function ExploreEntryFrame() {
                 {index > 0 && <Divider />}
                 <CoverageEntry
                   article={article}
-                  profile={profiles.get(article.publisher.did)}
+                  profile={outletProfile(profiles, article.publisher)}
                   postCount={discussions[index + 1]?.data?.total}
                 />
               </Fragment>

@@ -6,11 +6,42 @@ import {
   sectionForArticle,
 } from './sections'
 
-/** One article, kept with the publisher that ran it. */
+/**
+ * The outlet that ran an article, as the spread's cards read it.
+ *
+ * Narrower than `NewsroomPublisher` (which satisfies it structurally) because
+ * not every source of a story is a registered publisher: a labeler-backed
+ * spread ingests outlets by feed alone, most with no Bluesky account, so `did`
+ * cannot be assumed.
+ */
+export interface ExploreOutlet {
+  /** Stable per outlet; the registry id, or the site host for a bare feed. */
+  id: string
+  /** Present only with a Bluesky account: drives the avatar and the byline link. */
+  did?: string
+  /** Fallback display name, for an outlet with no profile to read one from. */
+  name?: string
+  /** Section hints for an article carrying no labels of its own. */
+  categories: string[]
+}
+
+/** One article, kept with the outlet that ran it. */
 export interface ExploreArticle {
-  publisher: NewsroomPublisher
+  publisher: ExploreOutlet
   item: RssItem
   section: ExploreSection
+}
+
+/**
+ * The live profile behind an outlet, where it has one. Outlets without an
+ * account never match a profile, so this keeps that check in one place rather
+ * than at every avatar.
+ */
+export function outletProfile<T>(
+  profiles: Map<string, T>,
+  outlet: ExploreOutlet,
+): T | undefined {
+  return outlet.did ? profiles.get(outlet.did) : undefined
 }
 
 /**
