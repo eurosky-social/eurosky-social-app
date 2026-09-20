@@ -8,6 +8,8 @@
  * for now: every registered newsroom is equally visible to everyone.
  */
 
+import {type DidString} from '@atproto/syntax'
+
 /**
  * A content source feeding a publisher's page beyond its Bluesky account
  * (which is registry-level: `did` + `reporterDids`). Only RSS is consumed
@@ -20,7 +22,7 @@ export interface NewsroomPublisher {
   /** Stable id; may end up in per-user records later, so never reuse or renumber. */
   id: string
   /** The publisher's own Bluesky account; its posts are the editorial "desks". */
-  did: string
+  did: DidString
   /** Per-publisher brand accent, tinting the follow button and share CTA. */
   accent?: string
   /**
@@ -32,7 +34,7 @@ export interface NewsroomPublisher {
   /** Category filter chips, e.g. Politics, World, Economy, Culture. */
   categories: string[]
   /** Accounts surfaced in the "Reporters" rail / merged feed. */
-  reporterDids: string[]
+  reporterDids: DidString[]
   /** Additional content sources beyond the publisher account. */
   sources: NewsroomSource[]
 }
