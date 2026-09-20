@@ -31,12 +31,8 @@ import {ExploreLeadBand} from './components/ExploreLeadBand'
 import {ExploreSectionChips} from './components/ExploreSectionChips'
 import {ExploreSectionFront} from './components/ExploreSectionFront'
 import {BandRule, ColumnRule} from './components/Rules'
-import {
-  EXPLORE_SECTION_OTHER,
-  EXPLORE_SECTIONS,
-  type ExploreSection,
-} from './sections'
-import {useExploreStories} from './useExploreStories'
+import {type ExploreSection} from './sections'
+import {useExploreSource} from './useExploreSource'
 
 /** How many stories the opening band takes before the departments start. */
 const TOP_STORIES_COUNT = 5
@@ -66,7 +62,7 @@ type Props = NativeStackScreenProps<CommonNavigatorParams, 'NewsroomExplore'>
 export function NewsroomExploreScreen({navigation}: Props) {
   const {t: l} = useLingui()
   const {wide, width} = useExploreSpread()
-  const {stories, isLoading} = useExploreStories()
+  const {stories, sections, isLoading} = useExploreSource()
   const profiles = useNewsroomProfilesQuery()
   const [sectionId, setSectionId] = useState<string | undefined>()
   const scrollRef = useRef<Animated.ScrollView>(null)
@@ -95,10 +91,7 @@ export function NewsroomExploreScreen({navigation}: Props) {
     scrollRef.current?.scrollTo({y: 0, animated: false})
   }
 
-  const groups = groupStoriesBySection(stories, [
-    ...EXPLORE_SECTIONS,
-    EXPLORE_SECTION_OTHER,
-  ])
+  const groups = groupStoriesBySection(stories, sections)
   /*
    * The opening band belongs to the whole spread, so a section filter drops it
    * rather than promoting an unrelated story into the lead.
