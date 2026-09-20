@@ -1528,11 +1528,6 @@
       "count": 1
     }
   },
-  "src/view/com/composer/text-input/web/Autocomplete.tsx": {
-    "typescript/no-unsafe-member-access": {
-      "count": 2
-    }
-  },
   "src/view/com/feeds/ComposerPrompt.tsx": {
     "typescript/no-explicit-any": {
       "count": 2

@@ -18,6 +18,7 @@ import {useLingui} from '@lingui/react/macro'
 import {IMAGE_SIZE_CONFIG_POSTS} from '#/lib/constants'
 import {downloadAndResize} from '#/lib/media/manip'
 import {isUriImage} from '#/lib/media/util'
+import {getEmojiAt, insertEmojiAt} from '#/lib/strings/emoji-manip'
 import {getMentionAt, insertMentionAt} from '#/lib/strings/mention-manip'
 import {useTheme} from '#/lib/ThemeContext'
 import {
@@ -26,10 +27,14 @@ import {
 } from '#/view/com/composer/text-input/text-input-util'
 import {atoms as a, useAlf} from '#/alf'
 import {normalizeTextStyles} from '#/alf/typography'
+import {
+  type AutocompleteEmoji,
+  type AutocompleteProfile,
+} from '#/components/Autocomplete'
 import {IS_ANDROID} from '#/env'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
-import {Autocomplete} from './mobile/Autocomplete'
+import {type ActiveAutocomplete, Autocomplete} from './mobile/Autocomplete'
 import {type TextInputProps} from './TextInput.types'
 
 interface Selection {
@@ -53,7 +58,8 @@ export function TextInput({
   const textInput = useRef<RNTextInput>(null)
   const textInputSelection = useRef<Selection>({start: 0, end: 0})
   const theme = useTheme()
-  const [autocompletePrefix, setAutocompletePrefix] = useState('')
+  const [activeAutocomplete, setActiveAutocomplete] =
+    useState<ActiveAutocomplete | null>(null)
   const prevLength = useRef(richtext.length)
 
   useImperativeHandle(ref, () => ({
@@ -78,12 +84,16 @@ export function TextInput({
       // NOTE: BinaryFiddler
       // onChangeText happens before onSelectionChange, cursorPos is out of bound if the user deletes characters,
       const cursorPos = textInputSelection.current?.start ?? 0
-      const prefix = getMentionAt(newText, Math.min(cursorPos, newText.length))
+      const safeCursorPos = Math.min(cursorPos, newText.length)
+      const mention = getMentionAt(newText, safeCursorPos)
+      const emoji = getEmojiAt(newText, safeCursorPos)
 
-      if (prefix) {
-        setAutocompletePrefix(prefix.value)
-      } else if (autocompletePrefix) {
-        setAutocompletePrefix('')
+      if (mention?.value) {
+        setActiveAutocomplete({type: 'profile', query: mention.value})
+      } else if (emoji?.value) {
+        setActiveAutocomplete({type: 'emoji', query: emoji.value})
+      } else if (activeAutocomplete) {
+        setActiveAutocomplete(null)
       }
 
       const nextDetectedUris = new Map<string, LinkFacetMatch>()
@@ -120,7 +130,7 @@ export function TextInput({
       }
       prevLength.current = newText.length
     },
-    [setRichText, autocompletePrefix, onPhotoPasted, onNewLink],
+    [setRichText, activeAutocomplete, onPhotoPasted, onNewLink],
   )
 
   const onPaste = useCallback(
@@ -150,17 +160,17 @@ export function TextInput({
   )
 
   const onSelectAutocompleteItem = useCallback(
-    (item: string) => {
-      void onChangeText(
-        insertMentionAt(
-          richtext.text,
-          textInputSelection.current?.start || 0,
-          item,
-        ),
-      )
-      setAutocompletePrefix('')
+    (item: AutocompleteProfile | AutocompleteEmoji) => {
+      const cursorPos = textInputSelection.current?.start || 0
+      const newText =
+        item.type === 'profile'
+          ? insertMentionAt(richtext.text, cursorPos, item.value.slice(1))
+          : insertEmojiAt(richtext.text, cursorPos, item.value)
+
+      void onChangeText(newText)
+      setActiveAutocomplete(null)
     },
-    [onChangeText, richtext, setAutocompletePrefix],
+    [onChangeText, richtext],
   )
 
   const inputTextStyle = useMemo(() => {
@@ -229,7 +239,7 @@ export function TextInput({
           style={[
             inputTextStyle,
             a.w_full,
-            !autocompletePrefix && a.h_full,
+            !activeAutocomplete && a.h_full,
             {
               textAlignVertical: 'top',
               minHeight: 60,
@@ -245,7 +255,7 @@ export function TextInput({
         </RNTextInput>
       </TextInputWrapper>
       <Autocomplete
-        prefix={autocompletePrefix}
+        active={activeAutocomplete}
         onSelect={onSelectAutocompleteItem}
       />
     </View>
