@@ -10,4 +10,10 @@ export interface RssItem {
   description?: string
   /** Lead image URL, when the feed provides one. */
   imageUrl?: string
+  /**
+   * The publisher's own section labels for the item (`<category>` in RSS,
+   * `<category term>` in Atom). Free-form per outlet - the explore page maps
+   * them onto its shared sections rather than showing them raw.
+   */
+  categories?: string[]
 }
