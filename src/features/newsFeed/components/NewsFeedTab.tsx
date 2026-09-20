@@ -43,8 +43,8 @@ export function NewsFeedTab({
          * button carries a text label. */}
         <Link
           testID="newsFeedNewsroomsBtn"
-          to="/newsroom"
-          label={l`Open newsrooms`}
+          to="/newsroom/explore"
+          label={l`Explore newsrooms`}
           size="small"
           color="secondary">
           <ButtonIcon icon={NewsroomsIcon} />
