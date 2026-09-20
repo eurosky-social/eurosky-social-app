@@ -10,21 +10,20 @@ import {type FeedDescriptor} from '#/state/queries/post-feed'
 import {useProfileQuery, useProfilesQuery} from '#/state/queries/profile'
 import {PostFeed} from '#/view/com/posts/PostFeed'
 import {type ListMethods} from '#/view/com/util/List'
-import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useLayoutBreakpoints, useTheme} from '#/alf'
-import {Button, ButtonIcon, ButtonText} from '#/components/Button'
+import {ButtonIcon, ButtonText} from '#/components/Button'
 import {Newspaper_Stroke2_Corner2_Rounded as NewsFeedIcon} from '#/components/icons/Newspaper'
 import {Newspaper2_Stroke2_Corner2_Rounded as NewsroomsIcon} from '#/components/icons/Newspaper2'
 import * as Layout from '#/components/Layout'
 import {Link} from '#/components/Link'
 import {Loader} from '#/components/Loader'
-import * as Menu from '#/components/Menu'
 import {Text} from '#/components/Typography'
 import {type app} from '#/lexicons'
 import {NewsroomFrontPage} from './components/NewsroomFrontPage'
 import {NewsroomMasthead} from './components/NewsroomMasthead'
 import {NewsroomRightRail} from './components/NewsroomRightRail'
 import {NewsroomSwitcher} from './components/NewsroomSwitcher'
+import {NewsroomSwitcherMenu} from './components/NewsroomSwitcherMenu'
 import {
   getDefaultNewsroomPublisher,
   getNewsroomPublisherByDid,
@@ -68,6 +67,10 @@ export function NewsroomScreen({route, navigation}: Props) {
     profiles?.profiles.map(profile => [profile.did, profile]) ?? [],
   )
   const publisherName = getPublisherName(profileByDid.get(publisher.did))
+
+  function onSelectExplore() {
+    navigation.navigate('NewsroomExplore')
+  }
 
   function onSelectPublisher(next: NewsroomPublisher) {
     navigation.setParams({name: next.did})
@@ -124,44 +127,12 @@ export function NewsroomScreen({route, navigation}: Props) {
             <Trans>News</Trans>
           </ButtonText>
         </Link>
-        {/* The org switcher scrolls away with the feed; this menu keeps
-         * switching newsrooms one tap away from anywhere on the page. */}
         <Layout.Header.Slot>
-          <Menu.Root>
-            <Menu.Trigger label={l`Switch newsroom`}>
-              {({props}) => (
-                <Button
-                  {...props}
-                  testID="newsroomSwitcherMenuBtn"
-                  label={l`Switch newsroom`}
-                  size="small"
-                  color="secondary"
-                  shape="round">
-                  <ButtonIcon icon={NewsroomsIcon} size="md" />
-                </Button>
-              )}
-            </Menu.Trigger>
-            <Menu.Outer>
-              <Menu.Group>
-                {NEWSROOM_PUBLISHERS.map(p => (
-                  <Menu.Item
-                    key={p.id}
-                    label={l`Switch to ${getPublisherName(profileByDid.get(p.did))}`}
-                    onPress={() => onSelectPublisher(p)}>
-                    <UserAvatar
-                      type="user"
-                      size={20}
-                      avatar={profileByDid.get(p.did)?.avatar}
-                    />
-                    <Menu.ItemText>
-                      {getPublisherName(profileByDid.get(p.did))}
-                    </Menu.ItemText>
-                    <Menu.ItemRadio selected={p.id === publisher.id} />
-                  </Menu.Item>
-                ))}
-              </Menu.Group>
-            </Menu.Outer>
-          </Menu.Root>
+          <NewsroomSwitcherMenu
+            selectedId={publisher.id}
+            onSelect={onSelectPublisher}
+            onSelectExplore={onSelectExplore}
+          />
         </Layout.Header.Slot>
       </Layout.Header.Outer>
 
@@ -172,6 +143,7 @@ export function NewsroomScreen({route, navigation}: Props) {
           publishers={NEWSROOM_PUBLISHERS}
           selectedId={publisher.id}
           onSelect={onSelectPublisher}
+          onSelectExplore={onSelectExplore}
         />
       </Layout.Center>
 
