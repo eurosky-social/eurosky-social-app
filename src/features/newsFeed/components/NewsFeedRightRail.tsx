@@ -88,7 +88,7 @@ function NewsroomsModule() {
           ))}
         </View>
         <Link
-          to="/newsroom"
+          to="/newsroom/explore"
           label={l`See all newsrooms`}
           color="primary"
           size="large"

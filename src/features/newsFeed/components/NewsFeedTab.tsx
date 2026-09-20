@@ -10,6 +10,7 @@ import {SettingsGear2_Stroke2_Corner0_Rounded as SettingsGear} from '#/component
 import * as Layout from '#/components/Layout'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
+import {ExploreEntryFrame} from '#/features/newsrooms/explore/components/ExploreEntryFrame'
 import {selectSources} from '../sources'
 import {type NewsFeedPrefs} from '../state/prefs'
 
@@ -71,6 +72,10 @@ export function NewsFeedTab({
           testID="newsFeed"
           feed={feed}
           renderEmptyState={renderEmpty}
+          // The way into the cross-publisher spread, above the feed rather
+          // than behind the header's "Newsrooms" link, where the stories
+          // themselves do the inviting.
+          ListHeaderComponent={<ExploreEntryFrame />}
         />
       )}
     </Layout.Screen>
