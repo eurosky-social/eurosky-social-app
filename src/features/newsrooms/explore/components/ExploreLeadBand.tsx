@@ -15,7 +15,7 @@ import {PublisherLabel} from './StoryByline'
 import {StoryLead, StoryRow} from './StoryCard'
 
 /** How many stories run beside the lead before the departments start. */
-const DEVELOPING_COUNT = 4
+const DEVELOPING_COUNT = 3
 
 /**
  * The spread's opening band: the day's story, and beside it a column carrying
