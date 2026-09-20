@@ -39,13 +39,19 @@ export function useRssArticlesQuery({urls}: {urls: string[]}) {
  */
 export function useAllPublisherArticlesQuery({
   publishers,
+  enabled = true,
 }: {
   publishers: NewsroomPublisher[]
+  /** Set false to skip fetching entirely, e.g. when another source is active. */
+  enabled?: boolean
 }) {
   const withFeeds = publishers.filter(p => getPublisherRssUrls(p).length > 0)
   const results = useQueries({
     queries: withFeeds.map(publisher =>
-      rssArticlesQueryOptions({urls: getPublisherRssUrls(publisher)}),
+      rssArticlesQueryOptions({
+        urls: getPublisherRssUrls(publisher),
+        enabled,
+      }),
     ),
   })
 
@@ -63,11 +69,17 @@ export function useAllPublisherArticlesQuery({
  * Shared query definition, so one publisher's feed is fetched once whether it
  * is read by its own newsroom page or by the explore page.
  */
-function rssArticlesQueryOptions({urls}: {urls: string[]}) {
+function rssArticlesQueryOptions({
+  urls,
+  enabled = true,
+}: {
+  urls: string[]
+  enabled?: boolean
+}) {
   return {
     queryKey: createRssArticlesQueryKey({urls}),
     staleTime: STALE.MINUTES.FIVE,
-    enabled: urls.length > 0,
+    enabled: enabled && urls.length > 0,
     queryFn: async () => {
       const feeds = await Promise.all(
         urls.map(async url => {

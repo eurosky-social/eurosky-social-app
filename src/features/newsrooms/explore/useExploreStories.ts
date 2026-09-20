@@ -12,12 +12,13 @@ import {clusterArticles, type ExploreStory} from './cluster'
  * query hook hands back fresh arrays each time, so its own identity cannot
  * carry the memo.
  */
-export function useExploreStories(): {
+export function useExploreStories({enabled = true}: {enabled?: boolean} = {}): {
   stories: ExploreStory[]
   isLoading: boolean
 } {
   const {articlesByPublisher, isLoading} = useAllPublisherArticlesQuery({
     publishers: NEWSROOM_PUBLISHERS,
+    enabled,
   })
 
   /*
