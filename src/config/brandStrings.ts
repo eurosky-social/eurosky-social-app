@@ -46,6 +46,7 @@ const APP_BRAND_MSGIDS = new Set<string>([
   'AETlrv', // profileName joined Bluesky using a starter pack timeAgoString ago
   'AgLgDA', // Your contact firstAuthorLink is on Bluesky
   'RbsMSV', // This will irreversibly delete your Bluesky account <0>currentHandle</0>... (review: account)
+  'sMXDJR', // New to Bluesky? <0>Sign up</0>
   'UuBuVb', // 0plural# people have joined Bluesky via this starter pack!
   'Wf4SRR', // You joined Bluesky timeAgoString ago
   'ehdCS5', // profileName joined Bluesky timeAgoString ago

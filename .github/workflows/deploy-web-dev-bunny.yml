@@ -66,15 +66,7 @@ jobs:
           # on its own pinned worker at oauth.mu.social.
           EXPO_PUBLIC_OAUTH_BASE_URL: https://dev.mu.social
           EXPO_PUBLIC_OAUTH_ASSERTION_URL: https://oauth-staging.mu.social/client-assertion
-          # Dev routes AUTHED appview traffic to the Eurosky appview: the PDS
-          # resolves this DID's #bsky_appview service endpoint
-          # (https://api.eurosky.network) and proxies there via the
-          # atproto-proxy header. UNAUTHED traffic (logged-out browsing,
-          # brand.json services.publicApi/appView) stays on Bluesky's public
-          # API for now: the Eurosky appview does not resolve handles yet
-          # (handle lookups 404, profiles return handle.invalid), which would
-          # break logged-out views.
-          EXPO_PUBLIC_BLUESKY_PROXY_DID: did:web:api.eurosky.network
+          # Use brand.json's Bluesky AppView defaults for all reads.
           # Geolocation: same first-party endpoint as prod (services/geolocation/
           # serves any origin), drives the regional moderation labelers.
           EXPO_PUBLIC_ENABLE_GEOLOCATION: 'true'

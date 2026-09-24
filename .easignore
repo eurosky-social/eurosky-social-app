@@ -65,8 +65,9 @@ coverage/
 junit.xml
 artifacts
 
-# Web bundle outputs
+# Web bundle outputs (not needed by native builds)
 /dist/
+/bskyweb/static/
 
 # Expo
 .expo/

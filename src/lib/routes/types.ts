@@ -25,6 +25,10 @@ export type CommonNavigatorParams = {
   NewsFeed: undefined
   Newsroom: {name?: string}
   Moderation: undefined
+  ModerationInbox: undefined
+  ModerationInboxSettings: undefined
+  ModerationInboxReportDetails: undefined
+  ModerationInboxSubjectDetails: undefined
   ModerationModlists: undefined
   ModerationMutedAccounts: undefined
   ModerationBlockedAccounts: undefined

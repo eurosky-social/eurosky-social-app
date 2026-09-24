@@ -1,9 +1,14 @@
 #!/bin/bash
-outputIos=$(eas build:version:get -p ios)
-outputAndroid=$(eas build:version:get -p android)
-BSKY_IOS_BUILD_NUMBER=${outputIos#*buildNumber - }
-BSKY_ANDROID_VERSION_CODE=${outputAndroid#*versionCode - }
+set -o errexit
+set -o pipefail
+set -o nounset
 
-echo PACKAGE_VERSION="$(jq -r '.version' package.json)" > "$GITHUB_OUTPUT"
-echo BSKY_IOS_BUILD_NUMBER=$BSKY_IOS_BUILD_NUMBER >> "$GITHUB_OUTPUT"
-echo BSKY_ANDROID_VERSION_CODE=$BSKY_ANDROID_VERSION_CODE >> "$GITHUB_OUTPUT"
+output=$(eas build:version:get -p all --json --non-interactive)
+BSKY_IOS_BUILD_NUMBER=$(jq -r '.buildNumber // 1' <<< "$output")
+BSKY_ANDROID_VERSION_CODE=$(jq -r '.versionCode // 1' <<< "$output")
+
+{
+  echo PACKAGE_VERSION="$(jq -r '.version' package.json)"
+  echo BSKY_IOS_BUILD_NUMBER="$BSKY_IOS_BUILD_NUMBER"
+  echo BSKY_ANDROID_VERSION_CODE="$BSKY_ANDROID_VERSION_CODE"
+} > "$GITHUB_OUTPUT"

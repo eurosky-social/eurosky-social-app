@@ -228,10 +228,10 @@ export const ENABLE_LIVE_EVENTS =
 export const ENABLE_APP_CONFIG =
   process.env.EXPO_PUBLIC_ENABLE_APP_CONFIG !== 'false'
 /**
- * Gates the product-analytics metrics client (the `ax.metric()` pipeline that
- * POSTs to `${METRICS_API_HOST}/t`). Disabling stops all event reporting,
- * including GrowthBook `experiment:viewed`/`feature:viewed` exposures. GrowthBook
- * flag *fetching* is unaffected - the SDK pulls gates directly, separate from
- * this client - so feature gating keeps working.
+ * Gates the web product-analytics metrics client (the `ax.metric()` pipeline
+ * that POSTs to `${METRICS_API_HOST}/t`). Native product analytics are always
+ * disabled, regardless of this value. Disabling this client also stops its
+ * GrowthBook `experiment:viewed`/`feature:viewed` exposures. GrowthBook flag
+ * fetching, Plausible, and feed feedback are independent and unaffected.
  */
 export const ENABLE_METRICS = process.env.EXPO_PUBLIC_ENABLE_METRICS !== 'false'

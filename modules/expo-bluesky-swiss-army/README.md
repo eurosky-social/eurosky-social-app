@@ -11,6 +11,7 @@ This module consolidates several native features into a single Expo module:
 - **SharedPrefs**: Shared preferences storage using native platform APIs (UserDefaults on iOS, SharedPreferences on Android)
 - **VisibilityView**: A native view component that tracks which view is currently visible on screen
 - **NotificationSettings**: iOS handler that routes the system "notification settings" intent into the app
+- **PixelArtImage**: iOS nearest-neighbor image renderer for bundled pet sprite sheets
 
 ## Modules
 
@@ -149,6 +150,17 @@ The module uses platform-specific file extensions to provide appropriate impleme
 - `index.native.ts` - Calls native modules via Expo Modules Core
 - `index.web.ts` - Web-specific implementations or stubs
 - `index.ios.ts` / `index.android.ts` - Platform-specific implementations when behavior differs
+
+### PixelArtImage
+
+Import from `src/PixelArtImage`. On iOS this resolves a React Native image asset
+and loads it through Expo's image loader (local bundle or Metro URL), displaying
+the unmodified bitmap on a layer with nearest-neighbor magnification and
+minification. A request ID prevents late image loads from replacing a newer pet
+variant. Layout and sprite-frame clipping remain in `PetSprite`.
+
+Other platforms retain the `expo-image` renderer; web uses CSS pixelated scaling.
+Adding this module requires regenerating the native project before building.
 
 ### Native Layer
 

@@ -1,8 +1,8 @@
-import {type Client} from '@atproto/lex'
+import {Client} from '@atproto/lex'
 import {type DidString} from '@atproto/syntax'
 import {api} from '@bsky/sdk'
 
-import {IS_TEST_USER} from '#/lib/constants'
+import {EUROSKY_LABELER_DID, IS_TEST_USER} from '#/lib/constants'
 import {com} from '#/lexicons'
 import {account as accountStorage} from '#/storage'
 import {
@@ -12,7 +12,7 @@ import {
 import {type SessionAccount} from './types'
 
 /** The moderation surface of a session bundle. */
-type ModerationSession = {appviewClient: Client}
+type ModerationSession = {appviewClient: Client; chatClient: Client}
 
 /**
  * Cache an account's subscribed labeler DIDs. Called on every preferences
@@ -36,31 +36,31 @@ export function readLabelers(did: string): string[] | undefined {
 }
 
 /**
- * Apply an account's labeler subscriptions to the appview client, without
- * duplicating the globally redacted Bluesky moderation authority.
+ * Apply an account's labeler subscriptions without duplicating the globally
+ * redacted app moderation authorities.
  *
- * The Bluesky DID is filtered out because it already flows through the global
- * `Client.appLabelers`, which lex emits with a `;redact` suffix. Listing it
- * per-instance would add a second, non-redacting entry for the same authority:
+ * App labelers already flow through the global `Client.appLabelers`, which lex
+ * emits with a `;redact` suffix. Listing them per-instance would add a second,
+ * non-redacting entry for the same authority:
  * lex collects the two lists into a `Set` keyed on the suffixed string, so
  * neither dedupes against the other.
  *
- * Only the appview client takes subscriptions - the PDS and chat clients suppress
- * labelers entirely (see clients.ts).
+ * Appview and chat both take subscriptions. The PDS suppresses labelers because
+ * repo and identity requests do not hydrate moderated content (see clients.ts).
  */
 export function applyLabelersToClient(
   client: Client,
   subscribedDids: string[],
 ) {
   client.setLabelers(
-    subscribedDids.filter(did => did !== api.moderation.did) as DidString[],
+    subscribedDids.filter(
+      did => !Client.appLabelers.includes(did as DidString),
+    ) as DidString[],
   )
 }
 
 export function configureModerationForGuest() {
-  // This global mutation is *only* OK because this code is only relevant for testing.
-  // Don't add any other global behavior here!
-  switchToBskyAppLabeler()
+  switchToDefaultAppLabelers()
   configureAdditionalModerationAuthorities()
 }
 
@@ -73,28 +73,25 @@ export function configureModerationForAccount(
   bundle: ModerationSession,
   account: SessionAccount,
 ) {
-  // This global mutation is *only* OK because this code is only relevant for testing.
-  // Don't add any other global behavior here!
-  switchToBskyAppLabeler()
+  switchToDefaultAppLabelers()
+  configureAdditionalModerationAuthorities()
   if (IS_TEST_USER(account.handle)) {
     // Test accounts may briefly use the production authority while this resolves.
     void trySwitchToTestAppLabeler(bundle.appviewClient)
   }
 
-  // The code below is actually relevant to production (and isn't global).
   const labelerDids = readLabelers(account.did)
   if (labelerDids) {
     applyLabelersToClient(bundle.appviewClient, labelerDids)
+    applyLabelersToClient(bundle.chatClient, labelerDids)
   } else {
     // If there are no headers in the storage, we'll not send them on the initial requests.
     // If we wanted to fix this, we could block on the preferences query here.
   }
-
-  configureAdditionalModerationAuthorities()
 }
 
-function switchToBskyAppLabeler() {
-  configureGlobalAppLabelers([api.moderation.did])
+function switchToDefaultAppLabelers() {
+  configureGlobalAppLabelers([api.moderation.did, EUROSKY_LABELER_DID])
 }
 
 /** Resolve and install the test environment's moderation authority. */

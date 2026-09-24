@@ -10,10 +10,6 @@ import {type Result, type WidenPrimitives} from '@growthbook/growthbook-react'
 
 import {Logger} from '#/logger'
 import {
-  getCachedIsBetaUser,
-  subscribeToCachedIsBetaUser,
-} from '#/state/preferences/beta-user-cache'
-import {
   Features,
   features as feats,
   init,
@@ -39,7 +35,7 @@ import {plausible} from '#/analytics/plausible'
 import {PLAUSIBLE_GOALS} from '#/analytics/plausible/shared'
 import * as env from '#/env'
 import {useGeolocationServiceResponse} from '#/geolocation/service'
-import {device} from '#/storage'
+import {account, device} from '#/storage'
 
 export * as utils from '#/analytics/utils'
 export const features = {init, refresh}
@@ -138,6 +134,7 @@ const Context = createContext<AnalyticsBaseContextType>({
     geolocation: device.get(['geolocationServiceResponse']) || {
       countryCode: '',
       regionCode: '',
+      city: '',
     },
   },
 })
@@ -160,7 +157,7 @@ export const setupDeviceId = getAndMigrateDeviceId()
 
 /**
  * Reads the per-account cached `isBetaUser` flag for `did`, kept in sync with
- * PDS preference query results and the beta settings toggle.
+ * writes from `BetaUserStorageSync` and the beta settings toggle.
  *
  * This deliberately does not use `useStorage`, whose `useState` seeds once and
  * only updates via the change listener. The consuming `AnalyticsContext` lives
@@ -175,13 +172,17 @@ function useAccountIsBetaUser(did: string | undefined): boolean | undefined {
   const subscribe = useCallback(
     (onChange: () => void) => {
       if (!did) return () => {}
-      return subscribeToCachedIsBetaUser(did, onChange)
+      const sub = account.addOnValueChangedListener(
+        [did, 'isBetaUser'],
+        onChange,
+      )
+      return () => sub.remove()
     },
     [did],
   )
   const getSnapshot = useCallback(() => {
     if (!did) return undefined
-    return getCachedIsBetaUser(did)
+    return account.get([did, 'isBetaUser'])
   }, [did])
   return useSyncExternalStore(subscribe, getSnapshot)
 }
@@ -206,6 +207,7 @@ export function AnalyticsContext({
   }
   const deviceId = useDeviceId() ?? 'unknown'
   const sessionId = useSessionId()
+  // only IP based, never GPS
   const geolocation = useGeolocationServiceResponse()
   const parentContext = useContext(Context)
   /*

@@ -6,7 +6,7 @@ import {focusManager, QueryClient, useQuery} from '@tanstack/react-query'
 import {persistQueryClient} from '@tanstack/react-query-persist-client'
 import debounce from 'lodash.debounce'
 
-import {networkRetry} from '#/lib/async/retry'
+import {isRetryableRequestError, networkRetry} from '#/lib/async/retry'
 import {createPersistedQueryStorage} from '#/lib/persisted-query-storage'
 import {getAge} from '#/lib/strings/time'
 import {fetchActorDeclarationRecord} from '#/state/queries/messages/actor-declaration'
@@ -51,6 +51,13 @@ const persister = createAsyncStoragePersister({
 const [, cacheHydrationPromise] = persistQueryClient({
   queryClient: qc,
   persister,
+  /*
+   * Device signals are local-only and cannot be recovered without prompting
+   * the user again, so they must survive the persister's default 24-hour
+   * expiration. Server-backed queries still use their own stale times and
+   * refetch normally after hydration.
+   */
+  maxAge: Infinity,
 })
 
 /*
@@ -334,9 +341,15 @@ export type OtherRequiredData = {
   birthdate: string | undefined
   actorDeclaration?: chat.bsky.actor.declaration.Main
 }
+export type OtherRequiredDataStatus = 'pending' | 'error' | 'success'
+const otherRequiredDataRetryOptions = {
+  retry: (failureCount: number, error: unknown) =>
+    failureCount < 2 && isRetryableRequestError(error),
+}
 export function createOtherRequiredDataQueryKey({did}: {did: string}) {
   return ['otherRequiredData', did]
 }
+
 async function getOtherRequiredData({
   accountClient,
 }: {
@@ -426,10 +439,11 @@ export async function prefetchOtherRequiredData({
 
   try {
     logger.debug(`prefetchOtherRequiredData: resolving...`)
-    const res = await networkRetry(3, () =>
-      getOtherRequiredData({accountClient}),
-    )
-    qc.setQueryData<OtherRequiredData>(qk, res)
+    await qc.fetchQuery({
+      ...otherRequiredDataRetryOptions,
+      queryKey: qk,
+      queryFn: () => getOtherRequiredData({accountClient}),
+    })
   } catch (err) {
     const e = err as Error
     logger.warn(`prefetchOtherRequiredData: failed`, {
@@ -461,6 +475,7 @@ export function useOtherRequiredDataQuery() {
   const did = accountClient.did
   return useQuery(
     {
+      ...otherRequiredDataRetryOptions,
       enabled: !!did,
       /**
        * mu fork: the declared age comes from our own backend and changes ~never,
@@ -476,6 +491,7 @@ export function useOtherRequiredDataQuery() {
         return getOtherRequiredDataFromCache({did})
       },
       queryKey: createOtherRequiredDataQueryKey({did: did!}),
+      retryOnMount: false,
       async queryFn() {
         return getOtherRequiredData({accountClient})
       },
@@ -703,19 +719,11 @@ export type AgeAssuranceServerData = {
   state: app.bsky.ageassurance.defs.State | undefined
   metadata: AgeAssuranceMetadata | undefined
   /**
-   * mu fork: true while the declared-age query (otherRequiredData) has not yet
-   * produced a result. Consumers use this to avoid flashing the age gate
-   * before the declared age has loaded. See computeAgeAssuranceState.
+   * Whether the account data needed to compute age assurance is available.
+   * A successful response without a birthdate is still `success`.
+   * Revalidation remains `pending` to avoid flashing Mu's declaration gate.
    */
-  metadataLoading: boolean
-  /**
-   * mu fork: true when the declared-age query (otherRequiredData) settled in an
-   * error state (e.g. the mu-age-service call failed) rather than returning a
-   * result. Lets consumers tell "we couldn't determine the declared age" apart
-   * from "the user has not declared", so a backend hiccup fails open instead of
-   * trapping the user in the gate. See computeAgeAssuranceState.
-   */
-  metadataError: boolean
+  otherRequiredDataStatus: OtherRequiredDataStatus
   /**
    * The native on-device age signals for the region the user is currently in,
    * if they've granted access there. Already resolved from the region-keyed
@@ -733,8 +741,7 @@ const AgeAssuranceServerDataContext = createContext<AgeAssuranceServerData>({
     declaredAge: undefined,
     birthdate: undefined,
   },
-  metadataLoading: false,
-  metadataError: false,
+  otherRequiredDataStatus: 'pending',
   deviceSignals: undefined,
 })
 export function useAgeAssuranceServerDataContext() {
@@ -748,8 +755,15 @@ export function AgeAssuranceServerDataProvider({
   const {data: config} = useConfigQuery()
   const serverState = useServerStateQuery()
   const {state, metadata} = serverState.data || {}
-  const otherRequiredData = useOtherRequiredDataQuery()
-  const {data} = otherRequiredData
+  const {data, isPending, isFetching, isError} = useOtherRequiredDataQuery()
+  /*
+   * Mu's persisted cache can contain an old response without a declaration.
+   * Stay pending through revalidation so it cannot flash the age gate. Once
+   * fetching settles, distinguish a failed lookup from a missing declaration;
+   * the former fails open to Safe rather than trapping users in the gate.
+   */
+  const otherRequiredDataStatus: OtherRequiredDataStatus =
+    isPending || isFetching ? 'pending' : isError ? 'error' : 'success'
   // `select` resolves the cached region-keyed map to the current region.
   const {data: deviceSignals} = useDeviceSignalsQuery()
   const ctx = useMemo(
@@ -764,38 +778,10 @@ export function AgeAssuranceServerDataProvider({
           : undefined,
         birthdate: data?.birthdate,
       },
-      /**
-       * Treat the declared age as "not yet known" while the query is pending OR
-       * fetching. `isPending` covers the cold start with no cached data. But the
-       * AA query cache is persisted (see createPersistedQueryStorage) and
-       * restored async: a stale `{birthdate: undefined}` snapshot can hydrate
-       * (flipping isPending to false) while a fresh fetch to mu-age-service is
-       * still in flight. Gating on isPending alone flashes the gate in that
-       * window for users who have actually declared. `isFetching` keeps us in
-       * the loading state until the revalidation settles, after which a genuine
-       * "no declaration" correctly gates with None.
-       */
-      metadataLoading:
-        otherRequiredData.isPending || otherRequiredData.isFetching,
-      /**
-       * Only an error once we're no longer fetching: during retries/refetch we
-       * stay in the loading state, and a stale cached birthdate (if any) still
-       * resolves declaredAge. This flips true only when the query has given up
-       * with no usable result.
-       */
-      metadataError: otherRequiredData.isError && !otherRequiredData.isFetching,
+      otherRequiredDataStatus,
       deviceSignals,
     }),
-    [
-      config,
-      state,
-      data,
-      metadata,
-      otherRequiredData.isPending,
-      otherRequiredData.isFetching,
-      otherRequiredData.isError,
-      deviceSignals,
-    ],
+    [config, state, data, metadata, otherRequiredDataStatus, deviceSignals],
   )
   return (
     <AgeAssuranceServerDataContext.Provider value={ctx}>

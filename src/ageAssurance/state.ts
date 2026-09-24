@@ -10,6 +10,7 @@ import {
   getDeviceSignalsFromCacheForRegion,
   getOtherRequiredDataFromCache,
   getServerStateFromCache,
+  type OtherRequiredDataStatus,
   useAgeAssuranceServerDataContext,
 } from '#/ageAssurance/data'
 import {logger} from '#/ageAssurance/logger'
@@ -36,14 +37,13 @@ import {device} from '#/storage'
  * server state before computing access based on AA config from the server +
  * geolocation and other data.
  */
-function computeAgeAssuranceState({
+export function computeAgeAssuranceState({
   hasSession,
   geolocation,
   config,
   state,
   metadata,
-  metadataLoading = false,
-  metadataError = false,
+  otherRequiredDataStatus,
   deviceSignals,
 }: {
   hasSession: boolean
@@ -51,8 +51,7 @@ function computeAgeAssuranceState({
   config?: app.bsky.ageassurance.defs.Config
   state?: app.bsky.ageassurance.defs.State
   metadata?: AgeAssuranceMetadata
-  metadataLoading?: boolean
-  metadataError?: boolean
+  otherRequiredDataStatus: OtherRequiredDataStatus
   deviceSignals?: AgeRange.AgeRangeResponse
 }) {
   /**
@@ -97,7 +96,7 @@ function computeAgeAssuranceState({
      * through to the region rules) or it settles to "no declaration" and we
      * gate with None below.
      */
-    if (metadataLoading) {
+    if (otherRequiredDataStatus === 'pending') {
       return {
         status: AgeAssuranceStatus.Unknown,
         access: AgeAssuranceAccess.Safe,
@@ -112,7 +111,7 @@ function computeAgeAssuranceState({
      * policy as a missing config above); the query keeps retrying, and once it
      * succeeds the real declared age takes over.
      */
-    if (metadataError) {
+    if (otherRequiredDataStatus === 'error') {
       logger.warn(
         'useAgeAssuranceState: declared-age query failed, failing open',
       )
@@ -240,6 +239,7 @@ export function unsafeGetAndComputeAgeAssurance({did}: {did: string}) {
     geolocation,
     state: state.state,
     metadata,
+    otherRequiredDataStatus: 'success',
     deviceSignals,
   })
 
@@ -257,14 +257,8 @@ export function unsafeGetAndComputeAgeAssurance({did}: {did: string}) {
 export function useAgeAssuranceState(): AgeAssuranceState {
   const {hasSession} = useSession()
   const geolocation = useGeolocation()
-  const {
-    config,
-    state,
-    metadata,
-    metadataLoading,
-    metadataError,
-    deviceSignals,
-  } = useAgeAssuranceServerDataContext()
+  const {config, state, metadata, otherRequiredDataStatus, deviceSignals} =
+    useAgeAssuranceServerDataContext()
 
   return useMemo(
     () =>
@@ -274,8 +268,7 @@ export function useAgeAssuranceState(): AgeAssuranceState {
         geolocation,
         state,
         metadata,
-        metadataLoading,
-        metadataError,
+        otherRequiredDataStatus,
         deviceSignals,
       }),
     [
@@ -284,8 +277,7 @@ export function useAgeAssuranceState(): AgeAssuranceState {
       config,
       state,
       metadata,
-      metadataLoading,
-      metadataError,
+      otherRequiredDataStatus,
       deviceSignals,
     ],
   )

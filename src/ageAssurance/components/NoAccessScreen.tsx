@@ -1,4 +1,4 @@
-import {useCallback, useEffect} from 'react'
+import {useCallback, useEffect, useEffectEvent} from 'react'
 import {ScrollView, View} from 'react-native'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {msg} from '@lingui/core/macro'
@@ -59,14 +59,17 @@ export function NoAccessScreen() {
   const isAARegion = !!region
   const hasDeclaredAge = metadata?.declaredAge !== undefined
 
-  useEffect(() => {
+  const onShown = useEffectEvent(() => {
     ax.metric(`ageAssurance:noAccessScreen:shown`, {
       accountCreatedAt: metadata?.accountCreatedAt || 'unknown',
       isAARegion,
       hasDeclaredAge,
       canUpdateBirthday: true,
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  })
+
+  useEffect(() => {
+    onShown()
   }, [])
 
   const onPressLogout = useCallback(() => {

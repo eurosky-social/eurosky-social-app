@@ -1,14 +1,14 @@
 import {lazy, Suspense, useRef} from 'react'
 import {View} from 'react-native'
 import {type ViewShotRef} from 'react-native-view-shot'
-import {
-  requestPermissionsAsync,
-  saveToLibraryAsync,
-} from 'expo-media-library/legacy'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
+import {
+  requestPhotoSavePermission,
+  savePhotoToLibrary,
+} from '#/lib/media/photo-library'
 import {shareUrl} from '#/lib/sharing'
 import {logger} from '#/logger'
 import {atoms as a, useBreakpoints, useTheme} from '#/alf'
@@ -59,14 +59,15 @@ function ShareDialogInner({
 
   const ref = useRef<ViewShotRef>(null)
 
-  const onShareLink = async () => {
+  const onShareLink = () => {
     if (!link) return
-    shareUrl(link)
     ax.metric('starterPack:share', {
       starterPack: starterPack.uri,
       shareType: 'link',
     })
-    control.close()
+    control.close(() => {
+      void shareUrl(link)
+    })
   }
 
   // Native-only: capture the rendered card (no remote image service) and save
@@ -75,9 +76,7 @@ function ShareDialogInner({
     const uri = await ref.current?.capture()
     if (!uri) return
 
-    // Write-only permission - saving does not require read access.
-    const res = await requestPermissionsAsync(true)
-    if (!res.granted) {
+    if (!(await requestPhotoSavePermission())) {
       Toast.show(
         _(msg`You must grant access to your photo library to save the image`),
       )
@@ -85,7 +84,7 @@ function ShareDialogInner({
     }
 
     try {
-      await saveToLibraryAsync(`file://${uri}`)
+      await savePhotoToLibrary(uri)
     } catch (e: unknown) {
       Toast.show(_(msg`An error occurred while saving the image!`), {
         type: 'error',
@@ -109,11 +108,11 @@ function ShareDialogInner({
           <View style={[!gtMobile && a.gap_lg]}>
             <View style={[a.gap_sm, gtMobile && a.pb_lg]}>
               <Text style={[a.font_semi_bold, a.text_2xl]}>
-                <Trans>Invite people to this starter pack!</Trans>
+                <Trans>Invite people to this Starter Pack!</Trans>
               </Text>
               <Text style={[a.text_md, t.atoms.text_contrast_medium]}>
                 <Trans>
-                  Share this starter pack and help people join your community on
+                  Share this Starter Pack and help people join your community on
                   Bluesky.
                 </Trans>
               </Text>

@@ -1,10 +1,12 @@
 import {afterEach, describe, expect, it} from '@jest/globals'
 
+import {BRAND} from '#/config/brand'
 import {device} from '#/storage'
 import {
   appViewUrlToDid,
   getAppViewDid,
   getAppViewProxyService,
+  getConfiguredAppView,
   getPublicAppViewUrl,
   normalizeAppViewUrl,
   resolveCustomAppView,
@@ -15,6 +17,19 @@ afterEach(() => {
 })
 
 describe('AppView configuration', () => {
+  it('defaults to Bluesky for signed-in and logged-out reads', () => {
+    expect(getConfiguredAppView()).toEqual({
+      url: 'https://api.bsky.app',
+      did: 'did:web:api.bsky.app',
+    })
+    expect(
+      getAppViewProxyService(`${BRAND.services.appViewDid}#bsky_appview`),
+    ).toBe('did:web:api.bsky.app#bsky_appview')
+    expect(getPublicAppViewUrl(BRAND.services.publicApi)).toBe(
+      'https://public.api.bsky.app',
+    )
+  })
+
   it('normalizes base URLs and derives their did:web identifier', () => {
     expect(normalizeAppViewUrl(' https://api.example.com/ ')).toBe(
       'https://api.example.com',

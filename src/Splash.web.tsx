@@ -6,7 +6,7 @@
 
 import {useEffect, useRef, useState} from 'react'
 
-import {atoms as a, flatten} from '#/alf'
+import {atoms as a, flattenToCSS} from '#/alf'
 import {BrandLogo} from '#/components/icons/BrandLogo'
 import brand from '#/config/brand.json'
 
@@ -78,7 +78,7 @@ export function Splash({
       {!isAnimationComplete && (
         <div
           ref={splashRef}
-          style={flatten([
+          style={flattenToCSS([
             a.fixed,
             a.inset_0,
             a.flex,

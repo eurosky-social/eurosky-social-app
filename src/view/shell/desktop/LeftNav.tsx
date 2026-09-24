@@ -563,9 +563,8 @@ function ComposeBtn({minimal}: {minimal: boolean}) {
           handle = await fetchHandle(handle)
         } catch (e) {
           handle = undefined
-        } finally {
-          setIsFetchingHandle(false)
         }
+        setIsFetchingHandle(false)
       }
 
       if (
@@ -787,8 +786,8 @@ const styles = StyleSheet.create({
   leftNav: {
     left: '50%',
     width: LEFT_NAV_STANDARD_WIDTH,
-    // @ts-expect-error web only
     maxHeight: '100vh',
+    // @ts-expect-error web only
     overflowY: 'auto',
     scrollbarWidth: 'thin',
   },

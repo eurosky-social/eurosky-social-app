@@ -1,8 +1,8 @@
 import {useEffect, useRef, useState} from 'react'
 import {View} from 'react-native'
-import {Image} from 'expo-image'
 
 import {atoms as a, web} from '#/alf'
+import {PixelArtImage} from '../../../modules/expo-bluesky-swiss-army/src/PixelArtImage'
 import {resolveVariant} from './registry'
 import {type Species} from './types'
 
@@ -121,7 +121,7 @@ export function PetSprite({
                 ? [{translateY: dropY}, {scaleX: -1}]
                 : [{translateY: dropY}],
           }}>
-          <Image
+          <PixelArtImage
             source={sheet}
             accessibilityIgnoresInvertColors
             contentFit="fill"
@@ -133,7 +133,7 @@ export function PetSprite({
                 left: -cx * renderPx,
                 top: -cy * renderPx,
               },
-              // Crisp pixel-art scaling on web; native ignores this.
+              // iOS uses a nearest-neighbor native layer; web uses CSS.
               web({
                 imageRendering: 'pixelated',
                 // Stop mobile Safari from opening/saving the raw spritesheet on

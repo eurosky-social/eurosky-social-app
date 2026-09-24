@@ -5,7 +5,6 @@ import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 
 import {type CommonNavigatorParams} from '#/lib/routes/types'
 import {logger} from '#/logger'
-import {setCachedIsBetaUser} from '#/state/preferences/beta-user-cache'
 import {
   usePreferencesQuery,
   useSetIsBetaUserMutation,
@@ -26,6 +25,7 @@ import {Text} from '#/components/Typography'
 import {features, useAnalytics} from '#/analytics'
 import {getTargetedFeatures} from '#/analytics/features'
 import {IS_WEB} from '#/env'
+import {account} from '#/storage'
 
 type Props = NativeStackScreenProps<
   CommonNavigatorParams,
@@ -74,7 +74,7 @@ export function BetaFeaturesSettingsScreen({}: Props) {
        * account-specific.
        */
       if (currentAccount) {
-        setCachedIsBetaUser(currentAccount.did, next)
+        account.set([currentAccount.did, 'isBetaUser'], next)
       }
       ax.metric('betaFeatures:toggle', {
         enabled: next,
@@ -83,10 +83,10 @@ export function BetaFeaturesSettingsScreen({}: Props) {
     } catch (e) {
       logger.error('Failed to toggle beta features', {safeMessage: e})
       Toast.show(l`Something went wrong, please try again.`, {type: 'error'})
-      return
-    } finally {
       setIsPending(false)
+      return
     }
+    setIsPending(false)
     /*
      * The toggle already succeeded; re-evaluate feature gates against the new
      * attribute in-session as a best-effort follow-up. A failure here should

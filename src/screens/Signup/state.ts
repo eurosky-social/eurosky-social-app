@@ -3,7 +3,6 @@ import {LayoutAnimation} from 'react-native'
 import {useLingui} from '@lingui/react/macro'
 import * as EmailValidator from 'email-validator'
 
-import {DEFAULT_SERVICE} from '#/lib/constants'
 import {cleanError, isNetworkError} from '#/lib/strings/errors'
 import {createFullHandle} from '#/lib/strings/handles'
 import {getAge} from '#/lib/strings/time'
@@ -11,6 +10,7 @@ import {matchXrpcError} from '#/lib/xrpc-error'
 import {useSessionApi} from '#/state/session'
 import {useOnboardingDispatch} from '#/state/shell'
 import {type AnalyticsContextType, useAnalytics} from '#/analytics'
+import {OAUTH_SIGNUP_PDS_HOST} from '#/config/oauth'
 import {com} from '#/lexicons'
 
 export type ServiceDescription = com.atproto.server.describeServer.$OutputBody
@@ -87,7 +87,7 @@ export const initialState: SignupState = {
   activeStep: SignupStep.INFO,
   screenTransitionDirection: 'Forward',
 
-  serviceUrl: DEFAULT_SERVICE,
+  serviceUrl: OAUTH_SIGNUP_PDS_HOST,
   serviceDescription: undefined,
   userDomain: '',
   dateOfBirth: DEFAULT_DATE,
@@ -322,6 +322,7 @@ export function useSubmitSignup() {
       dispatch({type: 'setError', value: ''})
       dispatch({type: 'setIsLoading', value: true})
 
+      const verificationCode = state.pendingSubmit?.verificationCode
       try {
         await createAccount(
           {
@@ -331,7 +332,7 @@ export function useSubmitSignup() {
             password: state.password,
             birthDate: state.dateOfBirth,
             inviteCode: state.inviteCode.trim(),
-            verificationCode: state.pendingSubmit?.verificationCode,
+            verificationCode,
           },
           {
             signupDuration: Date.now() - state.signupStartTime,
@@ -360,6 +361,7 @@ export function useSubmitSignup() {
             field: 'invite-code',
           })
           dispatch({type: 'setStep', value: SignupStep.INFO})
+          dispatch({type: 'setIsLoading', value: false})
           return
         }
 
@@ -384,9 +386,8 @@ export function useSubmitSignup() {
             safeMessage: e,
           })
         }
-      } finally {
-        dispatch({type: 'setIsLoading', value: false})
       }
+      dispatch({type: 'setIsLoading', value: false})
     },
     [l, ax, createAccount, onboardingDispatch],
   )

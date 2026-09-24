@@ -6,7 +6,12 @@
   },
   "build": {
     "base": {
-      "node": "24.19.0"
+      "node": "24.19.0",
+      "env": {
+        "EXPO_PUBLIC_APPVIEW_URL": "https://api.bsky.app",
+        "EXPO_PUBLIC_APPVIEW_DID": "did:web:api.bsky.app",
+        "EXPO_PUBLIC_BLUESKY_PROXY_DID": "did:web:api.bsky.app"
+      }
     },
     "development": {
       "extends": "base",
@@ -74,16 +79,22 @@
     },
     "testflight-android": {
       "extends": "base",
+      "pnpm": "11.23.0",
       "ios": {
         "autoIncrement": true,
         "buildArtifactPaths": ["ios/build/*"]
       },
       "android": {
-        "autoIncrement": true
+        "autoIncrement": true,
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease :app:assembleRelease",
+        "applicationArchivePath": "android/app/build/outputs/bundle/release/*.aab",
+        "buildArtifactPaths": ["android/app/build/outputs/apk/release/*.apk"]
       },
       "channel": "testflight",
       "env": {
-        "EXPO_PUBLIC_ENV": "testflight"
+        "EXPO_PUBLIC_ENV": "testflight",
+        "EAS_BUILD_DISABLE_MAVEN_CACHE": "1"
       }
     }
   },
@@ -103,8 +114,9 @@
     },
     "testflight-android": {
       "android": {
+        "applicationId": "social.mu.app",
         "track": "internal",
-        "serviceAccountKeyPath": "./credentials/google-play-service-account.json"
+        "releaseStatus": "completed"
       }
     }
   }
