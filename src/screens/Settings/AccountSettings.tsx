@@ -1,8 +1,10 @@
-import {useEffect} from 'react'
+import {useEffect, useRef} from 'react'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 
+import {useOpenLink} from '#/lib/hooks/useOpenLink'
 import {type CommonNavigatorParams} from '#/lib/routes/types'
+import {useMarqueManagedDomainQuery} from '#/state/queries/marque'
 import {useProfileQuery} from '#/state/queries/profile'
 import {useSession} from '#/state/session'
 import {consumePendingHandleStepUp} from '#/state/session/oauth-web-client'
@@ -22,12 +24,14 @@ import {Bot_Stroke as RobotIcon} from '#/components/icons/Bot'
 import {Car_Stroke2_Corner2_Rounded as CarIcon} from '#/components/icons/Car'
 import {Envelope_Stroke2_Corner2_Rounded as EnvelopeIcon} from '#/components/icons/Envelope'
 import {Freeze_Stroke2_Corner2_Rounded as FreezeIcon} from '#/components/icons/Freeze'
+import {Globe_Stroke2_Corner0_Rounded as GlobeIcon} from '#/components/icons/Globe'
 import {Lock_Stroke2_Corner2_Rounded as LockIcon} from '#/components/icons/Lock'
 import {PencilLine_Stroke2_Corner2_Rounded as PencilIcon} from '#/components/icons/Pencil'
 import {ShieldCheck_Stroke2_Corner0_Rounded as ShieldIcon} from '#/components/icons/Shield'
 import {Trash_Stroke2_Corner2_Rounded} from '#/components/icons/Trash'
 import * as Layout from '#/components/Layout'
 import * as toast from '#/components/Toast'
+import {hasPendingDomainCheckout} from './components/BuyDomainDialog'
 import {ChangeHandleDialog} from './components/ChangeHandleDialog'
 import {ChangePasswordDialog} from './components/ChangePasswordDialog'
 import {DeactivateAccountDialog} from './components/DeactivateAccountDialog'
@@ -35,11 +39,15 @@ import {DeleteAccountDialog} from './components/DeleteAccountDialog'
 import {ExportCarDialog} from './components/ExportCarDialog'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'AccountSettings'>
-export function AccountSettingsScreen({}: Props) {
+export function AccountSettingsScreen({navigation}: Props) {
   const t = useTheme()
   const {t: l} = useLingui()
   const {currentAccount} = useSession()
+  const openLink = useOpenLink()
   const {data: profile} = useProfileQuery({did: currentAccount?.did})
+  const {data: managedDomain} = useMarqueManagedDomainQuery(
+    currentAccount?.handle,
+  )
   const emailDialogControl = useEmailDialogControl()
   const birthdayControl = useDialogControl()
   const changeHandleControl = useDialogControl()
@@ -47,6 +55,7 @@ export function AccountSettingsScreen({}: Props) {
   const exportCarControl = useDialogControl()
   const deactivateAccountControl = useDialogControl()
   const deleteAccountControl = useDialogControl()
+  const didResumeDomainCheckout = useRef(false)
 
   // mu fork: returning from a handle-scope step-up lands here (the callback
   // rewrites the path to /settings/account). Reopen the change-handle dialog so
@@ -61,6 +70,23 @@ export function AccountSettingsScreen({}: Props) {
       })
     }
   }, [changeHandleControl, l])
+
+  // Wait until navigation settles before resuming a hosted checkout.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const resume = () => {
+      if (!didResumeDomainCheckout.current && hasPendingDomainCheckout()) {
+        didResumeDomainCheckout.current = true
+        timer = setTimeout(() => changeHandleControl.open(), 0)
+      }
+    }
+    const unsubscribe = navigation.addListener('focus', resume)
+    if (navigation.isFocused()) resume()
+    return () => {
+      unsubscribe()
+      if (timer) clearTimeout(timer)
+    }
+  }, [navigation, changeHandleControl])
 
   return (
     <Layout.Screen>
@@ -156,6 +182,25 @@ export function AccountSettingsScreen({}: Props) {
             </SettingsList.ItemText>
             <SettingsList.Chevron />
           </SettingsList.PressableItem>
+          {managedDomain && (
+            <SettingsList.PressableItem
+              label={l`Manage ${managedDomain.domain} in Marque`}
+              accessibilityHint={l`Opens this domain in Marque`}
+              onPress={() =>
+                openLink(
+                  `https://marque.at/dashboard/domains/${encodeURIComponent(managedDomain.domain)}`,
+                )
+              }>
+              <SettingsList.ItemIcon icon={GlobeIcon} />
+              <SettingsList.ItemText>
+                <Trans>Your domain is managed by Marque</Trans>
+              </SettingsList.ItemText>
+              <SettingsList.BadgeText>
+                <Trans>Manage in Marque</Trans>
+              </SettingsList.BadgeText>
+              <SettingsList.Chevron />
+            </SettingsList.PressableItem>
+          )}
           <SettingsList.Item>
             <SettingsList.ItemIcon icon={BirthdayCakeIcon} />
             <SettingsList.ItemText>
