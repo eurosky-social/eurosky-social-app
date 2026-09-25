@@ -30,7 +30,8 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
   const {hasSession} = useSession()
   const gutters = useGutters(['base', 0, 'base', 'wide'])
   const isSearchScreen = routeName === 'Search'
-  const isMessagesRelatedScreen = routeName.startsWith('Messages')
+  const isMessagesRelatedScreen =
+    routeName.startsWith('Messages') || routeName === 'LiveEvent'
   const {rightNavVisible, centerColumnOffset, leftNavMinimal} =
     useLayoutBreakpoints()
 

@@ -9,7 +9,7 @@ import {
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {msg, plural} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
-import {Plural, Trans} from '@lingui/react/macro'
+import {Plural, Trans, useLingui as useLinguiMacro} from '@lingui/react/macro'
 import {StackActions, useNavigation} from '@react-navigation/native'
 
 import {type PressableScale} from '#/lib/custom-animations/PressableScale'
@@ -56,6 +56,7 @@ import {
 } from '#/components/icons/Message'
 import {Newspaper_Stroke2_Corner2_Rounded as Newspaper} from '#/components/icons/Newspaper'
 import {SettingsGear2_Stroke2_Corner0_Rounded as Settings} from '#/components/icons/SettingsGear2'
+import {StreamingLive_Stroke2_Corner0_Rounded as LiveIcon} from '#/components/icons/StreamingLive'
 import {
   UserCircle_Filled_Corner0_Rounded as UserCircleFilled,
   UserCircle_Stroke2_Corner0_Rounded as UserCircle,
@@ -287,6 +288,12 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
     setDrawerOpen(false)
   }, [navigation, setDrawerOpen, ax])
 
+  const onPressLive = useCallback(() => {
+    ax.metric('nav:click', {item: 'live', surface: 'drawer'})
+    navigation.navigate('Live')
+    setDrawerOpen(false)
+  }, [navigation, setDrawerOpen, ax])
+
   const onPressBookmarks = useCallback(() => {
     ax.metric('nav:click', {item: 'saved', surface: 'drawer'})
     navigation.navigate('Bookmarks')
@@ -355,6 +362,7 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
             <SearchMenuItem isActive={isAtSearch} onPress={onPressSearch} />
             <HomeMenuItem isActive={isAtHome} onPress={onPressHome} />
             <NewsMenuItem onPress={onPressNews} />
+            <LiveMenuItem onPress={onPressLive} />
             <ChatMenuItem isActive={isAtMessages} onPress={onPressMessages} />
             <NotificationsMenuItem
               isActive={isAtNotifications}
@@ -634,6 +642,20 @@ let NewsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
   )
 }
 NewsMenuItem = memo(NewsMenuItem)
+
+let LiveMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
+  const {t: l} = useLinguiMacro()
+  const t = useTheme()
+
+  return (
+    <MenuItem
+      icon={<LiveIcon style={[t.atoms.text]} width={iconWidth} />}
+      label={l`Live`}
+      onPress={onPress}
+    />
+  )
+}
+LiveMenuItem = memo(LiveMenuItem)
 
 let BookmarksMenuItem = ({
   isActive,

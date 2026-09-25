@@ -1,0 +1,56 @@
+{
+  "lexicon": 1,
+  "id": "social.mu.live.event",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A curated live broadcast in mu's Live section. Written by the curator account; mu lists the collection straight from that account's repo.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["title", "streamUrl", "host", "startsAt", "createdAt"],
+        "properties": {
+          "title": {"type": "string", "maxGraphemes": 120, "maxLength": 640},
+          "description": {"type": "string", "maxGraphemes": 300, "maxLength": 3000},
+          "streamUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Where the video streams. Must play inline in mu (YouTube, Twitch, Vimeo)."
+          },
+          "host": {
+            "type": "string",
+            "format": "did",
+            "description": "The account whose post anchors the live thread."
+          },
+          "anchorPost": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "The post whose replies are the live thread. When absent, the host's own post of the stream link is used."
+          },
+          "startsAt": {"type": "string", "format": "datetime"},
+          "endsAt": {"type": "string", "format": "datetime"},
+          "image": {
+            "type": "string",
+            "format": "uri",
+            "description": "Hero image, 16:9. YouTube events fall back to the video thumbnail."
+          },
+          "accent": {"type": "string", "maxLength": 9, "description": "Hex colour tinting the follow button."},
+          "speakers": {"type": "array", "items": {"type": "string", "format": "did"}},
+          "runningOrder": {
+            "type": "array",
+            "items": {"type": "ref", "ref": "#runningOrderItem"}
+          },
+          "createdAt": {"type": "string", "format": "datetime"}
+        }
+      }
+    },
+    "runningOrderItem": {
+      "type": "object",
+      "required": ["at", "label"],
+      "properties": {
+        "at": {"type": "string", "format": "datetime"},
+        "label": {"type": "string", "maxGraphemes": 120, "maxLength": 640}
+      }
+    }
+  }
+}
