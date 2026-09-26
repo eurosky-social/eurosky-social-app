@@ -24,6 +24,10 @@ export EXPO_PUBLIC_APPVIEW_URL="https://api.bsky.app"
 export EXPO_PUBLIC_APPVIEW_DID="did:web:api.bsky.app"
 export EXPO_PUBLIC_BLUESKY_PROXY_DID="did:web:api.bsky.app"
 
+# Fail early before prebuild; Metro repeats this at archive time in case source
+# strings change between preparation and the GUI archive.
+pnpm intl:build
+
 # Regenerates ios/ (including Pods) with the right icon, version and modules.
 pnpm prebuild --platform ios
 

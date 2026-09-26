@@ -93,9 +93,35 @@ Adding bitdrift is NOT required. You can keep `EXPO_PUBLIC_BITDRIFT_API_KEY=` in
 
 However, if you're a part of the Bluesky team and want to enable bitdrift, fill in `EXPO_PUBLIC_BITDRIFT_API_KEY` in your `.env` to enable bitdrift.
 
-### Adding and Updating Locales
+### Release translations
 
-- `pnpm intl:build` -> you will also need to run this anytime `./src/locale/{locale}/messages.po` change
+Lingui removes English message defaults from production JavaScript. If a new
+message was not extracted and compiled, users see its six-character ID instead
+of text. Development mode and ordinary component tests retain those defaults,
+so they do not catch this failure.
+
+- Production Metro and Webpack configs run `pnpm intl:build` **before bundling**.
+  This covers direct Xcode archives, Gradle releases, EAS/OTA exports and web
+  builds, even when a release wrapper is bypassed. `pnpm` must be on the build
+  process's PATH; a preparation failure aborts the release.
+- `intl:build` extracts all locales, compiles them, then runs `intl:check`.
+  Missing translations may use English; a missing compiled message must not
+  ship. The check verifies every locale against the English catalog and checks
+  the actual production IDs from the Mu feed announcement (including its error
+  state) against the compiled catalogs.
+- CI already runs `intl:build`, so this verification also gates PR checks.
+  `pnpm intl:check` is a read-only check of existing compiled artifacts; it is
+  expected to fail on a checkout with stale/missing catalogs.
+- Extraction and compilation remain CI/release-build responsibilities; do not
+  commit generated `messages.ts` files. Neither is run on development startup.
+
+The feed-announcement incident exposed two local build gaps: TestFlight
+preparation skipped translations entirely, and the Android release script
+compiled old PO files without first extracting new strings. Both now run the
+full preparation step, with the bundler boundary as a second safeguard.
+
+After changing this pipeline, smoke-test a **release** build in English and a
+non-English language. A development preview is not sufficient.
 
 ## Running the Backend Locally
 

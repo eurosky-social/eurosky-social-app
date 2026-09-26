@@ -7,6 +7,7 @@ const webpack = require('webpack')
 const {BundleAnalyzerPlugin} = require('webpack-bundle-analyzer')
 const {sentryWebpackPlugin} = require('@sentry/webpack-plugin')
 const {version} = require('./package.json')
+const {prepareReleaseI18n} = require('./scripts/prepare-release-i18n.cjs')
 
 const GENERATE_STATS = process.env.EXPO_PUBLIC_GENERATE_STATS === '1'
 const OPEN_ANALYZER = process.env.EXPO_PUBLIC_OPEN_ANALYZER === '1'
@@ -45,6 +46,8 @@ function patchSourceMapFilter(rules, pathPattern) {
 }
 
 module.exports = async function (env, argv) {
+  prepareReleaseI18n(env.mode || process.env.NODE_ENV)
+
   env.babel = {
     dangerouslyAddModulePathsToTranspile: [
       // this covers every package that starts with these strings (e.g. @atproto/lex-client)

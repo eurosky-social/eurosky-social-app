@@ -37,8 +37,9 @@ echo "  commit: $COMMIT_HASH"
 BUILD_MARKER="$(mktemp)"
 trap 'rm -f "$BUILD_MARKER"' EXIT
 
-# Make sure the bundled JS ships with up-to-date compiled translations.
-pnpm intl:compile
+# Compilation alone misses strings added since the last extraction.
+cd "$REPO_ROOT"
+pnpm intl:build
 
 cd "$ANDROID_DIR"
 # Build only arm64: Apple Silicon Macs run arm64 emulator images and all modern
