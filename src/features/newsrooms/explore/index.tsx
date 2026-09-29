@@ -13,7 +13,6 @@ import {
 import {useShellLayout} from '#/state/shell/shell-layout'
 import {atoms as a, native, useTheme, web} from '#/alf'
 import * as Layout from '#/components/Layout'
-import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
 import {IS_WEB} from '#/env'
 import {NewsroomHubTabs} from '../hub/NewsroomHubTabs'
@@ -38,6 +37,7 @@ import {
 } from './components/ExploreLocationPicker'
 import {ExploreSectionChips} from './components/ExploreSectionChips'
 import {ExploreSectionFront} from './components/ExploreSectionFront'
+import {ExploreSkeleton} from './components/ExploreSkeleton'
 import {BandRule, ColumnRule} from './components/Rules'
 import {type ExploreSection} from './sections'
 import {useExploreSource} from './useExploreSource'
@@ -201,9 +201,7 @@ function ExploreSpreadScreen({local = false}: {local?: boolean}) {
         scrollEventThrottle={16}>
         <ExploreColumn>
           {isLoading ? (
-            <View style={[a.py_5xl, a.align_center]}>
-              <Loader size="xl" />
-            </View>
+            <ExploreSkeleton wide={wide} columns={columnsPerBand} />
           ) : stories.length === 0 ? (
             <View style={[a.p_2xl, a.align_center]}>
               <Text style={[a.text_md, a.text_center]}>
