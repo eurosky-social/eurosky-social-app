@@ -115,18 +115,51 @@ Both AAB and APK built successfully; the downloaded APK's release signature,
 package, version code, and target API 36 were verified. Local copies are in
 `artifacts/android/mu-1.132.0-17.{apk,aab}` (git-ignored). AppView configuration
 tests and Android type-checking passed. This was a working-tree build including
-uncommitted changes; device smoke-testing and Google Play submission are still
-pending. Version code 16 was consumed by an interrupted upload, not a completed
-cloud build.
+uncommitted changes. Build 17 was subsequently uploaded manually to Play; its
+open-testing release was blocked by undeclared broad photo/video permissions.
+Version code 16 was consumed by an interrupted upload, not a completed cloud
+build.
+
+### Android photo/video permissions
+
+Build 17 included `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, and other read
+permissions contributed by Expo Media Library. The replacement implementation
+uses the system photo picker without library authorization, scoped saves on
+Android 11+, and legacy write-only saves on older Android versions. iOS/web
+behavior and the Bluesky AppView default are preserved. See
+[`src/lib/media/photo-library/README.md`](../src/lib/media/photo-library/README.md)
+for the API rationale and device smoke-test checklist.
+
+Replacement cloud build: **1.133.0 (18)**,
+[EAS build e13525a6](https://expo.dev/accounts/eurosky/projects/mu-social/builds/e13525a6-f84c-4c34-9418-58ea5c512faa),
+built and verified on **2026-09-22**. Both packaged APK/AAB manifests omit
+`READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO`,
+`READ_MEDIA_VISUAL_USER_SELECTED`, `READ_EXTERNAL_STORAGE`, and
+`ACCESS_MEDIA_LOCATION`. The package/version, target API 36, APK/AAB signatures,
+and Bluesky AppView settings in the cloud build logs were verified. Local
+artifacts and the verification record are under
+`artifacts/android/mu-1.133.0-18.*` (git-ignored). This was a working-tree build
+including uncommitted changes. The wider media/invite regression set passed
+92 tests; all three platform typechecks, lint, and scoped formatting passed.
+Nothing was submitted to Google Play by the build or verification process.
+
+Library-provided declarations are explicitly blocked in `app.config.js`; future
+changes to these permissions require a native rebuild and another manifest check.
+
+Replace build 17 in the open-testing draft with the verified replacement build,
+and update internal testing as well. Do not claim a broad-access use case just
+to bypass the declaration form. Device smoke-testing remains required; unit
+mocks cannot validate MediaStore behavior on actual Android devices.
 
 ### Submit an existing Android build to internal testing
 
 ```bash
 pnpm dlx eas-cli@latest submit -p android --profile testflight-android \
-  --id aedee725-3fd6-4c7d-a874-9429e35de0b7 --non-interactive
+  --id BUILD_ID --non-interactive
 ```
 
-This reuses build 17 without rebuilding. The submit profile explicitly selects
+Replace `BUILD_ID` with the verified EAS build's ID. This submits its existing
+AAB without rebuilding. The submit profile explicitly selects
 `social.mu.app`, the `internal` track, and release status `completed`, making a
 successful rollout available to existing internal testers, not to the public.
 It uses the Google service-account key stored in EAS, not the Android keystore.

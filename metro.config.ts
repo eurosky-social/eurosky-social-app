@@ -6,6 +6,11 @@ import {getDefaultConfig} from '@expo/metro-config'
 import {getSentryExpoConfig} from '@sentry/react-native/metro.js'
 
 const require = createRequire(import.meta.url)
+const {prepareReleaseI18n} = require('./scripts/prepare-release-i18n.cjs')
+
+// Expo sets NODE_ENV before loading Metro for native archives and OTA exports.
+prepareReleaseI18n(process.env.NODE_ENV)
+
 const joseBrowserEntry = resolve(
   dirname(require.resolve('jose')),
   '../../browser/index.js',

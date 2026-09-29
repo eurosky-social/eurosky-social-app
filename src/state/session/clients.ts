@@ -8,37 +8,12 @@ import {
   PUBLIC_BSKY_SERVICE,
 } from '#/lib/constants'
 import {createLexClient} from '#/lib/lexClient'
-import {getCachedIsBetaUser} from '#/state/preferences/beta-user-cache'
 import {
   getAppViewProxyService,
   getPublicAppViewUrl,
 } from '#/features/appView/config'
 import {withAppViewShadowFetch} from '#/features/appView/shadow'
 import {networkAwareFetch} from './network'
-
-const IS_BETA_USER_HEADER = 'X-Bsky-Is-Beta-User'
-
-/**
- * Add account-scoped headers to appview requests.
- *
- * Values are read from memory per request so preference changes are reflected
- * immediately without rebuilding the session bundle.
- */
-function withAppviewRequestHeaders(agent: Agent): Agent {
-  return {
-    get did() {
-      return agent.did
-    },
-    fetchHandler(path, init) {
-      const headers = new Headers(init?.headers)
-      const isBetaUser = agent.did ? getCachedIsBetaUser(agent.did) : undefined
-      if (isBetaUser !== undefined) {
-        headers.set(IS_BETA_USER_HEADER, String(isBetaUser))
-      }
-      return agent.fetchHandler(path, {...init, headers})
-    },
-  }
-}
 
 /**
  * Build the signed-in appview {@link Client}.
@@ -53,14 +28,14 @@ function withAppviewRequestHeaders(agent: Agent): Agent {
  * here: this client is the only producer of `atproto-accept-labelers` on an
  * appview request now that no agent sits underneath it. The account's own
  * subscriptions arrive separately, through `applyLabelersToClient` on the
- * instance, and that function filters out the Bluesky moderation DID so the
- * globally redacted authority is not also listed unredacted.
+ * instance, and that function filters out global app labelers so the redacted
+ * authorities are not also listed unredacted.
  *
  * No `fetch` option: a client built over a session uses that session's own
  * fetch, which is `networkAwareFetch` wrapped in the disposal kill switch.
  */
 export function buildAppviewClient(agent: Agent): Client {
-  return createLexClient(withAppviewRequestHeaders(agent), {
+  return createLexClient(agent, {
     service: getAppViewProxyService(BLUESKY_PROXY_HEADER.get()) as Service,
   })
 }
@@ -88,12 +63,13 @@ export function buildPdsClient(agent: Agent): Client {
  * env-configurable `CHAT_PROXY_DID` rather than a hard-coded constant, so it can
  * be retargeted per environment.
  *
- * `appLabelers: null` for the same reason as the PDS client: the chat service
- * takes no moderation authorities.
+ * Unlike the PDS client, chat carries moderation authorities. The service uses
+ * them to hydrate labels on profiles embedded in conversation responses, so
+ * this client reads the global `Client.appLabelers` and receives the account's
+ * subscriptions through `configureModerationForAccount`.
  */
 export function buildChatClient(agent: Agent): Client {
   return createLexClient(agent, {
-    appLabelers: null,
     service: CHAT_PROXY_SERVICE,
   })
 }

@@ -36,15 +36,36 @@ jest.mock('expo-file-system/legacy', () => ({
   createDownloadResumable: jest.fn(),
 }))
 
-jest.mock('expo-image-manipulator', () => ({
-  manipulateAsync: jest.fn().mockResolvedValue({
-    uri: 'file://resized-image',
-  }),
-  SaveFormat: {
-    JPEG: 'jpeg',
-    WEBP: 'webp',
-  },
-}))
+jest.mock('expo-image-manipulator', () => {
+  const createContext = () => {
+    const image = {
+      height: 100,
+      release: jest.fn(),
+      saveAsync: jest.fn().mockResolvedValue({
+        height: 100,
+        uri: 'file://resized-image',
+        width: 100,
+      }),
+      width: 100,
+    }
+    return {
+      crop: jest.fn(),
+      release: jest.fn(),
+      renderAsync: jest.fn().mockResolvedValue(image),
+      resize: jest.fn(),
+    }
+  }
+
+  return {
+    ImageManipulator: {
+      manipulate: jest.fn(createContext),
+    },
+    SaveFormat: {
+      JPEG: 'jpeg',
+      WEBP: 'webp',
+    },
+  }
+})
 
 jest.mock('expo-camera', () => ({
   Camera: {
@@ -56,6 +77,16 @@ jest.mock('expo-media-library', () => ({
   __esModule: true, // this property makes it work
   default: jest.fn(),
   usePermissions: jest.fn(() => [true]),
+  requestPermissionsAsync: jest.fn().mockResolvedValue({granted: true}),
+  saveToLibraryAsync: jest.fn().mockResolvedValue(undefined),
+}))
+
+jest.mock('expo-media-library/legacy', () => ({
+  __esModule: true,
+  default: jest.fn(),
+  usePermissions: jest.fn(() => [true]),
+  requestPermissionsAsync: jest.fn().mockResolvedValue({granted: true}),
+  saveToLibraryAsync: jest.fn().mockResolvedValue(undefined),
 }))
 
 jest.mock('@bsky.app/expo-guess-language', () => ({
@@ -113,5 +144,6 @@ jest.mock('expo-modules-core', () => ({
 }))
 
 jest.mock('expo-localization', () => ({
+  getCalendars: jest.fn(() => [{uses24hourClock: null}]),
   getLocales: () => [],
 }))

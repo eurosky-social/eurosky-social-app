@@ -79,7 +79,7 @@
     },
     "testflight-android": {
       "extends": "base",
-      "pnpm": "11.21.0",
+      "pnpm": "11.23.0",
       "ios": {
         "autoIncrement": true,
         "buildArtifactPaths": ["ios/build/*"]

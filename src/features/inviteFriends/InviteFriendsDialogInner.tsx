@@ -2,13 +2,13 @@ import {Suspense, useRef} from 'react'
 import {Pressable, View} from 'react-native'
 import {type ViewShotRef} from 'react-native-view-shot'
 import {setStringAsync} from 'expo-clipboard'
-import {
-  requestPermissionsAsync,
-  saveToLibraryAsync,
-} from 'expo-media-library/legacy'
 import {useLingui} from '@lingui/react/macro'
 import {useNavigation} from '@react-navigation/native'
 
+import {
+  requestPhotoSavePermission,
+  savePhotoToLibrary,
+} from '#/lib/media/photo-library'
 import {type NavigationProp} from '#/lib/routes/types'
 import {shareUrl as nativeShareUrl} from '#/lib/sharing'
 import {logger} from '#/logger'
@@ -84,10 +84,7 @@ export function InviteFriendsDialogInner({
       return
     }
 
-    // Write-only permission - saving the QR image does not require read access
-    // to the user's photo library.
-    const permission = await requestPermissionsAsync(true)
-    if (!permission.granted) {
+    if (!(await requestPhotoSavePermission())) {
       Toast.show(
         l`You must grant access to your photo library to save a QR code`,
         {type: 'error'},
@@ -96,10 +93,7 @@ export function InviteFriendsDialogInner({
     }
 
     try {
-      // saveToLibraryAsync writes without reading the asset back, so it works
-      // with the add-only permission. createAssetAsync fetches the created
-      // asset, which triggers the full library read prompt on iOS (APP-2374).
-      await saveToLibraryAsync(`file://${uri}`)
+      await savePhotoToLibrary(uri)
       ax.metric('invite:action:download', {})
       Toast.show(l`QR code saved to your camera roll!`)
     } catch (err) {
@@ -112,8 +106,6 @@ export function InviteFriendsDialogInner({
 
   const onScan = () => {
     ax.metric('invite:action:scan', {})
-    // Close dialog first, then navigate (control.close callback per CLAUDE.md
-    // Dialog footgun rule — prevents race with the navigation push).
     control.close(() => {
       navigation.navigate('InviteScanner')
     })

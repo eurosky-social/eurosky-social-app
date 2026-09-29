@@ -1,21 +1,15 @@
 import {useCallback, useState} from 'react'
 import {View} from 'react-native'
-import {TID} from '@atproto/common-web'
 import {type Un$Typed} from '@atproto/lex'
 import {type AtUriString, toDatetimeString} from '@atproto/syntax'
-import {overwriteSavedFeeds, setInterestsPref, upsertProfile} from '@bsky/sdk'
+import {setInterestsPref, upsertProfile} from '@bsky/sdk'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
 
 import {uploadBlob} from '#/lib/api'
-import {
-  BSKY_APP_ACCOUNT_DID,
-  DISCOVER_SAVED_FEED,
-  TIMELINE_SAVED_FEED,
-  VIDEO_SAVED_FEED,
-} from '#/lib/constants'
+import {BSKY_APP_ACCOUNT_DID} from '#/lib/constants'
 import {useRequestNotificationsPermission} from '#/lib/notifications/notifications'
 import {logger} from '#/logger'
 import {useSetHasCheckedForStarterPack} from '#/state/preferences/used-starter-packs'
@@ -45,6 +39,7 @@ import {ArrowRight_Stroke2_Corner0_Rounded as ArrowRight} from '#/components/ico
 import {Loader} from '#/components/Loader'
 import {useAnalytics} from '#/analytics'
 import {IS_WEB} from '#/env'
+import {saveOnboardingFeeds} from '#/features/muForYouFeed/preferences'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {ValuePropositionPager} from './ValuePropositionPager'
@@ -76,42 +71,50 @@ export function StepFinished() {
         })
         starterPack = spRes.starterPack
       } catch (e) {
-        logger.error('Failed to fetch starter pack', {safeMessage: e})
+        logger.error('Failed to fetch Starter Pack', {safeMessage: e})
         // don't tell the user, just get them through onboarding.
       }
+      const starterPackList = starterPack?.list
       try {
-        if (starterPack?.list) {
+        if (starterPackList) {
           listItems = await getAllListMembers(
             appviewClient,
-            starterPack.list.uri,
+            starterPackList.uri,
           )
         }
       } catch (e) {
-        logger.error('Failed to fetch starter pack list items', {
+        logger.error('Failed to fetch Starter Pack list items', {
           safeMessage: e,
         })
         // don't tell the user, just get them through onboarding.
       }
     }
 
+    /*
+     * Hoisted above the `try`: React Compiler cannot lower these inside one, and
+     * `listItems` is already settled by the earlier try/catch.
+     */
+    const followDids = [
+      BSKY_APP_ACCOUNT_DID,
+      ...(listItems?.map(i => i.subject.did) ?? []),
+    ]
+    const starterPackRef = starterPack
+      ? {uri: starterPack.uri, cid: starterPack.cid}
+      : undefined
+
     try {
       const {interestsStepResults, profileStepResults} = state
       const {selectedInterests} = interestsStepResults
 
-      await Promise.all([
-        bulkWriteFollows(
-          pdsClient,
-          appviewClient,
-          [BSKY_APP_ACCOUNT_DID, ...(listItems?.map(i => i.subject.did) ?? [])],
-          starterPack
-            ? {uri: starterPack.uri, cid: starterPack.cid}
-            : undefined,
-        ),
-        // Like the picker-account interest post for each selected interest, to
-        // seed the fu feed's personalization. Interest posts are discovered
-        // at runtime (see euroskyInterestPosts); this is a no-op when the picker
-        // account is unset/unreachable. Errors are swallowed by the surrounding
-        // try/catch so this never blocks onboarding.
+      // Wait for feed preferences even when another onboarding task fails.
+      const results = await Promise.allSettled([
+        bulkWriteFollows(pdsClient, appviewClient, followDids, starterPackRef),
+        /*
+         * Like the picker-account interest post for each selected interest to
+         * seed the fu feed. This is a no-op when the picker is unset/unreachable
+         * (see euroskyInterestPosts). Failures are logged without blocking
+         * onboarding or preventing the feed preferences from being saved.
+         */
         (async () => {
           const refs = await interestPostRefsFor(
             appviewClient,
@@ -123,35 +126,7 @@ export function StepFinished() {
           // Interests need to get saved first, then we can write the feeds to prefs
           await pdsClient.call(setInterestsPref, {tags: selectedInterests})
 
-          // Default feeds that every user should have pinned when landing in the app
-          const feedsToSave: app.bsky.actor.defs.SavedFeed[] = [
-            {
-              ...DISCOVER_SAVED_FEED,
-              id: TID.nextStr(),
-            },
-            {
-              ...TIMELINE_SAVED_FEED,
-              id: TID.nextStr(),
-            },
-            {
-              ...VIDEO_SAVED_FEED,
-              id: TID.nextStr(),
-            },
-          ]
-
-          // Any starter pack feeds will be pinned _after_ the defaults
-          if (starterPack && starterPack.feeds?.length) {
-            feedsToSave.push(
-              ...starterPack.feeds.map(f => ({
-                type: 'feed' as const,
-                value: f.uri,
-                pinned: true,
-                id: TID.nextStr(),
-              })),
-            )
-          }
-
-          await pdsClient.call(overwriteSavedFeeds, feedsToSave)
+          await saveOnboardingFeeds(pdsClient, starterPack?.feeds)
         })(),
         (async () => {
           const {imageUri, imageMime} = profileStepResults
@@ -195,6 +170,11 @@ export function StepFinished() {
         })(),
         requestNotificationsPermission('AfterOnboarding'),
       ])
+      for (const result of results) {
+        if (result.status === 'rejected') {
+          logger.error('onboarding: save failed', {safeMessage: result.reason})
+        }
+      }
     } catch (e: any) {
       logger.info(`onboarding: bulk save failed`)
       logger.error(e)

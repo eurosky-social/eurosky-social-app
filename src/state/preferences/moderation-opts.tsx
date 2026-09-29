@@ -38,16 +38,27 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
     if (!moderationPrefs) {
       return undefined
     }
+    /*
+     * Cached preferences may predate an app labeler. Merge on read so its labels
+     * apply even if a preferences refresh fails, preserving existing settings.
+     */
+    const labelers = new Map(
+      moderationPrefs.labelers.map(labeler => [labeler.did, labeler]),
+    )
+    for (const did of Client.appLabelers) {
+      if (!labelers.has(did)) {
+        labelers.set(did, {
+          did,
+          labels: userDid ? {} : DEFAULT_LOGGED_OUT_LABEL_PREFERENCES,
+        })
+      }
+    }
+
     return {
       userDid,
       prefs: {
         ...moderationPrefs,
-        labelers: moderationPrefs.labelers.length
-          ? moderationPrefs.labelers
-          : Client.appLabelers.map(did => ({
-              did,
-              labels: DEFAULT_LOGGED_OUT_LABEL_PREFERENCES,
-            })),
+        labelers: Array.from(labelers.values()),
         /*
          * `hiddenPosts` comes from persisted storage typed as plain `string`,
          * so brand it to the SDK's `AtUriString` slot.

@@ -17,6 +17,8 @@ export const BLUESKY_APPVIEW_DID = api.app.did
 export const BLUESKY_APPVIEW_SERVICE: Service = api.app.service
 export const BLUESKY_APPVIEW = api.app.url
 export const BLUESKY_PUBLIC_APPVIEW = api.app.urlPublic
+/** ozone.eurosky.social; its DID document resolves the labeler service endpoint. */
+export const EUROSKY_LABELER_DID = 'did:plc:h5cmg4t64mj4pxmqaiaoam7c'
 export const DEFAULT_SERVICE = BSKY_SERVICE
 export const HELP_DESK_URL = BRAND.links.helpDesk
 export const CHAT_SERVICE = BRAND.services.chat
@@ -183,10 +185,13 @@ export const VIDEO_SAVED_FEED = {
 }
 
 /**
- * Eurosky "fu feed" personalized feed generator. Intended to become the default
- * home feed for new users once interest-post-seeded personalization is validated
- * (see StepFinished onboarding). Publisher DID + rkey `fu` are fixed by the
- * feedgen deployment (feed1.eurosky.network).
+ * Eurosky "fu feed" personalized feed generator. Publisher DID + rkey `fu` are
+ * fixed by the feedgen deployment (feed1.eurosky.network).
+ *
+ * Saved and pinned first in server-side preferences during onboarding. Existing
+ * accounts can opt in via the Mu For You announcement. Personalization is seeded
+ * by liking one interest post per selected interest (see euroskyInterestPosts).
+ * The display name comes from the published generator, not a local override.
  */
 export const FU_FEED_URI =
   'at://did:plc:ooensn4mr5mhznzypvxelfa3/app.bsky.feed.generator/fu'
@@ -199,7 +204,7 @@ export const FU_SAVED_FEED = {
 export const RECOMMENDED_SAVED_FEEDS: Pick<
   app.bsky.actor.defs.SavedFeed,
   'type' | 'value' | 'pinned'
->[] = [DISCOVER_SAVED_FEED, TIMELINE_SAVED_FEED]
+>[] = [FU_SAVED_FEED, TIMELINE_SAVED_FEED]
 
 export const KNOWN_SHUTDOWN_FEEDS = [
   'at://did:plc:wqowuobffl66jv3kpsvo7ak4/app.bsky.feed.generator/the-algorithm', // for you by skygaze
@@ -217,8 +222,7 @@ export const MAX_LABELERS = 20
 export const VIDEO_SERVICE = BRAND.services.video
 export const VIDEO_SERVICE_DID = BRAND.services.videoDid
 
-export const VIDEO_MAX_DURATION_MS = 3 * 60 * 1000 // 3 minutes in milliseconds
-export const VIDEO_10_MINUTE_MAX_DURATION_MS = 10 * 60 * 1000
+export const VIDEO_MAX_DURATION_MS = 10 * 60 * 1000 // 10 minutes in milliseconds
 /**
  * Maximum size of a video in megabytes, _not_ mebibytes. Backend uses
  * ISO megabytes.
@@ -319,7 +323,6 @@ export const SLINGSHOT_SERVICE = 'https://slingshot.microcosm.blue'
 export const PUBLIC_STAGING_APPVIEW_DID = 'did:web:api.staging.bsky.dev'
 
 export const DEV_ENV_APPVIEW = `http://localhost:2584` // always the same
-export const DEV_ENV_APPVIEW_DID = `did:plc:dw4kbjf5mn7nhenabiqpkyh3` // always the same
 
 // temp hack for e2e - esb
 export const BLUESKY_PROXY_HEADER = {

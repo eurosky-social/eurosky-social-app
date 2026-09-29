@@ -13,25 +13,34 @@ stateContext.displayName = 'SelectedFeedStateContext'
 const setContext = createContext<SetContext>((_: string) => {})
 setContext.displayName = 'SelectedFeedSetContext'
 
-function getInitialFeed(did?: string): FeedDescriptor | null {
-  if (IS_WEB) {
-    if (window.location.pathname === '/') {
-      const params = new URLSearchParams(window.location.search)
-      const feedFromUrl = params.get('feed')
-      if (feedFromUrl) {
-        // If explicitly booted from a link like /?feed=..., prefer that.
-        return feedFromUrl as FeedDescriptor
-      }
-    }
+/** Per-tab memory, scoped by DID to prevent feed selection leaking across accounts. */
+function homeFeedSessionKey(did: string) {
+  return `lastSelectedHomeFeed:${did}`
+}
 
-    const feedFromSession = sessionStorage.getItem('lastSelectedHomeFeed')
-    if (feedFromSession) {
-      // Fall back to a previously chosen feed for this browser tab.
-      return feedFromSession as FeedDescriptor
+function getInitialFeed(did?: string): FeedDescriptor | null {
+  // An explicit deep link (/?feed=...) always wins.
+  if (IS_WEB && window.location.pathname === '/') {
+    const params = new URLSearchParams(window.location.search)
+    const feedFromUrl = params.get('feed')
+    if (feedFromUrl) {
+      return feedFromUrl as FeedDescriptor
     }
   }
 
   if (did) {
+    if (IS_WEB) {
+      try {
+        const feedFromSession = sessionStorage.getItem(homeFeedSessionKey(did))
+        if (feedFromSession) {
+          // Fall back to a previously chosen feed for this browser tab.
+          return feedFromSession as FeedDescriptor
+        }
+      } catch {
+        // Storage may be blocked by the browser; fall back to account storage.
+      }
+    }
+
     const feedFromStorage = account.get([did, 'lastSelectedHomeFeed'])
     if (feedFromStorage) {
       // Fall back to the last chosen one across all tabs.
@@ -44,21 +53,22 @@ function getInitialFeed(did?: string): FeedDescriptor | null {
 
 export function Provider({children}: React.PropsWithChildren<{}>) {
   const {currentAccount} = useSession()
-  const [state, setState] = useState(() => getInitialFeed(currentAccount?.did))
+  const did = currentAccount?.did
+  const [state, setState] = useState(() => getInitialFeed(did))
 
   const saveState = useCallback(
     (feed: FeedDescriptor) => {
       setState(feed)
-      if (IS_WEB) {
-        try {
-          sessionStorage.setItem('lastSelectedHomeFeed', feed)
-        } catch {}
-      }
-      if (currentAccount?.did) {
-        account.set([currentAccount?.did, 'lastSelectedHomeFeed'], feed)
+      if (did) {
+        if (IS_WEB) {
+          try {
+            sessionStorage.setItem(homeFeedSessionKey(did), feed)
+          } catch {}
+        }
+        account.set([did, 'lastSelectedHomeFeed'], feed)
       }
     },
-    [currentAccount?.did],
+    [did],
   )
 
   return (

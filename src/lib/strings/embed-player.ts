@@ -5,10 +5,11 @@ import {IS_WEB} from '#/env'
 const {height: SCREEN_HEIGHT} = Dimensions.get('window')
 
 const IFRAME_HOST = IS_WEB
-  ? // @ts-ignore only for web -- Eurosky fork: serve the YouTube iframe player
-    // from our own origin instead of bsky.app. bsky.app/iframe/* sends
-    // X-Frame-Options: SAMEORIGIN, so it refuses to be framed cross-origin. The
-    // player files live in web/iframe/* and are copied to the web build root.
+  ? /*
+     * Serve the YouTube iframe player from our own origin. bsky.app/iframe/*
+     * sends X-Frame-Options: SAMEORIGIN and refuses cross-origin framing.
+     * The player files in web/iframe/ are copied to the web build root.
+     */
     window.location.origin
   : __DEV__ && !process.env.JEST_WORKER_ID
     ? 'http://localhost:8100'
@@ -52,6 +53,29 @@ export type EmbedPlayerType =
   | 'bandcamp_album'
   | 'bandcamp_track'
   | 'plyr_track'
+
+export function getEmbedPlayerMediaType(
+  type: EmbedPlayerType,
+): 'video' | 'audio' | 'gif' | 'other' {
+  if (
+    type === 'youtube_video' ||
+    type === 'youtube_short' ||
+    type === 'twitch_video' ||
+    type === 'vimeo_video'
+  ) {
+    return 'video'
+  }
+  if (type.endsWith('_gif')) return 'gif'
+  if (
+    type.startsWith('spotify_') ||
+    type.startsWith('soundcloud_') ||
+    type.startsWith('apple_music_') ||
+    type.startsWith('bandcamp_')
+  ) {
+    return 'audio'
+  }
+  return 'other'
+}
 
 export const externalEmbedLabels: Record<EmbedPlayerSource, string> = {
   youtube: 'YouTube',
@@ -171,10 +195,7 @@ export function parseEmbedPlayerFromUrl(
     urlp.hostname === 'www.twitch.tv' ||
     urlp.hostname === 'm.twitch.tv'
   ) {
-    const parent = IS_WEB
-      ? // @ts-ignore only for web
-        window.location.hostname
-      : 'localhost'
+    const parent = IS_WEB ? window.location.hostname : 'localhost'
 
     const [__, channelOrVideo, clipOrId, id] = urlp.pathname.split('/')
 

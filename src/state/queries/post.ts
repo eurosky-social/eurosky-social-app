@@ -388,8 +388,8 @@ export function useEditPostMutation() {
       await until(
         5,
         1e3,
-        (posts: app.bsky.feed.defs.PostView[]) =>
-          posts.length > 0 &&
+        posts =>
+          !!posts?.length &&
           typeof (posts[0].record as {updatedAt?: unknown}).updatedAt ===
             'string',
         async () =>

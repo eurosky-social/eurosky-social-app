@@ -21,7 +21,7 @@ import {useAppviewClient, useSession} from '#/state/session'
 import {type OnPostSuccessData} from '#/state/shell/composer'
 import {useMergedThreadgateHiddenReplies} from '#/state/threadgate-hidden-replies'
 import {type PostSource} from '#/state/unstable-post-source'
-import {KnownLikers, LikesStat} from '#/screens/PostThread/components/LikesStat'
+import {LikesStat} from '#/screens/PostThread/components/LikesStat'
 import {ThreadComposePromptPill} from '#/screens/PostThread/components/ThreadComposePrompt'
 import {
   ThreadItemPost,
@@ -40,12 +40,14 @@ import {atoms as a, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
 import {CalendarClock_Stroke2_Corner0_Rounded as CalendarClockIcon} from '#/components/icons/CalendarClock'
 import {Link} from '#/components/Link'
+import {KnownLikers} from '#/components/Post/KnownLikers'
 import {PostControls} from '#/components/PostControls'
 import {useFormatPostStatCount} from '#/components/PostControls/util'
 import {PostEditedIndicator} from '#/components/PostEditedIndicator'
 import * as Prompt from '#/components/Prompt'
 import {Text} from '#/components/Typography'
 import {WhoCanReply} from '#/components/WhoCanReply'
+import {Features} from '#/analytics'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 
@@ -232,8 +234,7 @@ function ReaderSeamControlsInner({
             a.align_center,
             {rowGap: a.gap_sm.gap, columnGap: a.gap_lg.gap},
             a.border_t,
-            a.border_b,
-            a.py_md,
+            a.py_sm,
             t.atoms.border_contrast_low,
           ]}>
           {post.repostCount ? (
@@ -281,9 +282,15 @@ function ReaderSeamControlsInner({
               </Trans>
             </Text>
           ) : null}
-          <KnownLikers post={post} />
         </View>
       ) : null}
+      {showDetails && (
+        <KnownLikers
+          post={post}
+          feature={Features.PostThreadKnownLikersEnable}
+          outerStyle={[a.pt_xs, a.pb_sm]}
+        />
+      )}
 
       {/* Action bar + optional compose prompt as one gap item */}
       <View>
