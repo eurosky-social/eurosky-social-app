@@ -1,6 +1,5 @@
 import {type Client} from '@atproto/lex'
 import {type AtIdentifierString} from '@atproto/syntax'
-import chunk from 'lodash.chunk'
 
 import {app} from '#/lexicons'
 import {type FeedAPI, type FeedAPIResponse} from './types'
@@ -9,7 +8,13 @@ import {type FeedAPI, type FeedAPIResponse} from './types'
 const POST_AGE_CUTOFF_MS = 7 * 24 * 60 * 60 * 1000
 // Author feeds are fetched in parallel; bound how many run at once so a large
 // source set does not fire dozens of requests simultaneously.
-const FETCH_CONCURRENCY = 8
+const FETCH_CONCURRENCY = 12
+/*
+ * How long a page waits for slow sources before going out with what has
+ * arrived. The rest keep loading in the background and join later pages, so
+ * one slow author feed does not hold up the first screen.
+ */
+const PAGE_WAIT_MS = 1200
 
 type SourceState = {
   did: string
@@ -32,6 +37,11 @@ export class NewsFeedAPI implements FeedAPI {
   sources: SourceState[] = []
   seen = new Set<string>()
   itemCursor = 0
+  /** Top-ups in flight, so a source is never fetched twice at once. */
+  pending = new Map<SourceState, Promise<void>>()
+  /** Top-ups waiting for a free slot under FETCH_CONCURRENCY. */
+  waiting: (() => void)[] = []
+  running = 0
 
   constructor({client, dids}: {client: Client; dids: string[]}) {
     this.client = client
@@ -47,6 +57,9 @@ export class NewsFeedAPI implements FeedAPI {
     }))
     this.seen = new Set()
     this.itemCursor = 0
+    this.pending = new Map()
+    this.waiting = []
+    this.running = 0
   }
 
   async peekLatest(): Promise<app.bsky.feed.defs.FeedViewPost> {
@@ -75,9 +88,9 @@ export class NewsFeedAPI implements FeedAPI {
     const stale = this.sources.filter(
       source => source.hasMore && source.queue.length < limit,
     )
-    for (const batch of chunk(stale, FETCH_CONCURRENCY)) {
-      await Promise.all(batch.map(source => this._topUp(source, minDate)))
-    }
+    const refills = stale.map(source => this._scheduleTopUp(source, minDate))
+    const allDone = Promise.all(refills).then(() => {})
+    await Promise.race([allDone, this._pageReady(limit, allDone)])
 
     const posts = this._takeRoundRobin(limit)
 
@@ -89,6 +102,55 @@ export class NewsFeedAPI implements FeedAPI {
       cursor:
         posts.length > 0 && !exhausted ? String(++this.itemCursor) : undefined,
     }
+  }
+
+  /**
+   * Resolves once a full page is queued, or once PAGE_WAIT_MS has passed with
+   * at least something to show; never before `allDone` would on an empty feed.
+   */
+  _pageReady(limit: number, allDone: Promise<void>): Promise<void> {
+    return new Promise(resolve => {
+      const started = Date.now()
+      const check = () => {
+        const queued = this.sources.reduce(
+          (sum, source) => sum + source.queue.length,
+          0,
+        )
+        const waited = Date.now() - started >= PAGE_WAIT_MS
+        if (queued >= limit || (waited && queued > 0)) {
+          resolve()
+        } else {
+          timer = setTimeout(check, 100)
+        }
+      }
+      let timer = setTimeout(check, 100)
+      void allDone.then(() => clearTimeout(timer))
+    })
+  }
+
+  /** Starts (or joins) a source's top-up, within the concurrency limit. */
+  _scheduleTopUp(source: SourceState, minDate: number): Promise<void> {
+    const inFlight = this.pending.get(source)
+    if (inFlight) return inFlight
+    const run = async () => {
+      // Wait for a slot; a finishing top-up hands its slot straight over.
+      if (this.running >= FETCH_CONCURRENCY) {
+        await new Promise<void>(resolve => this.waiting.push(resolve))
+      } else {
+        this.running += 1
+      }
+      try {
+        await this._topUp(source, minDate)
+      } finally {
+        this.pending.delete(source)
+        const next = this.waiting.shift()
+        if (next) next()
+        else this.running -= 1
+      }
+    }
+    const promise = run()
+    this.pending.set(source, promise)
+    return promise
   }
 
   async _topUp(source: SourceState, minDate: number) {
