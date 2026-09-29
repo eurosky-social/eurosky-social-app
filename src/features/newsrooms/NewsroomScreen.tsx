@@ -7,33 +7,28 @@ import {
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
 import {type FeedDescriptor} from '#/state/queries/post-feed'
-import {useProfileQuery, useProfilesQuery} from '#/state/queries/profile'
+import {useProfileQuery} from '#/state/queries/profile'
 import {PostFeed} from '#/view/com/posts/PostFeed'
 import {type ListMethods} from '#/view/com/util/List'
-import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useLayoutBreakpoints, useTheme} from '#/alf'
-import {Button, ButtonIcon, ButtonText} from '#/components/Button'
+import {ButtonIcon, ButtonText} from '#/components/Button'
 import {Newspaper_Stroke2_Corner2_Rounded as NewsFeedIcon} from '#/components/icons/Newspaper'
 import {Newspaper2_Stroke2_Corner2_Rounded as NewsroomsIcon} from '#/components/icons/Newspaper2'
 import * as Layout from '#/components/Layout'
 import {Link} from '#/components/Link'
 import {Loader} from '#/components/Loader'
-import * as Menu from '#/components/Menu'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
-import {type app} from '#/lexicons'
 import {NewsroomFrontPage} from './components/NewsroomFrontPage'
 import {NewsroomMasthead} from './components/NewsroomMasthead'
 import {NewsroomRightRail} from './components/NewsroomRightRail'
-import {NewsroomSwitcher} from './components/NewsroomSwitcher'
 import {
   getDefaultNewsroomPublisher,
   getNewsroomPublisherByDid,
   getPublisherFeedDids,
   getPublisherName,
-  NEWSROOM_PUBLISHERS,
-  type NewsroomPublisher,
 } from './publishers'
+import {useNewsroomProfilesQuery} from './queries'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'Newsroom'>
 
@@ -60,22 +55,8 @@ export function NewsroomScreen({route, navigation}: Props) {
   const {rightNavVisible} = useLayoutBreakpoints()
   const scrollElRef = useRef<ListMethods>(null)
 
-  // Org profiles for the switcher menu and section header; shares the cache
-  // with the switcher rail.
-  const {data: profiles} = useProfilesQuery({
-    handles: NEWSROOM_PUBLISHERS.map(p => p.did),
-  })
-  const profileByDid = new Map<string, app.bsky.actor.defs.ProfileViewDetailed>(
-    profiles?.profiles.map(profile => [profile.did, profile]) ?? [],
-  )
-  const publisherName = getPublisherName(profileByDid.get(publisher.did))
-
-  function onSelectPublisher(next: NewsroomPublisher) {
-    navigation.setParams({name: next.did})
-    // The feed remounts keyed on the org; also reset the scroll position so
-    // the new org's front page starts at the top.
-    scrollElRef.current?.scrollToOffset({offset: 0, animated: false})
-  }
+  const profiles = useNewsroomProfilesQuery()
+  const publisherName = getPublisherName(profiles.get(publisher.did))
 
   // Normalize the URL to the focused org's DID (`/newsroom/<did>`), waiting
   // out an in-flight handle resolution so a handle deep link is not clobbered
@@ -108,7 +89,7 @@ export function NewsroomScreen({route, navigation}: Props) {
         <Layout.Header.BackButton />
         <Layout.Header.Content>
           <Layout.Header.TitleText>
-            <Trans>{BRAND.name} Newsrooms</Trans>
+            <Trans>{BRAND.name} News</Trans>
           </Layout.Header.TitleText>
         </Layout.Header.Content>
         {/* Mirrors the news feed header's "Newsrooms" link, so the two news
@@ -125,56 +106,7 @@ export function NewsroomScreen({route, navigation}: Props) {
             <Trans>News</Trans>
           </ButtonText>
         </Link>
-        {/* The org switcher scrolls away with the feed; this menu keeps
-         * switching newsrooms one tap away from anywhere on the page. */}
-        <Layout.Header.Slot>
-          <Menu.Root>
-            <Menu.Trigger label={l`Switch newsroom`}>
-              {({props}) => (
-                <Button
-                  {...props}
-                  testID="newsroomSwitcherMenuBtn"
-                  label={l`Switch newsroom`}
-                  size="small"
-                  color="secondary"
-                  shape="round">
-                  <ButtonIcon icon={NewsroomsIcon} size="md" />
-                </Button>
-              )}
-            </Menu.Trigger>
-            <Menu.Outer>
-              <Menu.Group>
-                {NEWSROOM_PUBLISHERS.map(p => (
-                  <Menu.Item
-                    key={p.id}
-                    label={l`Switch to ${getPublisherName(profileByDid.get(p.did))}`}
-                    onPress={() => onSelectPublisher(p)}>
-                    <UserAvatar
-                      type="user"
-                      size={20}
-                      avatar={profileByDid.get(p.did)?.avatar}
-                    />
-                    <Menu.ItemText>
-                      {getPublisherName(profileByDid.get(p.did))}
-                    </Menu.ItemText>
-                    <Menu.ItemRadio selected={p.id === publisher.id} />
-                  </Menu.Item>
-                ))}
-              </Menu.Group>
-            </Menu.Outer>
-          </Menu.Root>
-        </Layout.Header.Slot>
       </Layout.Header.Outer>
-
-      {/* Primary nav: switch the focused org. Stays fixed above the feed,
-       * constrained to the center column rather than the full viewport. */}
-      <Layout.Center>
-        <NewsroomSwitcher
-          publishers={NEWSROOM_PUBLISHERS}
-          selectedId={publisher.id}
-          onSelect={onSelectPublisher}
-        />
-      </Layout.Center>
 
       <PostFeed
         // Key on the org so switching resets feed scroll/state cleanly.

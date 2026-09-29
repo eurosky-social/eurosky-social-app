@@ -38,6 +38,12 @@ export type ScreenProps = React.ComponentProps<typeof View> & {
   style?: StyleProp<ViewStyle>
   noInsetTop?: boolean
   minimalShell?: boolean
+  /**
+   * Skips the fixed center-column edges, for a screen that lays its content out
+   * at another width and draws its own frame (e.g. the newsroom explore
+   * spread, which reaches into the right column).
+   */
+  noCenterBorders?: boolean
 }
 
 /**
@@ -47,6 +53,7 @@ export const Screen = memo(function Screen({
   style,
   noInsetTop,
   minimalShell = false,
+  noCenterBorders = false,
   ...props
 }: ScreenProps) {
   const {top} = useSafeAreaInsets()
@@ -56,7 +63,7 @@ export const Screen = memo(function Screen({
 
   return (
     <>
-      {IS_WEB && !isWithinSplitView && <WebCenterBorders />}
+      {IS_WEB && !isWithinSplitView && !noCenterBorders && <WebCenterBorders />}
       <View
         style={[
           a.util_screen_outer,

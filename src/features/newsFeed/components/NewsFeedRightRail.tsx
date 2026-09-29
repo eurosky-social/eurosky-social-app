@@ -9,7 +9,6 @@ import {ButtonText} from '#/components/Button'
 import {Newspaper2_Stroke2_Corner2_Rounded as NewsroomsIcon} from '#/components/icons/Newspaper2'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
-import {BRAND} from '#/config/brand'
 import {ExploreLiveSportsWidget} from '#/features/liveSports/components/ExploreLiveSportsWidget'
 import {
   getPublisherName,
@@ -69,9 +68,7 @@ function NewsroomsModule() {
     <View style={[a.pb_xl]}>
       <ModuleHeader.Container>
         <ModuleHeader.Icon icon={NewsroomsIcon} />
-        <ModuleHeader.TitleText>
-          {l`${BRAND.name} Newsrooms`}
-        </ModuleHeader.TitleText>
+        <ModuleHeader.TitleText>{l`Your Newsrooms`}</ModuleHeader.TitleText>
       </ModuleHeader.Container>
       <View style={[a.px_lg, a.gap_md]}>
         <Text style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
@@ -91,7 +88,7 @@ function NewsroomsModule() {
           ))}
         </View>
         <Link
-          to="/newsroom"
+          to="/newsroom/explore"
           label={l`See all newsrooms`}
           color="primary"
           size="large"

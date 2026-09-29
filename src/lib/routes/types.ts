@@ -24,6 +24,18 @@ export type CommonNavigatorParams = {
   Lists: undefined
   NewsFeed: undefined
   Newsroom: {name?: string}
+  NewsroomExplore: undefined
+  NewsroomLocal: undefined
+  NewsroomDirectory: undefined
+  NewsroomArticle: {
+    url: string
+    title?: string
+    image?: string
+    description?: string
+    publishedAt?: string
+    outletName?: string
+    outletDid?: string
+  }
   Moderation: undefined
   ModerationInbox: undefined
   ModerationInboxSettings: undefined

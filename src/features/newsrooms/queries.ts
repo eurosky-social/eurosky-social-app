@@ -1,12 +1,18 @@
 import {type Client, type UriString} from '@atproto/lex'
-import {type DidString} from '@atproto/syntax'
+import {type AtUriString, type DidString} from '@atproto/syntax'
 import {useQueries, useQuery} from '@tanstack/react-query'
 
 import {STALE} from '#/state/queries'
+import {useProfilesQuery} from '#/state/queries/profile'
 import {createQueryKey} from '#/state/queries/util'
 import {useAppviewClient} from '#/state/session'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
+import {
+  getPublisherRssUrls,
+  NEWSROOM_PUBLISHERS,
+  type NewsroomPublisher,
+} from './publishers'
 import {buildRssFetchUrl} from './rss/config'
 import {extractOgImage, parseRssFeed} from './rss/parse'
 import {type RssItem} from './rss/types'
@@ -22,10 +28,58 @@ export const createRssArticlesQueryKey = (args: {urls: string[]}) =>
  * published front page rather than reverse-chron social posts.
  */
 export function useRssArticlesQuery({urls}: {urls: string[]}) {
-  return useQuery({
+  return useQuery(rssArticlesQueryOptions({urls}))
+}
+
+/**
+ * Every registered publisher's latest articles, each set kept under its own
+ * publisher rather than merged, so the explore page can attribute a story to
+ * the outlet that ran it. Cache keys are per publisher feed URL set, so a
+ * newsroom's own front page and the explore page share one fetch.
+ */
+export function useAllPublisherArticlesQuery({
+  publishers,
+  enabled = true,
+}: {
+  publishers: NewsroomPublisher[]
+  /** Set false to skip fetching entirely, e.g. when another source is active. */
+  enabled?: boolean
+}) {
+  const withFeeds = publishers.filter(p => getPublisherRssUrls(p).length > 0)
+  const results = useQueries({
+    queries: withFeeds.map(publisher =>
+      rssArticlesQueryOptions({
+        urls: getPublisherRssUrls(publisher),
+        enabled,
+      }),
+    ),
+  })
+
+  return {
+    /* A publisher whose feed is unreachable simply contributes nothing. */
+    articlesByPublisher: withFeeds.map((publisher, i) => ({
+      publisher,
+      articles: results[i]?.data ?? [],
+    })),
+    isLoading: results.some(r => r.isLoading),
+  }
+}
+
+/**
+ * Shared query definition, so one publisher's feed is fetched once whether it
+ * is read by its own newsroom page or by the explore page.
+ */
+function rssArticlesQueryOptions({
+  urls,
+  enabled = true,
+}: {
+  urls: string[]
+  enabled?: boolean
+}) {
+  return {
     queryKey: createRssArticlesQueryKey({urls}),
     staleTime: STALE.MINUTES.FIVE,
-    enabled: urls.length > 0,
+    enabled: enabled && urls.length > 0,
     queryFn: async () => {
       const feeds = await Promise.all(
         urls.map(async url => {
@@ -59,7 +113,18 @@ export function useRssArticlesQuery({urls}: {urls: string[]}) {
         )
         .slice(0, RSS_ARTICLES_TOTAL)
     },
+  }
+}
+
+/**
+ * The live profiles of every registered publisher, keyed by DID. Shares the
+ * profiles cache with the switcher rail and the mastheads.
+ */
+export function useNewsroomProfilesQuery() {
+  const {data} = useProfilesQuery({
+    handles: NEWSROOM_PUBLISHERS.map(p => p.did),
   })
+  return new Map(data?.profiles.map(p => [p.did, p]) ?? [])
 }
 
 export const createArticleDiscussionQueryKey = (args: {
@@ -137,9 +202,25 @@ function articleDiscussionQueryOptions({
         (sum, post) => sum + engagementScore(post),
         0,
       )
-      return {posts: ordered, total, anchor, interactions}
+      /*
+       * People rather than posts: one account sharing an article twice is one
+       * person talking about it. Only the fetched posts can be counted, so
+       * where the search has more, the count is a lower bound.
+       */
+      const sharers: ArticleSharers = {
+        count: new Set(ordered.map(post => post.author.did)).size,
+        partial: (data.hitsTotal ?? 0) > data.posts.length,
+      }
+      return {posts: ordered, total, anchor, interactions, sharers}
     },
   }
+}
+
+/** How many distinct accounts shared an article. */
+export type ArticleSharers = {
+  count: number
+  /** More posts exist than were fetched, so `count` is at least this. */
+  partial: boolean
 }
 
 /**
@@ -283,5 +364,57 @@ export function useOgImageQuery({
         return null
       }
     },
+  })
+}
+
+/** Replies shown under each post in an article's discussion. */
+const THREAD_REPLIES_SHOWN = 3
+
+export const createArticleThreadRepliesQueryKey = (args: {uri: string}) =>
+  createQueryKey('newsroomArticleThreadReplies', args)
+
+/**
+ * A few replies to each post in an article's discussion, so the article page
+ * reads as conversations rather than a list of shares.
+ *
+ * Newest first, one per person, and never the post's own author: an author
+ * replying to themselves is continuing their post, not a participant joining
+ * it. One thread fetch per post, one level deep, cached per post.
+ */
+export function useArticleThreadRepliesQueries({uris}: {uris: string[]}) {
+  const client = useAppviewClient()
+  return useQueries({
+    queries: uris.map(uri => ({
+      queryKey: createArticleThreadRepliesQueryKey({uri}),
+      staleTime: STALE.MINUTES.ONE,
+      async queryFn() {
+        const data = await client.call(app.bsky.feed.getPostThread, {
+          uri: uri as AtUriString,
+          depth: 1,
+          parentHeight: 0,
+        })
+        const thread = data.thread
+        if (!bsky.isType(app.bsky.feed.defs.threadViewPost, thread)) {
+          return [] as app.bsky.feed.defs.PostView[]
+        }
+        const opDid = thread.post.author.did
+        const replies = (thread.replies ?? [])
+          .filter(reply =>
+            bsky.isType(app.bsky.feed.defs.threadViewPost, reply),
+          )
+          .map(reply => (reply as app.bsky.feed.defs.ThreadViewPost).post)
+          .filter(post => post.author.did !== opDid)
+          .sort((x, y) => y.indexedAt.localeCompare(x.indexedAt))
+        const seen = new Set<string>()
+        const shown: app.bsky.feed.defs.PostView[] = []
+        for (const post of replies) {
+          if (seen.has(post.author.did)) continue
+          seen.add(post.author.did)
+          shown.push(post)
+          if (shown.length === THREAD_REPLIES_SHOWN) break
+        }
+        return shown
+      },
+    })),
   })
 }

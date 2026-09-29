@@ -1,7 +1,8 @@
 # Newsrooms
 
 A publisher hub inside Mu. `/newsroom` is a landing page: an org switcher across
-the top selects which approved publisher to focus, and the focused org gets a
+the top selects the cross-publisher explore spread (`/newsroom/explore`) or an
+approved publisher to focus, and the focused org gets a
 magazine-style space that blends its editorial posts, its reporters' posts, and
 (later) external sources - RSS, podcasts, YouTube - into one surface, with the
 native Bluesky social layer (boosts, replies) woven through it. Each org is also
@@ -68,6 +69,59 @@ column is hidden - where the rail adapts to the scroll: the reporters list
 collapses to a preview of the first few, fading out under a gradient with a
 "Show all" toggle, and the "Your News" callout tightens to a single tappable
 row. It resolves the focused org from the navigation state.
+
+## Explore
+
+`explore/` is the hub's cross-publisher surface, reached from the rail's first
+tab and from the header menu. It answers a different question from a focused
+newsroom page - not "what is this outlet running" but "what is being covered,
+and by whom".
+
+- Every registered publisher's feed is read at once
+  (`useAllPublisherArticlesQuery`), sharing cache entries with each newsroom's
+  own front page. On web that is one proxied fetch per publisher, so the page
+  is heavier than a single newsroom; feeds that fail simply contribute nothing.
+- Articles are grouped into **stories** (`explore/cluster.ts`): when several
+  outlets run the same event, their articles collapse into one entry with the
+  others as coverage. Matching is a headline-overlap heuristic, deliberately
+  conservative, and can be replaced by an explicit signal (a shared Atmosphere
+  thread, or a story id a publisher writes) without changing the UI.
+- Stories are filed under **sections** (`explore/sections.ts`) read from the
+  article's own RSS categories, then its URL path, then the publisher's
+  registry categories. Nothing is inferred from the headline, and unmatched
+  articles land in "More stories" rather than being guessed at.
+- The lead is the story the most newsrooms are running (ties by recency), and
+  it is the only story whose Atmosphere pull is looked up - one search, rather
+  than one per article on the page.
+
+The page opens straight on the news, laid out as a broadsheet rather than a
+grid of cards: the rail, a department filter bar, then a lead band (the day's story, and beside it every other
+newsroom's version of it followed by what else is developing) then bands of departments - three columns wide, alternating with a
+single department run across the full width. Rules divide the bands and their
+columns; nothing is boxed. Choosing a department (a chip, or a department's own
+name) narrows the page to that section, which keeps the same shape: its own lead
+band, then its stories as a grid of pictures and a closing pair of headline
+columns. Every headline carries its newsroom above it and its time below, and a story covered elsewhere carries a "Full coverage" row that
+expands into each other outlet's own headline.
+
+### Entry from the news feed
+
+The news feed (`/news`) carries the spread's entry point above its posts
+(`components/ExploreEntryFrame.tsx`, rendered as the feed's list header): the
+day's biggest cross-newsroom stories, then a row into `/newsroom/explore`. It
+reads the same clustered stories the spread does, so the feed warms that page's
+cache - and pays the same one-fetch-per-publisher cost. It renders nothing until
+the feeds land, so it never holds the feed up.
+
+### Layout
+
+The spread is the one hub surface that is not a branded org space, so it runs
+from the center column's left edge to the window's right edge: `DesktopRightNav`
+renders nothing on this route, `Layout.Screen` is asked to skip its
+center-column edges (`noCenterBorders`), and `explore/components/ExploreColumn.tsx`
+sizes the page against the window, draws its left seam with the shell, and lays
+the header out across it. Below the right-nav breakpoint - and on native - the
+spread is just the center column and every band stacks into one column.
 
 ## RSS
 

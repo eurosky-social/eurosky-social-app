@@ -36,6 +36,7 @@ export function parseRssFeed(xml: string): RssItem[] {
       publishedAt: toIso(rawDate),
       description: stripHtml(summary) || undefined,
       imageUrl: extractImage(block, summary),
+      categories: extractCategories(block),
     })
   }
 
@@ -87,6 +88,24 @@ function tag(block: string, name: string): string {
   const m = block.match(re)
   if (!m) return ''
   return unwrapCdata(m[1]).trim()
+}
+
+/**
+ * The item's own section labels. RSS puts them in `<category>` text, Atom in a
+ * `term` attribute; feeds mix both, so read either and drop empties.
+ */
+function extractCategories(block: string): string[] | undefined {
+  const found: string[] = []
+  for (const raw of matchAll(
+    block,
+    /<category\b[^>]*(?:\/>|>[\s\S]*?<\/category>)/gi,
+  )) {
+    const term = raw.match(/term=["']([^"']+)["']/i)
+    const value = term ? decodeEntities(term[1]) : clean(tag(raw, 'category'))
+    const label = value.trim()
+    if (label) found.push(label)
+  }
+  return found.length ? found : undefined
 }
 
 /** Atom links live in attributes; prefer rel="alternate", else the first href. */

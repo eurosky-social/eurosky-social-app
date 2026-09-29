@@ -273,7 +273,7 @@ export function KeyboardShortcuts() {
         void navigate('Home')
         break
       case 'w':
-        void navigate('NewsFeed')
+        void navigate('NewsroomExplore')
         break
       case 'e':
         void navigate('Search', {})

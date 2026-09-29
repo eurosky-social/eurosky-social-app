@@ -16,6 +16,12 @@ export const router = new Router<AllNavigatableRoutes>({
   Settings: '/settings',
   Lists: '/lists',
   NewsFeed: '/news',
+  // Matched before the publisher route, whose `:name` would otherwise swallow
+  // `/newsroom/explore`, `/newsroom/local` and `/newsroom/article`.
+  NewsroomExplore: '/newsroom/explore',
+  NewsroomLocal: '/newsroom/local',
+  NewsroomArticle: '/newsroom/article',
+  NewsroomDirectory: '/newsrooms',
   Newsroom: ['/newsroom/:name', '/newsroom'],
   // moderation
   Moderation: '/moderation',
