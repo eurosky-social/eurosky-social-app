@@ -72,7 +72,7 @@ export const NEWSROOM_PUBLISHERS: NewsroomPublisher[] = [
     domains: ['theverge.com'],
     did: 'did:plc:7exlcsle4mjfhu3wnhcgizz6',
     accent: '#5200FD',
-    categories: ['Tech', 'Science', 'Culture'],
+    categories: ['Technology', 'Science', 'Culture'],
     reporterDids: [
       'did:plc:x56l2n7i7babgdzqul4bd433', // nilay patel
       'did:plc:j3tpb4iabrq3ukfaui6eymwf', // Elizabeth Lopatto
@@ -93,7 +93,7 @@ export const NEWSROOM_PUBLISHERS: NewsroomPublisher[] = [
     id: 'wired',
     domains: ['wired.com'],
     did: 'did:plc:inz4fkbbp7ms3ixufw6xuvdi',
-    categories: ['Tech', 'Security', 'Science', 'Culture'],
+    categories: ['Technology', 'Security', 'Science', 'Culture'],
     reporterDids: [
       'did:plc:5vzgjins5recitzoov4rby3y', // Andrew Couts
       'did:plc:vaznsq6z7zughxjapim2nazy', // Vittoria Elliott
@@ -241,7 +241,7 @@ export const NEWSROOM_PUBLISHERS: NewsroomPublisher[] = [
     domains: ['euobserver.com', 'euobs.com'],
     did: 'did:plc:xnmkjaouspdzqv4hzvvcf3j3',
     accent: '#EF513B',
-    categories: ['EU', 'Politics', 'Green Economy', 'Migration', 'Digital'],
+    categories: ['EU', 'Politics', 'Green Economy', 'Migration', 'Technology'],
     reporterDids: [
       'did:plc:gswts63m3ew4kbrlwt7a5ika', // Elena Sánchez Nicolás
       'did:plc:epzn6awph6unnn6mhme2vn7o', // Alejandro Tauber
@@ -348,7 +348,7 @@ export const NEWSROOM_PUBLISHERS: NewsroomPublisher[] = [
     domains: ['next.ink'],
     did: 'did:plc:o4gygiehiqr7hcpyicprn6w4',
     accent: '#4A5CFE',
-    categories: ['Tech', 'Digital Policy', 'Privacy'],
+    categories: ['Technology', 'Policy', 'Privacy'],
     reporterDids: [
       'did:plc:56lvkl2sub3gvojlzknbwczb', // Mathilde Saliou
       'did:plc:jztspcobtrgx7r5mxs3q4noc', // @manhack
