@@ -1,5 +1,5 @@
 import {type Client, type UriString} from '@atproto/lex'
-import {type DidString} from '@atproto/syntax'
+import {type AtUriString, type DidString} from '@atproto/syntax'
 import {useQueries, useQuery} from '@tanstack/react-query'
 
 import {STALE} from '#/state/queries'
@@ -202,9 +202,25 @@ function articleDiscussionQueryOptions({
         (sum, post) => sum + engagementScore(post),
         0,
       )
-      return {posts: ordered, total, anchor, interactions}
+      /*
+       * People rather than posts: one account sharing an article twice is one
+       * person talking about it. Only the fetched posts can be counted, so
+       * where the search has more, the count is a lower bound.
+       */
+      const sharers: ArticleSharers = {
+        count: new Set(ordered.map(post => post.author.did)).size,
+        partial: (data.hitsTotal ?? 0) > data.posts.length,
+      }
+      return {posts: ordered, total, anchor, interactions, sharers}
     },
   }
+}
+
+/** How many distinct accounts shared an article. */
+export type ArticleSharers = {
+  count: number
+  /** More posts exist than were fetched, so `count` is at least this. */
+  partial: boolean
 }
 
 /**
@@ -348,5 +364,57 @@ export function useOgImageQuery({
         return null
       }
     },
+  })
+}
+
+/** Replies shown under each post in an article's discussion. */
+const THREAD_REPLIES_SHOWN = 3
+
+export const createArticleThreadRepliesQueryKey = (args: {uri: string}) =>
+  createQueryKey('newsroomArticleThreadReplies', args)
+
+/**
+ * A few replies to each post in an article's discussion, so the article page
+ * reads as conversations rather than a list of shares.
+ *
+ * Newest first, one per person, and never the post's own author: an author
+ * replying to themselves is continuing their post, not a participant joining
+ * it. One thread fetch per post, one level deep, cached per post.
+ */
+export function useArticleThreadRepliesQueries({uris}: {uris: string[]}) {
+  const client = useAppviewClient()
+  return useQueries({
+    queries: uris.map(uri => ({
+      queryKey: createArticleThreadRepliesQueryKey({uri}),
+      staleTime: STALE.MINUTES.ONE,
+      async queryFn() {
+        const data = await client.call(app.bsky.feed.getPostThread, {
+          uri: uri as AtUriString,
+          depth: 1,
+          parentHeight: 0,
+        })
+        const thread = data.thread
+        if (!bsky.isType(app.bsky.feed.defs.threadViewPost, thread)) {
+          return [] as app.bsky.feed.defs.PostView[]
+        }
+        const opDid = thread.post.author.did
+        const replies = (thread.replies ?? [])
+          .filter(reply =>
+            bsky.isType(app.bsky.feed.defs.threadViewPost, reply),
+          )
+          .map(reply => (reply as app.bsky.feed.defs.ThreadViewPost).post)
+          .filter(post => post.author.did !== opDid)
+          .sort((x, y) => y.indexedAt.localeCompare(x.indexedAt))
+        const seen = new Set<string>()
+        const shown: app.bsky.feed.defs.PostView[] = []
+        for (const post of replies) {
+          if (seen.has(post.author.did)) continue
+          seen.add(post.author.did)
+          shown.push(post)
+          if (shown.length === THREAD_REPLIES_SHOWN) break
+        }
+        return shown
+      },
+    })),
   })
 }

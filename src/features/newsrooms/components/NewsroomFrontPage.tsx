@@ -1,6 +1,5 @@
 import {View} from 'react-native'
 import {Image} from 'expo-image'
-import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
@@ -13,8 +12,10 @@ import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
 import {articleViewLinkFor} from '../article/articleLink'
 import {articleSearchPath} from '../discussion'
+import {sharedByLabel} from '../explore/components/StoryByline'
 import {getPublisherRssUrls, type NewsroomPublisher} from '../publishers'
 import {
+  type ArticleSharers,
   useArticleDiscussionQuery,
   useArticleDiscussionsQuery,
   useOgImageQuery,
@@ -203,7 +204,7 @@ function SecondaryArticle({
           </Link>
           <ArticleMeta
             item={item}
-            discussionCount={discussion?.total}
+            sharers={discussion?.sharers}
             discussionPath={articleSearchPath(item.link)}
           />
         </View>
@@ -294,43 +295,40 @@ function ArticleShareButton({
 
 function ArticleMeta({
   item,
-  discussionCount,
+  sharers,
   discussionPath,
 }: {
   item: RssItem
-  discussionCount?: number
-  /** Makes the post count a link into the article's posts. */
+  sharers?: ArticleSharers
+  /** Makes the sharer count a link into the article's posts. */
   discussionPath?: string
 }) {
   const t = useTheme()
   const {i18n, t: l} = useLingui()
   const hostname = safeHostname(item.link)
-  const postCount = plural(discussionCount ?? 0, {
-    one: '# post',
-    other: '# posts',
-  })
+  const sharedBy = sharers?.count ? sharedByLabel(sharers) : undefined
 
   return (
     <Text style={[a.text_xs, t.atoms.text_contrast_medium]}>
       {hostname}
       {!!item.publishedAt && (
         <>
-          {' · '}
+          {'\u00a0– '}
           {i18n.date(new Date(item.publishedAt), {dateStyle: 'medium'})}
         </>
       )}
-      {!!discussionCount && (
+      {!!sharedBy && (
         <>
-          {' · '}
+          {'\u00a0– '}
           {discussionPath ? (
             <InlineLinkText
               to={discussionPath}
               label={l`See this story in the Atmosphere`}
               style={[a.text_xs]}>
-              {postCount}
+              {sharedBy}
             </InlineLinkText>
           ) : (
-            postCount
+            sharedBy
           )}
         </>
       )}

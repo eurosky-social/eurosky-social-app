@@ -85,7 +85,7 @@ export function ExploreEntryFrame() {
                 <CoverageEntry
                   article={article}
                   profile={outletProfile(profiles, article.publisher)}
-                  postCount={discussions[index + 1]?.data?.total}
+                  sharers={discussions[index + 1]?.data?.sharers}
                 />
               </Fragment>
             ))}

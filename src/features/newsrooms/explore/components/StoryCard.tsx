@@ -14,6 +14,7 @@ import {Text} from '#/components/Typography'
 import {type app} from '#/lexicons'
 import {articleViewLink} from '../../article/articleLink'
 import {useOgImageQuery} from '../../queries'
+import {type ArticleSharers} from '../../queries'
 import {type ExploreStory, outletProfile} from '../cluster'
 import {CoverageStack, PublisherLabel, StoryMeta} from './StoryByline'
 
@@ -26,13 +27,13 @@ type Profiles = Map<string, app.bsky.actor.defs.ProfileViewDetailed>
 export function StoryLead({
   story,
   profiles,
-  postCount,
+  sharers,
   size = 'section',
   hideCoverage = false,
 }: {
   story: ExploreStory
   profiles: Profiles
-  postCount?: number
+  sharers?: ArticleSharers
   /** `hero` is the spread's own lead; `section` a department's. */
   size?: 'hero' | 'section'
   /** For the spread's lead, whose coverage gets a column of its own. */
@@ -91,7 +92,7 @@ export function StoryLead({
           </Text>
         )}
       </Link>
-      <StoryMeta article={lead} postCount={postCount} />
+      <StoryMeta article={lead} sharers={sharers} />
       {!hideCoverage && <StoryCoverage story={story} profiles={profiles} />}
     </View>
   )
@@ -104,11 +105,11 @@ export function StoryLead({
 export function StoryRow({
   story,
   profiles,
-  postCount,
+  sharers,
 }: {
   story: ExploreStory
   profiles: Profiles
-  postCount?: number
+  sharers?: ArticleSharers
 }) {
   const t = useTheme()
   const {lead} = story
@@ -131,7 +132,7 @@ export function StoryRow({
               {lead.item.title}
             </Text>
           </Link>
-          <StoryMeta article={lead} postCount={postCount} />
+          <StoryMeta article={lead} sharers={sharers} />
         </View>
         {!!lead.item.imageUrl && (
           <Link to={articleViewLink(lead)} label={lead.item.title}>
@@ -211,12 +212,26 @@ function StoryCoverage({
       <Button
         label={
           expanded
-            ? l`Hide the other newsrooms on this story`
-            : l`Show the other newsrooms on this story`
+            ? l`Hide the rest of the coverage of this story`
+            : l`Show the rest of the coverage of this story`
         }
         onPress={() => setExpanded(!expanded)}
-        style={[a.self_start, a.flex_row, a.align_center, a.gap_2xs]}>
-        <CoverageStack articles={others} profiles={profiles} />
+        /* Capped at the column's width so a long line of outlet names wraps
+         * rather than overflowing (and, centred by the button, spilling left). */
+        style={[
+          a.self_start,
+          a.flex_row,
+          a.align_center,
+          a.justify_start,
+          a.gap_2xs,
+          {maxWidth: '100%'},
+        ]}>
+        <CoverageStack
+          articles={others}
+          leadOutletId={story.lead.publisher.id}
+          newsroomCount={story.newsroomCount}
+          profiles={profiles}
+        />
         {expanded ? (
           <ChevronUpIcon size="xs" style={{color: t.palette.primary_500}} />
         ) : (
@@ -227,7 +242,7 @@ function StoryCoverage({
         <View
           style={[a.gap_md, a.pl_md, a.border_l, t.atoms.border_contrast_low]}>
           {others.map(article => (
-            <View key={article.publisher.id} style={[a.gap_xs]}>
+            <View key={article.item.link} style={[a.gap_xs]}>
               <PublisherLabel
                 article={article}
                 profile={outletProfile(profiles, article.publisher)}
