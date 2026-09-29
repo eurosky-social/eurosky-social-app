@@ -184,7 +184,7 @@ export function ArticleDiscussion({
   )
 }
 
-function DiscussionPost({
+export function DiscussionPost({
   post,
   moderation,
 }: {

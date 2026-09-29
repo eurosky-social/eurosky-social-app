@@ -6,10 +6,12 @@ import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
 import {useAppviewClient} from '#/state/session'
 import {app} from '#/lexicons'
-import * as bsky from '#/types/bsky'
+import {engagementScore, postReferencesUrl, postUrls} from './postLinks'
 import {buildRssFetchUrl} from './rss/config'
 import {extractOgImage, parseRssFeed} from './rss/parse'
 import {type RssItem} from './rss/types'
+
+export {engagementScore, postUrls}
 
 const RSS_ARTICLES_TOTAL = 7
 
@@ -189,67 +191,6 @@ export function useArticleDiscussionsQuery({
       articleDiscussionQueryOptions({url, publisherDid, client}),
     ),
   })
-}
-
-/** A post's total interactions in the Atmosphere; ranks the discussion. */
-function engagementScore(post: app.bsky.feed.defs.PostView): number {
-  return (
-    (post.likeCount ?? 0) +
-    (post.repostCount ?? 0) +
-    (post.replyCount ?? 0) +
-    (post.quoteCount ?? 0)
-  )
-}
-
-/** Whether a post links to `url`, comparing normalized host + path. */
-function postReferencesUrl(
-  post: app.bsky.feed.defs.PostView,
-  url: string,
-): boolean {
-  const target = normalizeUrl(url)
-  if (!target) return false
-  for (const candidate of postUrls(post)) {
-    if (normalizeUrl(candidate) === target) return true
-  }
-  return false
-}
-
-/** All URLs a post points at: external embed, link facets, and raw text. */
-function postUrls(post: app.bsky.feed.defs.PostView): string[] {
-  const urls: string[] = []
-
-  if (
-    bsky.isType(app.bsky.embed.external.view, post.embed) &&
-    post.embed.external?.uri
-  ) {
-    urls.push(post.embed.external.uri)
-  }
-
-  if (!bsky.isType(app.bsky.feed.post, post.record)) return urls
-  const record = post.record
-  for (const facet of record.facets ?? []) {
-    for (const feature of facet.features) {
-      const uri = (feature as {uri?: string}).uri
-      if (typeof uri === 'string') urls.push(uri)
-    }
-  }
-  if (typeof record.text === 'string') {
-    const textUrls = record.text.match(/https?:\/\/\S+/gi)
-    if (textUrls) urls.push(...textUrls)
-  }
-
-  return urls
-}
-
-function normalizeUrl(url: string): string {
-  try {
-    const u = new URL(url)
-    const host = u.hostname.replace(/^www\./, '').toLowerCase()
-    const path = u.pathname.replace(/\/+$/, '').toLowerCase()
-    return host + path
-  } catch {
-    return ''
-  }
 }
 
 export const createOgImageQueryKey = (args: {url: string}) =>
