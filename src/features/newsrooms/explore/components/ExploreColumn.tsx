@@ -106,7 +106,6 @@ export function ExploreColumn({
 export function ExploreHeaderOuter({children}: {children: React.ReactNode}) {
   const t = useTheme()
   const gutters = useGutters([0, 'base'])
-  const {gtMobile} = useBreakpoints()
 
   return (
     <ExploreColumn
@@ -118,8 +117,11 @@ export function ExploreHeaderOuter({children}: {children: React.ReactNode}) {
         a.py_xs,
         gutters,
         {minHeight: 52},
-        gtMobile && web([a.sticky, {top: 0}, a.z_10]),
-        /* Always painted: the hub pins the header on every screen size. */
+        /*
+         * Painted but not sticky: each hub page pins its header together with
+         * its tabs, and slides the header away on scroll, which a sticky
+         * header of its own would hold in place.
+         */
         t.atoms.bg,
         t.atoms.border_contrast_low,
       ]}>

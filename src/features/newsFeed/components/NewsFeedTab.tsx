@@ -89,7 +89,9 @@ export function NewsFeedTab({
         <Animated.View style={titleCollapse.blockStyle}>
           {wide ? (
             <>
-              <ExploreHeaderOuter>{headerContent}</ExploreHeaderOuter>
+              <View onLayout={titleCollapse.onTitleLayout}>
+                <ExploreHeaderOuter>{headerContent}</ExploreHeaderOuter>
+              </View>
               <ExploreColumn style={[t.atoms.bg]}>
                 <NewsroomHubTabs active="mine" />
               </ExploreColumn>
@@ -128,7 +130,12 @@ export function NewsFeedTab({
             />
           </ScrollProvider>
         )}
-        {wide && <NewsFeedRailColumn top={chromeHeight} />}
+        {wide && (
+          <NewsFeedRailColumn
+            top={chromeHeight}
+            offset={titleCollapse.offset}
+          />
+        )}
       </View>
     </Layout.Screen>
   )

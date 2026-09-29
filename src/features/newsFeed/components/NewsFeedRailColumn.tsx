@@ -1,4 +1,8 @@
 import {ScrollView, View} from 'react-native'
+import Animated, {
+  type SharedValue,
+  useAnimatedStyle,
+} from 'react-native-reanimated'
 
 import {atoms as a, tokens, useGutters, useLayoutBreakpoints, web} from '#/alf'
 import {CENTER_COLUMN_OFFSET} from '#/components/Layout'
@@ -17,10 +21,23 @@ import {NewsFeedRightRail} from './NewsFeedRightRail'
  * It sits exactly where the shell would have put it: absolutely positioned
  * over the feed, beside the center column, with the same width and gutters.
  */
-export function NewsFeedRailColumn({top}: {top: number}) {
+export function NewsFeedRailColumn({
+  top,
+  offset,
+}: {
+  /** Height of the pinned header and tabs the column sits under. */
+  top: number
+  /** How far that pinned block has slid up as its title collapses. */
+  offset: SharedValue<number>
+}) {
   const gutters = useGutters(['base', 0, 'base', 'wide'])
   const {centerColumnOffset} = useLayoutBreakpoints()
   const width = centerColumnOffset ? 250 : 300
+  /* Follows the pinned block up, so no gap opens above the column. */
+  const pinStyle = useAnimatedStyle(() => {
+    const pinnedAt = top + offset.get()
+    return {top: pinnedAt, maxHeight: `calc(100vh - ${pinnedAt}px)`}
+  })
 
   return (
     <View
@@ -38,7 +55,7 @@ export function NewsFeedRailColumn({top}: {top: number}) {
           ],
         },
       ]}>
-      <View
+      <Animated.View
         style={[
           a.pr_2xs,
           {
@@ -49,16 +66,13 @@ export function NewsFeedRailColumn({top}: {top: number}) {
             paddingBottom: gutters.paddingBottom,
             paddingLeft: gutters.paddingLeft - tokens.space.lg,
           },
-          web({
-            position: 'sticky',
-            top,
-            maxHeight: `calc(100vh - ${top}px)`,
-          }),
+          web({position: 'sticky'}),
+          pinStyle,
         ]}>
         <ScrollView showsVerticalScrollIndicator={false}>
           <NewsFeedRightRail />
         </ScrollView>
-      </View>
+      </Animated.View>
     </View>
   )
 }
