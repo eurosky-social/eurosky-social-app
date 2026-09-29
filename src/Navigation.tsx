@@ -150,7 +150,11 @@ import {IS_LIQUID_GLASS, IS_NATIVE, IS_WEB} from '#/env'
 import {InviteScannerScreen} from '#/features/inviteFriends'
 import {NewsFeedScreen} from '#/features/newsFeed/NewsFeedScreen'
 import {NewsroomArticleScreen} from '#/features/newsrooms/article/NewsroomArticleScreen'
-import {NewsroomExploreScreen} from '#/features/newsrooms/explore'
+import {NewsroomDirectoryScreen} from '#/features/newsrooms/directory'
+import {
+  NewsroomExploreScreen,
+  NewsroomLocalScreen,
+} from '#/features/newsrooms/explore'
 import {NewsroomScreen} from '#/features/newsrooms/NewsroomScreen'
 import {router} from '#/routes'
 import {Referrer} from '../modules/expo-bluesky-swiss-army'
@@ -195,12 +199,22 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
       <Stack.Screen
         name="Newsroom"
         getComponent={() => NewsroomScreen}
-        options={{title: title(msg`Mu Newsrooms`), requireAuth: true}}
+        options={{title: title(msg`Mu News`), requireAuth: true}}
       />
       <Stack.Screen
         name="NewsroomExplore"
         getComponent={() => NewsroomExploreScreen}
-        options={{title: title(msg`Explore Newsrooms`), requireAuth: true}}
+        options={{title: title(msg`Latest News`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="NewsroomLocal"
+        getComponent={() => NewsroomLocalScreen}
+        options={{title: title(msg`Local News`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="NewsroomDirectory"
+        getComponent={() => NewsroomDirectoryScreen}
+        options={{title: title(msg`Newsrooms`), requireAuth: true}}
       />
       <Stack.Screen
         name="NewsroomArticle"

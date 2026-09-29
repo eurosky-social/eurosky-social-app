@@ -42,6 +42,7 @@ export function adaptStory(
   if (!story.lead) return undefined
 
   const section = sectionForTheme(story.theme)
+  const provinces = rankedProvinces(story.provinces)
   const lead = adaptArticle(story.lead, section)
   const coverage = [
     lead,
@@ -61,7 +62,8 @@ export function adaptStory(
     section,
     publishedAt: story.lead.publishedAt,
     postCount: story.counts.posts,
-    provinces: rankedProvinces(story.provinces),
+    provinces,
+    regions: provinces,
   }
 }
 

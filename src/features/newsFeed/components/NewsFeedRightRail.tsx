@@ -68,7 +68,7 @@ function NewsroomsModule() {
     <View style={[a.pb_xl]}>
       <ModuleHeader.Container>
         <ModuleHeader.Icon icon={NewsroomsIcon} />
-        <ModuleHeader.TitleText>{l`Mu Newsrooms`}</ModuleHeader.TitleText>
+        <ModuleHeader.TitleText>{l`Your Newsrooms`}</ModuleHeader.TitleText>
       </ModuleHeader.Container>
       <View style={[a.px_lg, a.gap_md]}>
         <Text style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>

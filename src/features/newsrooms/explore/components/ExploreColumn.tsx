@@ -118,7 +118,9 @@ export function ExploreHeaderOuter({children}: {children: React.ReactNode}) {
         a.py_xs,
         gutters,
         {minHeight: 52},
-        gtMobile && web([a.sticky, {top: 0}, a.z_10, t.atoms.bg]),
+        gtMobile && web([a.sticky, {top: 0}, a.z_10]),
+        /* Always painted: the hub pins the header on every screen size. */
+        t.atoms.bg,
         t.atoms.border_contrast_low,
       ]}>
       {children}

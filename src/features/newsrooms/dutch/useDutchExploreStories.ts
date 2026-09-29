@@ -18,7 +18,8 @@ import {useDutchStoriesQuery, useDutchThemesQuery} from './queries'
 export function useDutchExploreStories({
   theme,
   category,
-}: {theme?: string; category?: string} = {}): {
+  enabled = true,
+}: {theme?: string; category?: string; enabled?: boolean} = {}): {
   stories: DutchExploreStory[]
   sections: ExploreSection[]
   isLoading: boolean
@@ -26,8 +27,12 @@ export function useDutchExploreStories({
   const {stories: raw, isLoading: storiesLoading} = useDutchStoriesQuery({
     theme,
     category,
+    enabled,
   })
-  const {themes, isLoading: themesLoading} = useDutchThemesQuery({category})
+  const {themes, isLoading: themesLoading} = useDutchThemesQuery({
+    category,
+    enabled,
+  })
 
   const sections = useMemo(() => themeSections(themes), [themes])
 

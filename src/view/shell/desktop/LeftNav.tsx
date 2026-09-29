@@ -397,7 +397,18 @@ interface NavItemProps {
   label: string
   minimal: boolean
   navItem: Events['nav:click']['item']
+  /** Other routes that belong to this item's section, for its active state. */
+  relatedRoutes?: string[]
 }
+/** Every route of the news hub, so its nav item stays lit across its tabs. */
+const NEWS_HUB_ROUTES = [
+  'NewsFeed',
+  'NewsroomLocal',
+  'NewsroomDirectory',
+  'Newsroom',
+  'NewsroomArticle',
+]
+
 function NavItem({
   count,
   hasNew,
@@ -406,6 +417,7 @@ function NavItem({
   label,
   minimal,
   navItem,
+  relatedRoutes,
 }: NavItemProps) {
   const t = useTheme()
   const {t: l} = useLingui()
@@ -425,7 +437,9 @@ function NavItem({
         (currentRouteInfo.params as CommonNavigatorParams['Profile']).name ===
           currentAccount?.handle
       : isTab(currentRouteInfo.name, pathName)
-  const isRelated = currentRouteInfo.name.startsWith(pathName)
+  const isRelated =
+    currentRouteInfo.name.startsWith(pathName) ||
+    !!relatedRoutes?.includes(currentRouteInfo.name)
   const navigation = useNavigation<NavigationProp>()
   const onPressWrapped = useCallback(
     (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
@@ -677,9 +691,10 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             }}
           />
           <NavItem
-            label={l`News`}
-            href="/news"
+            label={l`Newsrooms`}
+            href="/newsroom/explore"
             navItem="news"
+            relatedRoutes={NEWS_HUB_ROUTES}
             minimal={leftNavMinimal}
             icons={{
               inactive: NewspaperIcon,

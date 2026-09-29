@@ -15,12 +15,15 @@ export function ExploreSectionChips({
   sections,
   selectedId,
   onSelect,
+  leading,
 }: {
   /** Only the topics that actually have stories today. */
   sections: ExploreSection[]
   /** Undefined shows every topic. */
   selectedId?: string
   onSelect: (sectionId: string | undefined) => void
+  /** A control that scopes the whole page, run ahead of the topics. */
+  leading?: React.ReactNode
 }) {
   const {i18n, t: l} = useLingui()
 
@@ -29,6 +32,7 @@ export function ExploreSectionChips({
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={[a.flex_row, a.align_center, a.gap_sm, a.px_lg]}>
+      {leading}
       <Chip
         active={!selectedId}
         text={l`All`}

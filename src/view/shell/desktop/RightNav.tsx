@@ -21,7 +21,6 @@ import {CENTER_COLUMN_OFFSET} from '#/components/Layout'
 import {InlineLinkText, Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
-import {NewsFeedRightRail} from '#/features/newsFeed/components/NewsFeedRightRail'
 import {NewsroomArticleRightRail} from '#/features/newsrooms/article/NewsroomArticleRightRail'
 import {NewsroomRightRail} from '#/features/newsrooms/components/NewsroomRightRail'
 
@@ -36,10 +35,15 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
     useLayoutBreakpoints()
 
   /*
-   * The newsroom explore spread lays itself out across the center and right
-   * columns, so the shell leaves the right column to it.
+   * The newsroom hub pages lay themselves out across the center and right
+   * columns, so the shell leaves the right column to them. The news feed
+   * keeps a right column but draws it itself (see `NewsFeedRailColumn`).
    */
-  const isNewsroomExplore = routeName === 'NewsroomExplore'
+  const isNewsroomExplore =
+    routeName === 'NewsroomExplore' ||
+    routeName === 'NewsroomLocal' ||
+    routeName === 'NewsroomDirectory' ||
+    routeName === 'NewsFeed'
 
   if (!rightNavVisible || isMessagesRelatedScreen || isNewsroomExplore) {
     return null
@@ -54,8 +58,6 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
       <NewsroomRightRail />
     ) : routeName === 'NewsroomArticle' ? (
       <NewsroomArticleRightRail />
-    ) : routeName === 'NewsFeed' ? (
-      <NewsFeedRightRail />
     ) : null
 
   if (railContent) {

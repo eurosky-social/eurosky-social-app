@@ -50,10 +50,12 @@ export function useDutchStoriesQuery({
   theme,
   category,
   sort = 'discussed',
+  enabled = true,
 }: {
   theme?: string
   category?: string
   sort?: DutchStorySort
+  enabled?: boolean
 } = {}) {
   const pdsClient = useMaybePdsClient()
   const query = useQuery({
@@ -64,7 +66,7 @@ export function useDutchStoriesQuery({
      * likely to be reopened.
      */
     staleTime: STALE.MINUTES.FIVE,
-    enabled: IS_DUTCH_API_CONFIGURED && !!pdsClient,
+    enabled: enabled && IS_DUTCH_API_CONFIGURED && !!pdsClient,
     async queryFn() {
       const data = await fetchDutchApi<DutchStoriesResponse>(
         pdsClient!,
@@ -93,7 +95,10 @@ export function useDutchStoriesQuery({
  * The sections of the news, curated in the pipeline. These drive the spread's
  * departments, so the page has no section list of its own.
  */
-export function useDutchThemesQuery({category}: {category?: string} = {}) {
+export function useDutchThemesQuery({
+  category,
+  enabled = true,
+}: {category?: string; enabled?: boolean} = {}) {
   const pdsClient = useMaybePdsClient()
   const query = useQuery({
     queryKey: createDutchThemesQueryKey({category}),
@@ -102,7 +107,7 @@ export function useDutchThemesQuery({category}: {category?: string} = {}) {
      * pipeline releases, not of news.
      */
     staleTime: STALE.HOURS.ONE,
-    enabled: IS_DUTCH_API_CONFIGURED && !!pdsClient,
+    enabled: enabled && IS_DUTCH_API_CONFIGURED && !!pdsClient,
     async queryFn() {
       const data = await fetchDutchApi<DutchThemesResponse>(
         pdsClient!,

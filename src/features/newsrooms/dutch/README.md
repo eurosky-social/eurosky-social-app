@@ -29,13 +29,14 @@ discussion volume everywhere without one search per article.
 
 ## The seam
 
-`useExploreSource()` is the whole integration surface. It returns
+`useExploreSource({source})` is the whole integration surface. It returns
 `{stories, sections, isLoading}`, and every component below it renders an
-`ExploreStory` without knowing where the story came from. The Dutch source takes
-over wherever its API is configured; otherwise the spread reads RSS exactly as
-before. Both hooks run either way, because hooks must, but the inactive one
-fetches nothing - `useExploreStories({enabled})` threads that down to the
-per-publisher feed queries.
+`ExploreStory` without knowing where the story came from. Latest News asks for
+`rss`; Local News asks for `dutch`, which is the only source that knows which
+stories are regional, and the tab is only offered where the Dutch API is
+configured. Both hooks run either way, because hooks must, but the one not asked
+for fetches nothing - `enabled` threads that down to the per-publisher feed
+queries and the Dutch API queries.
 
 Making one set of components serve both meant widening `ExploreArticle`.
 It carried a full `NewsroomPublisher` - a registry entry with a `did`,

@@ -6,37 +6,49 @@ import {type ExploreSection} from './sections'
 import {useExploreStories} from './useExploreStories'
 
 /**
- * The stories the spread renders, from whichever source this build is set up
- * for, plus the sections to lay them out under.
+ * Where a spread's stories come from.
  *
- * Two sources answer the same question differently. The RSS source reads every
- * registered publisher's feed and infers the structure - clustering headlines,
- * matching categories to a fixed section list. The Dutch labeler serves that
- * structure already modeled, so its stories arrive clustered, themed, and
- * carrying their matched discussion.
+ * - `rss` reads every registered publisher's feed and infers the structure -
+ *   clustering headlines, matching categories to a fixed section list. This is
+ *   Latest News.
+ * - `dutch` is the Dutch labeler, which serves that structure already modeled:
+ *   stories arrive clustered, themed, and carrying their matched discussion.
+ *   It is the only source that knows which stories are regional, so it backs
+ *   Local News.
+ */
+export type ExploreSourceId = 'rss' | 'dutch'
+
+/**
+ * The stories a spread renders from the given source, plus the sections to lay
+ * them out under.
  *
- * Which one is live is configuration, not a user choice: the Dutch source takes
- * over wherever its API is configured (see ../dutch/config). Both hooks run
- * unconditionally to satisfy the rules of hooks; the inactive one fetches
- * nothing.
+ * Both hooks run unconditionally to satisfy the rules of hooks; the one not
+ * asked for fetches nothing. The Dutch source also stays idle where its API is
+ * not configured (see ../dutch/config), and its page is not offered.
  */
 export function useExploreSource({
+  source,
   theme,
   category,
-}: {theme?: string; category?: string} = {}): {
+}: {
+  source: ExploreSourceId
+  theme?: string
+  category?: string
+}): {
   stories: ExploreStory[]
   /** In page order, ending with the catch-all the page files leftovers under. */
   sections: ExploreSection[]
   isLoading: boolean
 } {
-  const dutch = useDutchExploreStories({theme, category})
-  const rss = useExploreStories({enabled: !IS_DUTCH_API_CONFIGURED})
+  const dutchActive = source === 'dutch' && IS_DUTCH_API_CONFIGURED
+  const dutch = useDutchExploreStories({theme, category, enabled: dutchActive})
+  const rss = useExploreStories({enabled: source === 'rss'})
 
-  if (IS_DUTCH_API_CONFIGURED) {
+  if (source === 'dutch') {
     return {
       stories: dutch.stories,
       sections: [...dutch.sections, EXPLORE_SECTION_OTHER],
-      isLoading: dutch.isLoading,
+      isLoading: dutchActive && dutch.isLoading,
     }
   }
 

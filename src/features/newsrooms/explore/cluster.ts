@@ -58,6 +58,13 @@ export interface ExploreStory {
   newsroomCount: number
   section: ExploreSection
   publishedAt?: string
+  /**
+   * Label values of the regions the story is placed in, busiest first; empty
+   * or unset for national and world news. Only a source that models regions
+   * can say (the Dutch labeler does, by province); RSS clustering leaves it
+   * unset and the story stays out of Local News.
+   */
+  regions?: string[]
 }
 
 /** Shared headline words below which two articles are never the same story. */
