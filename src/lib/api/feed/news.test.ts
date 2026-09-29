@@ -13,8 +13,14 @@ function item(actor: string, index: number) {
   }
 }
 
-/** A client whose author feeds answer after a per-actor delay. */
-function fakeClient(delays: Record<string, number>) {
+/**
+ * A client whose author feeds answer after a per-actor delay, each with a
+ * per-actor number of posts (2 unless given).
+ */
+function fakeClient(
+  delays: Record<string, number>,
+  counts: Record<string, number> = {},
+) {
   return {
     call: jest.fn(
       (_method: unknown, {actor, cursor}: Params) =>
@@ -24,7 +30,12 @@ function fakeClient(delays: Record<string, number>) {
               resolve(
                 cursor
                   ? {feed: []}
-                  : {feed: [item(actor, 1), item(actor, 2)], cursor: 'more'},
+                  : {
+                      feed: Array.from({length: counts[actor] ?? 2}, (_, i) =>
+                        item(actor, i + 1),
+                      ),
+                      cursor: 'more',
+                    },
               ),
             delays[actor] ?? 0,
           ),
@@ -54,15 +65,44 @@ describe('NewsFeedAPI', () => {
     expect(secondUris.filter(uri => uri.includes('did:slow'))).toHaveLength(2)
   }, 10000)
 
-  it('returns a full page as soon as one is queued', async () => {
+  it('returns as soon as enough sources answer to fill the page', async () => {
     const api = new NewsFeedAPI({
       client: fakeClient({'did:slow': 3000}),
-      dids: ['did:a', 'did:b', 'did:slow'],
+      dids: ['did:a', 'did:b', 'did:c', 'did:d', 'did:slow'],
     })
 
     const started = Date.now()
     const page = await api.fetch({cursor: undefined, limit: 4})
     expect(Date.now() - started).toBeLessThan(1000)
     expect(page.feed).toHaveLength(4)
+  })
+
+  it('keeps one fast, prolific source from filling the page', async () => {
+    const api = new NewsFeedAPI({
+      client: fakeClient(
+        {'did:b': 200, 'did:c': 300, 'did:d': 400},
+        {'did:fast': 30},
+      ),
+      dids: ['did:fast', 'did:b', 'did:c', 'did:d'],
+    })
+
+    const page = await api.fetch({cursor: undefined, limit: 8})
+    const fromFast = page.feed.filter(entry =>
+      entry.post.uri.includes('did:fast'),
+    )
+    // Every source answered in time, so each gets its round-robin share.
+    expect(fromFast.length).toBeLessThanOrEqual(2)
+    expect(page.feed).toHaveLength(8)
+  })
+
+  it('caps each source on a page that could not wait for everyone', async () => {
+    const api = new NewsFeedAPI({
+      client: fakeClient({'did:slow': 3000}, {'did:fast': 30}),
+      dids: ['did:fast', 'did:slow'],
+    })
+
+    const page = await api.fetch({cursor: undefined, limit: 10})
+    expect(page.feed).toHaveLength(2)
+    expect(page.cursor).toBeDefined()
   })
 })

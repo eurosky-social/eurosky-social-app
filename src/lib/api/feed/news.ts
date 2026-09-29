@@ -15,6 +15,12 @@ const FETCH_CONCURRENCY = 12
  * one slow author feed does not hold up the first screen.
  */
 const PAGE_WAIT_MS = 1200
+/*
+ * On a page that goes out before every source has answered, no source gives
+ * more than this: otherwise the first fast source, which returns a whole page
+ * of its own posts, fills the top of the feed by itself.
+ */
+const EARLY_PAGE_PER_SOURCE = 2
 
 type SourceState = {
   did: string
@@ -89,10 +95,16 @@ export class NewsFeedAPI implements FeedAPI {
       source => source.hasMore && source.queue.length < limit,
     )
     const refills = stale.map(source => this._scheduleTopUp(source, minDate))
-    const allDone = Promise.all(refills).then(() => {})
-    await Promise.race([allDone, this._pageReady(limit, allDone)])
+    let settled = false
+    const allDone = Promise.all(refills).then(() => {
+      settled = true
+    })
+    await Promise.race([allDone, this._pageReady(limit, stale, allDone)])
 
-    const posts = this._takeRoundRobin(limit)
+    const posts = this._takeRoundRobin(
+      limit,
+      settled ? Infinity : EARLY_PAGE_PER_SOURCE,
+    )
 
     const exhausted = this.sources.every(
       source => !source.hasMore && source.queue.length === 0,
@@ -105,19 +117,26 @@ export class NewsFeedAPI implements FeedAPI {
   }
 
   /**
-   * Resolves once a full page is queued, or once PAGE_WAIT_MS has passed with
-   * at least something to show; never before `allDone` would on an empty feed.
+   * Resolves once enough of the refilling sources have answered to fill the
+   * page one post each, or once PAGE_WAIT_MS has passed with at least one
+   * answer to show. Counting sources rather than posts is what keeps the page
+   * mixed: a single fast source can queue a full page's worth on its own.
    */
-  _pageReady(limit: number, allDone: Promise<void>): Promise<void> {
+  _pageReady(
+    limit: number,
+    refilling: SourceState[],
+    allDone: Promise<void>,
+  ): Promise<void> {
+    const needed = Math.min(limit, refilling.length)
     return new Promise(resolve => {
       const started = Date.now()
       const check = () => {
-        const queued = this.sources.reduce(
-          (sum, source) => sum + source.queue.length,
-          0,
-        )
+        const answered = refilling.filter(
+          source => !this.pending.has(source),
+        ).length
+        const hasPosts = this.sources.some(source => source.queue.length > 0)
         const waited = Date.now() - started >= PAGE_WAIT_MS
-        if (queued >= limit || (waited && queued > 0)) {
+        if (answered >= needed || (waited && hasPosts)) {
           resolve()
         } else {
           timer = setTimeout(check, 100)
@@ -184,10 +203,17 @@ export class NewsFeedAPI implements FeedAPI {
 
   // Take one post from each source per pass for equal representation, visiting
   // sources newest-head first so the page still trends fresh.
-  _takeRoundRobin(limit: number): app.bsky.feed.defs.FeedViewPost[] {
+  _takeRoundRobin(
+    limit: number,
+    perSource: number,
+  ): app.bsky.feed.defs.FeedViewPost[] {
     const posts: app.bsky.feed.defs.FeedViewPost[] = []
+    const taken = new Map<SourceState, number>()
     while (posts.length < limit) {
-      const ready = this.sources.filter(source => source.queue.length > 0)
+      const ready = this.sources.filter(
+        source =>
+          source.queue.length > 0 && (taken.get(source) ?? 0) < perSource,
+      )
       if (ready.length === 0) break
       ready.sort(
         (a, b) =>
@@ -197,7 +223,10 @@ export class NewsFeedAPI implements FeedAPI {
       for (const source of ready) {
         if (posts.length >= limit) break
         const next = source.queue.shift()
-        if (next) posts.push(next)
+        if (next) {
+          posts.push(next)
+          taken.set(source, (taken.get(source) ?? 0) + 1)
+        }
       }
     }
     return posts
