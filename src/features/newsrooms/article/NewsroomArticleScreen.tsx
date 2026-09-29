@@ -5,29 +5,34 @@ import {
   type CommonNavigatorParams,
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
-import {PostFeed} from '#/view/com/posts/PostFeed'
+import {List} from '#/view/com/util/List'
 import {atoms as a, useTheme} from '#/alf'
 import {Bubbles_Stroke2_Corner2_Rounded as BubblesIcon} from '#/components/icons/Bubble'
 import * as Layout from '#/components/Layout'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
-import {NewsroomSwitcherMenu} from '../components/NewsroomSwitcherMenu'
-import {getNewsroomPublisherByDid, type NewsroomPublisher} from '../publishers'
 import {useArticleDiscussionQuery} from '../queries'
 import {ArticleHeader} from './ArticleHeader'
+import {
+  type ArticleThreadItem,
+  ArticleThreadPost,
+  useArticleThreadItems,
+} from './ArticleThreads'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'NewsroomArticle'>
 
+/** Space under the last post of the discussion. */
+const BOTTOM_BUFFER = 200
+
 /**
  * A focused stop between a story card and the article itself: the piece shown
- * large, then the full in-network discussion as a feed, so the reader sees the
- * whole conversation before leaving for the outlet's site.
+ * large, then the in-network discussion, so the reader sees the conversation
+ * before leaving for the outlet's site.
  *
- * The discussion is every post that features the article, ranked with the
- * publisher's own post first (see `useArticleDiscussionQuery`), rendered as
- * real, interactive post cards via the `posts|` feed rather than a static list.
+ * The discussion is every post that features the article, each with a few of
+ * its replies, rendered as feed slices (see `useArticleThreadItems`).
  */
-export function NewsroomArticleScreen({route, navigation}: Props) {
+export function NewsroomArticleScreen({route}: Props) {
   const {url, title, image, description, publishedAt, outletName, outletDid} =
     route.params
 
@@ -37,20 +42,7 @@ export function NewsroomArticleScreen({route, navigation}: Props) {
   })
   const posts = data?.posts ?? []
   const sharers = posts.map(post => post.author)
-
-  // The article's outlet is the switcher's selected org when it is a registered
-  // publisher; a bare feed outlet leaves nothing selected.
-  const currentPublisher = outletDid
-    ? getNewsroomPublisherByDid(outletDid)
-    : undefined
-
-  function onSelectPublisher(publisher: NewsroomPublisher) {
-    navigation.navigate('Newsroom', {name: publisher.did})
-  }
-
-  function onSelectExplore() {
-    navigation.navigate('NewsroomExplore')
-  }
+  const items = useArticleThreadItems({posts, anchorUri: data?.anchor?.uri})
 
   const header = (
     <Layout.Center>
@@ -77,34 +69,27 @@ export function NewsroomArticleScreen({route, navigation}: Props) {
             <Trans>Article</Trans>
           </Layout.Header.TitleText>
         </Layout.Header.Content>
-        <Layout.Header.Slot>
-          <NewsroomSwitcherMenu
-            selectedId={currentPublisher?.id}
-            onSelect={onSelectPublisher}
-            onSelectExplore={onSelectExplore}
-          />
-        </Layout.Header.Slot>
       </Layout.Header.Outer>
 
-      {posts.length > 0 ? (
-        <PostFeed
-          feed={`posts|${posts.map(post => post.uri).join(',')}`}
-          disablePoll
-          ListHeaderComponent={header}
-          renderEmptyState={ArticleDiscussionEmpty}
-        />
-      ) : (
-        <Layout.Content>
-          {header}
-          {isLoading ? (
+      <List
+        data={items}
+        keyExtractor={(item: ArticleThreadItem) => item.key}
+        renderItem={({item}: {item: ArticleThreadItem}) => (
+          <ArticleThreadPost item={item} />
+        )}
+        ListHeaderComponent={header}
+        /* Room past the last post, so it can scroll clear of the bottom bar. */
+        ListFooterComponent={<View style={{height: BOTTOM_BUFFER}} />}
+        ListEmptyComponent={
+          isLoading ? (
             <View style={[a.py_2xl, a.align_center]}>
               <Loader size="xl" />
             </View>
           ) : (
             <ArticleDiscussionEmpty />
-          )}
-        </Layout.Content>
-      )}
+          )
+        }
+      />
     </Layout.Screen>
   )
 }
