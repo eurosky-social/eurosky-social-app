@@ -36,6 +36,11 @@ pnpm prebuild --platform ios
 # embed stale release metadata. Prebuild recreates this file on the next run.
 {
   printf '\n# TestFlight environment from scripts/prepareIosTestflight.sh\n'
+  # GUI Xcode does not inherit nvm/pnpm from the terminal. The production Metro
+  # translation gate needs both tools on PATH, not only NODE_BINARY.
+  printf 'export NODE_BINARY=%q\n' "$(node -p 'process.execPath')"
+  printf 'export PATH=%q:%q:"$PATH"\n' \
+    "$(dirname "$(node -p 'process.execPath')")" "$(dirname "$(command -v pnpm)")"
   for key in BSKY_IOS_BUILD_NUMBER EAS_BUILD_PLATFORM EXPO_PUBLIC_ENV \
     EXPO_PUBLIC_RELEASE_VERSION EXPO_PUBLIC_BUNDLE_IDENTIFIER \
     EXPO_PUBLIC_BUNDLE_DATE EXPO_PUBLIC_APPVIEW_URL EXPO_PUBLIC_APPVIEW_DID \
