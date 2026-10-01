@@ -26,6 +26,7 @@ import {useAgeAssuranceServerDataContext} from '#/ageAssurance/data'
 import {useComputeAgeAssuranceRegionAccess} from '#/ageAssurance/useComputeAgeAssuranceRegionAccess'
 import {useAgeAssuranceRegionConfig} from '#/ageAssurance/util'
 import {useAnalytics} from '#/analytics'
+import {BRAND} from '#/config/brand'
 import {IS_NATIVE, IS_WEB} from '#/env'
 import {useDeviceGeolocationApi} from '#/geolocation'
 
@@ -157,7 +158,9 @@ export function NoAccessScreen() {
             ) : !aa.flags.isOverAppMinAccessAge ? (
               <View style={[a.gap_lg]}>
                 <Text style={textStyles}>
-                  <Trans>You must be at least 13 years old to use mu.</Trans>
+                  <Trans>
+                    You must be at least 13 years old to use {BRAND.name}.
+                  </Trans>
                 </Text>
                 {updateAge}
               </View>
@@ -165,8 +168,8 @@ export function NoAccessScreen() {
               <View style={[a.gap_lg]}>
                 <Text style={textStyles}>
                   <Trans>
-                    Your declared age is below the minimum required to use mu in
-                    your region.
+                    Your declared age is below the minimum required to use{' '}
+                    {BRAND.name} in your region.
                   </Trans>
                 </Text>
                 {updateAge}
@@ -175,8 +178,8 @@ export function NoAccessScreen() {
               <View style={[a.gap_lg]}>
                 <Text style={textStyles}>
                   <Trans>
-                    mu isn't available in your region, which legally requires
-                    verified age assurance.
+                    {BRAND.name} isn't available in your region, which legally
+                    requires verified age assurance.
                   </Trans>
                 </Text>
                 {updateAge}

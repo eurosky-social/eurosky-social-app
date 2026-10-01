@@ -84,6 +84,7 @@ credentials/
 build-*.aab
 build-*.apk
 web-build/
+web-build-oso/
 stats.json
 
 # Temporary files created by Metro to check the health of the file watcher

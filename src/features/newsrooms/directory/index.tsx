@@ -17,6 +17,7 @@ import {atoms as a, native, useTheme, web} from '#/alf'
 import * as Layout from '#/components/Layout'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
+import {BRAND} from '#/config/brand'
 import {type app} from '#/lexicons'
 import {
   ExploreColumn,
@@ -81,7 +82,7 @@ export function NewsroomDirectoryScreen(_props: Props) {
               <Layout.Header.BackButton />
               <Layout.Header.Content>
                 <Layout.Header.TitleText>
-                  <Trans>Mu News</Trans>
+                  <Trans>{BRAND.name} News</Trans>
                 </Layout.Header.TitleText>
               </Layout.Header.Content>
             </ExploreHeaderOuter>

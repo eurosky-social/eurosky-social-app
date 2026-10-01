@@ -14,6 +14,7 @@ import {useShellLayout} from '#/state/shell/shell-layout'
 import {atoms as a, native, useTheme, web} from '#/alf'
 import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
+import {BRAND} from '#/config/brand'
 import {IS_WEB} from '#/env'
 import {NewsroomHubTabs} from '../hub/NewsroomHubTabs'
 import {useCollapsingTitle} from '../hub/useCollapsingTitle'
@@ -159,7 +160,7 @@ function ExploreSpreadScreen({local = false}: {local?: boolean}) {
               <Layout.Header.BackButton />
               <Layout.Header.Content>
                 <Layout.Header.TitleText>
-                  <Trans>Mu News</Trans>
+                  <Trans>{BRAND.name} News</Trans>
                 </Layout.Header.TitleText>
               </Layout.Header.Content>
             </ExploreHeaderOuter>

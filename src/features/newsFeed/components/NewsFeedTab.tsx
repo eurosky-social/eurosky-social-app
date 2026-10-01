@@ -11,6 +11,7 @@ import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {SettingsGear2_Stroke2_Corner0_Rounded as SettingsGear} from '#/components/icons/SettingsGear2'
 import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
+import {BRAND} from '#/config/brand'
 import {
   ExploreColumn,
   ExploreHeaderOuter,
@@ -51,7 +52,7 @@ export function NewsFeedTab({
       <Layout.Header.BackButton />
       <Layout.Header.Content>
         <Layout.Header.TitleText>
-          <Trans>Mu News</Trans>
+          <Trans>{BRAND.name} News</Trans>
         </Layout.Header.TitleText>
       </Layout.Header.Content>
       {/* Outside Header.Slot: slots are fixed-width squares and this button

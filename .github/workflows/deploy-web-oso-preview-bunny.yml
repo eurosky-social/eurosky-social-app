@@ -1,0 +1,56 @@
+# Manual, isolated partner demo. Does not deploy Mu and never runs on push.
+name: Deploy Oso preview (Bunny)
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-oso-preview
+  cancel-in-progress: true
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Check dedicated preview zone configuration
+        env:
+          ZONE: ${{ secrets.OSO_PREVIEW_BUNNY_STORAGE_ZONE }}
+          PASSWORD: ${{ secrets.OSO_PREVIEW_BUNNY_STORAGE_PASSWORD }}
+          PULLZONE: ${{ secrets.OSO_PREVIEW_BUNNY_PULLZONE_ID }}
+          API_KEY: ${{ secrets.BUNNY_API_KEY }}
+        run: |
+          test -n "$ZONE" && test -n "$PASSWORD" && test -n "$PULLZONE" && test -n "$API_KEY" || {
+            echo 'Set the three OSO_PREVIEW_BUNNY_* secrets and BUNNY_API_KEY before deploying' >&2
+            exit 1
+          }
+          [[ "$ZONE" == *oso* && "$PULLZONE" != 5945167 ]] || {
+            echo 'Refusing non-Oso storage or Mu production pull zone' >&2
+            exit 1
+          }
+      - name: Build Oso in disposable tree
+        env:
+          EXPO_PUBLIC_ENABLE_GEOLOCATION: 'true'
+          EXPO_PUBLIC_GEOLOCATION_URL: https://ip.mu.social
+          EXPO_PUBLIC_PLAUSIBLE_API_HOST: https://events.mu.social
+          EXPO_PUBLIC_RSS_PROXY_URL: https://rss.mu.social
+          # Same public, read-only newsroom sources as the dev deploy.
+          EXPO_PUBLIC_DUTCH_API_URL: https://news-aggregator.eurosky.dev
+          EXPO_PUBLIC_DUTCH_API_SERVICE_DID: did:plc:oub2sr5miponqkvdf3awv5qn
+        run: bash scripts/build-oso-preview.sh
+      # No Mu-zone secret or edge-setup script is used. The latter still has
+      # mu.social URL patterns; configure noindex headers on Oso's zone itself.
+      - name: Upload Oso bundle to its own storage zone and purge its pull zone
+        env:
+          BUNNY_STORAGE_ZONE: ${{ secrets.OSO_PREVIEW_BUNNY_STORAGE_ZONE }}
+          BUNNY_STORAGE_PASSWORD: ${{ secrets.OSO_PREVIEW_BUNNY_STORAGE_PASSWORD }}
+          BUNNY_PULLZONE_ID: ${{ secrets.OSO_PREVIEW_BUNNY_PULLZONE_ID }}
+          BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+        run: bash scripts/bunny_upload.sh web-build-oso

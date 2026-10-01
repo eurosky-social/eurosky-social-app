@@ -18,6 +18,7 @@ import * as Layout from '#/components/Layout'
 import {Link} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
+import {BRAND} from '#/config/brand'
 import {NewsroomFrontPage} from './components/NewsroomFrontPage'
 import {NewsroomMasthead} from './components/NewsroomMasthead'
 import {NewsroomRightRail} from './components/NewsroomRightRail'
@@ -88,7 +89,7 @@ export function NewsroomScreen({route, navigation}: Props) {
         <Layout.Header.BackButton />
         <Layout.Header.Content>
           <Layout.Header.TitleText>
-            <Trans>Mu News</Trans>
+            <Trans>{BRAND.name} News</Trans>
           </Layout.Header.TitleText>
         </Layout.Header.Content>
         {/* Mirrors the news feed header's "Newsrooms" link, so the two news

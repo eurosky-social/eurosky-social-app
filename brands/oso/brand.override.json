@@ -1,0 +1,46 @@
+{
+  "name": "oso",
+  "hosts": ["oso.mu.social"],
+  "socialHandle": "",
+  "colors": {
+    "neutral": {
+      "contrast_25": "#F8F8FF",
+      "contrast_50": "#F0F0FF",
+      "contrast_100": "#E2E2F0",
+      "contrast_950": "#14141F",
+      "contrast_975": "#101019",
+      "contrast_1000": "#0C0C15"
+    },
+    "neutralSubduedOverrides": {
+      "contrast_900": "#20202C",
+      "contrast_950": "#1A1A25",
+      "contrast_975": "#161620",
+      "contrast_1000": "#14141F"
+    },
+    "accents": {
+      "blue": {
+        "primary_25": "#F5F5FF",
+        "primary_50": "#EEEEFF",
+        "primary_100": "#DADAFF",
+        "primary_200": "#BDBDFF",
+        "primary_300": "#9999FF",
+        "primary_400": "#6060FF",
+        "primary_500": "#1D1AFF",
+        "primary_600": "#1612E8",
+        "primary_700": "#1212B8",
+        "primary_800": "#0C0C89",
+        "primary_900": "#090963",
+        "primary_950": "#060648",
+        "primary_975": "#030330"
+      }
+    },
+    "defaultAccent": "blue"
+  },
+  "oauth": {
+    "defaultBaseUrl": "https://oso.mu.social",
+    "clientName": "oso"
+  },
+  "decorations": {
+    "enabled": false
+  }
+}

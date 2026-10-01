@@ -199,7 +199,7 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
       <Stack.Screen
         name="Newsroom"
         getComponent={() => NewsroomScreen}
-        options={{title: title(msg`Mu News`), requireAuth: true}}
+        options={{title: title(msg`${BRAND.name} News`), requireAuth: true}}
       />
       <Stack.Screen
         name="NewsroomExplore"
