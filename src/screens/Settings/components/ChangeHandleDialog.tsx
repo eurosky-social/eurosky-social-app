@@ -1,5 +1,5 @@
 import {useCallback, useMemo, useState} from 'react'
-import {View} from 'react-native'
+import {ScrollView, View} from 'react-native'
 import Animated, {
   FadeIn,
   FadeOut,
@@ -15,6 +15,7 @@ import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 import {useMutation, useQueryClient} from '@tanstack/react-query'
 
+import {ensureMarqueAtprotoRecord} from '#/lib/api/marque'
 import {HITSLOP_10, urls} from '#/lib/constants'
 import {cleanError} from '#/lib/strings/errors'
 import {
@@ -24,10 +25,11 @@ import {
 } from '#/lib/strings/handles'
 import {logger} from '#/logger'
 import {useFetchDid, useUpdateHandleMutation} from '#/state/queries/handle'
+import {useMarqueDomainsQuery} from '#/state/queries/marque'
 import {RQKEY as RQKEY_PROFILE} from '#/state/queries/profile'
 import {useServiceQuery} from '#/state/queries/service'
 import {useCurrentAccountProfile} from '#/state/queries/useCurrentAccountProfile'
-import {useSession, useSessionApi} from '#/state/session'
+import {usePdsClient, useSession, useSessionApi} from '#/state/session'
 import {oauthUpgradeForHandle} from '#/state/session/oauth-web-client'
 import {ErrorScreen} from '#/view/com/util/error/ErrorScreen'
 import {atoms as a, native, useBreakpoints, useTheme} from '#/alf'
@@ -48,6 +50,7 @@ import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
 import {useSimpleVerificationState} from '#/components/verification'
 import {type com} from '#/lexicons'
+import {BuyDomainFlow, hasPendingDomainCheckout} from './BuyDomainDialog'
 import {CopyButton} from './CopyButton'
 
 export function ChangeHandleDialog({
@@ -76,40 +79,53 @@ function ChangeHandleDialogInner() {
     refetch,
   } = useServiceQuery(currentAccount?.service ?? '')
 
-  const [page, setPage] = useState<'provided-handle' | 'own-handle'>(
-    'provided-handle',
-  )
+  const [page, setPage] = useState<
+    'provided-handle' | 'own-handle' | 'buy-domain'
+  >(hasPendingDomainCheckout() ? 'buy-domain' : 'provided-handle')
 
-  const cancelButton = useCallback(
+  const leftButton = useCallback(
     () => (
       <Button
-        label={_(msg`Cancel`)}
-        onPress={() => control.close()}
+        label={page === 'buy-domain' ? _(msg`Back`) : _(msg`Cancel`)}
+        onPress={() =>
+          page === 'buy-domain' ? setPage('provided-handle') : control.close()
+        }
         size="small"
         color="primary"
         variant="ghost"
         style={[a.rounded_full]}>
+        {page === 'buy-domain' && (
+          <ButtonIcon icon={ArrowLeftIcon} position="left" />
+        )}
         <ButtonText style={[a.text_md]}>
-          <Trans>Cancel</Trans>
+          {page === 'buy-domain' ? <Trans>Back</Trans> : <Trans>Cancel</Trans>}
         </ButtonText>
       </Button>
     ),
-    [control, _],
+    [control, page, _],
   )
 
   return (
     <Dialog.ScrollableInner
-      label={_(msg`Change Handle`)}
+      label={
+        page === 'buy-domain' ? _(msg`Buy a domain`) : _(msg`Change Handle`)
+      }
       header={
-        <Dialog.Header renderLeft={cancelButton}>
+        <Dialog.Header renderLeft={leftButton}>
           <Dialog.HeaderText>
-            <Trans>Change Handle</Trans>
+            {page === 'buy-domain' ? (
+              <Trans>Buy a domain</Trans>
+            ) : (
+              <Trans>Change Handle</Trans>
+            )}
           </Dialog.HeaderText>
         </Dialog.Header>
       }
       contentContainerStyle={[a.pt_0, a.px_0]}>
       <View style={[a.flex_1, a.pt_lg, a.px_xl]}>
-        {serviceInfoError ? (
+        {page === 'buy-domain' ? (
+          <BuyDomainFlow />
+        ) : serviceInfoError ? (
           <ErrorScreen
             title={_(msg`Oops!`)}
             message={_(msg`There was an issue fetching your service info`)}
@@ -126,6 +142,7 @@ function ChangeHandleDialogInner() {
                 <ProvidedHandlePage
                   serviceInfo={serviceInfo}
                   goToOwnHandle={() => setPage('own-handle')}
+                  goToBuyDomain={() => setPage('buy-domain')}
                 />
               </Animated.View>
             ) : (
@@ -240,9 +257,11 @@ function isBenignHandleValidationError(error: unknown): boolean {
 function ProvidedHandlePage({
   serviceInfo,
   goToOwnHandle,
+  goToBuyDomain,
 }: {
   serviceInfo: com.atproto.server.describeServer.$OutputBody
   goToOwnHandle: () => void
+  goToBuyDomain: () => void
 }) {
   const {_} = useLingui()
   const [subdomain, setSubdomain] = useState('')
@@ -405,6 +424,17 @@ function ProvidedHandlePage({
             </ButtonText>
             <ButtonIcon icon={ArrowRightIcon} position="right" />
           </Button>
+          <Button
+            label={_(msg`Buy a domain`)}
+            variant="outline"
+            color="primary"
+            size="large"
+            onPress={goToBuyDomain}>
+            <ButtonText>
+              <Trans>Buy a domain</Trans>
+            </ButtonText>
+            <ButtonIcon icon={ArrowRightIcon} position="right" />
+          </Button>
         </Animated.View>
       </View>
     </LayoutAnimationConfig>
@@ -415,12 +445,37 @@ function OwnHandlePage({goToServiceHandle}: {goToServiceHandle: () => void}) {
   const {_} = useLingui()
   const t = useTheme()
   const {currentAccount} = useSession()
-  const [dnsPanel, setDNSPanel] = useState(true)
+  const [verificationMethod, setVerificationMethod] = useState<
+    'dns' | 'file' | 'marque'
+  >('dns')
+  const [selectedMarqueDomain, setSelectedMarqueDomain] = useState('')
+  const [marqueSubdomain, setMarqueSubdomain] = useState('')
+  const [manualDomain, setManualDomain] = useState('')
   const [domain, setDomain] = useState('')
   const control = Dialog.useDialogContext()
   const {partialRefreshSession} = useSessionApi()
+  const pdsClient = usePdsClient()
   const fetchDid = useFetchDid()
   const queryClient = useQueryClient()
+  const {data: marqueDomains = []} = useMarqueDomainsQuery()
+
+  const normalizedMarqueSubdomain = marqueSubdomain
+    .trim()
+    .toLowerCase()
+    .replace(/^\.+|\.+$/g, '')
+  const marqueHandle = selectedMarqueDomain
+    ? normalizedMarqueSubdomain
+      ? `${normalizedMarqueSubdomain}.${selectedMarqueDomain}`
+      : selectedMarqueDomain
+    : ''
+  const isMarqueSubdomainValid =
+    !normalizedMarqueSubdomain ||
+    (marqueHandle.length <= 253 &&
+      normalizedMarqueSubdomain.split('.').every(label => {
+        return (
+          label.length <= 63 && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label)
+        )
+      }))
 
   const {
     mutate: changeHandle,
@@ -448,11 +503,29 @@ function OwnHandlePage({goToServiceHandle}: {goToServiceHandle: () => void}) {
   } = useMutation<true, Error | DidMismatchError>({
     mutationKey: ['verify-handle', domain],
     mutationFn: async () => {
-      const did = await fetchDid(domain)
-      if (did !== currentAccount?.did) {
-        throw new DidMismatchError(did)
+      if (!currentAccount?.did) throw new Error('Not authenticated')
+      const marqueResult = await ensureMarqueAtprotoRecord(
+        pdsClient,
+        currentAccount.did,
+        domain,
+      )
+      if (marqueResult === 'conflict') throw new MarqueDnsConflictError()
+
+      const attempts = marqueResult === 'created' ? 5 : 1
+      let lastError: unknown
+      for (let attempt = 0; attempt < attempts; attempt++) {
+        if (attempt > 0) {
+          await new Promise(resolve => setTimeout(resolve, attempt * 1000))
+        }
+        try {
+          const did = await fetchDid(domain)
+          if (did !== currentAccount.did) throw new DidMismatchError(did)
+          return true
+        } catch (error) {
+          lastError = error
+        }
       }
-      return true
+      throw lastError
     },
   })
 
@@ -481,7 +554,13 @@ function OwnHandlePage({goToServiceHandle}: {goToServiceHandle: () => void}) {
       {verifyError && (
         <Animated.View entering={FadeIn} exiting={FadeOut}>
           <Admonition type="error">
-            {verifyError instanceof DidMismatchError ? (
+            {verifyError instanceof MarqueDnsConflictError ? (
+              <Trans>
+                This Marque domain already has an AT Protocol DNS record for a
+                different account. Manage its DNS records in Marque before
+                trying again.
+              </Trans>
+            ) : verifyError instanceof DidMismatchError ? (
               <Trans>
                 Wrong DID returned from server. Received: {verifyError.did}
               </Trans>
@@ -494,31 +573,144 @@ function OwnHandlePage({goToServiceHandle}: {goToServiceHandle: () => void}) {
       <Animated.View
         layout={native(LinearTransition)}
         style={[a.flex_1, a.gap_md, a.overflow_hidden]}>
-        <View>
-          <TextField.LabelText>
-            <Trans>Enter the domain you want to use</Trans>
-          </TextField.LabelText>
-          <TextField.Root>
-            <TextField.Icon icon={AtIcon} />
-            <Dialog.Input
-              label={_(msg`New handle`)}
-              placeholder={_(msg`e.g. alice.com`)}
-              editable={!isPending}
-              defaultValue={domain}
-              onChangeText={text => {
-                setDomain(text)
-                resetVerification()
-              }}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </TextField.Root>
-        </View>
+        {verificationMethod !== 'marque' ? (
+          <View>
+            <TextField.LabelText>
+              <Trans>Enter the domain you want to use</Trans>
+            </TextField.LabelText>
+            <TextField.Root>
+              <TextField.Icon icon={AtIcon} />
+              <Dialog.Input
+                label={_(msg`New handle`)}
+                placeholder={_(msg`e.g. alice.com`)}
+                editable={!isPending}
+                defaultValue={manualDomain}
+                onChangeText={text => {
+                  setManualDomain(text)
+                  setDomain(text)
+                  resetVerification()
+                }}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </TextField.Root>
+          </View>
+        ) : (
+          <View style={[a.gap_sm]}>
+            <TextField.LabelText>
+              <Trans>Enter the domain you want to use</Trans>
+            </TextField.LabelText>
+            <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+              <Trans>Choose one of your Marque domains</Trans>
+            </Text>
+            <ScrollView
+              style={[{maxHeight: 190}]}
+              contentContainerStyle={[a.gap_xs]}
+              keyboardShouldPersistTaps="handled">
+              {marqueDomains.map(item => {
+                const selected = selectedMarqueDomain === item.domain
+                return (
+                  <Button
+                    key={item.domain}
+                    label={_(msg`Use ${item.domain}`)}
+                    variant="outline"
+                    color={selected ? 'primary' : 'secondary'}
+                    size="small"
+                    shape="rectangular"
+                    onPress={() => {
+                      setSelectedMarqueDomain(item.domain)
+                      setDomain(
+                        normalizedMarqueSubdomain
+                          ? `${normalizedMarqueSubdomain}.${item.domain}`
+                          : item.domain,
+                      )
+                      resetVerification()
+                    }}
+                    style={[
+                      a.w_full,
+                      selected && {backgroundColor: t.palette.primary_50},
+                    ]}>
+                    <View
+                      style={[
+                        a.flex_row,
+                        a.flex_1,
+                        a.align_center,
+                        a.justify_between,
+                        a.gap_sm,
+                      ]}>
+                      <Text style={[a.text_md, a.font_semi_bold]}>
+                        {item.domain}
+                      </Text>
+                      {selected && (
+                        <CheckIcon fill={t.palette.primary_500} size="xs" />
+                      )}
+                    </View>
+                  </Button>
+                )
+              })}
+            </ScrollView>
+            {selectedMarqueDomain && (
+              <View style={[a.mt_sm]}>
+                <TextField.LabelText>
+                  <Trans>Add a subdomain (optional)</Trans>
+                </TextField.LabelText>
+                <TextField.Root isInvalid={!isMarqueSubdomainValid}>
+                  <TextField.Icon icon={AtIcon} />
+                  <Dialog.Input
+                    label={_(msg`Marque subdomain`)}
+                    placeholder={_(msg`Leave blank to use the root domain`)}
+                    defaultValue={marqueSubdomain}
+                    onChangeText={value => {
+                      setMarqueSubdomain(value)
+                      const normalized = value
+                        .trim()
+                        .toLowerCase()
+                        .replace(/^\.+|\.+$/g, '')
+                      setDomain(
+                        normalized
+                          ? `${normalized}.${selectedMarqueDomain}`
+                          : selectedMarqueDomain,
+                      )
+                      resetVerification()
+                    }}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  <TextField.SuffixText
+                    label={`.${selectedMarqueDomain}`}
+                    style={[{maxWidth: '45%'}]}>
+                    .{selectedMarqueDomain}
+                  </TextField.SuffixText>
+                </TextField.Root>
+              </View>
+            )}
+            {!isMarqueSubdomainValid && (
+              <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+                <Trans>
+                  Use letters, numbers, hyphens, or dots. Labels can’t start or
+                  end with a hyphen.
+                </Trans>
+              </Text>
+            )}
+            {marqueHandle && (
+              <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+                <Trans>
+                  Your handle will be{' '}
+                  <Text style={[a.font_semi_bold]}>@{marqueHandle}</Text>
+                </Trans>
+              </Text>
+            )}
+          </View>
+        )}
         <SegmentedControl.Root
           label={_(msg`Choose domain verification method`)}
           type="tabs"
-          value={dnsPanel ? 'dns' : 'file'}
-          onChange={values => setDNSPanel(values === 'dns')}>
+          value={verificationMethod}
+          onChange={value => {
+            setVerificationMethod(value)
+            setDomain(value === 'marque' ? marqueHandle : manualDomain)
+            resetVerification()
+          }}>
           <SegmentedControl.Item value="dns" label={_(msg`DNS Panel`)}>
             <SegmentedControl.ItemText>
               <Trans>DNS Panel</Trans>
@@ -529,8 +721,13 @@ function OwnHandlePage({goToServiceHandle}: {goToServiceHandle: () => void}) {
               <Trans>No DNS Panel</Trans>
             </SegmentedControl.ItemText>
           </SegmentedControl.Item>
+          {marqueDomains.length > 0 && (
+            <SegmentedControl.Item value="marque" label="Marque">
+              <SegmentedControl.ItemText>Marque</SegmentedControl.ItemText>
+            </SegmentedControl.Item>
+          )}
         </SegmentedControl.Root>
-        {dnsPanel ? (
+        {verificationMethod === 'dns' ? (
           <>
             <Text>
               <Trans>Add the following DNS record to your domain:</Trans>
@@ -596,7 +793,7 @@ function OwnHandlePage({goToServiceHandle}: {goToServiceHandle: () => void}) {
               <Text style={[a.text_md]}>_atproto.{domain}</Text>
             </View>
           </>
-        ) : (
+        ) : verificationMethod === 'file' ? (
           <>
             <Text>
               <Trans>Upload a text file to:</Trans>
@@ -632,6 +829,13 @@ function OwnHandlePage({goToServiceHandle}: {goToServiceHandle: () => void}) {
               <ButtonIcon icon={CopyIcon} />
             </CopyButton>
           </>
+        ) : (
+          <Text>
+            <Trans>
+              We’ll add the AT Protocol DNS record to this Marque domain for
+              you.
+            </Trans>
+          </Text>
         )}
       </Animated.View>
       {isVerified && (
@@ -659,14 +863,19 @@ function OwnHandlePage({goToServiceHandle}: {goToServiceHandle: () => void}) {
           label={
             isVerified
               ? _(msg`Update to ${domain}`)
-              : dnsPanel
+              : verificationMethod === 'dns'
                 ? _(msg`Verify DNS Record`)
-                : _(msg`Verify Text File`)
+                : verificationMethod === 'file'
+                  ? _(msg`Verify Text File`)
+                  : _(msg`Configure Marque domain`)
           }
           variant="solid"
           size="large"
           color="primary"
-          disabled={domain.trim().length === 0}
+          disabled={
+            domain.trim().length === 0 ||
+            (verificationMethod === 'marque' && !isMarqueSubdomainValid)
+          }
           onPress={() => {
             if (isVerified) {
               changeHandle({handle: domain})
@@ -680,10 +889,12 @@ function OwnHandlePage({goToServiceHandle}: {goToServiceHandle: () => void}) {
             <ButtonText>
               {isVerified ? (
                 <Trans>Update to {domain}</Trans>
-              ) : dnsPanel ? (
+              ) : verificationMethod === 'dns' ? (
                 <Trans>Verify DNS Record</Trans>
-              ) : (
+              ) : verificationMethod === 'file' ? (
                 <Trans>Verify Text File</Trans>
+              ) : (
+                <Trans>Configure domain</Trans>
               )}
             </ButtonText>
           )}
@@ -713,6 +924,13 @@ class DidMismatchError extends Error {
     super('DID mismatch')
     this.name = 'DidMismatchError'
     this.did = did
+  }
+}
+
+class MarqueDnsConflictError extends Error {
+  constructor() {
+    super('Conflicting Marque AT Protocol DNS record')
+    this.name = 'MarqueDnsConflictError'
   }
 }
 
