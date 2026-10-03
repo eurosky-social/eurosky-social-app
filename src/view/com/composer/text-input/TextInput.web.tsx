@@ -37,13 +37,18 @@ import {
 import {textInputWebEmitter} from '#/view/com/composer/text-input/textInputWebEmitter'
 import {atoms as a, useAlf} from '#/alf'
 import {normalizeTextStyles} from '#/alf/typography'
+import {useEmojiSearch} from '#/components/Autocomplete'
 import {type Emoji} from '#/components/EmojiPicker'
 import {Portal} from '#/components/Portal'
 import {Text} from '#/components/Typography'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {type TextInputProps} from './TextInput.types'
-import {type AutocompleteRef, createSuggestion} from './web/Autocomplete'
+import {
+  type AutocompleteRef,
+  createEmojiSuggestion,
+  createSuggestion,
+} from './web/Autocomplete'
 import {LinkDecorator} from './web/LinkDecorator'
 import {TagDecorator} from './web/TagDecorator'
 
@@ -63,10 +68,12 @@ export function TextInput({
 }: TextInputProps) {
   const {theme: t, fonts} = useAlf()
   const autocomplete = useActorAutocompleteFn()
+  const emojiSearch = useEmojiSearch()
   const modeClass = useColorSchemeStyle('ProseMirror-light', 'ProseMirror-dark')
 
   const [isDropping, setIsDropping] = useState(false)
   const autocompleteRef = useRef<AutocompleteRef>(null)
+  const emojiAutocompleteRef = useRef<AutocompleteRef>(null)
 
   const extensions = useMemo(
     () => [
@@ -77,7 +84,13 @@ export function TextInput({
         HTMLAttributes: {
           class: 'mention',
         },
-        suggestion: createSuggestion({autocomplete, autocompleteRef}),
+        suggestions: [
+          createSuggestion({autocomplete, autocompleteRef}),
+          createEmojiSuggestion({
+            search: emojiSearch,
+            autocompleteRef: emojiAutocompleteRef,
+          }),
+        ],
       }),
       Paragraph,
       Placeholder.configure({
@@ -87,7 +100,7 @@ export function TextInput({
       History,
       Hardbreak,
     ],
-    [autocomplete, placeholder],
+    [autocomplete, emojiSearch, placeholder],
   )
 
   useEffect(() => {
@@ -316,7 +329,10 @@ export function TextInput({
       const pos = editor?.state.selection.$anchor.pos
       return pos ? editor?.view.coordsAtPos(pos) : undefined
     },
-    maybeClosePopup: () => autocompleteRef.current?.maybeClose() ?? false,
+    maybeClosePopup: () =>
+      autocompleteRef.current?.maybeClose() ??
+      emojiAutocompleteRef.current?.maybeClose() ??
+      false,
   }))
 
   const inputStyle = useMemo(() => {
