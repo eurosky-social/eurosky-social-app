@@ -1,3 +1,4 @@
+import {useState} from 'react'
 import {View} from 'react-native'
 import {Image} from 'expo-image'
 import {type I18n} from '@lingui/core'
@@ -5,6 +6,7 @@ import {Trans, useLingui} from '@lingui/react/macro'
 
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
+import {countLines} from '#/lib/strings/helpers'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
 import {ButtonText} from '#/components/Button'
@@ -17,9 +19,16 @@ import {
   getFortyVerseEventUrl,
   getProfileAvatar,
 } from '../util'
+import {ShowMoreButton} from './ShowMoreButton'
 
 const AVATAR_SIZE = 24
 const BANNER_ASPECT_RATIO = 16 / 9
+const DESCRIPTION_MAX_LINES = 4
+/*
+ * We can't cheaply measure whether wrapped text overflows (onTextLayout doesn't
+ * fire on web), so long descriptions without line breaks are caught by length.
+ */
+const DESCRIPTION_MAX_CHARS = 300
 
 export function EventItem({
   event,
@@ -40,6 +49,11 @@ export function EventItem({
     : time?.start
   const where = getEventLocationLabel(event)
   const description = event.value.description?.trim()
+  const [limitDescription, setLimitDescription] = useState(
+    () =>
+      countLines(description) >= DESCRIPTION_MAX_LINES ||
+      (description?.length ?? 0) > DESCRIPTION_MAX_CHARS,
+  )
   const fortyVerseUrl = getFortyVerseEventUrl(event, profile)
 
   const authorName = sanitizeDisplayName(
@@ -99,9 +113,20 @@ export function EventItem({
         )}
       </View>
       {description && (
-        <Text emoji style={[a.leading_snug]}>
-          {description}
-        </Text>
+        <View>
+          <Text
+            emoji
+            numberOfLines={limitDescription ? DESCRIPTION_MAX_LINES : undefined}
+            style={[a.leading_snug]}>
+            {description}
+          </Text>
+          {limitDescription && (
+            <ShowMoreButton
+              label={l`Expand event description`}
+              onPress={() => setLimitDescription(false)}
+            />
+          )}
+        </View>
       )}
       {fortyVerseUrl && (
         <Link
