@@ -43,6 +43,13 @@ export function listEvents(params: EventListParams, signal?: AbortSignal) {
   return xrpcGet<ListResponse<EventRecord>>('event.listRecords', params, signal)
 }
 
+export function listEventsByLocation(
+  params: EventListParams & {location?: string; country?: string},
+  signal?: AbortSignal,
+) {
+  return xrpcGet<ListResponse<EventRecord>>('event.byLocation', params, signal)
+}
+
 export function getEvent(
   params: {uri: string; profiles?: boolean},
   signal?: AbortSignal,

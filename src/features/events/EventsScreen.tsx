@@ -1,5 +1,6 @@
+import {useState} from 'react'
 import {View} from 'react-native'
-import {Trans} from '@lingui/react/macro'
+import {Trans, useLingui} from '@lingui/react/macro'
 
 import {
   type CommonNavigatorParams,
@@ -11,13 +12,26 @@ import {atoms as a, useTheme} from '#/alf'
 import * as Layout from '#/components/Layout'
 import {ListFooter} from '#/components/Lists'
 import {Text} from '#/components/Typography'
+import {EventFeedTabs} from './components/EventFeedTabs'
 import {EventItem} from './components/EventItem'
-import {useUpcomingEventsQuery} from './queries'
+import {EVENT_FEED_IDS, type EventFeedId} from './feeds'
+import {useEventFeedQuery} from './queries'
 import {type EventRecord} from './types'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'Events'>
 
 export function EventsScreen({}: Props) {
+  const {t: l} = useLingui()
+  const [feed, setFeed] = useState<EventFeedId>('upcoming')
+
+  const feedLabels: Record<EventFeedId, string> = {
+    upcoming: l`Upcoming`,
+    '40verse': l({
+      message: '40verse',
+      comment: 'Name of the 40verse community events feed. Do not translate.',
+    }),
+  }
+
   return (
     <Layout.Screen testID="eventsScreen">
       <Layout.Header.Outer>
@@ -29,12 +43,19 @@ export function EventsScreen({}: Props) {
         </Layout.Header.Content>
         <Layout.Header.Slot />
       </Layout.Header.Outer>
-      <EventsList />
+      <Layout.Center>
+        <EventFeedTabs
+          items={EVENT_FEED_IDS.map(id => ({id, label: feedLabels[id]}))}
+          selectedId={feed}
+          onSelect={setFeed}
+        />
+      </Layout.Center>
+      <EventsList feed={feed} />
     </Layout.Screen>
   )
 }
 
-function EventsList() {
+function EventsList({feed}: {feed: EventFeedId}) {
   const t = useTheme()
   const {
     data,
@@ -45,7 +66,7 @@ function EventsList() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useUpcomingEventsQuery()
+  } = useEventFeedQuery(feed)
 
   const events = data?.pages.flatMap(page => page.records) ?? []
 
