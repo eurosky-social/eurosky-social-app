@@ -87,11 +87,14 @@ deployment fronts `/api/*` with a Google oauth2-proxy (302 to `/oauth2/start`
 honored yet - `fetchDutchApi` stops at that redirect and names it. The
 `/xrpc/*` surface (labels, `_health`) is exempt and already public.
 
-`queries.ts` mints one per call with `com.atproto.server.getServiceAuth`,
-following `ageAssurance/muAgeService`: no `exp` is passed, so the PDS derives
-both `iat` and `exp` from its own clock and the token cannot be invalidated by
-client clock skew. Tokens are short-lived, so each request mints its own rather
-than caching one. Service auth works the same on OAuth and app-password
+`queries.ts` mints one with `com.atproto.server.getServiceAuth`, following
+`ageAssurance/muAgeService`: no `exp` is passed, so the PDS derives both `iat`
+and `exp` from its own clock and the token cannot be invalidated by client
+clock skew. One token serves every call for half its lifetime (`exp - iat`,
+counted locally from when it arrived, so skew still does not matter), and
+concurrent calls share one mint, so opening the page costs one PDS round trip
+rather than one per query. A 401 drops the token and retries once with a fresh
+one. Service auth works the same on OAuth and app-password
 sessions, and `useMaybePdsClient()` is null when signed out, which disables
 every Dutch query.
 
@@ -152,8 +155,9 @@ and, outside this directory:
    assumes one site is one newsroom.
 4. Decide the signed-out story: this source needs a session, the RSS one does
    not.
-5. Decide how provinces reach the chip bar: `/api/stories?category=nl-utrecht`
-   filters server-side, and `useExploreSource` already takes a `category`.
+5. Decide how provinces reach the chip bar. The Local News region picker
+   already passes its province to `/api/stories?category=nl-utrecht`, so the
+   filtering is server-side; whether provinces also belong in the chips is open.
 6. Decide the theme label locale. The API serves `name` and `nameNl`; the page
    currently takes `name`, which is wrong for a Dutch-language build.
 7. `story.posts` arrives with every story and nothing renders it yet - this is

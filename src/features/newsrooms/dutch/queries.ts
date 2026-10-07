@@ -1,5 +1,6 @@
 import {type Client} from '@atproto/lex'
 import {useQuery} from '@tanstack/react-query'
+import {jwtDecode} from 'jwt-decode'
 
 import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
@@ -149,14 +150,54 @@ export function useDutchCategoriesQuery({theme}: {theme?: string} = {}) {
 }
 
 /**
- * A service-auth token for the labeler, minted per call.
+ * The share of a token's lifetime it is reused for. The rest is headroom, so a
+ * reused token is still valid when the service checks it.
+ */
+const TOKEN_REUSE_SHARE = 0.5
+
+/**
+ * Lifetime assumed when a token's claims cannot be read: the PDS default for a
+ * service-auth token with no requested `exp`.
+ */
+const DEFAULT_TOKEN_LIFETIME_MS = 60_000
+
+/**
+ * The account's current token, per client so switching accounts never reuses
+ * another account's. `reuseUntil` is Infinity while the mint is in flight, so
+ * the page's concurrent queries share one mint rather than racing three.
+ */
+const cachedTokens = new WeakMap<
+  Client,
+  {token: Promise<string>; reuseUntil: number}
+>()
+
+/**
+ * A service-auth token for the labeler, shared across calls while it is fresh.
  *
  * `exp` is deliberately not passed: the PDS then derives both `iat` and `exp`
  * from its own clock, so the token cannot be invalidated by client clock skew
- * (the same reasoning as `ageAssurance/muAgeService`). Tokens are short-lived,
- * so this is called immediately before each request rather than cached.
+ * (the same reasoning as `ageAssurance/muAgeService`). Reuse keeps that
+ * property: the lifetime is `exp - iat`, both PDS-clock, and is counted down on
+ * the local clock from when the token arrived, never compared against it.
  */
-async function bearer(client: Client): Promise<string> {
+function bearer(client: Client): Promise<string> {
+  const cached = cachedTokens.get(client)
+  if (cached && Date.now() < cached.reuseUntil) return cached.token
+
+  const entry = {token: mintBearer(client), reuseUntil: Infinity}
+  cachedTokens.set(client, entry)
+  entry.token.then(
+    token => {
+      entry.reuseUntil = Date.now() + tokenLifetimeMs(token) * TOKEN_REUSE_SHARE
+    },
+    () => {
+      if (cachedTokens.get(client) === entry) cachedTokens.delete(client)
+    },
+  )
+  return entry.token
+}
+
+async function mintBearer(client: Client): Promise<string> {
   if (!DUTCH_API_SERVICE_DID) {
     throw new Error('Dutch API service DID is not configured')
   }
@@ -168,9 +209,23 @@ async function bearer(client: Client): Promise<string> {
   return `Bearer ${data.token}`
 }
 
+/** How long the PDS made a token valid for, by its own clock. */
+function tokenLifetimeMs(bearerToken: string): number {
+  try {
+    const {iat, exp} = jwtDecode(bearerToken.slice('Bearer '.length))
+    if (iat !== undefined && exp !== undefined && exp > iat) {
+      return (exp - iat) * 1000
+    }
+  } catch {}
+  return DEFAULT_TOKEN_LIFETIME_MS
+}
+
 /**
  * One read of the consumer API, authenticated with an atproto service-auth JWT
  * (which works the same on OAuth and app-password sessions).
+ *
+ * A 401 is retried once with a freshly minted token, in case the reused one
+ * was rejected (revoked, or the service's clock running ahead of the PDS's).
  *
  * Redirects are not followed. The API answers with JSON or an error status; a
  * redirect means a login proxy in front of it intercepted the request, and
@@ -178,13 +233,11 @@ async function bearer(client: Client): Promise<string> {
  * ./README.md "Access".
  */
 async function fetchDutchApi<T>(client: Client, url: string): Promise<T> {
-  const res = await fetch(url, {
-    headers: {
-      accept: 'application/json',
-      authorization: await bearer(client),
-    },
-    redirect: 'manual',
-  })
+  let res = await requestDutchApi(client, url)
+  if (res.status === 401) {
+    cachedTokens.delete(client)
+    res = await requestDutchApi(client, url)
+  }
 
   /*
    * `redirect: 'manual'` yields a readable 3xx on native but an opaque
@@ -214,4 +267,14 @@ async function fetchDutchApi<T>(client: Client, url: string): Promise<T> {
   }
 
   return (await res.json()) as T
+}
+
+async function requestDutchApi(client: Client, url: string): Promise<Response> {
+  return fetch(url, {
+    headers: {
+      accept: 'application/json',
+      authorization: await bearer(client),
+    },
+    redirect: 'manual',
+  })
 }

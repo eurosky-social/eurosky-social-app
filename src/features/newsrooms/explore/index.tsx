@@ -86,8 +86,15 @@ export function NewsroomLocalScreen(
 function ExploreSpreadScreen({local = false}: {local?: boolean}) {
   const t = useTheme()
   const {wide, width} = useExploreSpread()
-  const source = useExploreSource({source: local ? 'dutch' : 'rss'})
   const [region, setRegion] = useState<string | undefined>()
+  /*
+   * The region goes to the API as its category, so a province gets its own
+   * stories rather than whatever of the national ones happen to be placed in it.
+   */
+  const source = useExploreSource({
+    source: local ? 'dutch' : 'rss',
+    category: local ? region : undefined,
+  })
   const stories = local
     ? source.stories.filter(
         story =>
