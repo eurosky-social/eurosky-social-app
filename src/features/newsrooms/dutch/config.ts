@@ -32,6 +32,17 @@ export const DUTCH_API_SERVICE_DID = asDid(
 export const DUTCH_API_LXM = asNsid(process.env.EXPO_PUBLIC_DUTCH_API_LXM)
 
 /**
+ * The labeler's scope behind Local News. A scope is a selection of the feeds
+ * with its own fitted model, so this one's stories are clustered among the
+ * Dutch feeds alone. Scopes other than `all` are set up on the service, not in
+ * its code, so this name has to match one created there.
+ */
+export const DUTCH_LOCAL_SCOPE = 'dutch'
+
+/** The labeler's scope behind Latest News: every feed. It always exists. */
+export const DUTCH_LATEST_SCOPE = 'all'
+
+/**
  * Whether the Dutch source is configured. Both halves are needed: a base URL
  * with no audience mints no token, and the service rejects an anonymous read.
  */

@@ -52,13 +52,13 @@ export function outletProfile<T>(
 /**
  * Where a spread's stories come from.
  *
- * - `rss` reads every registered publisher's feed and infers the structure -
- *   clustering headlines, matching categories to a fixed section list. This is
- *   Latest News.
- * - `dutch` is the Dutch labeler, which serves that structure already modeled:
+ * - `dutch` is the Dutch labeler, which serves the structure already modeled:
  *   stories arrive clustered, themed, and carrying their matched discussion.
- *   It is the only source that knows which stories are regional, so it backs
- *   Local News.
+ *   It backs both tabs, each from its own scope (see ../dutch/config): Local
+ *   News from the Dutch feeds, Latest News from every feed.
+ * - `rss` reads every registered publisher's feed and infers the structure -
+ *   clustering headlines, matching categories to a fixed section list. Latest
+ *   News falls back to it where the labeler's API is not configured.
  */
 export type ExploreSourceId = 'rss' | 'dutch'
 

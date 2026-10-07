@@ -7,6 +7,7 @@ import {ChevronBottom_Stroke2_Corner0_Rounded as ChevronDownIcon} from '#/compon
 import {PinLocation_Stroke2_Corner0_Rounded as PinIcon} from '#/components/icons/PinLocation'
 import * as Menu from '#/components/Menu'
 import {Text} from '#/components/Typography'
+import {DUTCH_LOCAL_SCOPE} from '../../dutch/config'
 import {useDutchCategoriesQuery} from '../../dutch/queries'
 
 /**
@@ -25,7 +26,7 @@ export function ExploreLocationPicker({
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
-  const {categories} = useDutchCategoriesQuery()
+  const {categories} = useDutchCategoriesQuery({scope: DUTCH_LOCAL_SCOPE})
   const provinces = categories
     .filter(category => category.kind === 'province')
     .sort((x, y) => x.name.localeCompare(y.name))

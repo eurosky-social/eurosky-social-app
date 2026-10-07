@@ -15,10 +15,13 @@ import {useExploreStories} from './useExploreStories'
  */
 export function useExploreSource({
   source,
+  scope,
   theme,
   category,
 }: {
   source: ExploreSourceId
+  /** For the Dutch source: which of the labeler's scopes to read. */
+  scope?: string
   theme?: string
   category?: string
 }): {
@@ -28,7 +31,12 @@ export function useExploreSource({
   isLoading: boolean
 } {
   const dutchActive = source === 'dutch' && IS_DUTCH_API_CONFIGURED
-  const dutch = useDutchExploreStories({theme, category, enabled: dutchActive})
+  const dutch = useDutchExploreStories({
+    scope,
+    theme,
+    category,
+    enabled: dutchActive,
+  })
   const rss = useExploreStories({enabled: source === 'rss'})
 
   if (source === 'dutch') {

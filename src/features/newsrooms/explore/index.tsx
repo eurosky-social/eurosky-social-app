@@ -16,6 +16,11 @@ import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
 import {IS_WEB} from '#/env'
+import {
+  DUTCH_LATEST_SCOPE,
+  DUTCH_LOCAL_SCOPE,
+  IS_DUTCH_API_CONFIGURED,
+} from '../dutch/config'
 import {NewsroomHubTabs} from '../hub/NewsroomHubTabs'
 import {useCollapsingTitle} from '../hub/useCollapsingTitle'
 import {useNewsroomProfilesQuery} from '../queries'
@@ -88,13 +93,17 @@ function ExploreSpreadScreen({local = false}: {local?: boolean}) {
   const {wide, width} = useExploreSpread()
   const [region, setRegion] = useState<string | undefined>()
   /*
-   * The region goes to the API as its category, so a province gets its own
-   * stories rather than whatever of the national ones happen to be placed in it.
+   * Both tabs read the labeler, each from its own scope. The region goes to the
+   * API as its category, so a province gets its own stories rather than
+   * whatever of the national ones happen to be placed in it.
    */
-  const source = useExploreSource({
-    source: local ? 'dutch' : 'rss',
-    category: local ? region : undefined,
-  })
+  const source = useExploreSource(
+    local
+      ? {source: 'dutch', scope: DUTCH_LOCAL_SCOPE, category: region}
+      : IS_DUTCH_API_CONFIGURED
+        ? {source: 'dutch', scope: DUTCH_LATEST_SCOPE}
+        : {source: 'rss'},
+  )
   const stories = local
     ? source.stories.filter(
         story =>

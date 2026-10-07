@@ -29,14 +29,24 @@ discussion volume everywhere without one search per article.
 
 ## The seam
 
-`useExploreSource({source})` is the whole integration surface. It returns
-`{stories, sections, isLoading}`, and every component below it renders an
-`ExploreStory` without knowing where the story came from. Latest News asks for
-`rss`; Local News asks for `dutch`, which is the only source that knows which
-stories are regional, and the tab is only offered where the Dutch API is
-configured. Both hooks run either way, because hooks must, but the one not asked
-for fetches nothing - `enabled` threads that down to the per-publisher feed
-queries and the Dutch API queries.
+`useExploreSource({source, scope})` is the whole integration surface. It
+returns `{stories, sections, isLoading}`, and every component below it renders
+an `ExploreStory` without knowing where the story came from. Both tabs ask for
+`dutch`, each with its own **scope** - the service's unit of "which feeds, fitted
+how", each with its own active model:
+
+- Local News reads `DUTCH_LOCAL_SCOPE` (`dutch`), the Dutch feeds. It is the
+  only tab that knows which stories are regional, and is only offered where the
+  Dutch API is configured.
+- Latest News reads `DUTCH_LATEST_SCOPE` (`all`), every feed. Where the API is
+  not configured it falls back to `rss`, the client-side clustering of the
+  registered publishers' feeds.
+
+Scopes other than `all` are created on the service by an admin rather than by
+its migrations, so `DUTCH_LOCAL_SCOPE` must name one that exists there. Both
+hooks run either way, because hooks must, but the one not asked for fetches
+nothing - `enabled` threads that down to the per-publisher feed queries and the
+Dutch API queries.
 
 Making one set of components serve both meant widening `ExploreArticle`.
 It carried a full `NewsroomPublisher` - a registry entry with a `did`,

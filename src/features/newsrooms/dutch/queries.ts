@@ -10,6 +10,7 @@ import {
   buildDutchApiUrl,
   DUTCH_API_LXM,
   DUTCH_API_SERVICE_DID,
+  DUTCH_LATEST_SCOPE,
   IS_DUTCH_API_CONFIGURED,
 } from './config'
 import {
@@ -30,6 +31,7 @@ import {
 const STORIES_LIMIT = 40
 
 export const createDutchStoriesQueryKey = (args: {
+  scope: string
   theme?: string
   category?: string
   sort: DutchStorySort
@@ -38,11 +40,15 @@ export const createDutchStoriesQueryKey = (args: {
 export const createDutchStoryQueryKey = (args: {id: string}) =>
   createQueryKey('dutchStory', args)
 
-export const createDutchThemesQueryKey = (args: {category?: string}) =>
-  createQueryKey('dutchThemes', args)
+export const createDutchThemesQueryKey = (args: {
+  scope: string
+  category?: string
+}) => createQueryKey('dutchThemes', args)
 
-export const createDutchCategoriesQueryKey = (args: {theme?: string}) =>
-  createQueryKey('dutchCategories', args)
+export const createDutchCategoriesQueryKey = (args: {
+  scope: string
+  theme?: string
+}) => createQueryKey('dutchCategories', args)
 
 /**
  * The labeler's stories: already clustered, themed, and carrying their matched
@@ -52,11 +58,14 @@ export const createDutchCategoriesQueryKey = (args: {theme?: string}) =>
  * about rather than what was published last.
  */
 export function useDutchStoriesQuery({
+  scope = DUTCH_LATEST_SCOPE,
   theme,
   category,
   sort = 'discussed',
   enabled = true,
 }: {
+  /** Which of the labeler's scopes (feed selection and model) to read. */
+  scope?: string
   theme?: string
   category?: string
   sort?: DutchStorySort
@@ -64,7 +73,7 @@ export function useDutchStoriesQuery({
 } = {}) {
   const pdsClient = useMaybePdsClient()
   const query = useQuery({
-    queryKey: createDutchStoriesQueryKey({theme, category, sort}),
+    queryKey: createDutchStoriesQueryKey({scope, theme, category, sort}),
     /*
      * The model refits every six hours and articles trickle in between fits,
      * so there is nothing to gain from asking more often than the page is
@@ -76,6 +85,7 @@ export function useDutchStoriesQuery({
       const data = await fetchDutchApi<DutchStoriesResponse>(
         pdsClient!,
         buildDutchApiUrl('/api/stories', {
+          scope,
           theme,
           category,
           sort,
@@ -130,12 +140,13 @@ export function useDutchStoryQuery({
  * departments, so the page has no section list of its own.
  */
 export function useDutchThemesQuery({
+  scope = DUTCH_LATEST_SCOPE,
   category,
   enabled = true,
-}: {category?: string; enabled?: boolean} = {}) {
+}: {scope?: string; category?: string; enabled?: boolean} = {}) {
   const pdsClient = useMaybePdsClient()
   const query = useQuery({
-    queryKey: createDutchThemesQueryKey({category}),
+    queryKey: createDutchThemesQueryKey({scope, category}),
     /*
      * Themes are curated rather than derived, so they change on the order of
      * pipeline releases, not of news.
@@ -145,7 +156,7 @@ export function useDutchThemesQuery({
     async queryFn() {
       const data = await fetchDutchApi<DutchThemesResponse>(
         pdsClient!,
-        buildDutchApiUrl('/api/themes', {category}),
+        buildDutchApiUrl('/api/themes', {scope, category}),
       )
       return data.themes
     },
@@ -161,16 +172,19 @@ export function useDutchThemesQuery({
  * The label values stories can be filtered by: the language, then the
  * provinces. This is the axis the RSS spread has no equivalent for.
  */
-export function useDutchCategoriesQuery({theme}: {theme?: string} = {}) {
+export function useDutchCategoriesQuery({
+  scope = DUTCH_LATEST_SCOPE,
+  theme,
+}: {scope?: string; theme?: string} = {}) {
   const pdsClient = useMaybePdsClient()
   const query = useQuery({
-    queryKey: createDutchCategoriesQueryKey({theme}),
+    queryKey: createDutchCategoriesQueryKey({scope, theme}),
     staleTime: STALE.HOURS.ONE,
     enabled: IS_DUTCH_API_CONFIGURED && !!pdsClient,
     async queryFn() {
       const data = await fetchDutchApi<DutchCategoriesResponse>(
         pdsClient!,
-        buildDutchApiUrl('/api/categories', {theme}),
+        buildDutchApiUrl('/api/categories', {scope, theme}),
       )
       return data.categories
     },

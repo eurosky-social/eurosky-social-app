@@ -16,20 +16,28 @@ import {useDutchStoriesQuery, useDutchThemesQuery} from './queries'
  * returned rather than imported by the page.
  */
 export function useDutchExploreStories({
+  scope,
   theme,
   category,
   enabled = true,
-}: {theme?: string; category?: string; enabled?: boolean} = {}): {
+}: {
+  scope?: string
+  theme?: string
+  category?: string
+  enabled?: boolean
+} = {}): {
   stories: DutchExploreStory[]
   sections: ExploreSection[]
   isLoading: boolean
 } {
   const {stories: raw, isLoading: storiesLoading} = useDutchStoriesQuery({
+    scope,
     theme,
     category,
     enabled,
   })
   const {themes, isLoading: themesLoading} = useDutchThemesQuery({
+    scope,
     category,
     enabled,
   })
