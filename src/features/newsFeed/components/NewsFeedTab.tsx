@@ -13,12 +13,10 @@ import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
 import {
-  ExploreColumn,
   ExploreHeaderOuter,
   ExploreSpreadBorders,
   useExploreSpread,
 } from '#/features/newsrooms/explore/components/ExploreColumn'
-import {NewsroomHubTabs} from '#/features/newsrooms/hub/NewsroomHubTabs'
 import {useCollapsingTitle} from '#/features/newsrooms/hub/useCollapsingTitle'
 import {selectSources} from '../sources'
 import {type NewsFeedPrefs} from '../state/prefs'
@@ -31,18 +29,18 @@ export function NewsFeedTab({
   prefs: NewsFeedPrefs
   onEdit: () => void
 }) {
-  const t = useTheme()
   const {t: l} = useLingui()
 
   const dids = selectSources({
     topics: prefs.topics,
     regions: prefs.regions,
+    languages: prefs.languages,
     excludedDids: prefs.excludedDids,
   }).map(source => source.did)
   const feed = `newsfeed|${dids.join(',')}` as FeedDescriptor
 
   const {wide} = useExploreSpread()
-  /** Height of the pinned header and tabs, which the right column sits under. */
+  /** Height of the pinned header, which the right column sits under. */
   const [chromeHeight, setChromeHeight] = useState(0)
   const titleCollapse = useCollapsingTitle()
   const parentScrollHandlers = useScrollHandlers()
@@ -72,9 +70,9 @@ export function NewsFeedTab({
   )
 
   /*
-   * The header and tabs pin together above the feed on every screen size. On
-   * a wide web layout they run the width of the spread, as on the hub's other
-   * pages, with the feed and the page's own right column below them.
+   * The header pins above the feed on every screen size. On a wide web layout
+   * it runs the width of the spread, as on the hub's other pages, with the
+   * feed and the page's own right column below it.
    */
   return (
     <Layout.Screen testID="newsFeedScreen" noCenterBorders={wide}>
@@ -88,25 +86,13 @@ export function NewsFeedTab({
             : undefined
         }>
         <Animated.View style={titleCollapse.blockStyle}>
-          {wide ? (
-            <>
-              <View onLayout={titleCollapse.onTitleLayout}>
-                <ExploreHeaderOuter>{headerContent}</ExploreHeaderOuter>
-              </View>
-              <ExploreColumn style={[t.atoms.bg]}>
-                <NewsroomHubTabs active="mine" />
-              </ExploreColumn>
-            </>
-          ) : (
-            <>
-              <View onLayout={titleCollapse.onTitleLayout}>
-                <Layout.Header.Outer>{headerContent}</Layout.Header.Outer>
-              </View>
-              <Layout.Center style={[t.atoms.bg]}>
-                <NewsroomHubTabs active="mine" />
-              </Layout.Center>
-            </>
-          )}
+          <View onLayout={titleCollapse.onTitleLayout}>
+            {wide ? (
+              <ExploreHeaderOuter>{headerContent}</ExploreHeaderOuter>
+            ) : (
+              <Layout.Header.Outer>{headerContent}</Layout.Header.Outer>
+            )}
+          </View>
         </Animated.View>
       </View>
       {/* Relative, so the right column can run the feed's full height and

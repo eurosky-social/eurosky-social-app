@@ -26,7 +26,6 @@ import {
   useExploreSpread,
 } from '../explore/components/ExploreColumn'
 import {BandRule, ColumnRule} from '../explore/components/Rules'
-import {NewsroomHubTabs} from '../hub/NewsroomHubTabs'
 import {useCollapsingTitle} from '../hub/useCollapsingTitle'
 import {
   getPublisherName,
@@ -50,7 +49,6 @@ type Props = NativeStackScreenProps<CommonNavigatorParams, 'NewsroomDirectory'>
  * boxes - so the hub's pages read as one publication.
  */
 export function NewsroomDirectoryScreen(_props: Props) {
-  const t = useTheme()
   const {wide, width} = useExploreSpread()
   const profiles = useNewsroomProfilesQuery()
   const titleCollapse = useCollapsingTitle()
@@ -71,8 +69,8 @@ export function NewsroomDirectoryScreen(_props: Props) {
   return (
     <Layout.Screen testID="newsroomDirectoryScreen" noCenterBorders>
       <ExploreSpreadBorders />
-      {/* Header and tabs pin together, outside the scroll view: on web the
-       * window scrolls, which a sticky header inside it cannot follow. */}
+      {/* The header pins outside the scroll view: on web the window scrolls,
+       * which a sticky header inside it cannot follow. */}
       <View
         pointerEvents="box-none"
         style={[web([a.sticky, {top: 0}]), native(a.overflow_hidden), a.z_10]}>
@@ -87,9 +85,6 @@ export function NewsroomDirectoryScreen(_props: Props) {
               </Layout.Header.Content>
             </ExploreHeaderOuter>
           </View>
-          <ExploreColumn style={[t.atoms.bg]}>
-            <NewsroomHubTabs active="newsrooms" />
-          </ExploreColumn>
         </Animated.View>
       </View>
 

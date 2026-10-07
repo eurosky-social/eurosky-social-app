@@ -41,9 +41,9 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
    */
   const isNewsroomExplore =
     routeName === 'NewsroomExplore' ||
-    routeName === 'NewsroomLocal' ||
     routeName === 'NewsroomDirectory' ||
-    routeName === 'NewsFeed'
+    routeName === 'NewsFeed' ||
+    routeName === 'NewsSettings'
 
   if (!rightNavVisible || isMessagesRelatedScreen || isNewsroomExplore) {
     return null

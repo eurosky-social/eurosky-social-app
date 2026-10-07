@@ -4,43 +4,53 @@ import {useLingui} from '@lingui/react/macro'
 import {atoms as a, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
 import {ChevronBottom_Stroke2_Corner0_Rounded as ChevronDownIcon} from '#/components/icons/Chevron'
+import {Earth_Stroke2_Corner2_Rounded as WorldIcon} from '#/components/icons/Globe'
 import {PinLocation_Stroke2_Corner0_Rounded as PinIcon} from '#/components/icons/PinLocation'
 import * as Menu from '#/components/Menu'
 import {Text} from '#/components/Typography'
-import {DUTCH_LOCAL_SCOPE} from '../../dutch/config'
-import {useDutchCategoriesQuery} from '../../dutch/queries'
+import {type NewsRegion} from '#/features/newsFeed/sources'
+import {WORLD_REGION} from '../locations'
 
 /**
- * Which region Local News is for. A stand-in until there is a real way to
- * declare a reader's locale: the choice lives only on the page, is not saved,
- * and starts on every region at once. The regions are the Dutch labeler's
- * provinces, so picking one narrows the page to stories placed there.
+ * Which part of the world the spread is for. The regions are the news
+ * settings' own, narrowed to those picked there (see `pickerRegions`), so the
+ * menu lists the places the reader follows. The choice itself lives only on
+ * the page and is not saved.
  */
 export function ExploreLocationPicker({
+  regions,
   selected,
   onSelect,
 }: {
-  /** A province label value, e.g. `nl-utrecht`; undefined for all of them. */
-  selected?: string
-  onSelect: (region: string | undefined) => void
+  /** The world first, then the countries and provinces on offer. */
+  regions: NewsRegion[]
+  /** A region id from the news settings, e.g. `global` or `nl-utrecht`. */
+  selected: string
+  onSelect: (regionId: string) => void
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
-  const {categories} = useDutchCategoriesQuery({scope: DUTCH_LOCAL_SCOPE})
-  const provinces = categories
-    .filter(category => category.kind === 'province')
-    .sort((x, y) => x.name.localeCompare(y.name))
-  const current = provinces.find(province => province.val === selected)
-  const everywhere = l`All of the Netherlands`
+  const countries = regions.filter(region => !region.parent)
+  const provinces = regions.filter(region => region.parent)
+
+  /* The settings call these by what they are; the menu by what they show. */
+  function nameOf(region: NewsRegion) {
+    if (region.id === WORLD_REGION) return l`World`
+    if (region.id === 'netherlands') return l`All of the Netherlands`
+    return region.label
+  }
+
+  const current = regions.find(region => region.id === selected)
+  const Icon = selected === WORLD_REGION ? WorldIcon : PinIcon
 
   return (
     <Menu.Root>
-      <Menu.Trigger label={l`Choose your region`}>
+      <Menu.Trigger label={l`Choose a location`}>
         {({props}) => (
           <Button
             {...props}
             testID="exploreLocationPickerBtn"
-            label={l`Choose your region`}
+            label={l`Choose a location`}
             style={[
               a.flex_row,
               a.align_center,
@@ -54,12 +64,12 @@ export function ExploreLocationPicker({
                 backgroundColor: t.palette.primary_25,
               },
             ]}>
-            <PinIcon size="sm" style={{color: t.palette.primary_500}} />
+            <Icon size="sm" style={{color: t.palette.primary_500}} />
             <Text
               emoji
               numberOfLines={1}
               style={[a.text_sm, a.font_bold, {color: t.palette.primary_500}]}>
-              {current?.name ?? everywhere}
+              {current ? nameOf(current) : l`World`}
             </Text>
             <ChevronDownIcon size="xs" style={{color: t.palette.primary_500}} />
           </Button>
@@ -67,25 +77,49 @@ export function ExploreLocationPicker({
       </Menu.Trigger>
       <Menu.Outer>
         <Menu.Group>
-          <Menu.Item label={everywhere} onPress={() => onSelect(undefined)}>
-            <Menu.ItemText>{everywhere}</Menu.ItemText>
-            <Menu.ItemRadio selected={!selected} />
-          </Menu.Item>
-        </Menu.Group>
-        <Menu.Divider />
-        <Menu.Group>
-          {provinces.map(province => (
-            <Menu.Item
-              key={province.val}
-              label={province.name}
-              onPress={() => onSelect(province.val)}>
-              <Menu.ItemText>{province.name}</Menu.ItemText>
-              <Menu.ItemRadio selected={province.val === selected} />
-            </Menu.Item>
+          {countries.map(region => (
+            <LocationItem
+              key={region.id}
+              name={nameOf(region)}
+              selected={region.id === selected}
+              onPress={() => onSelect(region.id)}
+            />
           ))}
         </Menu.Group>
+        {provinces.length > 0 && (
+          <>
+            <Menu.Divider />
+            <Menu.Group>
+              {provinces.map(region => (
+                <LocationItem
+                  key={region.id}
+                  name={nameOf(region)}
+                  selected={region.id === selected}
+                  onPress={() => onSelect(region.id)}
+                />
+              ))}
+            </Menu.Group>
+          </>
+        )}
       </Menu.Outer>
     </Menu.Root>
+  )
+}
+
+function LocationItem({
+  name,
+  selected,
+  onPress,
+}: {
+  name: string
+  selected: boolean
+  onPress: () => void
+}) {
+  return (
+    <Menu.Item label={name} onPress={onPress}>
+      <Menu.ItemText>{name}</Menu.ItemText>
+      <Menu.ItemRadio selected={selected} />
+    </Menu.Item>
   )
 }
 

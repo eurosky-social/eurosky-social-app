@@ -39,7 +39,11 @@ export function SetupSources({
   const [consented, setConsented] = useState(false)
 
   const sources = selectSources(
-    {topics: draft.topics, regions: draft.regions},
+    {
+      topics: draft.topics,
+      regions: draft.regions,
+      languages: draft.languages,
+    },
     {applyExclusions: false},
   )
   const allDids = sources.map(source => source.did)

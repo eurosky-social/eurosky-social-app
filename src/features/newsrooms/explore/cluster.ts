@@ -54,11 +54,13 @@ export function outletProfile<T>(
  *
  * - `dutch` is the Dutch labeler, which serves the structure already modeled:
  *   stories arrive clustered, themed, and carrying their matched discussion.
- *   It backs both tabs, each from its own scope (see ../dutch/config): Local
- *   News from the Dutch feeds, Latest News from every feed.
+ *   It backs every location of the news page, each from its own scope (see
+ *   ../dutch/config): the World from every feed, the Netherlands and its
+ *   provinces from the Dutch feeds.
  * - `rss` reads every registered publisher's feed and infers the structure -
- *   clustering headlines, matching categories to a fixed section list. Latest
- *   News falls back to it where the labeler's API is not configured.
+ *   clustering headlines, matching categories to a fixed section list. The
+ *   page falls back to it, World only, where the labeler's API is not
+ *   configured.
  */
 export type ExploreSourceId = 'rss' | 'dutch'
 
@@ -85,7 +87,7 @@ export interface ExploreStory {
    * Label values of the regions the story is placed in, busiest first; empty
    * or unset for national and world news. Only a source that models regions
    * can say (the Dutch labeler does, by province); RSS clustering leaves it
-   * unset and the story stays out of Local News.
+   * unset.
    */
   regions?: string[]
 }

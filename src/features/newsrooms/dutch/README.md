@@ -16,34 +16,49 @@ serves that structure directly, so three of our heuristics become reads:
 
 | eurosky explore                          | Dutch labeler                                     |
 | ---------------------------------------- | ------------------------------------------------- |
-| `cluster.ts` headline-overlap heuristic  | `story` clusters, BERTopic over sentence embeddings, refit every six hours |
+| `cluster.ts` headline-overlap heuristic  | threads: each day's bursts of articles linked across days, refit hourly |
 | `sections.ts` keyword matching           | `theme`, assigned by nearest prototype embedding   |
-| `useArticleDiscussionsQuery`, one search per story | `story.posts`, matched by embedding similarity and delivered with the story |
+| `useArticleDiscussionsQuery`, one search per story | the posts linking to or matching each event, counted on the thread |
 | -                                        | `category`: `dutch`, plus a label value per province |
 
 The newsroom README already anticipated the first of these: clustering "can be
 replaced by an explicit signal ... without changing the UI". This is that
 signal. It also settles the cost problem that kept engagement counts on the lead
-story only - `counts.posts` arrives on every story, so the spread can show
+story only - `counts.posts` arrives on every thread, so the spread can show
 discussion volume everywhere without one search per article.
+
+## Threads, not stories
+
+The page reads `/api/threads`, which the service calls the stories of its news
+view. It used to read `/api/stories`, a separate weekly model per scope,
+sorted by matched posts (`discussed`) - and the world view came out Dutch
+while the threads were international. Threads are sorted
+by `burst`, the service's own ranking of what is news now, and carry what
+`/api/stories` did not: each article's outlet with its DID and country, and
+the countries that covered the thread. `adaptThread` maps one onto an
+`ExploreStory`, its coverage being the thread's lead and then each event's
+articles, read once by URL. A story's id is `<scope>:<key>`: a thread's key,
+unlike its id, outlives a refit, and names a thread within one scope.
 
 ## The seam
 
 `useExploreSource({source, scope})` is the whole integration surface. It
 returns `{stories, sections, isLoading}`, and every component below it renders
-an `ExploreStory` without knowing where the story came from. Both tabs ask for
-`dutch`, each with its own **scope** - the service's unit of "which feeds, fitted
-how", each with its own active model:
+an `ExploreStory` without knowing where the story came from. The news page has
+one location picker, and every location asks for `dutch`, each with its own
+**scope** - the service's unit of "which feeds, fitted how", each with its own
+active model:
 
-- Local News reads `DUTCH_LOCAL_SCOPE` (`dutch`), the Dutch feeds. It is the
-  only tab that knows which stories are regional, and is only offered where the
-  Dutch API is configured.
-- Latest News reads `DUTCH_LATEST_SCOPE` (`all`), every feed. Where the API is
-  not configured it falls back to `rss`, the client-side clustering of the
-  registered publishers' feeds.
+- World reads `DUTCH_WORLD_SCOPE` (`all`), every feed. Where the API is not
+  configured the page offers no picker and reads `rss` instead, the client-side
+  clustering of the registered publishers' feeds.
+- All of the Netherlands reads `DUTCH_NETHERLANDS_SCOPE` (`dutch`), the Dutch
+  feeds.
+- A province reads the same scope with its label value as the `category`, so
+  the server does the filtering.
 
 Scopes other than `all` are created on the service by an admin rather than by
-its migrations, so `DUTCH_LOCAL_SCOPE` must name one that exists there. Both
+its migrations, so `DUTCH_NETHERLANDS_SCOPE` must name one that exists there. Both
 hooks run either way, because hooks must, but the one not asked for fetches
 nothing - `enabled` threads that down to the per-publisher feed queries and the
 Dutch API queries.
@@ -81,7 +96,7 @@ picking is a runtime choice against the active locale, not a Lingui one.
 ## Provinces
 
 The axis the eurosky spread has no equivalent for. Every story carries
-`provinces`, a label value to count, and `/api/stories?category=nl-utrecht`
+`provinces`, a label value to count, and `/api/threads?category=nl-utrecht`
 filters to one. This maps onto the existing department chip bar as a second row
 or a filter behind it, and is the most obviously "oso" thing in the design -
 worth deciding on before the layout work.
@@ -165,10 +180,12 @@ and, outside this directory:
    assumes one site is one newsroom.
 4. Decide the signed-out story: this source needs a session, the RSS one does
    not.
-5. Decide how provinces reach the chip bar. The Local News region picker
-   already passes its province to `/api/stories?category=nl-utrecht`, so the
-   filtering is server-side; whether provinces also belong in the chips is open.
+5. The location picker passes a province to
+   `/api/threads?category=nl-utrecht`, and another country to
+   `/api/threads?country=fr&sort=here`, so the filtering is server-side. Its
+   locations are the regions picked in the news settings (see the newsroom
+   README, "Locations").
 6. Decide the theme label locale. The API serves `name` and `nameNl`; the page
    currently takes `name`, which is wrong for a Dutch-language build.
-7. `story.posts` arrives with every story and nothing renders it yet - this is
-   where the discussion the spread previously had to search for goes.
+7. Each event arrives with its first posts and nothing renders them yet - this
+   is where the discussion the spread previously had to search for goes.

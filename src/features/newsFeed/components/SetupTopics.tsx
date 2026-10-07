@@ -9,28 +9,37 @@ import * as Toggle from '#/components/forms/Toggle'
 import {Newspaper_Stroke2_Corner2_Rounded as Newspaper} from '#/components/icons/Newspaper'
 import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
-import {NEWS_REGIONS, NEWS_TOPICS} from '../sources'
+import {NEWS_LANGUAGES, NEWS_REGIONS, NEWS_TOPICS} from '../sources'
 import {SetupFooter} from './SetupFooter'
 import {SetupHeader} from './SetupHeader'
 
 export function SetupTopics({
   topics,
   regions,
+  languages,
   onChangeTopics,
   onChangeRegions,
+  onChangeLanguages,
   onBack,
   onReset,
   onNext,
 }: {
   topics: string[]
   regions: string[]
+  languages: string[]
   onChangeTopics: (next: string[]) => void
   onChangeRegions: (next: string[]) => void
+  onChangeLanguages: (next: string[]) => void
   onBack: () => boolean | void
   onReset: () => void
   onNext: () => void
 }) {
+  const t = useTheme()
   const {t: l} = useLingui()
+  const countries = NEWS_REGIONS.filter(region => !region.parent)
+  const provinces = NEWS_REGIONS.filter(
+    region => region.parent === 'netherlands',
+  )
 
   // "All topics" is mutually exclusive with specific topics.
   const handleTopicsChange = (next: string[]) => {
@@ -59,7 +68,9 @@ export function SetupTopics({
             </Text>
           </View>
           <Text style={[a.text_sm, a.leading_snug]}>
-            <Trans>Select the regions and topics you care about.</Trans>
+            <Trans>
+              Select the regions, languages and topics you care about.
+            </Trans>
           </Text>
         </View>
 
@@ -74,13 +85,60 @@ export function SetupTopics({
               label={l`Regions`}
               values={regions}
               onChange={onChangeRegions}>
+              <View style={[a.gap_lg]}>
+                <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
+                  {countries.map(region => (
+                    <Toggle.Item
+                      key={region.id}
+                      name={region.id}
+                      label={region.label}>
+                      <Chip label={region.label} />
+                    </Toggle.Item>
+                  ))}
+                </View>
+                <View style={[a.gap_sm]}>
+                  <Text
+                    style={[
+                      a.text_sm,
+                      a.font_semi_bold,
+                      t.atoms.text_contrast_medium,
+                    ]}>
+                    <Trans>Provinces of the Netherlands</Trans>
+                  </Text>
+                  <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
+                    {provinces.map(region => (
+                      <Toggle.Item
+                        key={region.id}
+                        name={region.id}
+                        label={region.label}>
+                        <Chip label={region.label} />
+                      </Toggle.Item>
+                    ))}
+                  </View>
+                </View>
+              </View>
+            </Toggle.Group>
+          </Section>
+        </View>
+
+        <Divider />
+
+        <View style={[a.px_xl, a.pt_2xl, a.pb_lg]}>
+          <Section
+            titleText={<Trans>Languages</Trans>}
+            hintText={<Trans>Only show news in these</Trans>}>
+            <Toggle.Group
+              type="checkbox"
+              label={l`Languages`}
+              values={languages}
+              onChange={onChangeLanguages}>
               <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
-                {NEWS_REGIONS.map(region => (
+                {NEWS_LANGUAGES.map(language => (
                   <Toggle.Item
-                    key={region.id}
-                    name={region.id}
-                    label={region.label}>
-                    <Chip label={region.label} />
+                    key={language.id}
+                    name={language.id}
+                    label={language.label}>
+                    <Chip label={language.label} />
                   </Toggle.Item>
                 ))}
               </View>
@@ -121,7 +179,11 @@ export function SetupTopics({
             label={l`Reset`}
             size="large"
             color="secondary"
-            disabled={topics.length === 0 && regions.length === 0}
+            disabled={
+              topics.length === 0 &&
+              regions.length === 0 &&
+              languages.length === 0
+            }
             onPress={onReset}>
             <ButtonText>
               <Trans>Reset</Trans>

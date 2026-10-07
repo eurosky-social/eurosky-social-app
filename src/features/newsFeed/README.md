@@ -16,9 +16,10 @@ Two datasets, deliberately stored differently:
   is not a user preference, so it does not live in the PDS.
 
 Topic matching is account-level (a source is tagged with the topics it covers).
-Language is not a news-feed setting: the feed reuses the app's normal content
-language preference (`languagePrefs.contentLanguages`), applied at feed-assembly
-time.
+`languages` narrows the accounts to those publishing in one of them, and on the
+news page keeps only the stories with an article in one of them, led by that
+article. The feed still also applies the app's content language preference
+(`languagePrefs.contentLanguages`) at feed-assembly time.
 
 ## Flow
 
@@ -34,11 +35,17 @@ time.
 
 ## Layout
 
-- `sources.ts` - registry + taxonomy + `selectSources`
+- `sources.ts` - registry + taxonomy + `selectSources`. The regions include
+  the Dutch provinces, which select the same accounts as the Netherlands; the
+  news page's location picker offers the regions picked here
 - `state/prefs.ts` - prefs record schema + read/write hooks
-- `NewsFeedScreen.tsx` - orchestrates step 1 (topics/regions) -> step 2
-  (sources) -> feed; an unconfigured feed drops straight into step 1
-- `components/` - `SetupHeader` (step indicator), `SetupTopics` (chip picker),
+- `NewsFeedScreen.tsx` - shows the setup, then the feed; an unconfigured feed
+  drops straight into setup
+- `NewsSettingsScreen.tsx` - the same setup at `/news/settings` (route
+  `NewsSettings`), opened from the news page's header; it returns there on save
+- `components/` - `NewsFeedSetup` (step 1 topics/regions -> step 2 sources ->
+  save, shared by both screens), `SetupHeader` (step indicator), `SetupTopics`
+  (chip picker),
   `SetupSources` (opt-out list + consent), `SetupFooter` (bottom action bar),
   `NewsFeedTab` (header + feed)
 

@@ -2,43 +2,48 @@ import {type Client} from '@atproto/lex'
 import {useQuery} from '@tanstack/react-query'
 import {jwtDecode} from 'jwt-decode'
 
+import {logger} from '#/logger'
 import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
 import {useMaybePdsClient} from '#/state/session'
 import {com} from '#/lexicons'
+import {parseThreadStoryId} from './adapt'
 import {
   buildDutchApiUrl,
   DUTCH_API_LXM,
   DUTCH_API_SERVICE_DID,
-  DUTCH_LATEST_SCOPE,
+  DUTCH_WORLD_SCOPE,
   IS_DUTCH_API_CONFIGURED,
 } from './config'
 import {
   type DutchCategoriesResponse,
   type DutchCategory,
-  type DutchStoriesResponse,
-  type DutchStory,
-  type DutchStoryResponse,
-  type DutchStorySort,
   type DutchTheme,
   type DutchThemesResponse,
+  type DutchThread,
+  type DutchThreadResponse,
+  type DutchThreadSort,
+  type DutchThreadsResponse,
 } from './types'
 
 /**
- * How many stories the spread asks for. The page lays out a lead band plus
+ * How many threads the spread asks for. The page lays out a lead band plus
  * department bands; beyond this it is scrolling past the point anyone reads.
  */
-const STORIES_LIMIT = 40
+export const THREADS_LIMIT = 40
 
-export const createDutchStoriesQueryKey = (args: {
+export const createDutchThreadsQueryKey = (args: {
   scope: string
   theme?: string
   category?: string
-  sort: DutchStorySort
-}) => createQueryKey('dutchStories', args)
+  country?: string
+  lang?: string
+  sort: DutchThreadSort
+  limit: number
+}) => createQueryKey('dutchThreads', args)
 
-export const createDutchStoryQueryKey = (args: {id: string}) =>
-  createQueryKey('dutchStory', args)
+export const createDutchThreadQueryKey = (args: {id: string}) =>
+  createQueryKey('dutchThread', args)
 
 export const createDutchThemesQueryKey = (args: {
   scope: string
@@ -51,54 +56,80 @@ export const createDutchCategoriesQueryKey = (args: {
 }) => createQueryKey('dutchCategories', args)
 
 /**
- * The labeler's stories: already clustered, themed, and carrying their matched
- * discussion, so the page neither clusters nor searches for posts itself.
+ * The labeler's threads - the stories of its news view: already clustered,
+ * themed, and carrying their coverage by outlet and country, so the page
+ * neither clusters nor searches for posts itself.
  *
- * Defaults to `discussed`, since the spread is about what people are talking
- * about rather than what was published last.
+ * Sorted by `burst`, the service's own ranking of what is news now, unless a
+ * country is asked for, where `here` puts the threads its outlets covered most
+ * first.
  */
-export function useDutchStoriesQuery({
-  scope = DUTCH_LATEST_SCOPE,
+export function useDutchThreadsQuery({
+  scope = DUTCH_WORLD_SCOPE,
   theme,
   category,
-  sort = 'discussed',
+  country,
+  lang,
+  limit = THREADS_LIMIT,
   enabled = true,
 }: {
-  /** Which of the labeler's scopes (feed selection and model) to read. */
+  /** Which of the labeler's scopes (feed selection and fit) to read. */
   scope?: string
   theme?: string
+  /** A label value: a province, e.g. `nl-utrecht`. */
   category?: string
-  sort?: DutchStorySort
+  /** An ISO country code: threads its outlets covered. */
+  country?: string
+  /**
+   * An ISO language code: threads with an article in it, each with its lead
+   * in that language as `leadIn`. The service takes one at a time.
+   */
+  lang?: string
+  limit?: number
   enabled?: boolean
 } = {}) {
   const pdsClient = useMaybePdsClient()
+  const sort: DutchThreadSort = country ? 'here' : 'burst'
   const query = useQuery({
-    queryKey: createDutchStoriesQueryKey({scope, theme, category, sort}),
+    queryKey: createDutchThreadsQueryKey({
+      scope,
+      theme,
+      category,
+      country,
+      lang,
+      sort,
+      limit,
+    }),
     /*
-     * The model refits every six hours and articles trickle in between fits,
-     * so there is nothing to gain from asking more often than the page is
-     * likely to be reopened.
+     * The service refits hourly and articles trickle in between fits, so
+     * there is nothing to gain from asking more often than the page is likely
+     * to be reopened.
      */
     staleTime: STALE.MINUTES.FIVE,
     enabled: enabled && IS_DUTCH_API_CONFIGURED && !!pdsClient,
     async queryFn() {
-      const data = await fetchDutchApi<DutchStoriesResponse>(
-        pdsClient!,
-        buildDutchApiUrl('/api/stories', {
-          scope,
-          theme,
-          category,
-          sort,
-          limit: STORIES_LIMIT,
-        }),
-      )
-      return data
+      const url = buildDutchApiUrl('/api/threads', {
+        scope,
+        theme,
+        category,
+        country,
+        lang,
+        sort,
+        limit,
+      })
+      try {
+        return await fetchDutchApi<DutchThreadsResponse>(pdsClient!, url)
+      } catch (error) {
+        /* The page only says it could not load; this says why. */
+        logger.error('dutchThreads: failed to load', {safeMessage: error})
+        throw error
+      }
     },
   })
 
   return {
-    stories: query.data?.stories ?? ([] as DutchStory[]),
-    /** Null until a model has been fitted; `stories` is then empty. */
+    threads: query.data?.threads ?? ([] as DutchThread[]),
+    /** Null until the scope has been fitted; `threads` is then empty. */
     model: query.data?.model ?? null,
     total: query.data?.total ?? 0,
     isLoading: query.isLoading,
@@ -107,13 +138,13 @@ export function useDutchStoriesQuery({
 }
 
 /**
- * One story with all of its articles. The list endpoint trims each story to
- * its first few articles; this is the whole coverage, for the article page.
+ * One thread with every event in full. The list trims each event to a few
+ * articles; this is the whole coverage, for the article page.
  *
- * Story ids belong to a model, and the service still answers for a story of a
- * model since refitted, so an old link keeps working.
+ * `id` is the one `threadStoryId` built: the thread's key, which outlives
+ * refits, and the scope whose fit it is in.
  */
-export function useDutchStoryQuery({
+export function useDutchThreadQuery({
   id,
   enabled = true,
 }: {
@@ -121,16 +152,19 @@ export function useDutchStoryQuery({
   enabled?: boolean
 }) {
   const pdsClient = useMaybePdsClient()
+  const ref = id ? parseThreadStoryId(id) : undefined
   return useQuery({
-    queryKey: createDutchStoryQueryKey({id: id ?? ''}),
+    queryKey: createDutchThreadQueryKey({id: id ?? ''}),
     staleTime: STALE.MINUTES.FIVE,
-    enabled: enabled && !!id && IS_DUTCH_API_CONFIGURED && !!pdsClient,
+    enabled: enabled && !!ref && IS_DUTCH_API_CONFIGURED && !!pdsClient,
     async queryFn() {
-      const data = await fetchDutchApi<DutchStoryResponse>(
+      const data = await fetchDutchApi<DutchThreadResponse>(
         pdsClient!,
-        buildDutchApiUrl(`/api/stories/${encodeURIComponent(id!)}`),
+        buildDutchApiUrl(`/api/threads/${encodeURIComponent(ref!.key)}`, {
+          scope: ref!.scope,
+        }),
       )
-      return data.story
+      return data.thread
     },
   })
 }
@@ -140,7 +174,7 @@ export function useDutchStoryQuery({
  * departments, so the page has no section list of its own.
  */
 export function useDutchThemesQuery({
-  scope = DUTCH_LATEST_SCOPE,
+  scope = DUTCH_WORLD_SCOPE,
   category,
   enabled = true,
 }: {scope?: string; category?: string; enabled?: boolean} = {}) {
@@ -173,7 +207,7 @@ export function useDutchThemesQuery({
  * provinces. This is the axis the RSS spread has no equivalent for.
  */
 export function useDutchCategoriesQuery({
-  scope = DUTCH_LATEST_SCOPE,
+  scope = DUTCH_WORLD_SCOPE,
   theme,
 }: {scope?: string; theme?: string} = {}) {
   const pdsClient = useMaybePdsClient()

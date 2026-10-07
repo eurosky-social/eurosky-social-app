@@ -14,6 +14,16 @@ export interface NewsTopic {
 export interface NewsRegion {
   id: string
   label: string
+  /**
+   * The country a province belongs to. A province selects the same accounts
+   * as its country, since accounts are tagged by country only.
+   */
+  parent?: string
+}
+
+export interface NewsLanguage {
+  id: string
+  label: string
 }
 
 export interface NewsSource {
@@ -48,6 +58,41 @@ export const NEWS_REGIONS: NewsRegion[] = [
   {id: 'netherlands', label: 'Netherlands'},
   {id: 'spain', label: 'Spain'},
   {id: 'uk', label: 'UK'},
+  /*
+   * Ids are the Dutch labeler's province label values, so a selected province
+   * can be read straight off the stories it labels.
+   */
+  {id: 'nl-drenthe', label: 'Drenthe', parent: 'netherlands'},
+  {id: 'nl-flevoland', label: 'Flevoland', parent: 'netherlands'},
+  {id: 'nl-friesland', label: 'Friesland', parent: 'netherlands'},
+  {id: 'nl-gelderland', label: 'Gelderland', parent: 'netherlands'},
+  {id: 'nl-groningen', label: 'Groningen', parent: 'netherlands'},
+  {id: 'nl-limburg', label: 'Limburg', parent: 'netherlands'},
+  {id: 'nl-noord-brabant', label: 'Noord-Brabant', parent: 'netherlands'},
+  {id: 'nl-noord-holland', label: 'Noord-Holland', parent: 'netherlands'},
+  {id: 'nl-overijssel', label: 'Overijssel', parent: 'netherlands'},
+  {id: 'nl-utrecht', label: 'Utrecht', parent: 'netherlands'},
+  {id: 'nl-zeeland', label: 'Zeeland', parent: 'netherlands'},
+  {id: 'nl-zuid-holland', label: 'Zuid-Holland', parent: 'netherlands'},
+]
+
+/**
+ * The languages news can be read in. Ids are ISO 639-1 codes, as the source
+ * registry's `langs` and the Dutch labeler's articles carry them.
+ */
+export const NEWS_LANGUAGES: NewsLanguage[] = [
+  {id: 'en', label: 'English'},
+  {id: 'nl', label: 'Dutch'},
+  {id: 'de', label: 'German'},
+  {id: 'fr', label: 'French'},
+  {id: 'es', label: 'Spanish'},
+  {id: 'it', label: 'Italian'},
+  {id: 'pl', label: 'Polish'},
+  {id: 'da', label: 'Danish'},
+  {id: 'sv', label: 'Swedish'},
+  {id: 'no', label: 'Norwegian'},
+  {id: 'fi', label: 'Finnish'},
+  {id: 'cs', label: 'Czech'},
 ]
 
 /**
@@ -1499,19 +1544,21 @@ export const NEWS_SOURCES: NewsSource[] = [
 ]
 
 /**
- * Filter the registry by a selection. Empty `topics`/`regions` mean "no
- * constraint" on that facet. Pass `applyExclusions: false` to get the full
+ * Filter the registry by a selection. Empty `topics`/`regions`/`languages`
+ * mean "no constraint" on that facet. Pass `applyExclusions: false` to get the full
  * match set for the opt-out screen, where the user toggles sources off.
  */
 export function selectSources(
   selection: {
     topics: string[]
     regions: string[]
+    languages?: string[]
     excludedDids?: string[]
   },
   {applyExclusions = true}: {applyExclusions?: boolean} = {},
 ): NewsSource[] {
-  const {topics, regions, excludedDids = []} = selection
+  const {topics, languages = [], excludedDids = []} = selection
+  const regions = withParents(selection.regions)
   // `all` is a catch-all that disables topic filtering entirely.
   const filterByTopic = topics.length > 0 && !topics.includes('all')
   return NEWS_SOURCES.filter(source => {
@@ -1521,11 +1568,30 @@ export function selectSources(
     if (regions.length && !regions.some(r => source.regions.includes(r))) {
       return false
     }
+    if (languages.length && !languages.some(l => source.langs.includes(l))) {
+      return false
+    }
     if (applyExclusions && excludedDids.includes(source.did)) {
       return false
     }
     return true
   })
+}
+
+const REGION_PARENTS = new Map(
+  NEWS_REGIONS.flatMap(r => (r.parent ? [[r.id, r.parent] as const] : [])),
+)
+
+/** The regions, plus the country of any province among them. */
+function withParents(regions: string[]): string[] {
+  return [
+    ...new Set(
+      regions.flatMap(id => {
+        const parent = REGION_PARENTS.get(id)
+        return parent ? [id, parent] : [id]
+      }),
+    ),
+  ]
 }
 
 const REGION_LABELS = new Map(NEWS_REGIONS.map(r => [r.id, r.label]))

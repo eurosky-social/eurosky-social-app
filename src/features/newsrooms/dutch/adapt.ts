@@ -5,11 +5,11 @@ import {
 } from '../explore/cluster'
 import {type ExploreSection} from '../explore/sections'
 import {type RssItem} from '../rss/types'
-import {type DutchArticle, type DutchStory, type DutchTheme} from './types'
+import {type DutchArticle, type DutchTheme, type DutchThread} from './types'
 
 /**
- * A story in the shape the spread renders, built from the labeler's own
- * clustering rather than from `clusterArticles`.
+ * A story in the shape the spread renders, built from one of the labeler's
+ * threads rather than from `clusterArticles`.
  *
  * An `ExploreStory` plus what the API knows and RSS cannot, so the existing
  * components render it unchanged and only the Dutch-specific surfaces read the
@@ -17,55 +17,112 @@ import {type DutchArticle, type DutchStory, type DutchTheme} from './types'
  */
 export interface DutchExploreStory extends ExploreStory {
   /**
-   * The matched discussion, which the API hands over with the story. The
-   * eurosky spread has to search for this per article; here it is free, so the
-   * page can show post counts on every story rather than only the lead.
+   * The matched discussion, which the API counts with the thread. The eurosky
+   * spread has to search for this per article; here it is free, so the page
+   * can show post counts on every story rather than only the lead.
    */
   postCount: number
-  /** Province label values the story is labeled for, busiest first. */
+  /** Province label values the thread is labeled for, busiest first. */
   provinces: string[]
+  /** The countries of the outlets that covered it, as ISO codes. */
+  countries: string[]
 }
 
 /**
- * Maps one API story onto the page's shape. Returns undefined for a story with
+ * Maps one thread onto the page's shape. Returns undefined for a thread with
  * no lead article: the API drops articles that age out of the archive, leaving
- * a cluster with nothing to render.
+ * a thread with nothing to render.
  *
- * `sectionForTheme` resolves the story's theme slug onto one of the spread's
+ * `sectionForTheme` resolves the thread's theme slug onto one of the spread's
  * sections; it is passed in rather than imported so the mapping stays one
  * decision in one place (see `themeSections`).
+ *
+ * With `languages`, the story leads with an article in one of them where the
+ * thread has one, so a reader who reads only English is not handed a Dutch
+ * headline for a story English outlets covered too.
  */
-export function adaptStory(
-  story: DutchStory,
+export function adaptThread(
+  thread: DutchThread,
   sectionForTheme: (theme: string | null) => ExploreSection,
+  languages: string[] = [],
 ): DutchExploreStory | undefined {
-  if (!story.lead) return undefined
+  if (!thread.lead) return undefined
 
-  const section = sectionForTheme(story.theme)
-  const provinces = rankedProvinces(story.provinces)
-  const lead = adaptArticle(story.lead, section)
-  const coverage = [
-    lead,
-    ...story.articles.map(article => adaptArticle(article, section)),
-  ]
+  const section = sectionForTheme(thread.theme)
+  const provinces = rankedProvinces(thread.provinces)
+
+  /*
+   * The thread's articles come grouped by event, each event leading with its
+   * own. The thread's lead is usually one of them, so the coverage is read
+   * once by URL.
+   */
+  const seen = new Set<string>()
+  const articles = [
+    ...(thread.leadIn ? [thread.leadIn] : []),
+    thread.lead,
+    ...thread.events.flatMap(event => [
+      ...(event.lead ? [event.lead] : []),
+      ...event.articles,
+    ]),
+  ].filter(article => {
+    if (seen.has(article.uri)) return false
+    seen.add(article.uri)
+    return true
+  })
+  const inLanguage = (article: DutchArticle) =>
+    !!article.lang && languages.includes(article.lang)
+  const leadArticle =
+    (languages.length > 0 ? articles.find(inLanguage) : undefined) ??
+    thread.lead
+  const lead = adaptArticle(leadArticle, section)
 
   return {
-    id: String(story.id),
+    id: threadStoryId(thread),
     source: 'dutch',
     lead,
-    coverage,
+    coverage: [
+      lead,
+      ...articles
+        .filter(article => article !== leadArticle)
+        .map(article => adaptArticle(article, section)),
+    ],
     /*
-     * The API counts distinct outlets across every article of the story,
-     * including any beyond the three it returns, so this reads truer than the
-     * length of `coverage`.
+     * The API counts distinct outlets across every article of the thread,
+     * including those beyond the few it returns per event, so this reads
+     * truer than the length of `coverage`.
      */
-    newsroomCount: story.counts.outlets,
+    newsroomCount: thread.counts.outlets,
     section,
-    publishedAt: story.lead.publishedAt,
-    postCount: story.counts.posts,
+    publishedAt: leadArticle.publishedAt,
+    postCount: thread.counts.posts,
     provinces,
     regions: provinces,
+    countries: thread.countries,
   }
+}
+
+/** Whether any of the thread's articles is in one of the languages. */
+export function isThreadInLanguages(
+  thread: Pick<DutchThread, 'languages'>,
+  languages: string[],
+): boolean {
+  return thread.languages.some(language => languages.includes(language))
+}
+
+/**
+ * A thread as a story id: its key, which keeps across refits, and its scope,
+ * since a key names a thread within one scope's fits.
+ */
+export function threadStoryId(thread: Pick<DutchThread, 'key' | 'scope'>) {
+  return `${thread.scope}:${thread.key}`
+}
+
+/** The thread a story id names, or undefined for one not built here. */
+export function parseThreadStoryId(
+  id: string,
+): {scope: string; key: string} | undefined {
+  const [scope, key] = id.split(':')
+  return scope && key ? {scope, key} : undefined
 }
 
 /**
@@ -100,16 +157,19 @@ function adaptArticle(
 }
 
 /**
- * The outlet that ran an article. The API identifies outlets by display name
- * and site URL rather than by id, so the host is the stable key: two articles
- * from the same site must land on the same outlet or they read as separate
- * coverage and inflate the story's newsroom count.
+ * The outlet that ran an article. The site host is the key, as for an RSS
+ * outlet: two articles from the same site must land on the same outlet or they
+ * read as separate coverage and inflate the story's newsroom count. Where the
+ * service knows the outlet's Bluesky account, its DID comes along, which gives
+ * the card an avatar and a newsroom link.
  */
 export function outletFor(article: DutchArticle): ExploreOutlet {
   const host = hostOf(article.siteUrl ?? article.uri)
+  const outlet = article.outlet
   return {
-    id: host || (article.outlet ?? 'unknown'),
-    name: article.outlet ?? host,
+    id: host || (outlet?.slug ?? 'unknown'),
+    did: outlet?.did ?? undefined,
+    name: outlet?.name ?? host,
     site: host || undefined,
     categories: article.province ? [article.province] : [],
   }

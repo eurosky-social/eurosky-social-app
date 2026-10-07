@@ -12,8 +12,8 @@ import {NewsFeedRightRail} from './NewsFeedRightRail'
  * The news feed's right column, drawn by the page rather than the shell.
  *
  * The shell fixes its right column to the window, which is fine under a
- * header that scrolls away, but the feed pins a full-width header and tab row
- * above the column. A fixed column would need starting below that row, and
+ * header that scrolls away, but the feed pins a full-width header above the
+ * column. A fixed column would need starting below that header, and
  * would stay put while the rest of the page rubber-bands at the top. Laid out
  * in the page and sticky instead, it scrolls, pins and bounces with
  * everything else.
@@ -25,7 +25,7 @@ export function NewsFeedRailColumn({
   top,
   offset,
 }: {
-  /** Height of the pinned header and tabs the column sits under. */
+  /** Height of the pinned header the column sits under. */
   top: number
   /** How far that pinned block has slid up as its title collapses. */
   offset: SharedValue<number>

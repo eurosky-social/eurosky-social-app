@@ -18,23 +18,37 @@ export function useExploreSource({
   scope,
   theme,
   category,
+  country,
+  languages,
 }: {
   source: ExploreSourceId
   /** For the Dutch source: which of the labeler's scopes to read. */
   scope?: string
   theme?: string
+  /** For the Dutch source: a province label value, e.g. `nl-utrecht`. */
   category?: string
+  /** For the Dutch source: an ISO country code, e.g. `fr`. */
+  country?: string
+  /**
+   * For the Dutch source: ISO language codes the stories must be in. RSS
+   * articles carry no language, so the RSS source ignores them.
+   */
+  languages?: string[]
 }): {
   stories: ExploreStory[]
   /** In page order, ending with the catch-all the page files leftovers under. */
   sections: ExploreSection[]
   isLoading: boolean
+  /** The source failed, as opposed to having nothing to show. */
+  isError: boolean
 } {
   const dutchActive = source === 'dutch' && IS_DUTCH_API_CONFIGURED
   const dutch = useDutchExploreStories({
     scope,
     theme,
     category,
+    country,
+    languages,
     enabled: dutchActive,
   })
   const rss = useExploreStories({enabled: source === 'rss'})
@@ -44,6 +58,7 @@ export function useExploreSource({
       stories: dutch.stories,
       sections: [...dutch.sections, EXPLORE_SECTION_OTHER],
       isLoading: dutchActive && dutch.isLoading,
+      isError: dutchActive && dutch.isError,
     }
   }
 
@@ -51,5 +66,7 @@ export function useExploreSource({
     stories: rss.stories,
     sections: [...EXPLORE_SECTIONS, EXPLORE_SECTION_OTHER],
     isLoading: rss.isLoading,
+    /* Feeds that fail contribute nothing rather than failing the page. */
+    isError: false,
   }
 }

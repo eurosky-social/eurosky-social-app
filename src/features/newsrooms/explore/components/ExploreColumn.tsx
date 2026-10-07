@@ -119,7 +119,7 @@ export function ExploreHeaderOuter({children}: {children: React.ReactNode}) {
         {minHeight: 52},
         /*
          * Painted but not sticky: each hub page pins its header together with
-         * its tabs, and slides the header away on scroll, which a sticky
+         * its filter bar, and slides the header away on scroll, which a sticky
          * header of its own would hold in place.
          */
         t.atoms.bg,

@@ -1,5 +1,5 @@
-import {adaptStory} from '../dutch/adapt'
-import {useDutchStoryQuery} from '../dutch/queries'
+import {adaptThread} from '../dutch/adapt'
+import {useDutchThreadQuery} from '../dutch/queries'
 import {
   type ExploreArticle,
   type ExploreSourceId,
@@ -12,7 +12,7 @@ import {useExploreStories} from '../explore/useExploreStories'
  * Every article of the story an article was opened from, the article itself
  * included, so the article page can show the other newsrooms' takes.
  *
- * The Dutch labeler answers by story id with the story's whole coverage. RSS
+ * The Dutch labeler answers by thread with the thread's whole coverage. RSS
  * stories are clustered on the client, so they are found again in the same
  * clustering the spread ran (shared through the feed cache): by id, or, if the
  * feeds moved on and the cluster's lead changed, by the article being in it.
@@ -30,7 +30,7 @@ export function useStoryCoverage({
   coverage: ExploreArticle[]
   isLoading: boolean
 } {
-  const dutch = useDutchStoryQuery({
+  const dutch = useDutchThreadQuery({
     id: storyId,
     enabled: storySource === 'dutch',
   })
@@ -39,7 +39,7 @@ export function useStoryCoverage({
   if (storySource === 'dutch' && storyId) {
     /* The article page has no sections, so every article files under one. */
     const story = dutch.data
-      ? adaptStory(dutch.data, () => EXPLORE_SECTION_OTHER)
+      ? adaptThread(dutch.data, () => EXPLORE_SECTION_OTHER)
       : undefined
     return {
       story: {id: storyId, source: 'dutch'},

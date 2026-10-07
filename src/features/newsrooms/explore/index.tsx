@@ -4,7 +4,7 @@ import Animated, {
   useAnimatedScrollHandler,
   useAnimatedStyle,
 } from 'react-native-reanimated'
-import {Trans} from '@lingui/react/macro'
+import {Trans, useLingui} from '@lingui/react/macro'
 
 import {
   type CommonNavigatorParams,
@@ -12,18 +12,17 @@ import {
 } from '#/lib/routes/types'
 import {useShellLayout} from '#/state/shell/shell-layout'
 import {atoms as a, native, useTheme, web} from '#/alf'
+import {ButtonIcon, ButtonText} from '#/components/Button'
+import {SettingsGear2_Stroke2_Corner0_Rounded as SettingsGearIcon} from '#/components/icons/SettingsGear2'
 import * as Layout from '#/components/Layout'
+import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
 import {IS_WEB} from '#/env'
-import {
-  DUTCH_LATEST_SCOPE,
-  DUTCH_LOCAL_SCOPE,
-  IS_DUTCH_API_CONFIGURED,
-} from '../dutch/config'
-import {NewsroomHubTabs} from '../hub/NewsroomHubTabs'
+import {useNewsFeedPrefsQuery} from '#/features/newsFeed/state/prefs'
 import {useCollapsingTitle} from '../hub/useCollapsingTitle'
 import {useNewsroomProfilesQuery} from '../queries'
+import {boostStories, interestsFromPrefs} from './boost'
 import {type ExploreStory, groupStoriesBySection} from './cluster'
 import {
   ExploreColumn,
@@ -45,6 +44,7 @@ import {ExploreSectionChips} from './components/ExploreSectionChips'
 import {ExploreSectionFront} from './components/ExploreSectionFront'
 import {ExploreSkeleton} from './components/ExploreSkeleton'
 import {BandRule, ColumnRule} from './components/Rules'
+import {pickerRegions, sourceForRegion, WORLD_REGION} from './locations'
 import {type ExploreSection} from './sections'
 import {useExploreSource} from './useExploreSource'
 
@@ -59,59 +59,42 @@ type Band =
   | {kind: 'strip'; group: SectionGroup}
 
 /**
- * The hub's opening page: every registered newsroom's latest articles in one
- * spread, grouped into departments and clustered so a story several outlets
- * ran reads once.
- */
-export function NewsroomExploreScreen(
-  _props: NativeStackScreenProps<CommonNavigatorParams, 'NewsroomExplore'>,
-) {
-  return <ExploreSpreadScreen />
-}
-
-/**
- * The Dutch labeler's regional stories. Which region is the reader's is not
- * modeled yet, so for now this is every story it places in a province; the
- * filter tightens once there is a locale to tighten it to.
- */
-export function NewsroomLocalScreen(
-  _props: NativeStackScreenProps<CommonNavigatorParams, 'NewsroomLocal'>,
-) {
-  return <ExploreSpreadScreen local />
-}
-
-/**
- * The cross-publisher spread behind both the Latest News and Local News
- * tabs.
+ * The hub's news page: every story in one spread, grouped into departments and
+ * clustered so a story several outlets ran reads once. A topic chip narrows it
+ * to one department and the location picker to a part of the world, so there
+ * is one page to read rather than a tab per region.
  *
  * It is not a branded org space, so it runs from the center column to the
  * window's right edge (the shell hides the right rail here) and is laid out as
  * bands of unequal columns divided by rules, rather than a grid of cards.
  */
-function ExploreSpreadScreen({local = false}: {local?: boolean}) {
+export function NewsroomExploreScreen(
+  _props: NativeStackScreenProps<CommonNavigatorParams, 'NewsroomExplore'>,
+) {
   const t = useTheme()
+  const {t: l} = useLingui()
   const {wide, width} = useExploreSpread()
-  const [region, setRegion] = useState<string | undefined>()
+  const {data: prefs} = useNewsFeedPrefsQuery()
   /*
-   * Both tabs read the labeler, each from its own scope. The region goes to the
-   * API as its category, so a province gets its own stories rather than
-   * whatever of the national ones happen to be placed in it.
+   * The locations on offer are the regions picked in the news settings. One
+   * the settings no longer offer falls back to the world.
    */
-  const source = useExploreSource(
-    local
-      ? {source: 'dutch', scope: DUTCH_LOCAL_SCOPE, category: region}
-      : IS_DUTCH_API_CONFIGURED
-        ? {source: 'dutch', scope: DUTCH_LATEST_SCOPE}
-        : {source: 'rss'},
-  )
-  const stories = local
-    ? source.stories.filter(
-        story =>
-          !!story.regions?.length &&
-          (!region || story.regions.includes(region)),
-      )
-    : source.stories
-  const {sections, isLoading} = source
+  const regions = pickerRegions(prefs?.regions ?? [])
+  const [regionId, setRegionId] = useState(WORLD_REGION)
+  const location = regions.some(region => region.id === regionId)
+    ? regionId
+    : WORLD_REGION
+  /* The settings' languages filter every story on the page, wherever it is. */
+  const source = useExploreSource({
+    ...(sourceForRegion(location) ?? {source: 'rss'}),
+    languages: prefs?.languages,
+  })
+  const {sections, isLoading, isError} = source
+  /*
+   * The news settings - topics, regions and accounts - also move matching
+   * stories up the page rather than filtering the rest out.
+   */
+  const stories = boostStories(source.stories, interestsFromPrefs(prefs))
   const profiles = useNewsroomProfilesQuery()
   const [sectionId, setSectionId] = useState<string | undefined>()
   const [leadBandCount, setLeadBandCount] = useState(LEAD_BAND_DEFAULT_STORIES)
@@ -139,10 +122,20 @@ function ExploreSpreadScreen({local = false}: {local?: boolean}) {
     scrollToTop()
   }
 
+  /*
+   * The topic is kept across a change of location, so a reader following one
+   * department can move between places without picking it again.
+   */
+  function onSelectLocation(next: string) {
+    setRegionId(next)
+    scrollToTop()
+  }
+
   const groups = groupStoriesBySection(stories, sections)
   /*
    * The opening band belongs to the whole spread, so a section filter drops it
-   * rather than promoting an unrelated story into the lead.
+   * rather than promoting an unrelated story into the lead. A topic the
+   * location has no stories under falls back to the whole spread.
    */
   const focused = sectionId
     ? groups.find(group => group.section.id === sectionId)
@@ -163,7 +156,7 @@ function ExploreSpreadScreen({local = false}: {local?: boolean}) {
   return (
     <Layout.Screen testID="newsroomExploreScreen" noCenterBorders>
       <ExploreSpreadBorders />
-      {/* Header, tabs and topic chips pin together. It is one block outside
+      {/* Header and filter bar pin together. It is one block outside
        * the spread's scroll view because on web the window scrolls, which a
        * sticky header inside the scroll view cannot follow; on native, sitting
        * above the scroll view is enough to stay put. */}
@@ -179,26 +172,38 @@ function ExploreSpreadScreen({local = false}: {local?: boolean}) {
                   <Trans>{BRAND.name} News</Trans>
                 </Layout.Header.TitleText>
               </Layout.Header.Content>
+              {/* Outside Header.Slot: slots are fixed-width squares and this
+               * button carries a text label. */}
+              <Link
+                testID="newsSettingsBtn"
+                to="/news/settings"
+                label={l`Choose the topics, regions, languages and accounts for your news`}
+                size="small"
+                color="secondary">
+                <ButtonIcon icon={SettingsGearIcon} />
+                <ButtonText>
+                  <Trans>Settings</Trans>
+                </ButtonText>
+              </Link>
             </ExploreHeaderOuter>
           </View>
           <ExploreColumn style={[t.atoms.bg]}>
-            <NewsroomHubTabs active={local ? 'local' : 'latest'} />
-            {/* Departments as a filter bar, straight under the tabs: the page
-             * opens on the news rather than on an explanation of itself. */}
+            {/* Location and departments as one filter bar, straight under the
+             * header: the page opens on the news rather than on an explanation
+             * of itself. */}
             <View style={[a.py_sm]}>
               <ExploreSectionChips
                 sections={groups.map(group => group.section)}
-                selectedId={sectionId}
+                selectedId={focused?.section.id}
                 onSelect={onSelectSection}
                 leading={
-                  local && (
+                  /* Without the labeler the world is all there is. */
+                  regions.length > 1 && (
                     <>
                       <ExploreLocationPicker
-                        selected={region}
-                        onSelect={next => {
-                          setRegion(next)
-                          scrollToTop()
-                        }}
+                        regions={regions}
+                        selected={location}
+                        onSelect={onSelectLocation}
                       />
                       <LocationPickerRule />
                     </>
@@ -222,10 +227,12 @@ function ExploreSpreadScreen({local = false}: {local?: boolean}) {
           ) : stories.length === 0 ? (
             <View style={[a.p_2xl, a.align_center]}>
               <Text style={[a.text_md, a.text_center]}>
-                {local ? (
-                  <Trans>No local news right now.</Trans>
-                ) : (
+                {isError ? (
+                  <Trans>Couldn’t load the news. Try again later.</Trans>
+                ) : location === WORLD_REGION ? (
                   <Trans>No newsroom feeds are reachable right now.</Trans>
+                ) : (
+                  <Trans>No news from here right now.</Trans>
                 )}
               </Text>
             </View>
