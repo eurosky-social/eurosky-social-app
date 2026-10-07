@@ -2,6 +2,7 @@ import {useInfiniteQuery, useQuery} from '@tanstack/react-query'
 
 import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
+import {useSession} from '#/state/session'
 import {getEvent} from './api'
 import {EVENTS_PAGE_SIZE} from './config'
 import {EVENT_FEEDS, type EventFeedId} from './feeds'
@@ -16,13 +17,19 @@ const eventQueryKeyRoot = 'event'
 export const createEventFeedQueryKey = (args: {
   feed: EventFeedId
   startsAtMin: string
+  actor?: string
 }) => createQueryKey(eventFeedQueryKeyRoot, args)
 
 export const createEventQueryKey = (args: {uri: string}) =>
   createQueryKey(eventQueryKeyRoot, args)
 
-/** Upcoming events in the given feed, soonest first. */
+/** A page-by-page list of the events in the given feed. */
 export function useEventFeedQuery(feed: EventFeedId) {
+  const {currentAccount} = useSession()
+  const {requiresAuth, fetch} = EVENT_FEEDS[feed]
+  // Only per-user feeds key on the account, so shared feeds share one cache.
+  const actor = requiresAuth ? currentAccount?.did : undefined
+
   /*
    * Day granularity keeps the query key stable across renders. startsAt is
    * compared as a string, so a bare date includes all of today.
@@ -30,9 +37,10 @@ export function useEventFeedQuery(feed: EventFeedId) {
   const startsAtMin = new Date().toISOString().slice(0, 10)
 
   return useInfiniteQuery({
-    queryKey: createEventFeedQueryKey({feed, startsAtMin}),
+    queryKey: createEventFeedQueryKey({feed, startsAtMin, actor}),
+    enabled: !requiresAuth || !!actor,
     queryFn: ({pageParam, signal}) =>
-      EVENT_FEEDS[feed].fetch(
+      fetch(
         {
           startsAtMin,
           sort: 'startsAt',
@@ -41,6 +49,7 @@ export function useEventFeedQuery(feed: EventFeedId) {
           limit: EVENTS_PAGE_SIZE,
           cursor: pageParam,
         },
+        {actor},
         signal,
       ),
     initialPageParam: undefined as string | undefined,

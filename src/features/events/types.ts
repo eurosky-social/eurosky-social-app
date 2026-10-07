@@ -129,6 +129,11 @@ export type EventListParams = {
     | 'rsvpsGoingCount'
     | 'rsvpsInterestedCount'
   order?: 'asc' | 'desc'
+  /**
+   * Only events authored by this DID or handle. Not in contrail's API.md, but
+   * supported by `event.listRecords`.
+   */
+  actor?: string
   profiles?: boolean
   hydrateRsvps?: number
   limit?: number

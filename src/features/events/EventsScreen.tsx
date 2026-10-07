@@ -7,6 +7,7 @@ import {
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
 import {cleanError} from '#/lib/strings/errors'
+import {useSession} from '#/state/session'
 import {List} from '#/view/com/util/List'
 import {atoms as a, useTheme} from '#/alf'
 import * as Layout from '#/components/Layout'
@@ -22,13 +23,24 @@ type Props = NativeStackScreenProps<CommonNavigatorParams, 'Events'>
 
 export function EventsScreen({}: Props) {
   const {t: l} = useLingui()
-  const [feed, setFeed] = useState<EventFeedId>('upcoming')
+  const {hasSession} = useSession()
+  const [selectedFeed, setSelectedFeed] = useState<EventFeedId>('upcoming')
+
+  const feedIds = EVENT_FEED_IDS.filter(
+    id => hasSession || !EVENT_FEEDS[id].requiresAuth,
+  )
+  // Fall back if the selected feed disappeared, e.g. after signing out.
+  const feed = feedIds.includes(selectedFeed) ? selectedFeed : 'upcoming'
 
   const feedLabels: Record<EventFeedId, string> = {
     upcoming: l`Upcoming`,
     '40verse': l({
       message: '40verse',
       comment: 'Name of the 40verse community events feed. Do not translate.',
+    }),
+    mine: l({
+      message: 'My events',
+      comment: 'Events feed tab listing the events the user has created.',
     }),
   }
 
@@ -45,13 +57,13 @@ export function EventsScreen({}: Props) {
       </Layout.Header.Outer>
       <Layout.Center>
         <EventFeedTabs
-          items={EVENT_FEED_IDS.map(id => ({
+          items={feedIds.map(id => ({
             id,
             label: feedLabels[id],
             icon: EVENT_FEEDS[id].icon,
           }))}
           selectedId={feed}
-          onSelect={setFeed}
+          onSelect={setSelectedFeed}
         />
       </Layout.Center>
       <EventsList feed={feed} />
@@ -91,7 +103,11 @@ function EventsList({feed}: {feed: EventFeedId}) {
         isLoading || error ? undefined : (
           <View style={[a.p_xl]}>
             <Text style={[a.text_md, t.atoms.text_contrast_medium]}>
-              <Trans>No upcoming events.</Trans>
+              {feed === 'mine' ? (
+                <Trans>You haven’t created any events yet.</Trans>
+              ) : (
+                <Trans>No upcoming events.</Trans>
+              )}
             </Text>
           </View>
         )

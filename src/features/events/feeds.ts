@@ -7,10 +7,16 @@ import {
   type ListResponse,
 } from './types'
 
-export type EventFeedId = 'upcoming' | '40verse'
+export type EventFeedId = 'upcoming' | '40verse' | 'mine'
 
 /** The selectable feeds, in tab order. */
-export const EVENT_FEED_IDS: EventFeedId[] = ['upcoming', '40verse']
+export const EVENT_FEED_IDS: EventFeedId[] = ['upcoming', '40verse', 'mine']
+
+/** Per-user context a feed may need to fetch. */
+export type EventFeedContext = {
+  /** DID of the signed-in account; set whenever a feed requires auth. */
+  actor?: string
+}
 
 /**
  * How each feed fetches a page. The shared params (date range, sort, paging)
@@ -22,18 +28,30 @@ export const EVENT_FEEDS: Record<
   {
     /** Optional logo shown before the feed's label in the tab. */
     icon?: React.ComponentType<IconProps>
+    /** Hidden when signed out; `ctx.actor` is always set when it fetches. */
+    requiresAuth?: boolean
     fetch: (
       params: EventListParams,
+      ctx: EventFeedContext,
       signal?: AbortSignal,
     ) => Promise<ListResponse<EventRecord>>
   }
 > = {
   upcoming: {
-    fetch: (params, signal) => listEvents(params, signal),
+    fetch: (params, _ctx, signal) => listEvents(params, signal),
   },
   '40verse': {
     icon: FortyVerse,
-    fetch: (params, signal) =>
+    fetch: (params, _ctx, signal) =>
       listEventsByLocation({...params, location: 'amsterdam'}, signal),
+  },
+  mine: {
+    requiresAuth: true,
+    // Everything the user organised, past events included, latest first.
+    fetch: (params, {actor}, signal) =>
+      listEvents(
+        {...params, actor, startsAtMin: undefined, order: 'desc'},
+        signal,
+      ),
   },
 }
