@@ -1,0 +1,7 @@
+import {createSinglePathSVG} from '#/components/icons/TEMPLATE'
+
+/** From 40verse-atproto `src/web/svg/heart.svg`. */
+export const Heart = createSinglePathSVG({
+  viewBox: '0 0 16 15',
+  path: 'M8.16357 13.9763C8.0731 14.0372 7.96637 14.0698 7.85714 14.0698C7.74791 14.0698 7.64118 14.0372 7.55071 13.9763C6.10029 13.012 0 8.72082 0 4.67207C0 -0.552114 6.16786 -1.38892 7.85714 2.13037C9.54643 -1.38892 15.7143 -0.552114 15.7143 4.67207C15.7143 8.7216 9.614 13.012 8.16357 13.9747V13.9763Z',
+})

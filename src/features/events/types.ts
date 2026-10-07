@@ -139,3 +139,17 @@ export type EventListParams = {
   limit?: number
   cursor?: string
 }
+
+/** The signed-in user's RSVP to one event, read from their own repo. */
+export type ViewerRsvp = {
+  status: RsvpStatus
+  /**
+   * Record keys of every RSVP record the user has for this event, newest
+   * first. Other clients can leave duplicates behind; we update the newest and
+   * delete them all when removing the RSVP.
+   */
+  rkeys: string[]
+}
+
+/** The signed-in user's RSVPs, keyed by event AT-URI. */
+export type ViewerRsvps = Record<string, ViewerRsvp>

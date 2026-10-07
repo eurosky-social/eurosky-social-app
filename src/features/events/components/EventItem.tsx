@@ -9,7 +9,8 @@ import {sanitizeHandle} from '#/lib/strings/handles'
 import {countLines} from '#/lib/strings/helpers'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
-import {ButtonText} from '#/components/Button'
+import {ButtonText, useSharedButtonTextStyles} from '#/components/Button'
+import {FortyVerse} from '#/components/icons/community/FortyVerse'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {type EventProfile, type EventRecord} from '../types'
@@ -19,6 +20,7 @@ import {
   getFortyVerseEventUrl,
   getProfileAvatar,
 } from '../util'
+import {EventRsvpButtons} from './EventRsvpButtons'
 import {ShowMoreButton} from './ShowMoreButton'
 
 const AVATAR_SIZE = 24
@@ -128,19 +130,37 @@ export function EventItem({
           )}
         </View>
       )}
-      {fortyVerseUrl && (
-        <Link
-          to={fortyVerseUrl}
-          label={l`Open on 40verse`}
-          size="small"
-          color="secondary"
-          style={[a.self_start, a.mt_xs]}>
-          <ButtonText>
-            <Trans>Open on 40verse</Trans>
-          </ButtonText>
-        </Link>
-      )}
+      <View style={[a.flex_row, a.align_center, a.justify_between, a.gap_sm]}>
+        <EventRsvpButtons event={event} />
+        {fortyVerseUrl && (
+          <Link
+            to={fortyVerseUrl}
+            label={l`Open on 40verse`}
+            size="small"
+            variant="ghost"
+            color="secondary"
+            hoverStyle={t.atoms.bg_contrast_25}
+            style={[a.bg_transparent]}>
+            <OpenOnFortyVerse />
+          </Link>
+        )}
+      </View>
     </View>
+  )
+}
+
+/** "Open on" followed by the 40verse logo, in the button's text colour. */
+function OpenOnFortyVerse() {
+  const textStyles = useSharedButtonTextStyles()
+  return (
+    <>
+      <ButtonText>
+        <Trans comment="Followed by the 40verse logo, e.g. “Open on 40verse”">
+          Open on
+        </Trans>
+      </ButtonText>
+      <FortyVerse size="sm" fill={textStyles.color} />
+    </>
   )
 }
 

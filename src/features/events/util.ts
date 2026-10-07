@@ -5,6 +5,7 @@ import {
   type EventMedia,
   type EventProfile,
   type EventRecord,
+  type RsvpStatus,
 } from './types'
 
 /**
@@ -80,4 +81,32 @@ export function getFortyVerseEventUrl(
   const actor = profile?.handle ?? event.did
   // Handles, DIDs and rkeys are all path-safe, so no encoding is needed.
   return new URL(`/p/${actor}/e/${event.rkey}`, FORTYVERSE_URL).href
+}
+
+const RSVP_COUNT_FIELDS = {
+  'community.lexicon.calendar.rsvp#going': 'rsvpsGoingCount',
+  'community.lexicon.calendar.rsvp#interested': 'rsvpsInterestedCount',
+  'community.lexicon.calendar.rsvp#notgoing': 'rsvpsNotgoingCount',
+} as const satisfies Record<RsvpStatus, keyof EventRecord>
+
+/**
+ * Returns a copy of the event with its RSVP counts adjusted for the viewer
+ * changing their RSVP from `prev` to `next` (null meaning no RSVP).
+ */
+export function applyRsvpChange(
+  event: EventRecord,
+  prev: RsvpStatus | null,
+  next: RsvpStatus | null,
+): EventRecord {
+  const updated = {...event}
+  const adjust = (
+    field: 'rsvpsCount' | (typeof RSVP_COUNT_FIELDS)[RsvpStatus],
+    delta: number,
+  ) => {
+    updated[field] = Math.max(0, (updated[field] ?? 0) + delta)
+  }
+  adjust('rsvpsCount', (next ? 1 : 0) - (prev ? 1 : 0))
+  if (prev) adjust(RSVP_COUNT_FIELDS[prev], -1)
+  if (next) adjust(RSVP_COUNT_FIELDS[next], 1)
+  return updated
 }
