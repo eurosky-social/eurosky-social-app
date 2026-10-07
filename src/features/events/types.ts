@@ -36,6 +36,14 @@ export type EventLocation = {
   uri?: string
 }
 
+export type EventMedia = {
+  /** e.g. `thumbnail` or `banner`. */
+  role?: string
+  alt?: string
+  content?: Blob
+  aspect_ratio?: {width: number; height: number}
+}
+
 /** The raw `community.lexicon.calendar.event` record. */
 export type EventRecordValue = {
   $type: 'community.lexicon.calendar.event'
@@ -52,7 +60,7 @@ export type EventRecordValue = {
   createdAt?: string | {}
   locations?: EventLocation[]
   uris?: {uri: string; name?: string}[]
-  media?: {role?: string; content?: Blob}[]
+  media?: EventMedia[]
 }
 
 /** The raw `community.lexicon.calendar.rsvp` record. */

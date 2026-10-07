@@ -1,5 +1,5 @@
 import {View} from 'react-native'
-import {Trans, useLingui} from '@lingui/react/macro'
+import {Trans} from '@lingui/react/macro'
 
 import {
   type CommonNavigatorParams,
@@ -11,6 +11,7 @@ import {atoms as a, useTheme} from '#/alf'
 import * as Layout from '#/components/Layout'
 import {ListFooter} from '#/components/Lists'
 import {Text} from '#/components/Typography'
+import {EventItem} from './components/EventItem'
 import {useUpcomingEventsQuery} from './queries'
 import {type EventRecord} from './types'
 
@@ -79,32 +80,5 @@ function EventsList() {
       }
       sideBorders={false}
     />
-  )
-}
-
-function EventItem({event}: {event: EventRecord}) {
-  const t = useTheme()
-  const {i18n} = useLingui()
-  const {startsAt} = event.value
-  const startDate = typeof startsAt === 'string' ? new Date(startsAt) : null
-
-  return (
-    <View
-      style={[
-        a.gap_xs,
-        a.px_xl,
-        a.py_lg,
-        a.border_t,
-        t.atoms.border_contrast_low,
-      ]}>
-      <Text emoji style={[a.text_md, a.font_bold]}>
-        {event.value.name}
-      </Text>
-      {startDate && !isNaN(startDate.getTime()) && (
-        <Text style={[t.atoms.text_contrast_medium]}>
-          {i18n.date(startDate, {dateStyle: 'medium', timeStyle: 'short'})}
-        </Text>
-      )}
-    </View>
   )
 }
