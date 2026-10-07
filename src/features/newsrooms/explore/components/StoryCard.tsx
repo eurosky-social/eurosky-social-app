@@ -29,15 +29,12 @@ export function StoryLead({
   profiles,
   sharers,
   size = 'section',
-  hideCoverage = false,
 }: {
   story: ExploreStory
   profiles: Profiles
   sharers?: ArticleSharers
   /** `hero` is the spread's own lead; `section` a department's. */
   size?: 'hero' | 'section'
-  /** For the spread's lead, whose coverage gets a column of its own. */
-  hideCoverage?: boolean
 }) {
   const t = useTheme()
   const {lead} = story
@@ -93,7 +90,7 @@ export function StoryLead({
         )}
       </Link>
       <StoryMeta article={lead} sharers={sharers} />
-      {!hideCoverage && <StoryCoverage story={story} profiles={profiles} />}
+      <StoryCoverage story={story} profiles={profiles} />
     </View>
   )
 }

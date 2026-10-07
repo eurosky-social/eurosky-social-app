@@ -3,7 +3,6 @@ import {plural} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react/macro'
 
 import {useGetTimeAgo} from '#/lib/hooks/useTimeAgo'
-import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
@@ -11,6 +10,7 @@ import {type app} from '#/lexicons'
 import {getPublisherName} from '../../publishers'
 import {type ArticleSharers} from '../../queries'
 import {type ExploreArticle, outletProfile} from '../cluster'
+import {OutletIcon} from './OutletIcon'
 
 /**
  * The newsroom that ran a story, set above its headline the way a news app
@@ -42,12 +42,21 @@ export function PublisherLabel({
     </Text>
   )
 
+  const icon = (
+    <OutletIcon outlet={article.publisher} profile={profile} size={16} />
+  )
+
   /*
-   * An outlet with no Bluesky account has no newsroom page to open and no
-   * avatar to show, so it is credited in text alone rather than as a dead link.
+   * An outlet with no Bluesky account has no newsroom page to open, so it is
+   * credited without a link rather than with a dead one.
    */
   if (!did) {
-    return <View style={[a.flex_row, a.align_center]}>{label}</View>
+    return (
+      <View style={[a.flex_row, a.align_center, a.gap_xs]}>
+        {icon}
+        {label}
+      </View>
+    )
   }
 
   return (
@@ -55,7 +64,7 @@ export function PublisherLabel({
       to={`/newsroom/${did}`}
       label={l`Open the ${name} newsroom`}
       style={[a.flex_row, a.align_center, a.gap_xs]}>
-      <UserAvatar type="user" size={16} avatar={profile?.avatar} />
+      {icon}
       {label}
     </Link>
   )
@@ -168,39 +177,35 @@ export function CoverageStack({
   }
 
   /*
-   * Only outlets with a real avatar are stacked. Most feed-only outlets have
-   * no Bluesky account to take one from, and a row of placeholder silhouettes
-   * says nothing the named line beside it does not.
+   * Every outlet gets a bubble: OutletIcon finds a logo for most of them (the
+   * Bluesky avatar, else the site's own icon) and falls back to an initial, so
+   * the stack still reads as "these outlets" where no logo exists.
    */
-  const avatars = (others.length > 0 ? others : outlets)
-    .map(article => ({
-      article,
-      avatar: outletProfile(profiles, article.publisher)?.avatar,
-    }))
-    .filter(entry => !!entry.avatar)
-    .slice(0, 4)
+  const bubbles = (others.length > 0 ? others : outlets).slice(0, MAX_BUBBLES)
 
   return (
     <View style={[a.flex_shrink, a.flex_row, a.align_center, a.gap_xs]}>
-      {avatars.length > 0 && (
-        <View style={[a.flex_row, a.align_center]}>
-          {avatars.map(({article, avatar}, index) => (
-            <View
-              key={article.publisher.id}
-              style={[
-                a.rounded_full,
-                a.border,
-                t.atoms.bg,
-                {
-                  borderColor: t.atoms.bg.backgroundColor,
-                  marginLeft: index === 0 ? 0 : -6,
-                },
-              ]}>
-              <UserAvatar type="user" size={18} avatar={avatar} />
-            </View>
-          ))}
-        </View>
-      )}
+      <View style={[a.flex_row, a.align_center]}>
+        {bubbles.map((article, index) => (
+          <View
+            key={article.publisher.id}
+            style={[
+              a.rounded_full,
+              a.border,
+              t.atoms.bg,
+              {
+                borderColor: t.atoms.bg.backgroundColor,
+                marginLeft: index === 0 ? 0 : -6,
+              },
+            ]}>
+            <OutletIcon
+              outlet={article.publisher}
+              profile={outletProfile(profiles, article.publisher)}
+              size={18}
+            />
+          </View>
+        ))}
+      </View>
       <Text
         emoji
         numberOfLines={2}
@@ -231,6 +236,9 @@ export function sharedByLabel(sharers: ArticleSharers): string {
 
 /** Outlets named in the coverage line before the rest become a count. */
 const NAMED_OUTLETS = 2
+
+/** Outlets stacked as bubbles beside the coverage line. */
+const MAX_BUBBLES = 4
 
 /** An outlet's display name: its live profile's, else the source's, else its id. */
 export function outletName(

@@ -109,6 +109,7 @@ export function outletFor(article: DutchArticle): ExploreOutlet {
   return {
     id: host || (article.outlet ?? 'unknown'),
     name: article.outlet ?? host,
+    site: host || undefined,
     categories: article.province ? [article.province] : [],
   }
 }

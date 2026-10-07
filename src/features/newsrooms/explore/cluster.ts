@@ -21,6 +21,11 @@ export interface ExploreOutlet {
   did?: string
   /** Fallback display name, for an outlet with no profile to read one from. */
   name?: string
+  /**
+   * The outlet's site host, e.g. `nos.nl`. Where there is no Bluesky avatar,
+   * the icon the site declares stands in for one.
+   */
+  site?: string
   /** Section hints for an article carrying no labels of its own. */
   categories: string[]
 }
