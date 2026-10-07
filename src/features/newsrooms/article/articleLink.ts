@@ -1,4 +1,4 @@
-import {type ExploreArticle} from '../explore/cluster'
+import {type ExploreArticle, type ExploreStory} from '../explore/cluster'
 import {type RssItem} from '../rss/types'
 
 /**
@@ -8,12 +8,19 @@ import {type RssItem} from '../rss/types'
  * along as params and the focused view renders instantly rather than refetching
  * what was just on screen. The real article URL travels as `url`, which is what
  * the view reads the discussion from and what "View" opens.
+ *
+ * The story travels by reference (source and id), so the view can list the
+ * other newsrooms' coverage of it, and a shared or reloaded link still can.
  */
-export function articleViewLink(article: ExploreArticle) {
-  return articleViewLinkFor(article.item, {
-    did: article.publisher.did,
-    name: article.publisher.name,
-  })
+export function articleViewLink(
+  article: ExploreArticle,
+  story?: Pick<ExploreStory, 'id' | 'source'>,
+) {
+  return articleViewLinkFor(
+    article.item,
+    {did: article.publisher.did, name: article.publisher.name},
+    story,
+  )
 }
 
 /**
@@ -24,6 +31,7 @@ export function articleViewLink(article: ExploreArticle) {
 export function articleViewLinkFor(
   item: RssItem,
   outlet: {did?: string; name?: string},
+  story?: Pick<ExploreStory, 'id' | 'source'>,
 ) {
   return {
     screen: 'NewsroomArticle' as const,
@@ -35,6 +43,8 @@ export function articleViewLinkFor(
       publishedAt: item.publishedAt,
       outletName: outlet.name,
       outletDid: outlet.did,
+      storyId: story?.id,
+      storySource: story?.source,
     },
   }
 }

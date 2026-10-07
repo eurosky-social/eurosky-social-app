@@ -50,12 +50,30 @@ export function outletProfile<T>(
 }
 
 /**
+ * Where a spread's stories come from.
+ *
+ * - `rss` reads every registered publisher's feed and infers the structure -
+ *   clustering headlines, matching categories to a fixed section list. This is
+ *   Latest News.
+ * - `dutch` is the Dutch labeler, which serves that structure already modeled:
+ *   stories arrive clustered, themed, and carrying their matched discussion.
+ *   It is the only source that knows which stories are regional, so it backs
+ *   Local News.
+ */
+export type ExploreSourceId = 'rss' | 'dutch'
+
+/**
  * A story as the explore page shows it: one lead article plus every other
  * newsroom's version of the same event.
  */
 export interface ExploreStory {
-  /** The lead article's URL; stable across renders of the same feed data. */
+  /**
+   * Unique within its source: the lead article's URL for RSS, stable across
+   * renders of the same feed data; the labeler's story id for Dutch.
+   */
   id: string
+  /** Where the story came from, so it can be found again by `id`. */
+  source: ExploreSourceId
   lead: ExploreArticle
   /** The lead first, then the other outlets covering the story. */
   coverage: ExploreArticle[]
@@ -134,6 +152,7 @@ export function clusterArticles(
       const sections = cluster.members.map(m => m.section)
       return {
         id: lead.item.link,
+        source: 'rss' as const,
         lead,
         coverage: cluster.members,
         newsroomCount: new Set(cluster.members.map(m => m.publisher.id)).size,

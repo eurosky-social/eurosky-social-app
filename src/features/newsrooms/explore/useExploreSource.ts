@@ -1,22 +1,9 @@
 import {IS_DUTCH_API_CONFIGURED} from '../dutch/config'
 import {useDutchExploreStories} from '../dutch/useDutchExploreStories'
-import {type ExploreStory} from './cluster'
+import {type ExploreSourceId, type ExploreStory} from './cluster'
 import {EXPLORE_SECTION_OTHER, EXPLORE_SECTIONS} from './sections'
 import {type ExploreSection} from './sections'
 import {useExploreStories} from './useExploreStories'
-
-/**
- * Where a spread's stories come from.
- *
- * - `rss` reads every registered publisher's feed and infers the structure -
- *   clustering headlines, matching categories to a fixed section list. This is
- *   Latest News.
- * - `dutch` is the Dutch labeler, which serves that structure already modeled:
- *   stories arrive clustered, themed, and carrying their matched discussion.
- *   It is the only source that knows which stories are regional, so it backs
- *   Local News.
- */
-export type ExploreSourceId = 'rss' | 'dutch'
 
 /**
  * The stories a spread renders from the given source, plus the sections to lay

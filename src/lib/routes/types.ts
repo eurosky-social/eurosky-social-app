@@ -35,6 +35,9 @@ export type CommonNavigatorParams = {
     publishedAt?: string
     outletName?: string
     outletDid?: string
+    /** The story the article was opened from, for its other coverage. */
+    storyId?: string
+    storySource?: 'rss' | 'dutch'
   }
   Moderation: undefined
   ModerationInbox: undefined

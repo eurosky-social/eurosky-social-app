@@ -51,7 +51,7 @@ export function StoryLead({
     <View style={[a.gap_sm]}>
       {!!image && (
         <Link
-          to={articleViewLink(lead)}
+          to={articleViewLink(lead, story)}
           label={lead.item.title}
           style={[a.w_full]}>
           <Image
@@ -68,7 +68,7 @@ export function StoryLead({
         profile={outletProfile(profiles, lead.publisher)}
       />
       <Link
-        to={articleViewLink(lead)}
+        to={articleViewLink(lead, story)}
         label={lead.item.title}
         style={[a.flex_col, a.align_start, a.gap_sm, a.w_full]}>
         <Text
@@ -120,7 +120,7 @@ export function StoryRow({
             profile={outletProfile(profiles, lead.publisher)}
           />
           <Link
-            to={articleViewLink(lead)}
+            to={articleViewLink(lead, story)}
             label={lead.item.title}
             style={[a.flex_col, a.align_start, a.gap_xs, a.w_full]}>
             <Text
@@ -132,7 +132,7 @@ export function StoryRow({
           <StoryMeta article={lead} sharers={sharers} />
         </View>
         {!!lead.item.imageUrl && (
-          <Link to={articleViewLink(lead)} label={lead.item.title}>
+          <Link to={articleViewLink(lead, story)} label={lead.item.title}>
             <Image
               accessibilityIgnoresInvertColors
               source={{uri: lead.item.imageUrl}}
@@ -170,7 +170,7 @@ export function StoryHeadline({
         profile={outletProfile(profiles, lead.publisher)}
       />
       <Link
-        to={articleViewLink(lead)}
+        to={articleViewLink(lead, story)}
         label={lead.item.title}
         style={[a.flex_col, a.align_start, a.gap_xs, a.w_full]}>
         <Text
@@ -245,7 +245,7 @@ function StoryCoverage({
                 profile={outletProfile(profiles, article.publisher)}
               />
               <Link
-                to={articleViewLink(article)}
+                to={articleViewLink(article, story)}
                 label={article.item.title}
                 style={[a.flex_col, a.align_start, a.w_full]}>
                 <Text

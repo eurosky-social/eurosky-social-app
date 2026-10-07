@@ -4,6 +4,7 @@ import {useNavigationState} from '@react-navigation/native'
 
 import {useGetTimeAgo} from '#/lib/hooks/useTimeAgo'
 import {getCurrentRoute} from '#/lib/routes/helpers'
+import {type CommonNavigatorParams} from '#/lib/routes/types'
 import {useProfileQuery} from '#/state/queries/profile'
 import {atoms as a, useTheme} from '#/alf'
 import {InlineLinkText, Link} from '#/components/Link'
@@ -15,21 +16,24 @@ import {
   getPublisherRssUrls,
 } from '../publishers'
 import {useRssArticlesQuery} from '../queries'
+import {ArticleCoverage} from './ArticleCoverage'
 import {articleViewLinkFor} from './articleLink'
 
 /** How many other pieces the rail lists. */
 const SHOWN = 6
 
 /**
- * The focused article's right column: more of the same outlet's recent
- * journalism, set as a continuation of the page rather than a boxed widget - the
- * same rules-and-headlines grammar as the explore spread, so the column reads as
- * one more department of it.
+ * The focused article's right column: the other newsrooms' coverage of the same
+ * story, then more of the same outlet's recent journalism. Both are set as a
+ * continuation of the page rather than as boxed widgets - the same
+ * rules-and-headlines grammar as the explore spread, so the column reads as one
+ * more department of it.
  *
  * It reads the focused article from the navigation state (like the newsroom
  * rail does) rather than taking a prop, since the shell owns the right column.
- * Only registered publishers have a front page to draw from; for any other
- * outlet the rail renders nothing and the column stays empty.
+ * Coverage needs the story the article was opened from; "more from" needs a
+ * registered publisher with a front page to draw from. With neither, the
+ * column stays empty.
  */
 export function NewsroomArticleRightRail() {
   const rawParams = useNavigationState(state => {
@@ -38,20 +42,30 @@ export function NewsroomArticleRightRail() {
     if (route.name !== 'NewsroomArticle') return undefined
     return route.params
   })
-  const params = rawParams as {outletDid?: string; url?: string} | undefined
+  const params = rawParams as
+    CommonNavigatorParams['NewsroomArticle'] | undefined
 
   const publisher = params?.outletDid
     ? getNewsroomPublisherByDid(params.outletDid)
     : undefined
 
-  if (!publisher) return null
+  if (!params) return null
 
   return (
-    <MoreFromPublisher
-      did={publisher.did}
-      feedUrls={getPublisherRssUrls(publisher)}
-      currentUrl={params?.url}
-    />
+    <>
+      <ArticleCoverage
+        url={params.url}
+        storyId={params.storyId}
+        storySource={params.storySource}
+      />
+      {publisher && (
+        <MoreFromPublisher
+          did={publisher.did}
+          feedUrls={getPublisherRssUrls(publisher)}
+          currentUrl={params.url}
+        />
+      )}
+    </>
   )
 }
 

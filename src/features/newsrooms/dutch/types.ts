@@ -114,6 +114,13 @@ export interface DutchStoriesResponse {
   stories: DutchStory[]
 }
 
+/** `/api/stories/{id}`: one story with every article, not just the first few. */
+export interface DutchStoryResponse {
+  /** The model the story belongs to, which need not be the active one. */
+  model: {id: number; fittedAt: string; active: boolean} | null
+  story: DutchStory
+}
+
 export interface DutchThemesResponse {
   themes: DutchTheme[]
 }

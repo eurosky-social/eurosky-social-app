@@ -51,6 +51,7 @@ export function adaptStory(
 
   return {
     id: String(story.id),
+    source: 'dutch',
     lead,
     coverage,
     /*

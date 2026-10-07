@@ -17,6 +17,7 @@ import {
   type DutchCategory,
   type DutchStoriesResponse,
   type DutchStory,
+  type DutchStoryResponse,
   type DutchStorySort,
   type DutchTheme,
   type DutchThemesResponse,
@@ -33,6 +34,9 @@ export const createDutchStoriesQueryKey = (args: {
   category?: string
   sort: DutchStorySort
 }) => createQueryKey('dutchStories', args)
+
+export const createDutchStoryQueryKey = (args: {id: string}) =>
+  createQueryKey('dutchStory', args)
 
 export const createDutchThemesQueryKey = (args: {category?: string}) =>
   createQueryKey('dutchThemes', args)
@@ -90,6 +94,35 @@ export function useDutchStoriesQuery({
     isLoading: query.isLoading,
     error: query.error,
   }
+}
+
+/**
+ * One story with all of its articles. The list endpoint trims each story to
+ * its first few articles; this is the whole coverage, for the article page.
+ *
+ * Story ids belong to a model, and the service still answers for a story of a
+ * model since refitted, so an old link keeps working.
+ */
+export function useDutchStoryQuery({
+  id,
+  enabled = true,
+}: {
+  id?: string
+  enabled?: boolean
+}) {
+  const pdsClient = useMaybePdsClient()
+  return useQuery({
+    queryKey: createDutchStoryQueryKey({id: id ?? ''}),
+    staleTime: STALE.MINUTES.FIVE,
+    enabled: enabled && !!id && IS_DUTCH_API_CONFIGURED && !!pdsClient,
+    async queryFn() {
+      const data = await fetchDutchApi<DutchStoryResponse>(
+        pdsClient!,
+        buildDutchApiUrl(`/api/stories/${encodeURIComponent(id!)}`),
+      )
+      return data.story
+    },
+  })
 }
 
 /**
