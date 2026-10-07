@@ -34,6 +34,11 @@ export function EventsScreen({}: Props) {
 
   const feedLabels: Record<EventFeedId, string> = {
     upcoming: l`Upcoming`,
+    following: l({
+      message: 'Following',
+      comment:
+        'Events feed tab listing events hosted by people the user follows.',
+    }),
     '40verse': l({
       message: '40verse',
       comment: 'Name of the 40verse community events feed. Do not translate.',
@@ -105,6 +110,8 @@ function EventsList({feed}: {feed: EventFeedId}) {
             <Text style={[a.text_md, t.atoms.text_contrast_medium]}>
               {feed === 'mine' ? (
                 <Trans>You haven’t created any events yet.</Trans>
+              ) : feed === 'following' ? (
+                <Trans>No upcoming events from people you follow.</Trans>
               ) : (
                 <Trans>No upcoming events.</Trans>
               )}

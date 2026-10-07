@@ -50,6 +50,22 @@ export function listEventsByLocation(
   return xrpcGet<ListResponse<EventRecord>>('event.byLocation', params, signal)
 }
 
+/**
+ * Events hosted by everyone `actor` follows. On the first call for an actor
+ * contrail hasn't seen, this returns an empty list while it loads their
+ * follows in the background.
+ */
+export function getTimelineFeed(
+  params: EventListParams & {actor: string},
+  signal?: AbortSignal,
+) {
+  return xrpcGet<ListResponse<EventRecord>>(
+    'getFeed',
+    {...params, feed: 'timeline'},
+    signal,
+  )
+}
+
 export function getEvent(
   params: {uri: string; profiles?: boolean},
   signal?: AbortSignal,

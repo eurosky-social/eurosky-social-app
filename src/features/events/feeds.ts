@@ -1,16 +1,21 @@
 import {type Props as IconProps} from '#/components/icons/common'
 import {FortyVerse} from '#/components/icons/community/FortyVerse'
-import {listEvents, listEventsByLocation} from './api'
+import {getTimelineFeed, listEvents, listEventsByLocation} from './api'
 import {
   type EventListParams,
   type EventRecord,
   type ListResponse,
 } from './types'
 
-export type EventFeedId = 'upcoming' | '40verse' | 'mine'
+export type EventFeedId = 'upcoming' | 'following' | '40verse' | 'mine'
 
 /** The selectable feeds, in tab order. */
-export const EVENT_FEED_IDS: EventFeedId[] = ['upcoming', '40verse', 'mine']
+export const EVENT_FEED_IDS: EventFeedId[] = [
+  'upcoming',
+  'following',
+  '40verse',
+  'mine',
+]
 
 /** Per-user context a feed may need to fetch. */
 export type EventFeedContext = {
@@ -39,6 +44,11 @@ export const EVENT_FEEDS: Record<
 > = {
   upcoming: {
     fetch: (params, _ctx, signal) => listEvents(params, signal),
+  },
+  following: {
+    requiresAuth: true,
+    fetch: (params, {actor}, signal) =>
+      getTimelineFeed({...params, actor: actor!}, signal),
   },
   '40verse': {
     icon: FortyVerse,
