@@ -1,31 +1,79 @@
 import {View} from 'react-native'
 import {Image} from 'expo-image'
-import {useLingui} from '@lingui/react/macro'
+import {type I18n} from '@lingui/core'
+import {Trans, useLingui} from '@lingui/react/macro'
 
+import {sanitizeDisplayName} from '#/lib/strings/display-names'
+import {sanitizeHandle} from '#/lib/strings/handles'
+import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
+import {ButtonText} from '#/components/Button'
+import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
-import {type EventRecord} from '../types'
-import {getEventImage} from '../util'
+import {type EventProfile, type EventRecord} from '../types'
+import {
+  getEventImage,
+  getEventLocationLabel,
+  getFortyVerseEventUrl,
+  getProfileAvatar,
+} from '../util'
 
-const IMAGE_SIZE = 64
+const AVATAR_SIZE = 24
+const BANNER_ASPECT_RATIO = 16 / 9
 
-export function EventItem({event}: {event: EventRecord}) {
+export function EventItem({
+  event,
+  profile,
+}: {
+  event: EventRecord
+  profile?: EventProfile
+}) {
   const t = useTheme()
-  const {i18n} = useLingui()
-  const {startsAt} = event.value
-  const startDate = typeof startsAt === 'string' ? new Date(startsAt) : null
+  const {t: l, i18n} = useLingui()
   const image = getEventImage(event)
+  const time = formatEventTime(i18n, event)
+  const when = time?.end
+    ? l({
+        message: `${time.start}\u00A0– ${time.end}`,
+        comment: 'Time range of an event, e.g. “Oct 7, 2026, 18:00 – 21:00”',
+      })
+    : time?.start
+  const where = getEventLocationLabel(event)
+  const description = event.value.description?.trim()
+  const fortyVerseUrl = getFortyVerseEventUrl(event, profile)
+
+  const authorName = sanitizeDisplayName(
+    profile?.value?.displayName ||
+      (profile?.handle ? sanitizeHandle(profile.handle, '@') : event.did),
+  )
 
   return (
     <View
       style={[
-        a.flex_row,
-        a.gap_md,
+        a.gap_sm,
         a.px_xl,
         a.py_lg,
         a.border_t,
         t.atoms.border_contrast_low,
       ]}>
+      <View style={[a.flex_row, a.align_center, a.gap_sm]}>
+        <UserAvatar
+          type="user"
+          size={AVATAR_SIZE}
+          avatar={profile && getProfileAvatar(profile)}
+        />
+        <Text
+          emoji
+          numberOfLines={1}
+          style={[a.flex_1, t.atoms.text_contrast_medium]}>
+          <Trans>
+            <Text emoji style={[a.font_semi_bold, t.atoms.text]}>
+              {authorName}
+            </Text>{' '}
+            is organizing
+          </Trans>
+        </Text>
+      </View>
       {image && (
         <Image
           source={{uri: image.url}}
@@ -33,22 +81,68 @@ export function EventItem({event}: {event: EventRecord}) {
           accessibilityIgnoresInvertColors
           loading="lazy"
           style={[
-            a.rounded_sm,
+            a.w_full,
+            a.rounded_md,
             t.atoms.bg_contrast_25,
-            {width: IMAGE_SIZE, height: IMAGE_SIZE},
+            {aspectRatio: BANNER_ASPECT_RATIO},
           ]}
         />
       )}
-      <View style={[a.flex_1, a.gap_xs]}>
-        <Text emoji style={[a.text_md, a.font_bold]}>
+      <View style={[a.gap_xs]}>
+        <Text emoji style={[a.text_lg, a.font_bold, a.leading_snug]}>
           {event.value.name}
         </Text>
-        {startDate && !isNaN(startDate.getTime()) && (
-          <Text style={[t.atoms.text_contrast_medium]}>
-            {i18n.date(startDate, {dateStyle: 'medium', timeStyle: 'short'})}
+        {(when || where) && (
+          <Text emoji style={[t.atoms.text_contrast_medium]}>
+            {[when, where].filter(Boolean).join(' · ')}
           </Text>
         )}
       </View>
+      {description && (
+        <Text emoji style={[a.leading_snug]}>
+          {description}
+        </Text>
+      )}
+      {fortyVerseUrl && (
+        <Link
+          to={fortyVerseUrl}
+          label={l`Open on 40verse`}
+          size="small"
+          color="secondary"
+          style={[a.self_start, a.mt_xs]}>
+          <ButtonText>
+            <Trans>Open on 40verse</Trans>
+          </ButtonText>
+        </Link>
+      )}
     </View>
   )
+}
+
+/**
+ * The event's start, plus its end when present. An end on the same day only
+ * shows the time.
+ */
+function formatEventTime(
+  i18n: I18n,
+  event: EventRecord,
+): {start: string; end?: string} | undefined {
+  const start = parseDate(event.value.startsAt)
+  if (!start) return undefined
+  const startText = i18n.date(start, {dateStyle: 'medium', timeStyle: 'short'})
+
+  const end = parseDate(event.value.endsAt)
+  if (!end || end <= start) return {start: startText}
+  const endText =
+    end.toDateString() === start.toDateString()
+      ? i18n.date(end, {timeStyle: 'short'})
+      : i18n.date(end, {dateStyle: 'medium', timeStyle: 'short'})
+  return {start: startText, end: endText}
+}
+
+/** Record timestamps can be malformed (`{}`), so parse defensively. */
+function parseDate(value: string | {} | undefined): Date | undefined {
+  if (typeof value !== 'string') return undefined
+  const date = new Date(value)
+  return isNaN(date.getTime()) ? undefined : date
 }

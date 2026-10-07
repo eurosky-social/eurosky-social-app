@@ -90,6 +90,9 @@ function EventsList({feed}: {feed: EventFeedId}) {
   } = useEventFeedQuery(feed)
 
   const events = data?.pages.flatMap(page => page.records) ?? []
+  const profiles = new Map(
+    data?.pages.flatMap(page => page.profiles ?? []).map(p => [p.did, p]),
+  )
 
   const onEndReached = () => {
     if (hasNextPage && !isFetchingNextPage && !error) void fetchNextPage()
@@ -99,7 +102,9 @@ function EventsList({feed}: {feed: EventFeedId}) {
     <List
       data={events}
       keyExtractor={(event: EventRecord) => event.uri}
-      renderItem={({item}: {item: EventRecord}) => <EventItem event={item} />}
+      renderItem={({item}: {item: EventRecord}) => (
+        <EventItem event={item} profile={profiles.get(item.did)} />
+      )}
       refreshing={isRefetching}
       onRefresh={() => void refetch()}
       onEndReached={onEndReached}
