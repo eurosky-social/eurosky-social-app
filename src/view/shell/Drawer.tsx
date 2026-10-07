@@ -38,6 +38,7 @@ import {
 } from '#/components/icons/Bell'
 import {Bookmark, BookmarkFilled} from '#/components/icons/Bookmark'
 import {BulletList_Stroke2_Corner0_Rounded as List} from '#/components/icons/BulletList'
+import {CalendarDays_Stroke2_Corner0_Rounded as Calendar} from '#/components/icons/CalendarDays'
 import {
   Hashtag_Filled_Corner0_Rounded as HashtagFilled,
   Hashtag_Stroke2_Corner0_Rounded as Hashtag,
@@ -287,6 +288,12 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
     setDrawerOpen(false)
   }, [navigation, setDrawerOpen, ax])
 
+  const onPressEvents = useCallback(() => {
+    ax.metric('nav:click', {item: 'events', surface: 'drawer'})
+    navigation.navigate('Events')
+    setDrawerOpen(false)
+  }, [navigation, setDrawerOpen, ax])
+
   const onPressBookmarks = useCallback(() => {
     ax.metric('nav:click', {item: 'saved', surface: 'drawer'})
     navigation.navigate('Bookmarks')
@@ -355,6 +362,7 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
             <SearchMenuItem isActive={isAtSearch} onPress={onPressSearch} />
             <HomeMenuItem isActive={isAtHome} onPress={onPressHome} />
             <NewsMenuItem onPress={onPressNews} />
+            <EventsMenuItem onPress={onPressEvents} />
             <ChatMenuItem isActive={isAtMessages} onPress={onPressMessages} />
             <NotificationsMenuItem
               isActive={isAtNotifications}
@@ -634,6 +642,20 @@ let NewsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
   )
 }
 NewsMenuItem = memo(NewsMenuItem)
+
+let EventsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
+  const {_} = useLingui()
+  const t = useTheme()
+
+  return (
+    <MenuItem
+      icon={<Calendar style={[t.atoms.text]} width={iconWidth} />}
+      label={_(msg`Events`)}
+      onPress={onPress}
+    />
+  )
+}
+EventsMenuItem = memo(EventsMenuItem)
 
 let BookmarksMenuItem = ({
   isActive,

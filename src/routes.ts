@@ -22,6 +22,7 @@ export const router = new Router<AllNavigatableRoutes>({
   NewsroomExplore: '/newsroom/explore',
   NewsroomArticle: '/newsroom/article',
   NewsroomDirectory: '/newsrooms',
+  Events: '/events',
   Newsroom: ['/newsroom/:name', '/newsroom'],
   // moderation
   Moderation: '/moderation',
