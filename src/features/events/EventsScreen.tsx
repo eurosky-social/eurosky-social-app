@@ -14,7 +14,7 @@ import {ListFooter} from '#/components/Lists'
 import {Text} from '#/components/Typography'
 import {EventFeedTabs} from './components/EventFeedTabs'
 import {EventItem} from './components/EventItem'
-import {EVENT_FEED_IDS, type EventFeedId} from './feeds'
+import {EVENT_FEED_IDS, EVENT_FEEDS, type EventFeedId} from './feeds'
 import {useEventFeedQuery} from './queries'
 import {type EventRecord} from './types'
 
@@ -45,7 +45,11 @@ export function EventsScreen({}: Props) {
       </Layout.Header.Outer>
       <Layout.Center>
         <EventFeedTabs
-          items={EVENT_FEED_IDS.map(id => ({id, label: feedLabels[id]}))}
+          items={EVENT_FEED_IDS.map(id => ({
+            id,
+            label: feedLabels[id],
+            icon: EVENT_FEEDS[id].icon,
+          }))}
           selectedId={feed}
           onSelect={setFeed}
         />

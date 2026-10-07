@@ -11,6 +11,7 @@ import {
   ArrowLeft_Stroke2_Corner0_Rounded as ArrowLeft,
   ArrowRight_Stroke2_Corner0_Rounded as ArrowRight,
 } from '#/components/icons/Arrow'
+import {type Props as IconProps} from '#/components/icons/common'
 import {Text} from '#/components/Typography'
 import {IS_WEB} from '#/env'
 
@@ -28,7 +29,7 @@ export function EventFeedTabs<Id extends string>({
   onSelect,
   gutterWidth = tokens.space.lg,
 }: {
-  items: {id: Id; label: string}[]
+  items: {id: Id; label: string; icon?: React.ComponentType<IconProps>}[]
   selectedId: Id
   onSelect: (id: Id) => void
   gutterWidth?: number
@@ -82,6 +83,7 @@ export function EventFeedTabs<Id extends string>({
               }}>
               <Tab
                 label={item.label}
+                icon={item.icon}
                 active={item.id === selectedId}
                 onPress={() => onPressTab(item.id)}
               />
@@ -111,10 +113,12 @@ export function EventFeedTabs<Id extends string>({
 
 function Tab({
   label,
+  icon: Icon,
   active,
   onPress,
 }: {
   label: string
+  icon?: React.ComponentType<IconProps>
   active: boolean
   onPress: () => void
 }) {
@@ -127,34 +131,37 @@ function Tab({
       onPress={onPress}
       // Disable the default focus ring; the pill renders its own.
       style={web({outline: 'none'})}>
-      {({hovered, pressed, focused}) => (
-        <View
-          style={[
-            a.rounded_full,
-            a.px_lg,
-            a.py_sm,
-            a.border,
-            active || hovered || pressed
-              ? [t.atoms.bg_contrast_25, t.atoms.border_contrast_medium]
-              : focused
-                ? {
-                    borderColor: t.palette.primary_300,
-                    backgroundColor: t.palette.primary_25,
-                  }
-                : [t.atoms.bg, t.atoms.border_contrast_low],
-          ]}>
-          <Text
-            emoji
+      {({hovered, pressed, focused}) => {
+        const textStyle =
+          active || hovered || pressed
+            ? t.atoms.text
+            : t.atoms.text_contrast_medium
+        return (
+          <View
             style={[
-              a.font_medium,
+              a.flex_row,
+              a.align_center,
+              a.gap_xs,
+              a.rounded_full,
+              a.px_lg,
+              a.py_sm,
+              a.border,
               active || hovered || pressed
-                ? t.atoms.text
-                : t.atoms.text_contrast_medium,
+                ? [t.atoms.bg_contrast_25, t.atoms.border_contrast_medium]
+                : focused
+                  ? {
+                      borderColor: t.palette.primary_300,
+                      backgroundColor: t.palette.primary_25,
+                    }
+                  : [t.atoms.bg, t.atoms.border_contrast_low],
             ]}>
-            {label}
-          </Text>
-        </View>
-      )}
+            {Icon && <Icon size="sm" fill={textStyle.color} />}
+            <Text emoji style={[a.font_medium, textStyle]}>
+              {label}
+            </Text>
+          </View>
+        )
+      }}
     </Button>
   )
 }

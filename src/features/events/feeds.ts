@@ -1,3 +1,5 @@
+import {type Props as IconProps} from '#/components/icons/common'
+import {FortyVerse} from '#/components/icons/community/FortyVerse'
 import {listEvents, listEventsByLocation} from './api'
 import {
   type EventListParams,
@@ -18,6 +20,8 @@ export const EVENT_FEED_IDS: EventFeedId[] = ['upcoming', '40verse']
 export const EVENT_FEEDS: Record<
   EventFeedId,
   {
+    /** Optional logo shown before the feed's label in the tab. */
+    icon?: React.ComponentType<IconProps>
     fetch: (
       params: EventListParams,
       signal?: AbortSignal,
@@ -28,6 +32,7 @@ export const EVENT_FEEDS: Record<
     fetch: (params, signal) => listEvents(params, signal),
   },
   '40verse': {
+    icon: FortyVerse,
     fetch: (params, signal) =>
       listEventsByLocation({...params, location: 'amsterdam'}, signal),
   },
