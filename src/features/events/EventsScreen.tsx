@@ -1,53 +1,31 @@
-import {useState} from 'react'
 import {View} from 'react-native'
-import {Trans, useLingui} from '@lingui/react/macro'
+import {Trans} from '@lingui/react/macro'
 
 import {
   type CommonNavigatorParams,
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
 import {cleanError} from '#/lib/strings/errors'
-import {useSession} from '#/state/session'
 import {List} from '#/view/com/util/List'
-import {atoms as a, useTheme} from '#/alf'
+import {atoms as a, useLayoutBreakpoints, useTheme} from '#/alf'
 import * as Layout from '#/components/Layout'
 import {ListFooter} from '#/components/Lists'
 import {Text} from '#/components/Typography'
+import {IS_WEB} from '#/env'
 import {EventFeedTabs} from './components/EventFeedTabs'
 import {EventItem} from './components/EventItem'
-import {EVENT_FEED_IDS, EVENT_FEEDS, type EventFeedId} from './feeds'
+import {type EventFeedId} from './feeds'
 import {useEventFeedQuery} from './queries'
 import {type EventRecord} from './types'
+import {useEventFeedOptions} from './useEventFeedOptions'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'Events'>
 
-export function EventsScreen({}: Props) {
-  const {t: l} = useLingui()
-  const {hasSession} = useSession()
-  const [selectedFeed, setSelectedFeed] = useState<EventFeedId>('upcoming')
-
-  const feedIds = EVENT_FEED_IDS.filter(
-    id => hasSession || !EVENT_FEEDS[id].requiresAuth,
-  )
-  // Fall back if the selected feed disappeared, e.g. after signing out.
-  const feed = feedIds.includes(selectedFeed) ? selectedFeed : 'upcoming'
-
-  const feedLabels: Record<EventFeedId, string> = {
-    upcoming: l`Upcoming`,
-    following: l({
-      message: 'Following',
-      comment:
-        'Events feed tab listing events hosted by people the user follows.',
-    }),
-    '40verse': l({
-      message: '40verse',
-      comment: 'Name of the 40verse community events feed. Do not translate.',
-    }),
-    mine: l({
-      message: 'My events',
-      comment: 'Events feed tab listing the events the user has created.',
-    }),
-  }
+export function EventsScreen({route, navigation}: Props) {
+  const {rightNavVisible} = useLayoutBreakpoints()
+  const {options, resolveFeed} = useEventFeedOptions()
+  // The URL holds the selected feed so the desktop right rail can share it.
+  const feed = resolveFeed(route.params?.feed)
 
   return (
     <Layout.Screen testID="eventsScreen">
@@ -60,17 +38,16 @@ export function EventsScreen({}: Props) {
         </Layout.Header.Content>
         <Layout.Header.Slot />
       </Layout.Header.Outer>
-      <Layout.Center>
-        <EventFeedTabs
-          items={feedIds.map(id => ({
-            id,
-            label: feedLabels[id],
-            icon: EVENT_FEEDS[id].icon,
-          }))}
-          selectedId={feed}
-          onSelect={setSelectedFeed}
-        />
-      </Layout.Center>
+      {/* The shell's right column lists the feeds on wide screens. */}
+      {!(IS_WEB && rightNavVisible) && (
+        <Layout.Center>
+          <EventFeedTabs
+            items={options}
+            selectedId={feed}
+            onSelect={id => navigation.setParams({feed: id})}
+          />
+        </Layout.Center>
+      )}
       <EventsList feed={feed} />
     </Layout.Screen>
   )

@@ -290,7 +290,7 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
 
   const onPressEvents = useCallback(() => {
     ax.metric('nav:click', {item: 'events', surface: 'drawer'})
-    navigation.navigate('Events')
+    navigation.navigate('Events', {})
     setDrawerOpen(false)
   }, [navigation, setDrawerOpen, ax])
 
