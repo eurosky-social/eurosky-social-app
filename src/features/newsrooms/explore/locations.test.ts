@@ -25,11 +25,19 @@ describe('pickerRegions', () => {
 })
 
 describe('sourceForRegion', () => {
-  it('reads a province from the Dutch scope, filtered by the server', () => {
+  it('reads a province from the world scope, filtered by category', () => {
     expect(sourceForRegion('nl-utrecht')).toEqual({
       source: 'dutch',
-      scope: 'dutch',
+      scope: 'all',
       category: 'nl-utrecht',
+    })
+  })
+
+  it('reads the Netherlands like any other country', () => {
+    expect(sourceForRegion('netherlands')).toEqual({
+      source: 'dutch',
+      scope: 'all',
+      country: 'nl',
     })
   })
 

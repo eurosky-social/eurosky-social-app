@@ -32,14 +32,10 @@ export const DUTCH_API_SERVICE_DID = asDid(
 export const DUTCH_API_LXM = asNsid(process.env.EXPO_PUBLIC_DUTCH_API_LXM)
 
 /**
- * The labeler's scope behind the news page's Netherlands and province
- * locations. A scope is a selection of the feeds with its own fitted model, so
- * this one's stories are clustered among the Dutch feeds alone. Scopes other than `all` are set up on the service, not in
- * its code, so this name has to match one created there.
+ * The labeler's scope behind every location: every feed. It always exists, and
+ * it is the one scope with a thread fit, so countries and provinces narrow it
+ * by filter rather than reading a scope of their own.
  */
-export const DUTCH_NETHERLANDS_SCOPE = 'dutch'
-
-/** The labeler's scope behind the World location: every feed. It always exists. */
 export const DUTCH_WORLD_SCOPE = 'all'
 
 /**

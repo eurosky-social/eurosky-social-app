@@ -45,21 +45,22 @@ unlike its id, outlives a refit, and names a thread within one scope.
 `useExploreSource({source, scope})` is the whole integration surface. It
 returns `{stories, sections, isLoading}`, and every component below it renders
 an `ExploreStory` without knowing where the story came from. The news page has
-one location picker, and every location asks for `dutch`, each with its own
-**scope** - the service's unit of "which feeds, fitted how", each with its own
-active model:
+one location picker, and every location asks for `dutch`, reading the
+`DUTCH_WORLD_SCOPE` (`all`) **scope** - the service's unit of "which feeds,
+fitted how" - narrowed by filter:
 
-- World reads `DUTCH_WORLD_SCOPE` (`all`), every feed. Where the API is not
-  configured the page offers no picker and reads `rss` instead, the client-side
-  clustering of the registered publishers' feeds.
-- All of the Netherlands reads `DUTCH_NETHERLANDS_SCOPE` (`dutch`), the Dutch
-  feeds.
-- A province reads the same scope with its label value as the `category`, so
-  the server does the filtering.
+- World reads the scope unfiltered. Where the API is not configured the page
+  offers no picker and reads `rss` instead, the client-side clustering of the
+  registered publishers' feeds.
+- A country, the Netherlands included, adds `country=` (ISO codes, `gb` for the
+  UK): the threads its outlets covered, sorted by how many of them did.
+- A province adds its label value as the `category`, so the server does the
+  filtering.
 
-Scopes other than `all` are created on the service by an admin rather than by
-its migrations, so `DUTCH_NETHERLANDS_SCOPE` must name one that exists there. Both
-hooks run either way, because hooks must, but the one not asked for fetches
+Other scopes (the admin-created `dutch` one) are not read: `/api/threads` serves
+a scope's active thread fit, a scope with only the older weekly story fit
+answers with no threads rather than an error, and the page cannot tell that
+from a quiet news day. Both hooks run either way, because hooks must, but the one not asked for fetches
 nothing - `enabled` threads that down to the per-publisher feed queries and the
 Dutch API queries.
 
