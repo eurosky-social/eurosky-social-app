@@ -403,7 +403,7 @@ interface NavItemProps {
 /** Every route of the news hub, so its nav item stays lit across its tabs. */
 const NEWS_HUB_ROUTES = [
   'NewsFeed',
-  'NewsroomLocal',
+  'NewsSettings',
   'NewsroomDirectory',
   'Newsroom',
   'NewsroomArticle',

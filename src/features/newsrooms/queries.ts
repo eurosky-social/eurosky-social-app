@@ -2,7 +2,7 @@ import {type Client, type UriString} from '@atproto/lex'
 import {type AtUriString, type DidString} from '@atproto/syntax'
 import {useQueries, useQuery} from '@tanstack/react-query'
 
-import {STALE} from '#/state/queries'
+import {GCTIME, STALE} from '#/state/queries'
 import {useProfilesQuery} from '#/state/queries/profile'
 import {createQueryKey} from '#/state/queries/util'
 import {useAppviewClient} from '#/state/session'
@@ -14,7 +14,7 @@ import {
   type NewsroomPublisher,
 } from './publishers'
 import {buildRssFetchUrl} from './rss/config'
-import {extractOgImage, parseRssFeed} from './rss/parse'
+import {extractOgImage, extractSiteIcon, parseRssFeed} from './rss/parse'
 import {type RssItem} from './rss/types'
 
 const RSS_ARTICLES_TOTAL = 7
@@ -360,6 +360,46 @@ export function useOgImageQuery({
         })
         if (!res.ok) return null
         return extractOgImage(await res.text()) ?? null
+      } catch {
+        return null
+      }
+    },
+  })
+}
+
+export const createSiteIconQueryKey = (args: {site: string}) =>
+  createQueryKey('newsroomSiteIcon', args, {persistedVersion: 1})
+
+/**
+ * The icon a site declares on its homepage, for outlets with no Bluesky avatar
+ * to show. One fetch per host, shared by every bubble and byline naming it, and
+ * persisted: a site's icon changes on the order of redesigns, so a reader
+ * should not refetch every homepage on every launch.
+ *
+ * Resolves to null rather than failing when the page or its declaration is
+ * missing, so the icon can fall back without retrying.
+ */
+export function useSiteIconQuery({
+  site,
+  enabled = true,
+}: {
+  /** The site's host, e.g. `nos.nl`. */
+  site?: string
+  enabled?: boolean
+}) {
+  return useQuery({
+    queryKey: createSiteIconQueryKey({site: site ?? ''}),
+    staleTime: STALE.INFINITY,
+    gcTime: GCTIME.INFINITY,
+    enabled: enabled && !!site,
+    queryFn: async () => {
+      const pageUrl = `https://${site}/`
+      try {
+        const res = await fetch(buildRssFetchUrl(pageUrl), {
+          headers: {Accept: 'text/html'},
+        })
+        if (!res.ok) return null
+        return extractSiteIcon(await res.text(), pageUrl) ?? null
       } catch {
         return null
       }

@@ -72,8 +72,8 @@ row. It resolves the focused org from the navigation state.
 
 ## Explore
 
-`explore/` is the hub's cross-publisher surface, reached from the rail's first
-tab and from the header menu. It answers a different question from a focused
+`explore/` is the hub's news page (`/newsroom/explore`), reached from the left
+nav's news item. It answers a different question from a focused
 newsroom page - not "what is this outlet running" but "what is being covered,
 and by whom".
 
@@ -95,7 +95,8 @@ and by whom".
   than one per article on the page.
 
 The page opens straight on the news, laid out as a broadsheet rather than a
-grid of cards: the rail, a department filter bar, then a lead band (the day's story, and beside it every other
+grid of cards: a filter bar - the location picker (see "Locations") followed
+by the department chips - then a lead band (the day's story, and beside it every other
 newsroom's version of it followed by what else is developing) then bands of departments - three columns wide, alternating with a
 single department run across the full width. Rules divide the bands and their
 columns; nothing is boxed. Choosing a department (a chip, or a department's own
@@ -103,6 +104,46 @@ name) narrows the page to that section, which keeps the same shape: its own lead
 band, then its stories as a grid of pictures and a closing pair of headline
 columns. Every headline carries its newsroom above it and its time below, and a story covered elsewhere carries a "Full coverage" row that
 expands into each other outlet's own headline.
+
+### Boosting from the news settings
+
+The header's Settings button opens `/news/settings`, the news feed's own setup
+(topics, regions, then the accounts they select), so both surfaces share one
+`social.mu.newsFeedPrefs` record. The page reads it to reorder stories, never
+to hide them (`explore/boost.ts`): each kind of interest a story matches - its
+section is one of the reader's topics, it is placed in a picked province (or
+is Dutch at all, with the Netherlands picked), or one of its outlets is a selected account (by DID, or by the
+account's handle as the outlet's domain) - moves it a fixed number of places up.
+Topics map onto both the labeler's themes and the RSS sections; a topic or
+region with no counterpart on a story boosts nothing.
+
+### Languages
+
+The settings' `languages` filter every story on the page, whatever the
+location. The labeler takes one `lang=` per request, so with one language
+picked the server filters the threads and names a lead article in it
+(`leadIn`); with several, the page reads a wider page of threads and keeps
+those with an article in any of them (`isThreadInLanguages`). Either way a
+story leads with an article in a picked language where it has one
+(`adaptThread`). RSS articles carry no language, so the RSS spread is not
+filtered.
+
+### Locations
+
+The location picker and the settings' regions are one list: `NEWS_REGIONS` in
+`features/newsFeed/sources.ts`, which carries the Dutch provinces as well as the
+countries (a province's id is the labeler's label value, e.g. `nl-utrecht`,
+and its `parent` is `netherlands`). The picker offers the world first, then the
+regions picked in the settings (`explore/locations.ts`, `pickerRegions`); with
+none picked, it offers everything it can show.
+
+A region is only offered where the page can show it on its own
+(`sourceForRegion`): the world reads the labeler's `all` scope (RSS without
+the labeler), the Netherlands its `dutch` scope, and a province that scope
+filtered by the server to the province, and another country the `all` scope
+narrowed to the threads its outlets covered (`country=`, ranked by `here`).
+Europe has no such filter, so it boosts stories without being a place to go. Without the
+labeler only the world is left, and the picker is hidden.
 
 ### Entry from the news feed
 

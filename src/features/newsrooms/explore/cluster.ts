@@ -21,6 +21,11 @@ export interface ExploreOutlet {
   did?: string
   /** Fallback display name, for an outlet with no profile to read one from. */
   name?: string
+  /**
+   * The outlet's site host, e.g. `nos.nl`. Where there is no Bluesky avatar,
+   * the icon the site declares stands in for one.
+   */
+  site?: string
   /** Section hints for an article carrying no labels of its own. */
   categories: string[]
 }
@@ -45,12 +50,32 @@ export function outletProfile<T>(
 }
 
 /**
+ * Where a spread's stories come from.
+ *
+ * - `dutch` is the Dutch labeler, which serves the structure already modeled:
+ *   stories arrive clustered, themed, and carrying their matched discussion.
+ *   It backs every location of the news page, each from its own scope (see
+ *   ../dutch/config): the World from every feed, the Netherlands and its
+ *   provinces from the Dutch feeds.
+ * - `rss` reads every registered publisher's feed and infers the structure -
+ *   clustering headlines, matching categories to a fixed section list. The
+ *   page falls back to it, World only, where the labeler's API is not
+ *   configured.
+ */
+export type ExploreSourceId = 'rss' | 'dutch'
+
+/**
  * A story as the explore page shows it: one lead article plus every other
  * newsroom's version of the same event.
  */
 export interface ExploreStory {
-  /** The lead article's URL; stable across renders of the same feed data. */
+  /**
+   * Unique within its source: the lead article's URL for RSS, stable across
+   * renders of the same feed data; the labeler's story id for Dutch.
+   */
   id: string
+  /** Where the story came from, so it can be found again by `id`. */
+  source: ExploreSourceId
   lead: ExploreArticle
   /** The lead first, then the other outlets covering the story. */
   coverage: ExploreArticle[]
@@ -62,7 +87,7 @@ export interface ExploreStory {
    * Label values of the regions the story is placed in, busiest first; empty
    * or unset for national and world news. Only a source that models regions
    * can say (the Dutch labeler does, by province); RSS clustering leaves it
-   * unset and the story stays out of Local News.
+   * unset.
    */
   regions?: string[]
 }
@@ -129,6 +154,7 @@ export function clusterArticles(
       const sections = cluster.members.map(m => m.section)
       return {
         id: lead.item.link,
+        source: 'rss' as const,
         lead,
         coverage: cluster.members,
         newsroomCount: new Set(cluster.members.map(m => m.publisher.id)).size,

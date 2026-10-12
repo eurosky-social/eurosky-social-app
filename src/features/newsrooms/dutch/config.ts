@@ -32,6 +32,13 @@ export const DUTCH_API_SERVICE_DID = asDid(
 export const DUTCH_API_LXM = asNsid(process.env.EXPO_PUBLIC_DUTCH_API_LXM)
 
 /**
+ * The labeler's scope behind every location: every feed. It always exists, and
+ * it is the one scope with a thread fit, so countries and provinces narrow it
+ * by filter rather than reading a scope of their own.
+ */
+export const DUTCH_WORLD_SCOPE = 'all'
+
+/**
  * Whether the Dutch source is configured. Both halves are needed: a base URL
  * with no audience mints no token, and the service rejects an anonymous read.
  */

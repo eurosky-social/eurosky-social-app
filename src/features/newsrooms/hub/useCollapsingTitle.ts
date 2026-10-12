@@ -17,8 +17,8 @@ const DURATION = 200
 
 /**
  * Slides the hub's title row out of view while the reader scrolls down, and
- * back as soon as they scroll up. The tabs and topic chips pinned under it
- * stay: they are how the hub is navigated, where the title is only a label.
+ * back as soon as they scroll up. The filter bar pinned under it stays: it is
+ * how the page is navigated, where the title is only a label.
  *
  * The page pins its header block as usual and applies `blockStyle` to it,
  * which moves the whole block up by the title's height; `onTitleLayout`
@@ -63,7 +63,7 @@ export function useCollapsingTitle() {
      * Web moves the pinned block with a transform, which leaves the page's
      * flow alone. Native lays the block out above its scroll view, so it pulls
      * the block up with a margin instead, letting the scroll view grow into
-     * the space rather than leaving a gap under the tabs.
+     * the space rather than leaving a gap under the filter bar.
      */
     return IS_WEB ? {transform: [{translateY: value}]} : {marginTop: value}
   })

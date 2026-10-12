@@ -1,12 +1,31 @@
 import {useMemo} from 'react'
 
 import {EXPLORE_SECTION_OTHER, type ExploreSection} from '../explore/sections'
-import {adaptStory, type DutchExploreStory, themeSections} from './adapt'
-import {useDutchStoriesQuery, useDutchThemesQuery} from './queries'
+import {
+  adaptThread,
+  type DutchExploreStory,
+  isThreadInLanguages,
+  themeSections,
+} from './adapt'
+import {
+  THREADS_LIMIT,
+  useDutchThemesQuery,
+  useDutchThreadsQuery,
+} from './queries'
 
 /**
- * The labeler's stories in the shape the spread renders, alongside the sections
- * to lay them out under.
+ * How many threads to read when several languages filter them on the client.
+ * The service filters by one language only, so with more the page reads a
+ * wider page of threads and keeps those in any of them.
+ */
+const MULTI_LANGUAGE_LIMIT = 100
+
+/** A stable empty default, so the memo below is not rebuilt every render. */
+const NO_LANGUAGES: string[] = []
+
+/**
+ * The labeler's threads in the shape the spread renders, alongside the
+ * sections to lay them out under.
  *
  * Same shape as `useExploreStories`, so the two sources are interchangeable
  * behind one page. Nothing clusters or searches for posts here because the
@@ -16,20 +35,43 @@ import {useDutchStoriesQuery, useDutchThemesQuery} from './queries'
  * returned rather than imported by the page.
  */
 export function useDutchExploreStories({
+  scope,
   theme,
   category,
+  country,
+  languages = NO_LANGUAGES,
   enabled = true,
-}: {theme?: string; category?: string; enabled?: boolean} = {}): {
+}: {
+  scope?: string
+  theme?: string
+  category?: string
+  country?: string
+  /** ISO language codes; only threads with an article in one are kept. */
+  languages?: string[]
+  enabled?: boolean
+} = {}): {
   stories: DutchExploreStory[]
   sections: ExploreSection[]
   isLoading: boolean
+  /** The threads could not be read, as opposed to there being none. */
+  isError: boolean
 } {
-  const {stories: raw, isLoading: storiesLoading} = useDutchStoriesQuery({
+  const {
+    threads,
+    isLoading: storiesLoading,
+    error,
+  } = useDutchThreadsQuery({
+    scope,
     theme,
     category,
+    country,
+    /* One language the service filters itself, and picks a lead in. */
+    lang: languages.length === 1 ? languages[0] : undefined,
+    limit: languages.length > 1 ? MULTI_LANGUAGE_LIMIT : THREADS_LIMIT,
     enabled,
   })
   const {themes, isLoading: themesLoading} = useDutchThemesQuery({
+    scope,
     category,
     enabled,
   })
@@ -42,17 +84,23 @@ export function useDutchExploreStories({
       (slug ? bySlug.get(slug) : undefined) ?? EXPLORE_SECTION_OTHER
 
     /*
-     * A story whose articles have aged out of the archive maps to nothing, so
+     * A thread whose articles have aged out of the archive maps to nothing, so
      * the page never has to render a card with no lead.
      */
-    return raw
-      .map(story => adaptStory(story, sectionForTheme))
+    return threads
+      .filter(
+        thread =>
+          languages.length === 0 || isThreadInLanguages(thread, languages),
+      )
+      .map(thread => adaptThread(thread, sectionForTheme, languages))
       .filter((story): story is DutchExploreStory => story !== undefined)
-  }, [raw, sections])
+      .slice(0, THREADS_LIMIT)
+  }, [threads, sections, languages])
 
   return {
     stories,
     sections,
     isLoading: storiesLoading || themesLoading,
+    isError: !!error,
   }
 }

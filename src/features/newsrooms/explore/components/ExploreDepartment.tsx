@@ -117,7 +117,7 @@ export function StripStory({
     <View style={[a.flex_1, a.gap_sm]}>
       {!!lead.item.imageUrl && (
         <Link
-          to={articleViewLink(lead)}
+          to={articleViewLink(lead, story)}
           label={lead.item.title}
           style={[a.w_full]}>
           <Image
@@ -134,7 +134,7 @@ export function StripStory({
         profile={outletProfile(profiles, lead.publisher)}
       />
       <Link
-        to={articleViewLink(lead)}
+        to={articleViewLink(lead, story)}
         label={lead.item.title}
         style={[a.flex_col, a.align_start, a.w_full]}>
         <Text

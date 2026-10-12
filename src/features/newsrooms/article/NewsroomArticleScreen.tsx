@@ -6,12 +6,13 @@ import {
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
 import {List} from '#/view/com/util/List'
-import {atoms as a, useTheme} from '#/alf'
+import {atoms as a, useLayoutBreakpoints, useTheme} from '#/alf'
 import {Bubbles_Stroke2_Corner2_Rounded as BubblesIcon} from '#/components/icons/Bubble'
 import * as Layout from '#/components/Layout'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
 import {useArticleDiscussionQuery} from '../queries'
+import {ArticleCoverage} from './ArticleCoverage'
 import {ArticleHeader} from './ArticleHeader'
 import {
   type ArticleThreadItem,
@@ -33,8 +34,19 @@ const BOTTOM_BUFFER = 200
  * its replies, rendered as feed slices (see `useArticleThreadItems`).
  */
 export function NewsroomArticleScreen({route}: Props) {
-  const {url, title, image, description, publishedAt, outletName, outletDid} =
-    route.params
+  const {
+    url,
+    title,
+    image,
+    description,
+    publishedAt,
+    outletName,
+    outletDid,
+    storyId,
+    storySource,
+  } = route.params
+  /* Where the shell has a right column, the coverage is in it instead. */
+  const {rightNavVisible} = useLayoutBreakpoints()
 
   const {data, isLoading} = useArticleDiscussionQuery({
     url,
@@ -57,6 +69,14 @@ export function NewsroomArticleScreen({route}: Props) {
         sharers={sharers}
         anchor={data?.anchor ?? undefined}
       />
+      {!rightNavVisible && (
+        <ArticleCoverage
+          inline
+          url={url}
+          storyId={storyId}
+          storySource={storySource}
+        />
+      )}
     </Layout.Center>
   )
 

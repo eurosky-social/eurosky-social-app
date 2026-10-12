@@ -17,12 +17,15 @@ const NEWS_FEED_PREFS_RKEY = 'self'
 
 /**
  * Empty `topics` means setup is unfinished (callers show the topic picker).
- * Empty `regions` means no region filter. Language isn't stored here - the feed
- * uses the app's normal content language preference.
+ * Empty `regions` means no region filter, and empty `languages` no language
+ * filter. `languages` came later than the rest, so a record without it reads
+ * as having none rather than failing validation.
  */
 export const newsFeedPrefsSchema = z.object({
   topics: z.array(z.string()),
   regions: z.array(z.string()),
+  /** ISO 639-1 codes, e.g. `en`: the languages of the news to show. */
+  languages: z.array(z.string()).default([]),
   excludedDids: z.array(z.string()),
   createdAt: z.string(),
 })
@@ -32,6 +35,7 @@ export function makeDefaultNewsFeedPrefs(): NewsFeedPrefs {
   return {
     topics: [],
     regions: [],
+    languages: [],
     excludedDids: [],
     createdAt: new Date().toISOString(),
   }

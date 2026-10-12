@@ -75,6 +75,49 @@ export function extractOgImage(html: string): string | undefined {
   return url ? decodeEntities(url) : undefined
 }
 
+/**
+ * The best icon a site declares in its `<link>` tags, resolved against the page
+ * URL. Most news sites serve their icons from a CDN path the HTML names rather
+ * than from `/favicon.ico`, so the declaration is the reliable source.
+ *
+ * Prefers `apple-touch-icon` (a square, opaque, usually 180px mark), then the
+ * largest `icon` by `sizes`. `mask-icon` is skipped: it is a single-color
+ * silhouette meant to be tinted, not a logo.
+ */
+export function extractSiteIcon(
+  html: string,
+  pageUrl: string,
+): string | undefined {
+  const head = html.slice(0, 150000)
+  let best: {href: string; score: number} | undefined
+
+  for (const link of matchAll(head, /<link\b[^>]*>/gi)) {
+    const rel = (
+      link.match(/\brel=["']?([^"'>]+)["']?/i)?.[1] || ''
+    ).toLowerCase()
+    const rels = rel.split(/\s+/)
+    const touch =
+      rels.includes('apple-touch-icon') ||
+      rels.includes('apple-touch-icon-precomposed')
+    if (!touch && !rels.includes('icon')) continue
+
+    const href = link.match(/\bhref=["']([^"']+)["']/i)?.[1]
+    if (!href) continue
+
+    const sizes = link.match(/\bsizes?=["']?(\d+)x\d+/i)?.[1]
+    const size = sizes ? parseInt(sizes, 10) : touch ? 180 : 16
+    const score = (touch ? 10000 : 0) + size
+    if (!best || score > best.score) best = {href, score}
+  }
+
+  if (!best) return undefined
+  try {
+    return new URL(decodeEntities(best.href), pageUrl).toString()
+  } catch {
+    return undefined
+  }
+}
+
 function matchAll(input: string, re: RegExp): string[] {
   return input.match(re) ?? []
 }

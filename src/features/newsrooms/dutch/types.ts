@@ -42,76 +42,100 @@ export interface DutchCategory {
   }
 }
 
-/** One article of a story. `uri` is the article URL, and its label subject. */
+/**
+ * An outlet as the threads API names it: by slug, with its Bluesky account and
+ * country where the service knows them.
+ */
+export interface DutchOutlet {
+  slug: string
+  did: string | null
+  name: string | null
+  /** ISO 3166-1 alpha-2, lower case (`gb` for the UK). */
+  country: string | null
+}
+
+/** One article of a thread. `uri` is the article URL, and its label subject. */
 export interface DutchArticle {
   uri: string
   title: string | null
   summary: string | null
   imageUrl: string | null
   publishedAt: string
-  outlet: string | null
+  outlet: DutchOutlet | null
   siteUrl: string | null
   /** The outlet's province slug, when it is a regional broadcaster. */
   province: string | null
+  /** ISO 639-1, the article's own or its feed's. */
+  lang: string | null
   labels: string[]
-  /** Centered cosine to the story centroid. */
-  similarity: number
+}
+
+/** One day's burst of a thread: its lead article and a few more. */
+export interface DutchEvent {
+  key: string
+  day: string
+  lead: DutchArticle | null
+  articles: DutchArticle[]
 }
 
 /**
- * A Bluesky post the pipeline matched to a story by embedding similarity. This
- * is the story's discussion, and it arrives with the story - no per-article
- * search of our own.
+ * A thread: the events of one subject linked across days, which is what the
+ * service serves as the stories of the news view. `story` is one subject;
+ * `recurring` is a kind of event reported all along, which reads as a standing
+ * department rather than as news.
  */
-export interface DutchPost {
-  uri: string
-  did: string
-  handle: string | null
-  text: string
-  createdAt: string
-  labels: string[]
-  similarity: number
-}
-
-/**
- * A cluster of the last week's articles. `story` is one event; `recurring` is a
- * kind of event reported all week, which reads as a standing department rather
- * than as news.
- */
-export interface DutchStory {
+export interface DutchThread {
   id: number
-  /** The cluster's top terms, joined. Not a headline - see `headline`. */
-  name: string
-  terms: string[]
-  /** Title of the article closest to the centroid. */
-  headline: string | null
+  /** Stable across fits, unlike `id`: what a link should carry. */
+  key: string
+  scope: string
   kind: 'story' | 'recurring'
+  /** Title of the lead article. */
+  headline: string | null
   /** Slug of the theme it belongs to; null when no theme was near enough. */
   theme: string | null
   counts: {
+    events: number
     posts: number
     articles: number
     outlets: number
   }
-  /** Province label value -> articles and posts of the story carrying it. */
+  /** Province label value -> articles and posts of the thread carrying it. */
   provinces: Record<string, number>
+  /** The countries of the outlets that covered it. */
+  countries: string[]
+  /** The languages of its articles. */
+  languages: string[]
   firstSeen: string | null
   lastSeen: string | null
-  /** Null when the story's articles have aged out of the archive. */
+  /** Null when the thread's articles have aged out of the archive. */
   lead: DutchArticle | null
-  /** The other articles, most similar first. */
-  articles: DutchArticle[]
-  /** The discussion, most similar first. */
-  posts: DutchPost[]
+  /**
+   * With `lang` asked for: the thread's lead article in that language, null
+   * when it has none. Absent otherwise.
+   */
+  leadIn?: DutchArticle | null
+  /** Most recent first, each with a few of its articles. */
+  events: DutchEvent[]
 }
 
-export interface DutchStoriesResponse {
-  /** Null when nothing has been modeled yet; `stories` is then empty. */
-  model: {id: number; fittedAt: string; active: boolean} | null
+/** The service's active fit of a scope. */
+export type DutchModel = {id: number; fittedAt: string; active: boolean}
+
+export interface DutchThreadsResponse {
+  /** Null when nothing has been fitted yet; `threads` is then empty. */
+  model: DutchModel | null
   total: number
   limit: number
   offset: number
-  stories: DutchStory[]
+  threads: DutchThread[]
+}
+
+/** `/api/threads/{key}`: one thread with every event in full. */
+export interface DutchThreadResponse {
+  /** The fit the thread belongs to, which need not be the active one. */
+  model: DutchModel | null
+  thread: DutchThread
 }
 
 export interface DutchThemesResponse {
@@ -122,5 +146,8 @@ export interface DutchCategoriesResponse {
   categories: DutchCategory[]
 }
 
-/** Sort orders `/api/stories` accepts. */
-export type DutchStorySort = 'discussed' | 'latest' | 'coverage' | 'size'
+/**
+ * Sort orders of `/api/threads` the page uses. `burst` is the service's own
+ * ranking of the news; `here` ranks by the outlets in the `country` asked for.
+ */
+export type DutchThreadSort = 'burst' | 'latest' | 'coverage' | 'here'
