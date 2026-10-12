@@ -1,17 +1,23 @@
+import {useState} from 'react'
 import {View} from 'react-native'
-import {Trans} from '@lingui/react/macro'
+import {Trans, useLingui} from '@lingui/react/macro'
 
 import {
   type CommonNavigatorParams,
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
 import {cleanError} from '#/lib/strings/errors'
+import {useSession} from '#/state/session'
 import {List} from '#/view/com/util/List'
 import {atoms as a, useLayoutBreakpoints, useTheme} from '#/alf'
+import {Button, ButtonIcon, ButtonText} from '#/components/Button'
+import * as Dialog from '#/components/Dialog'
+import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/Plus'
 import * as Layout from '#/components/Layout'
 import {ListFooter} from '#/components/Lists'
 import {Text} from '#/components/Typography'
 import {IS_WEB} from '#/env'
+import {CreateOrEditEventDialog} from './components/CreateOrEditEventDialog'
 import {EventFeedTabs} from './components/EventFeedTabs'
 import {EventItem} from './components/EventItem'
 import {type EventFeedId} from './feeds'
@@ -26,6 +32,15 @@ export function EventsScreen({route, navigation}: Props) {
   const {options, resolveFeed} = useEventFeedOptions()
   // The URL holds the selected feed so the desktop right rail can share it.
   const feed = resolveFeed(route.params?.feed)
+  const {t: l} = useLingui()
+  const {hasSession} = useSession()
+  const eventDialogControl = Dialog.useDialogControl()
+  const [editingEvent, setEditingEvent] = useState<EventRecord>()
+
+  const openEventDialog = (event?: EventRecord) => {
+    setEditingEvent(event)
+    eventDialogControl.open()
+  }
 
   return (
     <Layout.Screen testID="eventsScreen">
@@ -36,7 +51,21 @@ export function EventsScreen({route, navigation}: Props) {
             <Trans>Events</Trans>
           </Layout.Header.TitleText>
         </Layout.Header.Content>
-        <Layout.Header.Slot />
+        {hasSession ? (
+          <Button
+            label={l`New event`}
+            color="secondary"
+            size="small"
+            onPress={() => openEventDialog()}
+            testID="newEventBtn">
+            <ButtonIcon icon={PlusIcon} />
+            <ButtonText>
+              <Trans context="action">New</Trans>
+            </ButtonText>
+          </Button>
+        ) : (
+          <Layout.Header.Slot />
+        )}
       </Layout.Header.Outer>
       {/* The shell's right column lists the feeds on wide screens. */}
       {!(IS_WEB && rightNavVisible) && (
@@ -48,12 +77,28 @@ export function EventsScreen({route, navigation}: Props) {
           />
         </Layout.Center>
       )}
-      <EventsList feed={feed} />
+      <EventsList feed={feed} onEdit={openEventDialog} />
+      {hasSession && (
+        <CreateOrEditEventDialog
+          control={eventDialogControl}
+          event={editingEvent}
+          onSave={() => {
+            // A new event shows up in "My events" first; see the save mutation.
+            if (!editingEvent) navigation.setParams({feed: 'mine'})
+          }}
+        />
+      )}
     </Layout.Screen>
   )
 }
 
-function EventsList({feed}: {feed: EventFeedId}) {
+function EventsList({
+  feed,
+  onEdit,
+}: {
+  feed: EventFeedId
+  onEdit: (event: EventRecord) => void
+}) {
   const t = useTheme()
   const {
     data,
@@ -80,7 +125,11 @@ function EventsList({feed}: {feed: EventFeedId}) {
       data={events}
       keyExtractor={(event: EventRecord) => event.uri}
       renderItem={({item}: {item: EventRecord}) => (
-        <EventItem event={item} profile={profiles.get(item.did)} />
+        <EventItem
+          event={item}
+          profile={profiles.get(item.did)}
+          onEdit={() => onEdit(item)}
+        />
       )}
       refreshing={isRefetching}
       onRefresh={() => void refetch()}

@@ -7,10 +7,17 @@ import {Trans, useLingui} from '@lingui/react/macro'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {countLines} from '#/lib/strings/helpers'
+import {useSession} from '#/state/session'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
-import {ButtonText, useSharedButtonTextStyles} from '#/components/Button'
+import {
+  Button,
+  ButtonIcon,
+  ButtonText,
+  useSharedButtonTextStyles,
+} from '#/components/Button'
 import {FortyVerse} from '#/components/icons/community/FortyVerse'
+import {Pencil_Stroke2_Corner0_Rounded as PencilIcon} from '#/components/icons/Pencil'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {type EventProfile, type EventRecord} from '../types'
@@ -35,11 +42,16 @@ const DESCRIPTION_MAX_CHARS = 300
 export function EventItem({
   event,
   profile,
+  onEdit,
 }: {
   event: EventRecord
   profile?: EventProfile
+  /** Shown only on the signed-in user's own events. */
+  onEdit?: () => void
 }) {
   const t = useTheme()
+  const {currentAccount} = useSession()
+  const canEdit = !!onEdit && currentAccount?.did === event.did
   const {t: l, i18n} = useLingui()
   const image = getEventImage(event)
   const time = formatEventTime(i18n, event)
@@ -132,18 +144,35 @@ export function EventItem({
       )}
       <View style={[a.flex_row, a.align_center, a.justify_between, a.gap_sm]}>
         <EventRsvpButtons event={event} />
-        {fortyVerseUrl && (
-          <Link
-            to={fortyVerseUrl}
-            label={l`Open on 40verse`}
-            size="small"
-            variant="ghost"
-            color="secondary"
-            hoverStyle={t.atoms.bg_contrast_25}
-            style={[a.bg_transparent]}>
-            <OpenOnFortyVerse />
-          </Link>
-        )}
+        <View style={[a.flex_row, a.align_center, a.gap_xs]}>
+          {canEdit && (
+            <Button
+              label={l`Edit event`}
+              onPress={onEdit}
+              size="small"
+              variant="ghost"
+              color="secondary"
+              hoverStyle={t.atoms.bg_contrast_25}
+              style={[a.bg_transparent]}>
+              <ButtonIcon icon={PencilIcon} />
+              <ButtonText>
+                <Trans context="action">Edit</Trans>
+              </ButtonText>
+            </Button>
+          )}
+          {fortyVerseUrl && (
+            <Link
+              to={fortyVerseUrl}
+              label={l`Open on 40verse`}
+              size="small"
+              variant="ghost"
+              color="secondary"
+              hoverStyle={t.atoms.bg_contrast_25}
+              style={[a.bg_transparent]}>
+              <OpenOnFortyVerse />
+            </Link>
+          )}
+        </View>
       </View>
     </View>
   )

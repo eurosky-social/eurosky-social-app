@@ -18,11 +18,7 @@ export function getEventImage(event: EventRecord):
       alt?: string
     }
   | undefined {
-  const images = (event.value.media ?? []).filter(isImage)
-  const media =
-    images.find(m => m.role === 'banner') ??
-    images.find(m => m.role === 'thumbnail') ??
-    images[0]
+  const media = event.value.media?.[getEventImageIndex(event.value.media)]
   const cid = media?.content?.ref?.$link
   if (!cid) return undefined
 
@@ -34,6 +30,19 @@ export function getEventImage(event: EventRecord):
     url: `${CDN_SERVICE}/img/feed_thumbnail/plain/${event.did}/${cid}@jpeg`,
     alt: media.alt,
   }
+}
+
+/**
+ * Index of the event's display image in its media: the banner, falling back
+ * to the thumbnail or first image. Returns -1 when there is no image.
+ */
+export function getEventImageIndex(media: EventMedia[] = []): number {
+  const roles = ['banner', 'thumbnail', undefined]
+  for (const role of roles) {
+    const index = media.findIndex(m => isImage(m) && (!role || m.role === role))
+    if (index !== -1) return index
+  }
+  return -1
 }
 
 function isImage(media: EventMedia) {

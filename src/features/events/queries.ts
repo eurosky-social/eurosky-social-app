@@ -1,3 +1,4 @@
+import {jsonToLex, type LexMap, lexToJson} from '@atproto/lex'
 import {AtUri} from '@atproto/syntax'
 import {useLingui} from '@lingui/react/macro'
 import {
@@ -8,16 +9,23 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 
+import {uploadBlob} from '#/lib/api'
 import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
 import {usePdsClient, useSession} from '#/state/session'
 import * as Toast from '#/components/Toast'
 import {com} from '#/lexicons'
 import {getEvent} from './api'
-import {EVENTS_PAGE_SIZE, RSVP_NSID} from './config'
+import {
+  type EventFormValues,
+  toRecord,
+} from './components/CreateOrEditEventDialog/form'
+import {EVENT_NSID, EVENTS_PAGE_SIZE, RSVP_NSID} from './config'
 import {EVENT_FEEDS, type EventFeedId} from './feeds'
 import {
+  type Blob as BlobJson,
   type EventRecord,
+  type GetRecordResponse,
   type ListResponse,
   type RsvpStatus,
   type ViewerRsvp,
@@ -258,3 +266,110 @@ export function useEventRsvpMutation() {
 }
 
 type EventFeedData = InfiniteData<ListResponse<EventRecord>>
+
+/**
+ * Creates an event, or replaces it when `existing` is passed, in the
+ * signed-in user's repo. Resolves to the saved event, already written into
+ * the cached feeds.
+ */
+export function useEventSaveMutation() {
+  const pdsClient = usePdsClient()
+  const queryClient = useQueryClient()
+  const {currentAccount} = useSession()
+  const did = currentAccount?.did
+
+  return useMutation({
+    mutationFn: async ({
+      values,
+      existing,
+    }: {
+      values: EventFormValues
+      existing?: EventRecord
+    }): Promise<EventRecord> => {
+      if (!did) throw new Error('Not signed in')
+
+      const upload = values.image?.upload
+      const uploadedImage = upload
+        ? (lexToJson(
+            (await uploadBlob(pdsClient, upload.path, upload.mime)).blob,
+          ) as BlobJson)
+        : undefined
+      const record = toRecord(values, existing, uploadedImage)
+      /*
+       * The record is plain JSON, as the AppView serves it; convert its blob
+       * refs and links back to lex values for the write.
+       */
+      const lexRecord = jsonToLex(JSON.parse(JSON.stringify(record))) as LexMap
+
+      const {uri, cid} = existing
+        ? await pdsClient.call(com.atproto.repo.putRecord, {
+            repo: did,
+            collection: EVENT_NSID,
+            rkey: existing.rkey,
+            record: lexRecord,
+            // Fail rather than overwrite an edit made elsewhere.
+            swapRecord: existing.cid,
+          })
+        : await pdsClient.call(com.atproto.repo.createRecord, {
+            repo: did,
+            collection: EVENT_NSID,
+            record: lexRecord,
+          })
+
+      return {
+        // Keeps the RSVP counts when editing.
+        ...existing,
+        uri,
+        cid,
+        did,
+        collection: EVENT_NSID,
+        rkey: new AtUri(uri).rkey,
+        time_us: Date.now() * 1000,
+        value: record,
+      }
+    },
+    onSuccess: (event, {existing}) => {
+      /*
+       * Write the event into the cache rather than refetching: the AppView
+       * hasn't indexed the write yet, so a refetch would drop it.
+       */
+      queryClient.setQueryData<GetRecordResponse<EventRecord>>(
+        createEventQueryKey({uri: event.uri}),
+        old => ({...old, ...event}),
+      )
+      if (existing) {
+        queryClient.setQueriesData<EventFeedData>(
+          {queryKey: [eventFeedQueryKeyRoot]},
+          data =>
+            data
+              ? {
+                  ...data,
+                  pages: data.pages.map(page => ({
+                    ...page,
+                    records: page.records.map(record =>
+                      record.uri === event.uri ? event : record,
+                    ),
+                  })),
+                }
+              : data,
+        )
+      } else {
+        // New events go to the top of "My events", which is newest first.
+        queryClient.setQueriesData<EventFeedData>(
+          {queryKey: [eventFeedQueryKeyRoot, {feed: 'mine'}]},
+          data =>
+            data
+              ? {
+                  ...data,
+                  pages: data.pages.map((page, i) =>
+                    i === 0
+                      ? {...page, records: [event, ...page.records]}
+                      : page,
+                  ),
+                }
+              : data,
+        )
+      }
+    },
+  })
+}
