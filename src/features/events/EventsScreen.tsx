@@ -24,9 +24,9 @@ import {EventItem} from './components/EventItem'
 import {type EventFeedId} from './feeds'
 import {
   type EventFilters,
-  eventFiltersToRouteParams,
   hasActiveFilters,
   readEventFilters,
+  withEventFilterParams,
 } from './filters'
 import {useEventFeedQuery} from './queries'
 import {type EventRecord} from './types'
@@ -63,7 +63,9 @@ export function EventsScreen({route, navigation}: Props) {
           <EventFiltersDialog
             filters={filters}
             onApply={next =>
-              navigation.setParams(eventFiltersToRouteParams(next))
+              navigation.replaceParams(
+                withEventFilterParams(route.params, next),
+              )
             }
           />
           {hasSession && (
