@@ -9,13 +9,16 @@ import {useProfileQuery} from '#/state/queries/profile'
 import {atoms as a, useTheme} from '#/alf'
 import {InlineLinkText, Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
+import {articleItem} from '../dutch/adapt'
+import {useDutchOutletArticlesQuery} from '../dutch/queries'
 import {BandRule, KickerText} from '../explore/components/Rules'
 import {
-  getNewsroomPublisherByDid,
-  getPublisherName,
-  getPublisherRssUrls,
-} from '../publishers'
-import {useRssArticlesQuery} from '../queries'
+  findNewsroom,
+  type Newsroom,
+  newsroomPath,
+  useNewsrooms,
+} from '../newsrooms'
+import {getPublisherName} from '../publishers'
 import {ArticleCoverage} from './ArticleCoverage'
 import {articleViewLinkFor} from './articleLink'
 
@@ -31,9 +34,9 @@ const SHOWN = 6
  *
  * It reads the focused article from the navigation state (like the newsroom
  * rail does) rather than taking a prop, since the shell owns the right column.
- * Coverage needs the story the article was opened from; "more from" needs a
- * registered publisher with a front page to draw from. With neither, the
- * column stays empty.
+ * Coverage needs the story the article was opened from; "more from" needs the
+ * outlet to be a newsroom, one of the news aggregator's outlets. With neither,
+ * the column stays empty.
  */
 export function NewsroomArticleRightRail() {
   const rawParams = useNavigationState(state => {
@@ -45,9 +48,11 @@ export function NewsroomArticleRightRail() {
   const params = rawParams as
     CommonNavigatorParams['NewsroomArticle'] | undefined
 
-  const publisher = params?.outletDid
-    ? getNewsroomPublisherByDid(params.outletDid)
-    : undefined
+  const {newsrooms} = useNewsrooms()
+  const newsroom = findNewsroom(
+    newsrooms,
+    params?.outletSlug ?? params?.outletDid,
+  )
 
   if (!params) return null
 
@@ -58,33 +63,29 @@ export function NewsroomArticleRightRail() {
         storyId={params.storyId}
         storySource={params.storySource}
       />
-      {publisher && (
-        <MoreFromPublisher
-          did={publisher.did}
-          feedUrls={getPublisherRssUrls(publisher)}
-          currentUrl={params.url}
-        />
+      {newsroom && (
+        <MoreFromNewsroom newsroom={newsroom} currentUrl={params.url} />
       )}
     </>
   )
 }
 
-function MoreFromPublisher({
-  did,
-  feedUrls,
+function MoreFromNewsroom({
+  newsroom,
   currentUrl,
 }: {
-  did: string
-  feedUrls: string[]
+  newsroom: Newsroom
   currentUrl?: string
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
   const timeAgo = useGetTimeAgo()
-  const {data: profile} = useProfileQuery({did})
-  const {data: articles} = useRssArticlesQuery({urls: feedUrls})
+  const {data: profile} = useProfileQuery({did: newsroom.did})
+  /* The same query as its front page, so opening the newsroom is instant. */
+  const {data} = useDutchOutletArticlesQuery({slug: newsroom.slug})
+  const articles = data?.map(articleItem)
 
-  const name = getPublisherName(profile)
+  const name = getPublisherName(profile) || newsroom.name
   // Drop the piece being read; it is already the whole page above.
   const others = (articles ?? [])
     .filter(item => item.link !== currentUrl)
@@ -95,7 +96,7 @@ function MoreFromPublisher({
   return (
     <View style={[a.px_lg, a.pt_2xl, a.gap_md]}>
       <KickerText>
-        {name ? l`More from ${name}` : l`More from this publisher`}
+        {name ? l`More from ${name}` : l`More from this newsroom`}
       </KickerText>
       <BandRule />
 
@@ -106,7 +107,11 @@ function MoreFromPublisher({
         return (
           <View key={item.id} style={[a.gap_2xs]}>
             <Link
-              to={articleViewLinkFor(item, {did, name})}
+              to={articleViewLinkFor(item, {
+                did: newsroom.did,
+                name,
+                slug: newsroom.slug,
+              })}
               label={item.title}
               style={[a.flex_col, a.align_start, a.w_full]}>
               <Text
@@ -128,7 +133,7 @@ function MoreFromPublisher({
       })}
 
       <InlineLinkText
-        to={`/newsroom/${did}`}
+        to={newsroomPath(newsroom)}
         label={l`Open the newsroom`}
         style={[a.text_sm, a.font_bold, {color: t.palette.primary_500}]}>
         {l`See the newsroom`}

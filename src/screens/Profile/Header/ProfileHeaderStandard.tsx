@@ -45,7 +45,11 @@ import {useAnalytics} from '#/analytics'
 import {IS_IOS, IS_NATIVE} from '#/env'
 import {InviteFriendsDialog} from '#/features/inviteFriends'
 import {useActorStatus} from '#/features/liveNow'
-import {getNewsroomPublisherByDid} from '#/features/newsrooms/publishers'
+import {
+  findNewsroom,
+  newsroomPath,
+  useNewsrooms,
+} from '#/features/newsrooms/newsrooms'
 import {type app} from '#/lexicons'
 import {GermButton} from '../components/GermButton'
 import {ProfileHeaderDisplayName} from './DisplayName'
@@ -286,7 +290,9 @@ export function HeaderStandardButtons({
 
   const isMe = currentAccount?.did === profile.did
 
-  const newsroomPublisher = getNewsroomPublisherByDid(profile.did)
+  /* An account that is one of the news aggregator's outlets has a newsroom. */
+  const {newsrooms} = useNewsrooms()
+  const newsroom = findNewsroom(newsrooms, profile.did)
 
   const onPressFollow = () => {
     playHaptic()
@@ -375,10 +381,10 @@ export function HeaderStandardButtons({
 
   return (
     <>
-      {newsroomPublisher && (
+      {newsroom && (
         <Link
           testID="profileHeaderNewsroomButton"
-          to={`/newsroom/${profile.did}`}
+          to={newsroomPath(newsroom)}
           label={_(
             msg`Visit the ${sanitizeDisplayName(
               profile.displayName || profile.handle,

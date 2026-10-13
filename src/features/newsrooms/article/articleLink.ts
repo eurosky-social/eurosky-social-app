@@ -18,7 +18,11 @@ export function articleViewLink(
 ) {
   return articleViewLinkFor(
     article.item,
-    {did: article.publisher.did, name: article.publisher.name},
+    {
+      did: article.publisher.did,
+      name: article.publisher.name,
+      slug: article.publisher.slug,
+    },
     story,
   )
 }
@@ -30,21 +34,29 @@ export function articleViewLink(
  */
 export function articleViewLinkFor(
   item: RssItem,
-  outlet: {did?: string; name?: string},
+  outlet: {did?: string; name?: string; slug?: string},
   story?: Pick<ExploreStory, 'id' | 'source'>,
 ) {
+  const params = {
+    url: item.link,
+    title: item.title || undefined,
+    image: item.imageUrl,
+    description: item.description,
+    publishedAt: item.publishedAt,
+    outletName: outlet.name,
+    outletDid: outlet.did,
+    outletSlug: outlet.slug,
+    storyId: story?.id,
+    storySource: story?.source,
+  }
   return {
     screen: 'NewsroomArticle' as const,
-    params: {
-      url: item.link,
-      title: item.title || undefined,
-      image: item.imageUrl,
-      description: item.description,
-      publishedAt: item.publishedAt,
-      outletName: outlet.name,
-      outletDid: outlet.did,
-      storyId: story?.id,
-      storySource: story?.source,
-    },
+    /*
+     * Unset values are left out: on web the params become the address, where
+     * one would read back as the string "undefined".
+     */
+    params: Object.fromEntries(
+      Object.entries(params).filter(([, value]) => value !== undefined),
+    ) as typeof params,
   }
 }

@@ -35,6 +35,8 @@ export type CommonNavigatorParams = {
     publishedAt?: string
     outletName?: string
     outletDid?: string
+    /** The outlet's slug at the news aggregator: its newsroom. */
+    outletSlug?: string
     /** The story the article was opened from, for its other coverage. */
     storyId?: string
     storySource?: 'rss' | 'dutch'
