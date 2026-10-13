@@ -1,4 +1,4 @@
-import {jsonToLex, type LexMap, lexToJson} from '@atproto/lex'
+import {jsonToLex, type LexMap, lexToJson, type UriString} from '@atproto/lex'
 import {AtUri} from '@atproto/syntax'
 import {useLingui} from '@lingui/react/macro'
 import {
@@ -10,21 +10,28 @@ import {
 } from '@tanstack/react-query'
 
 import {uploadBlob} from '#/lib/api'
+import {BLUESKY_APPVIEW_SERVICE} from '#/lib/constants'
 import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
-import {usePdsClient, useSession} from '#/state/session'
+import {useAppviewClient, usePdsClient, useSession} from '#/state/session'
 import * as Toast from '#/components/Toast'
-import {com} from '#/lexicons'
+import {app, com} from '#/lexicons'
 import {getEvent} from './api'
 import {
   type EventFormValues,
   toRecord,
 } from './components/CreateOrEditEventDialog/form'
-import {EVENT_NSID, EVENTS_PAGE_SIZE, RSVP_NSID} from './config'
+import {
+  EVENT_NSID,
+  EVENT_POSTS_SHOWN,
+  EVENTS_PAGE_SIZE,
+  RSVP_NSID,
+} from './config'
 import {EVENT_FEEDS, type EventFeedId} from './feeds'
 import {type EventFilters, type EventSort, toEventSortParams} from './filters'
 import {
   type Blob as BlobJson,
+  type EventProfile,
   type EventRecord,
   type GetRecordResponse,
   type ListResponse,
@@ -32,11 +39,12 @@ import {
   type ViewerRsvp,
   type ViewerRsvps,
 } from './types'
-import {applyRsvpChange} from './util'
+import {applyRsvpChange, getEventShareUrls} from './util'
 
 const eventFeedQueryKeyRoot = 'eventFeed'
 const eventQueryKeyRoot = 'event'
 const viewerEventRsvpsQueryKeyRoot = 'viewerEventRsvps'
+const eventPostsQueryKeyRoot = 'eventPosts'
 
 /**
  * Every feed shares the `eventFeed` root, so all feeds can be invalidated at
@@ -52,6 +60,9 @@ export const createEventFeedQueryKey = (args: {
 
 export const createEventQueryKey = (args: {uri: string}) =>
   createQueryKey(eventQueryKeyRoot, args)
+
+export const createEventPostsQueryKey = (args: {uri: string}) =>
+  createQueryKey(eventPostsQueryKeyRoot, args)
 
 export const createViewerEventRsvpsQueryKey = (args: {did?: string}) =>
   createQueryKey(viewerEventRsvpsQueryKeyRoot, args)
@@ -109,6 +120,42 @@ export function useEventQuery({uri}: {uri: string}) {
   return useQuery({
     queryKey: createEventQueryKey({uri}),
     queryFn: ({signal}) => getEvent({uri, profiles: true}, signal),
+    staleTime: STALE.MINUTES.FIVE,
+  })
+}
+
+/**
+ * Bluesky posts that link to the event's page on another events app, in the
+ * order post search returns them. Several URLs in one search match any of
+ * them.
+ */
+export function useEventPostsQuery({
+  event,
+  profile,
+}: {
+  event: EventRecord
+  profile?: EventProfile
+}) {
+  const client = useAppviewClient()
+  const {hasSession} = useSession()
+
+  return useQuery({
+    queryKey: createEventPostsQueryKey({uri: event.uri}),
+    // Bluesky's post search requires authentication.
+    enabled: hasSession,
+    queryFn: async () => {
+      const data = await client.call(
+        app.bsky.feed.searchPostsV2,
+        {
+          urls: getEventShareUrls(event, profile) as UriString[],
+          limit: EVENT_POSTS_SHOWN,
+          // Without this, search only covers recent posts.
+          allTime: true,
+        },
+        {service: BLUESKY_APPVIEW_SERVICE},
+      )
+      return data.posts
+    },
     staleTime: STALE.MINUTES.FIVE,
   })
 }

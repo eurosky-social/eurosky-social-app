@@ -92,6 +92,27 @@ export function getFortyVerseEventUrl(
   return new URL(`/p/${actor}/e/${event.rkey}`, FORTYVERSE_URL).href
 }
 
+/** Hosts that render an event at `/p/<actor>/e/<rkey>`. */
+const ATMO_HOSTS = ['https://atmo.rsvp', 'https://events.atmosphere.tickets']
+
+/**
+ * The public web pages of other apps that render the event, as people link to
+ * them in posts. Mirrors `eventShareUrls` in 40verse-atproto.
+ *
+ * Each host mints the link with the organiser's handle or DID, and post search
+ * matches the exact URL, so both forms of every host are listed.
+ */
+export function getEventShareUrls(
+  event: EventRecord,
+  profile?: EventProfile,
+): string[] {
+  const actors = profile?.handle ? [event.did, profile.handle] : [event.did]
+  return actors.flatMap(actor => [
+    `https://smokesignal.events/${actor}/${event.rkey}`,
+    ...ATMO_HOSTS.map(host => `${host}/p/${actor}/e/${event.rkey}`),
+  ])
+}
+
 const RSVP_COUNT_FIELDS = {
   'community.lexicon.calendar.rsvp#going': 'rsvpsGoingCount',
   'community.lexicon.calendar.rsvp#interested': 'rsvpsInterestedCount',

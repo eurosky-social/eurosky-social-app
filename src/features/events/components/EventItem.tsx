@@ -27,6 +27,7 @@ import {
   getFortyVerseEventUrl,
   getProfileAvatar,
 } from '../util'
+import {EventPosts} from './EventPosts'
 import {EventRsvpButtons} from './EventRsvpButtons'
 import {ShowMoreButton} from './ShowMoreButton'
 
@@ -76,104 +77,103 @@ export function EventItem({
   )
 
   return (
-    <View
-      style={[
-        a.gap_sm,
-        a.px_xl,
-        a.py_lg,
-        a.border_t,
-        t.atoms.border_contrast_low,
-      ]}>
-      <View style={[a.flex_row, a.align_center, a.gap_sm]}>
-        <UserAvatar
-          type="user"
-          size={AVATAR_SIZE}
-          avatar={profile && getProfileAvatar(profile)}
-        />
-        <Text
-          emoji
-          numberOfLines={1}
-          style={[a.flex_1, t.atoms.text_contrast_medium]}>
-          <Trans>
-            <Text emoji style={[a.font_semi_bold, t.atoms.text]}>
-              {authorName}
-            </Text>{' '}
-            is organizing
-          </Trans>
-        </Text>
-      </View>
-      {image && (
-        <Image
-          source={{uri: image.url}}
-          alt={image.alt}
-          accessibilityIgnoresInvertColors
-          loading="lazy"
-          style={[
-            a.w_full,
-            a.rounded_md,
-            t.atoms.bg_contrast_25,
-            {aspectRatio: BANNER_ASPECT_RATIO},
-          ]}
-        />
-      )}
-      <View style={[a.gap_xs]}>
-        <Text emoji style={[a.text_lg, a.font_bold, a.leading_snug]}>
-          {event.value.name}
-        </Text>
-        {(when || where) && (
-          <Text emoji style={[t.atoms.text_contrast_medium]}>
-            {[when, where].filter(Boolean).join(' · ')}
-          </Text>
-        )}
-      </View>
-      {description && (
-        <View>
+    <View style={[a.border_t, t.atoms.border_contrast_low]}>
+      <View style={[a.gap_sm, a.px_xl, a.py_lg]}>
+        <View style={[a.flex_row, a.align_center, a.gap_sm]}>
+          <UserAvatar
+            type="user"
+            size={AVATAR_SIZE}
+            avatar={profile && getProfileAvatar(profile)}
+          />
           <Text
             emoji
-            numberOfLines={limitDescription ? DESCRIPTION_MAX_LINES : undefined}
-            style={[a.leading_snug]}>
-            {description}
+            numberOfLines={1}
+            style={[a.flex_1, t.atoms.text_contrast_medium]}>
+            <Trans>
+              <Text emoji style={[a.font_semi_bold, t.atoms.text]}>
+                {authorName}
+              </Text>{' '}
+              is organizing
+            </Trans>
           </Text>
-          {limitDescription && (
-            <ShowMoreButton
-              label={l`Expand event description`}
-              onPress={() => setLimitDescription(false)}
-            />
+        </View>
+        {image && (
+          <Image
+            source={{uri: image.url}}
+            alt={image.alt}
+            accessibilityIgnoresInvertColors
+            loading="lazy"
+            style={[
+              a.w_full,
+              a.rounded_md,
+              t.atoms.bg_contrast_25,
+              {aspectRatio: BANNER_ASPECT_RATIO},
+            ]}
+          />
+        )}
+        <View style={[a.gap_xs]}>
+          <Text emoji style={[a.text_lg, a.font_bold, a.leading_snug]}>
+            {event.value.name}
+          </Text>
+          {(when || where) && (
+            <Text emoji style={[t.atoms.text_contrast_medium]}>
+              {[when, where].filter(Boolean).join(' · ')}
+            </Text>
           )}
         </View>
-      )}
-      <View style={[a.flex_row, a.align_center, a.justify_between, a.gap_sm]}>
-        <EventRsvpButtons event={event} />
-        <View style={[a.flex_row, a.align_center, a.gap_xs]}>
-          {canEdit && (
-            <Button
-              label={l`Edit event`}
-              onPress={onEdit}
-              size="small"
-              variant="ghost"
-              color="secondary"
-              hoverStyle={t.atoms.bg_contrast_25}
-              style={[a.bg_transparent]}>
-              <ButtonIcon icon={PencilIcon} />
-              <ButtonText>
-                <Trans context="action">Edit</Trans>
-              </ButtonText>
-            </Button>
-          )}
-          {fortyVerseUrl && (
-            <Link
-              to={fortyVerseUrl}
-              label={l`Open on 40verse`}
-              size="small"
-              variant="ghost"
-              color="secondary"
-              hoverStyle={t.atoms.bg_contrast_25}
-              style={[a.bg_transparent]}>
-              <OpenOnFortyVerse />
-            </Link>
-          )}
+        {description && (
+          <View>
+            <Text
+              emoji
+              numberOfLines={
+                limitDescription ? DESCRIPTION_MAX_LINES : undefined
+              }
+              style={[a.leading_snug]}>
+              {description}
+            </Text>
+            {limitDescription && (
+              <ShowMoreButton
+                label={l`Expand event description`}
+                onPress={() => setLimitDescription(false)}
+              />
+            )}
+          </View>
+        )}
+        <View style={[a.flex_row, a.align_center, a.justify_between, a.gap_sm]}>
+          <EventRsvpButtons event={event} />
+          <View style={[a.flex_row, a.align_center, a.gap_xs]}>
+            {canEdit && (
+              <Button
+                label={l`Edit event`}
+                onPress={onEdit}
+                size="small"
+                variant="ghost"
+                color="secondary"
+                hoverStyle={t.atoms.bg_contrast_25}
+                style={[a.bg_transparent]}>
+                <ButtonIcon icon={PencilIcon} />
+                <ButtonText>
+                  <Trans context="action">Edit</Trans>
+                </ButtonText>
+              </Button>
+            )}
+            {fortyVerseUrl && (
+              <Link
+                to={fortyVerseUrl}
+                label={l`Open on 40verse`}
+                size="small"
+                variant="ghost"
+                color="secondary"
+                hoverStyle={t.atoms.bg_contrast_25}
+                style={[a.bg_transparent]}>
+                <OpenOnFortyVerse />
+              </Link>
+            )}
+          </View>
         </View>
       </View>
+      {/* Full width: Post brings its own padding and top border. */}
+      <EventPosts event={event} profile={profile} />
     </View>
   )
 }

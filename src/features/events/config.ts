@@ -23,3 +23,6 @@ export const RSVP_NSID = 'community.lexicon.calendar.rsvp'
 
 /** Page size for event lists. */
 export const EVENTS_PAGE_SIZE = 30
+
+/** Most posts about an event shown under it in a feed. */
+export const EVENT_POSTS_SHOWN = 3
