@@ -22,11 +22,16 @@ type Props = NativeStackScreenProps<CommonNavigatorParams, 'NewsSettings'>
 export function NewsSettingsScreen({navigation}: Props) {
   const {data: prefs, isLoading} = useNewsFeedPrefsQuery()
 
+  /*
+   * Leaving replaces the screen rather than stacking the news page on it: a
+   * settings screen left mounted underneath keeps the draft it opened with,
+   * and saving from it later would overwrite whatever was saved since.
+   */
   function leave() {
     if (navigation.canGoBack()) {
       navigation.goBack()
     } else {
-      navigation.navigate('NewsroomExplore')
+      navigation.replace('NewsroomExplore')
     }
   }
 
