@@ -10,23 +10,11 @@ import {countLines} from '#/lib/strings/helpers'
 import {useSession} from '#/state/session'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
-import {
-  Button,
-  ButtonIcon,
-  ButtonText,
-  useSharedButtonTextStyles,
-} from '#/components/Button'
-import {FortyVerse} from '#/components/icons/community/FortyVerse'
+import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {Pencil_Stroke2_Corner0_Rounded as PencilIcon} from '#/components/icons/Pencil'
-import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {type EventProfile, type EventRecord} from '../types'
-import {
-  getEventImage,
-  getEventLocationLabel,
-  getFortyVerseEventUrl,
-  getProfileAvatar,
-} from '../util'
+import {getEventImage, getEventLocationLabel, getProfileAvatar} from '../util'
 import {EventPosts} from './EventPosts'
 import {EventRsvpButtons} from './EventRsvpButtons'
 import {ShowMoreButton} from './ShowMoreButton'
@@ -69,7 +57,6 @@ export function EventItem({
       countLines(description) >= DESCRIPTION_MAX_LINES ||
       (description?.length ?? 0) > DESCRIPTION_MAX_CHARS,
   )
-  const fortyVerseUrl = getFortyVerseEventUrl(event, profile)
 
   const authorName = sanitizeDisplayName(
     profile?.value?.displayName ||
@@ -157,39 +144,12 @@ export function EventItem({
                 </ButtonText>
               </Button>
             )}
-            {fortyVerseUrl && (
-              <Link
-                to={fortyVerseUrl}
-                label={l`Open on 40verse`}
-                size="small"
-                variant="ghost"
-                color="secondary"
-                hoverStyle={t.atoms.bg_contrast_25}
-                style={[a.bg_transparent]}>
-                <OpenOnFortyVerse />
-              </Link>
-            )}
           </View>
         </View>
       </View>
       {/* Full width: Post brings its own padding and top border. */}
       <EventPosts event={event} profile={profile} />
     </View>
-  )
-}
-
-/** "Open on" followed by the 40verse logo, in the button's text colour. */
-function OpenOnFortyVerse() {
-  const textStyles = useSharedButtonTextStyles()
-  return (
-    <>
-      <ButtonText>
-        <Trans comment="Followed by the 40verse logo, e.g. “Open on 40verse”">
-          Open on
-        </Trans>
-      </ButtonText>
-      <FortyVerse size="sm" fill={textStyles.color} />
-    </>
   )
 }
 

@@ -7,13 +7,6 @@ export const EVENTS_APPVIEW_URL =
   process.env.EXPO_PUBLIC_EVENTS_APPVIEW_URL ||
   'https://contrail-production.up.railway.app'
 
-/**
- * Base URL of the 40verse web app, which renders events at
- * `/p/<actor>/e/<rkey>`. The "Open on 40verse" button is hidden when unset.
- */
-export const FORTYVERSE_URL =
-  process.env.EXPO_PUBLIC_EVENTS_FORTYVERSE_URL || ''
-
 /** XRPC namespace of the events AppView's endpoints. */
 export const EVENTS_NAMESPACE = 'social.40verse'
 

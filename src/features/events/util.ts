@@ -1,5 +1,4 @@
 import {CDN_SERVICE} from '#/lib/constants'
-import {FORTYVERSE_URL} from './config'
 import {
   type EventLocation,
   type EventMedia,
@@ -76,20 +75,6 @@ function getLocationLabel(location: EventLocation): string | undefined {
     if (parts.length) return parts.join(', ')
   }
   return undefined
-}
-
-/**
- * The event's page on the 40verse web app, or undefined when no 40verse URL is
- * configured. The actor slot accepts a handle or a DID; handles read nicer.
- */
-export function getFortyVerseEventUrl(
-  event: EventRecord,
-  profile?: EventProfile,
-): string | undefined {
-  if (!FORTYVERSE_URL) return undefined
-  const actor = profile?.handle ?? event.did
-  // Handles, DIDs and rkeys are all path-safe, so no encoding is needed.
-  return new URL(`/p/${actor}/e/${event.rkey}`, FORTYVERSE_URL).href
 }
 
 /** Hosts that render an event at `/p/<actor>/e/<rkey>`. */
