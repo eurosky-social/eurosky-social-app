@@ -23,7 +23,7 @@ export type CommonNavigatorParams = {
   NotFound: undefined
   Lists: undefined
   NewsFeed: undefined
-  Events: {feed?: string}
+  Events: {feed?: string; location?: string}
   NewsSettings: undefined
   Newsroom: {name?: string}
   NewsroomExplore: undefined

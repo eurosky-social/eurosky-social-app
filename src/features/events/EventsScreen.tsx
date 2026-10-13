@@ -19,8 +19,15 @@ import {Text} from '#/components/Typography'
 import {IS_WEB} from '#/env'
 import {CreateOrEditEventDialog} from './components/CreateOrEditEventDialog'
 import {EventFeedTabs} from './components/EventFeedTabs'
+import {EventFiltersDialog} from './components/EventFiltersDialog'
 import {EventItem} from './components/EventItem'
 import {type EventFeedId} from './feeds'
+import {
+  type EventFilters,
+  eventFiltersToRouteParams,
+  hasActiveFilters,
+  readEventFilters,
+} from './filters'
 import {useEventFeedQuery} from './queries'
 import {type EventRecord} from './types'
 import {useEventFeedOptions} from './useEventFeedOptions'
@@ -32,6 +39,7 @@ export function EventsScreen({route, navigation}: Props) {
   const {options, resolveFeed} = useEventFeedOptions()
   // The URL holds the selected feed so the desktop right rail can share it.
   const feed = resolveFeed(route.params?.feed)
+  const filters = readEventFilters(route.params)
   const {t: l} = useLingui()
   const {hasSession} = useSession()
   const eventDialogControl = Dialog.useDialogControl()
@@ -51,21 +59,27 @@ export function EventsScreen({route, navigation}: Props) {
             <Trans>Events</Trans>
           </Layout.Header.TitleText>
         </Layout.Header.Content>
-        {hasSession ? (
-          <Button
-            label={l`New event`}
-            color="secondary"
-            size="small"
-            onPress={() => openEventDialog()}
-            testID="newEventBtn">
-            <ButtonIcon icon={PlusIcon} />
-            <ButtonText>
-              <Trans context="action">New</Trans>
-            </ButtonText>
-          </Button>
-        ) : (
-          <Layout.Header.Slot />
-        )}
+        <View style={[a.flex_row, a.align_center, a.gap_sm]}>
+          <EventFiltersDialog
+            filters={filters}
+            onApply={next =>
+              navigation.setParams(eventFiltersToRouteParams(next))
+            }
+          />
+          {hasSession && (
+            <Button
+              label={l`New event`}
+              color="secondary"
+              size="small"
+              onPress={() => openEventDialog()}
+              testID="newEventBtn">
+              <ButtonIcon icon={PlusIcon} />
+              <ButtonText>
+                <Trans context="action">New</Trans>
+              </ButtonText>
+            </Button>
+          )}
+        </View>
       </Layout.Header.Outer>
       {/* The shell's right column lists the feeds on wide screens. */}
       {!(IS_WEB && rightNavVisible) && (
@@ -77,7 +91,7 @@ export function EventsScreen({route, navigation}: Props) {
           />
         </Layout.Center>
       )}
-      <EventsList feed={feed} onEdit={openEventDialog} />
+      <EventsList feed={feed} filters={filters} onEdit={openEventDialog} />
       {hasSession && (
         <CreateOrEditEventDialog
           control={eventDialogControl}
@@ -94,9 +108,11 @@ export function EventsScreen({route, navigation}: Props) {
 
 function EventsList({
   feed,
+  filters,
   onEdit,
 }: {
   feed: EventFeedId
+  filters: EventFilters
   onEdit: (event: EventRecord) => void
 }) {
   const t = useTheme()
@@ -109,7 +125,7 @@ function EventsList({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useEventFeedQuery(feed)
+  } = useEventFeedQuery(feed, filters)
 
   const events = data?.pages.flatMap(page => page.records) ?? []
   const profiles = new Map(
@@ -139,7 +155,9 @@ function EventsList({
         isLoading || error ? undefined : (
           <View style={[a.p_xl]}>
             <Text style={[a.text_md, t.atoms.text_contrast_medium]}>
-              {feed === 'mine' ? (
+              {hasActiveFilters(filters) ? (
+                <Trans>No upcoming events with the selected filters.</Trans>
+              ) : feed === 'mine' ? (
                 <Trans>You haven’t created any events yet.</Trans>
               ) : feed === 'following' ? (
                 <Trans>No upcoming events from people you follow.</Trans>

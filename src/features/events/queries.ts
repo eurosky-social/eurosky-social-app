@@ -22,6 +22,7 @@ import {
 } from './components/CreateOrEditEventDialog/form'
 import {EVENT_NSID, EVENTS_PAGE_SIZE, RSVP_NSID} from './config'
 import {EVENT_FEEDS, type EventFeedId} from './feeds'
+import {type EventFilters} from './filters'
 import {
   type Blob as BlobJson,
   type EventRecord,
@@ -43,6 +44,7 @@ const viewerEventRsvpsQueryKeyRoot = 'viewerEventRsvps'
  */
 export const createEventFeedQueryKey = (args: {
   feed: EventFeedId
+  filters: EventFilters
   startsAtMin: string
   actor?: string
 }) => createQueryKey(eventFeedQueryKeyRoot, args)
@@ -53,8 +55,8 @@ export const createEventQueryKey = (args: {uri: string}) =>
 export const createViewerEventRsvpsQueryKey = (args: {did?: string}) =>
   createQueryKey(viewerEventRsvpsQueryKeyRoot, args)
 
-/** A page-by-page list of the events in the given feed. */
-export function useEventFeedQuery(feed: EventFeedId) {
+/** A page-by-page list of the events in the given feed, narrowed by `filters`. */
+export function useEventFeedQuery(feed: EventFeedId, filters: EventFilters) {
   const {currentAccount} = useSession()
   const {requiresAuth, fetch} = EVENT_FEEDS[feed]
   // Only per-user feeds key on the account, so shared feeds share one cache.
@@ -67,7 +69,7 @@ export function useEventFeedQuery(feed: EventFeedId) {
   const startsAtMin = new Date().toISOString().slice(0, 10)
 
   return useInfiniteQuery({
-    queryKey: createEventFeedQueryKey({feed, startsAtMin, actor}),
+    queryKey: createEventFeedQueryKey({feed, filters, startsAtMin, actor}),
     enabled: !requiresAuth || !!actor,
     queryFn: ({pageParam, signal}) =>
       fetch(
@@ -79,6 +81,7 @@ export function useEventFeedQuery(feed: EventFeedId) {
           limit: EVENTS_PAGE_SIZE,
           cursor: pageParam,
         },
+        filters,
         {actor},
         signal,
       ),
