@@ -134,7 +134,16 @@ function adaptArticle(
   article: DutchArticle,
   section: ExploreSection,
 ): ExploreArticle {
-  const item: RssItem = {
+  return {
+    publisher: outletFor(article),
+    item: articleItem(article),
+    section,
+  }
+}
+
+/** An article as the cards' feed item, which is what every card reads. */
+export function articleItem(article: DutchArticle): RssItem {
+  return {
     id: article.uri,
     title: article.title ?? '',
     link: article.uri,
@@ -147,12 +156,6 @@ function adaptArticle(
      * - the theme does that - but they carry the province through to the UI.
      */
     categories: article.labels,
-  }
-
-  return {
-    publisher: outletFor(article),
-    item,
-    section,
   }
 }
 
@@ -168,6 +171,7 @@ export function outletFor(article: DutchArticle): ExploreOutlet {
   const outlet = article.outlet
   return {
     id: host || (outlet?.slug ?? 'unknown'),
+    slug: outlet?.slug ?? undefined,
     did: outlet?.did ?? undefined,
     name: outlet?.name ?? host,
     site: host || undefined,

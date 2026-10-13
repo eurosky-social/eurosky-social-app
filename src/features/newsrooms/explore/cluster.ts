@@ -17,6 +17,11 @@ import {
 export interface ExploreOutlet {
   /** Stable per outlet; the registry id, or the site host for a bare feed. */
   id: string
+  /**
+   * The news aggregator's slug for the outlet: what its newsroom page is
+   * found by. Unset for an RSS outlet, which has no newsroom.
+   */
+  slug?: string
   /** Present only with a Bluesky account: drives the avatar and the byline link. */
   did?: string
   /** Fallback display name, for an outlet with no profile to read one from. */

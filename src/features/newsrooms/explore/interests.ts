@@ -34,6 +34,24 @@ export function outletsForInterest(
 }
 
 /**
+ * How many of the current stories in the themes an outlet ran an article in:
+ * in any theme when none are given. Undefined where the service did not say,
+ * so a caller can tell an outlet with nothing on the themes from one it
+ * knows nothing about.
+ */
+export function outletCoverage(
+  outlet: Pick<DutchOutletListing, 'themes'>,
+  themes: string[],
+): number | undefined {
+  if (!outlet.themes) return undefined
+  const counted =
+    themes.length > 0
+      ? themes.map(theme => outlet.themes![theme] ?? 0)
+      : Object.values(outlet.themes)
+  return counted.reduce((sum, count) => sum + count, 0)
+}
+
+/**
  * The reads of `/api/threads` that make up an interest, or `undefined` while
  * the outlets it narrows by are not known yet.
  *
