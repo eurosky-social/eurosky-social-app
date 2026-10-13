@@ -65,7 +65,7 @@ export function EventItem({
 
   return (
     <View style={[a.border_t, t.atoms.border_contrast_low]}>
-      <View style={[a.gap_sm, a.px_xl, a.py_lg]}>
+      <View style={[a.gap_sm, a.px_xl, a.pt_lg, a.pb_sm]}>
         <View style={[a.flex_row, a.align_center, a.gap_sm]}>
           <UserAvatar
             type="user"
