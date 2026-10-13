@@ -22,7 +22,7 @@ import {
 } from './components/CreateOrEditEventDialog/form'
 import {EVENT_NSID, EVENTS_PAGE_SIZE, RSVP_NSID} from './config'
 import {EVENT_FEEDS, type EventFeedId} from './feeds'
-import {type EventFilters} from './filters'
+import {type EventFilters, type EventSort, toEventSortParams} from './filters'
 import {
   type Blob as BlobJson,
   type EventRecord,
@@ -45,6 +45,7 @@ const viewerEventRsvpsQueryKeyRoot = 'viewerEventRsvps'
 export const createEventFeedQueryKey = (args: {
   feed: EventFeedId
   filters: EventFilters
+  sort: EventSort
   startsAtMin: string
   actor?: string
 }) => createQueryKey(eventFeedQueryKeyRoot, args)
@@ -55,8 +56,15 @@ export const createEventQueryKey = (args: {uri: string}) =>
 export const createViewerEventRsvpsQueryKey = (args: {did?: string}) =>
   createQueryKey(viewerEventRsvpsQueryKeyRoot, args)
 
-/** A page-by-page list of the events in the given feed, narrowed by `filters`. */
-export function useEventFeedQuery(feed: EventFeedId, filters: EventFilters) {
+/**
+ * A page-by-page list of the events in the given feed, narrowed by `filters`
+ * and ordered by `sort`.
+ */
+export function useEventFeedQuery(
+  feed: EventFeedId,
+  filters: EventFilters,
+  sort: EventSort,
+) {
   const {currentAccount} = useSession()
   const {requiresAuth, fetch} = EVENT_FEEDS[feed]
   // Only per-user feeds key on the account, so shared feeds share one cache.
@@ -69,14 +77,19 @@ export function useEventFeedQuery(feed: EventFeedId, filters: EventFilters) {
   const startsAtMin = new Date().toISOString().slice(0, 10)
 
   return useInfiniteQuery({
-    queryKey: createEventFeedQueryKey({feed, filters, startsAtMin, actor}),
+    queryKey: createEventFeedQueryKey({
+      feed,
+      filters,
+      sort,
+      startsAtMin,
+      actor,
+    }),
     enabled: !requiresAuth || !!actor,
     queryFn: ({pageParam, signal}) =>
       fetch(
         {
           startsAtMin,
-          sort: 'startsAt',
-          order: 'asc',
+          ...toEventSortParams(sort),
           profiles: true,
           limit: EVENTS_PAGE_SIZE,
           cursor: pageParam,

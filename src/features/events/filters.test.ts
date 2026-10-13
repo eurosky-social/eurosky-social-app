@@ -1,7 +1,9 @@
 import {
   readEventFilters,
+  readEventSort,
   toEventListParams,
   withEventFilterParams,
+  withEventSortParam,
 } from './filters'
 
 describe('readEventFilters', () => {
@@ -39,6 +41,23 @@ describe('toEventListParams', () => {
     expect(toEventListParams({from: '2026-10-01', to: '2026-10-31'})).toEqual({
       startsAtMin: new Date(2026, 9, 1).toISOString(),
       startsAtMax: new Date(2026, 9, 31, 23, 59, 59, 999).toISOString(),
+    })
+  })
+})
+
+describe('event sort params', () => {
+  it('defaults to date for a missing or unknown sort', () => {
+    expect(readEventSort({})).toBe('date')
+    expect(readEventSort({sort: 'nope'})).toBe('date')
+  })
+
+  it('leaves the default sort out of the route params', () => {
+    expect(withEventSortParam({feed: 'mine', sort: 'recent'}, 'date')).toEqual({
+      feed: 'mine',
+    })
+    expect(withEventSortParam({feed: 'mine'}, 'recent')).toEqual({
+      feed: 'mine',
+      sort: 'recent',
     })
   })
 })

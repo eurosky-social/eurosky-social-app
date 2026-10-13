@@ -21,12 +21,16 @@ import {CreateOrEditEventDialog} from './components/CreateOrEditEventDialog'
 import {EventFeedTabs} from './components/EventFeedTabs'
 import {EventFiltersDialog} from './components/EventFiltersDialog'
 import {EventItem} from './components/EventItem'
+import {EventSortToggle} from './components/EventSortToggle'
 import {type EventFeedId} from './feeds'
 import {
   type EventFilters,
+  type EventSort,
   hasActiveFilters,
   readEventFilters,
+  readEventSort,
   withEventFilterParams,
+  withEventSortParam,
 } from './filters'
 import {useEventFeedQuery} from './queries'
 import {type EventRecord} from './types'
@@ -40,6 +44,7 @@ export function EventsScreen({route, navigation}: Props) {
   // The URL holds the selected feed so the desktop right rail can share it.
   const feed = resolveFeed(route.params?.feed)
   const filters = readEventFilters(route.params)
+  const sort = readEventSort(route.params)
   const {t: l} = useLingui()
   const {hasSession} = useSession()
   const eventDialogControl = Dialog.useDialogControl()
@@ -93,7 +98,20 @@ export function EventsScreen({route, navigation}: Props) {
           />
         </Layout.Center>
       )}
-      <EventsList feed={feed} filters={filters} onEdit={openEventDialog} />
+      <Layout.Center style={[a.align_end, a.px_lg, a.py_sm]}>
+        <EventSortToggle
+          sort={sort}
+          onChange={next =>
+            navigation.replaceParams(withEventSortParam(route.params, next))
+          }
+        />
+      </Layout.Center>
+      <EventsList
+        feed={feed}
+        filters={filters}
+        sort={sort}
+        onEdit={openEventDialog}
+      />
       {hasSession && (
         <CreateOrEditEventDialog
           control={eventDialogControl}
@@ -111,10 +129,12 @@ export function EventsScreen({route, navigation}: Props) {
 function EventsList({
   feed,
   filters,
+  sort,
   onEdit,
 }: {
   feed: EventFeedId
   filters: EventFilters
+  sort: EventSort
   onEdit: (event: EventRecord) => void
 }) {
   const t = useTheme()
@@ -127,7 +147,7 @@ function EventsList({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useEventFeedQuery(feed, filters)
+  } = useEventFeedQuery(feed, filters, sort)
 
   const events = data?.pages.flatMap(page => page.records) ?? []
   const profiles = new Map(

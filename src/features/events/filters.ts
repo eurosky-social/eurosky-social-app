@@ -76,3 +76,34 @@ export function toEventListParams(
   }
   return params
 }
+
+/**
+ * How the feeds are ordered: by start date (soonest first), or by when the
+ * event was created (newest first).
+ */
+export type EventSort = 'date' | 'recent'
+
+/** Reads the sort from the `Events` route params, defaulting to `date`. */
+export function readEventSort(params?: {sort?: string}): EventSort {
+  return params?.sort === 'recent' ? 'recent' : 'date'
+}
+
+/**
+ * The `Events` route params with `sort` swapped in, for `replaceParams`. The
+ * default sort is left out of the URL.
+ */
+export function withEventSortParam<P extends object>(
+  params: P | undefined,
+  sort: EventSort,
+): P & {sort?: string} {
+  const {sort: _, ...rest} = {...params} as P & {sort?: string}
+  return (sort === 'date' ? rest : {...rest, sort}) as P & {sort?: string}
+}
+
+export function toEventSortParams(
+  sort: EventSort,
+): Pick<EventListParams, 'sort' | 'order'> {
+  return sort === 'recent'
+    ? {sort: 'createdAt', order: 'desc'}
+    : {sort: 'startsAt', order: 'asc'}
+}
