@@ -6,6 +6,7 @@ import {
   countryOfSubLocation,
   filtersForInterest,
   mergeRanked,
+  outletCoverage,
   outletsForInterest,
 } from './interests'
 
@@ -59,6 +60,24 @@ describe('outletsForInterest', () => {
 
   it('offers every outlet to an interest with no place', () => {
     expect(outletsForInterest(interest(), OUTLETS)).toHaveLength(4)
+  })
+})
+
+describe('outletCoverage', () => {
+  const covering = {themes: {tech: 4, politics: 2}}
+
+  it('counts the stories in the given themes', () => {
+    expect(outletCoverage(covering, ['tech'])).toBe(4)
+    expect(outletCoverage(covering, ['tech', 'sport'])).toBe(4)
+    expect(outletCoverage(covering, ['sport'])).toBe(0)
+  })
+
+  it('counts every theme when none are given', () => {
+    expect(outletCoverage(covering, [])).toBe(6)
+  })
+
+  it('is undefined when the service did not say', () => {
+    expect(outletCoverage({}, ['tech'])).toBeUndefined()
   })
 })
 

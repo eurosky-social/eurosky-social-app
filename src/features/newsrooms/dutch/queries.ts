@@ -18,6 +18,7 @@ import {
 import {
   type DutchCategoriesResponse,
   type DutchCategory,
+  type DutchOutletArticlesResponse,
   type DutchOutletsResponse,
   type DutchTheme,
   type DutchThemesResponse,
@@ -51,6 +52,11 @@ export const createDutchThreadQueryKey = (args: {id: string}) =>
 
 export const createDutchOutletsQueryKey = () =>
   createQueryKey('dutchOutlets', {})
+
+export const createDutchOutletArticlesQueryKey = (args: {
+  slug: string
+  limit: number
+}) => createQueryKey('dutchOutletArticles', args)
 
 export const createDutchThemesQueryKey = (args: {
   scope: string
@@ -228,6 +234,16 @@ export function useDutchThemesQuery({
 }
 
 /**
+ * A theme's name by its slug. Until the themes load, or for a slug the
+ * service no longer serves, the slug stands in, as the service does itself.
+ */
+export function useThemeName(): (slug: string) => string {
+  const {themes} = useDutchThemesQuery()
+  const names = new Map(themes.map(theme => [theme.slug, theme.name]))
+  return slug => names.get(slug) ?? slug.charAt(0).toUpperCase() + slug.slice(1)
+}
+
+/**
  * Every outlet the service reads, for the news settings to pick from. Sorted
  * by country then slug, as the service sends them.
  */
@@ -261,6 +277,48 @@ export function useDutchOutletsQuery({
     isError: query.isError,
     refetch: query.refetch,
   }
+}
+
+/** How many of an outlet's articles its newsroom front page shows. */
+export const OUTLET_ARTICLES_LIMIT = 20
+
+/**
+ * An outlet's own articles, latest first: its newsroom's front page, as the
+ * service ingested them from its feeds, so the app fetches no RSS itself.
+ */
+export function useDutchOutletArticlesQuery({
+  slug,
+  limit = OUTLET_ARTICLES_LIMIT,
+  enabled = true,
+}: {
+  slug?: string
+  limit?: number
+  enabled?: boolean
+}) {
+  const pdsClient = useMaybePdsClient()
+  return useQuery({
+    queryKey: createDutchOutletArticlesQueryKey({slug: slug ?? '', limit}),
+    /* Feeds are polled every few minutes; the page need not chase them. */
+    staleTime: STALE.MINUTES.FIVE,
+    enabled: enabled && !!slug && IS_DUTCH_API_CONFIGURED && !!pdsClient,
+    async queryFn() {
+      try {
+        const data = await fetchDutchApi<DutchOutletArticlesResponse>(
+          pdsClient!,
+          buildDutchApiUrl(
+            `/api/outlets/${encodeURIComponent(slug!)}/articles`,
+            {limit},
+          ),
+        )
+        return data.articles
+      } catch (error) {
+        logger.error('dutchOutletArticles: failed to load', {
+          safeMessage: error,
+        })
+        throw error
+      }
+    },
+  })
 }
 
 /**

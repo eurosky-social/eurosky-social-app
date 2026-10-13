@@ -1,4 +1,8 @@
-import {NEWS_REGIONS, selectSources} from '#/features/newsFeed/sources'
+import {
+  ALL_TOPICS,
+  NEWS_REGIONS,
+  selectSources,
+} from '#/features/newsFeed/sources'
 import {type NewsFeedPrefs} from '#/features/newsFeed/state/prefs'
 import {type ExploreOutlet, type ExploreStory} from './cluster'
 
@@ -8,21 +12,6 @@ import {type ExploreOutlet, type ExploreStory} from './cluster'
  * story still leads unless the reader's interests are far down the page.
  */
 const BOOST_POSITIONS = 8
-
-/**
- * The news settings' topics as the sections they cover, across both sources:
- * the labeler's themes and the RSS spread's sections. `general` has no
- * counterpart, and `all` is no preference, so neither boosts anything.
- */
-const TOPIC_SECTIONS: Record<string, string[]> = {
-  politics: ['politics'],
-  'arts-culture': ['culture'],
-  sports: ['sport'],
-  tech: ['tech'],
-  climate: ['climate', 'environment'],
-  health: ['health'],
-  science: ['science', 'education'],
-}
 
 /**
  * The regions that have a section of their own. The Netherlands and its
@@ -57,7 +46,12 @@ export function interestsFromPrefs(
   if (!prefs || prefs.topics.length === 0) return undefined
 
   const sectionIds = new Set([
-    ...prefs.topics.flatMap(topic => TOPIC_SECTIONS[topic] ?? []),
+    /*
+     * The topics are the labeler's themes, which are its stories' sections;
+     * the RSS spread names its sections after the same themes where it has
+     * them. `ALL_TOPICS` is no preference, so it boosts nothing.
+     */
+    ...prefs.topics.filter(topic => topic !== ALL_TOPICS),
     ...prefs.regions.flatMap(region => REGION_SECTIONS[region] ?? []),
   ])
   const outlets = new Set(

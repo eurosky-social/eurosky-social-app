@@ -15,7 +15,14 @@ Two datasets, deliberately stored differently:
   accounts to topic / region / language tags. Local list in `sources.ts`. This
   is not a user preference, so it does not live in the PDS.
 
-Topic matching is account-level (a source is tagged with the topics it covers).
+Topics are the news aggregator's themes (`/api/themes`), by slug, everywhere:
+the topic step lists them, the registry tags accounts with them, and the news
+page's sections are them. The app keeps no topic list of its own; `ALL_TOPICS`
+is every topic. Records written before carry the old topic ids, which
+`topicsAsThemes` reads as themes (`sports` as `sport`, `general` dropped).
+
+Topic matching is account-level (a source is tagged with the themes it covers;
+an account tagged with none is general news, shown for every topic only).
 `languages` narrows the accounts to those publishing in one of them, and on the
 news page keeps only the stories with an article in one of them, led by that
 article. The feed still also applies the app's content language preference
@@ -52,8 +59,10 @@ feed's.
 `newsrooms/explore/interests.ts` turns an interest into reads of
 `/api/threads`. The API takes several countries and outlets per read but one
 theme and one province, so an interest is one read per theme (and province),
-and the page merges them rank by rank. Without the aggregator configured, the
-settings fall back to the news feed's setup below.
+and the page merges them rank by rank. The outlet step reads, from
+`/api/outlets`, how many current stories each outlet has on each theme, and
+leads with the outlets that cover the interest's topics. Without the
+aggregator configured, the settings fall back to the news feed's setup below.
 
 ## Layout
 

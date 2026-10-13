@@ -15,6 +15,7 @@ import {Newspaper_Stroke2_Corner2_Rounded as Newspaper} from '#/components/icons
 import * as Layout from '#/components/Layout'
 import {ProfileBadges} from '#/components/ProfileBadges'
 import {Text} from '#/components/Typography'
+import {useThemeName} from '#/features/newsrooms/dutch/queries'
 import {app} from '#/lexicons'
 import {type NewsSource, selectSources, sourceTagLabels} from '../sources'
 import {type NewsFeedPrefs} from '../state/prefs'
@@ -121,7 +122,8 @@ function SourceCard({
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
-  const tags = sourceTagLabels(source)
+  const themeName = useThemeName()
+  const tags = sourceTagLabels(source, themeName)
 
   return (
     <Pressable

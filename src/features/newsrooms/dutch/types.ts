@@ -170,8 +170,33 @@ export interface DutchOutletListing {
   domains: string[]
   /** How many of its articles the service holds. */
   articles: number
+  /**
+   * What it covers: theme slug -> the current stories it ran an article in.
+   * Themes it covered none of are absent. Unset from a service older than the
+   * field, which says nothing either way.
+   */
+  themes?: Record<string, number>
+  sources?: {
+    /**
+     * Bluesky accounts that are the outlet's: its own and the tracked repos
+     * the service files under it - its desks and journalists.
+     */
+    accounts: string[]
+  }
 }
 
 export interface DutchOutletsResponse {
   outlets: DutchOutletListing[]
+}
+
+/** One of an outlet's own articles, with the story it is in, if any yet. */
+export interface DutchOutletArticle extends DutchArticle {
+  /** The thread of the scope's active fit it is in; null until it is placed. */
+  thread: {key: string; scope: string} | null
+}
+
+/** `/api/outlets/{ref}/articles`: a page of an outlet's articles, latest first. */
+export interface DutchOutletArticlesResponse {
+  hasMore: boolean
+  articles: DutchOutletArticle[]
 }

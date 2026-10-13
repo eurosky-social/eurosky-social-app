@@ -42,6 +42,7 @@ export function NewsroomArticleScreen({route}: Props) {
     publishedAt,
     outletName,
     outletDid,
+    outletSlug,
     storyId,
     storySource,
   } = route.params
@@ -66,6 +67,7 @@ export function NewsroomArticleScreen({route}: Props) {
         publishedAt={publishedAt}
         outletName={outletName}
         outletDid={outletDid}
+        outletSlug={outletSlug}
         sharers={sharers}
         anchor={data?.anchor ?? undefined}
       />
