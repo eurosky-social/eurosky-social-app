@@ -147,6 +147,7 @@ import {useAnalytics} from '#/analytics'
 import {setNavigationMetadata} from '#/analytics/metadata'
 import {BRAND} from '#/config/brand'
 import {IS_LIQUID_GLASS, IS_NATIVE, IS_WEB} from '#/env'
+import {EventsScreen} from '#/features/events/EventsScreen'
 import {InviteScannerScreen} from '#/features/inviteFriends'
 import {NewsFeedScreen} from '#/features/newsFeed/NewsFeedScreen'
 import {NewsSettingsScreen} from '#/features/newsFeed/NewsSettingsScreen'
@@ -224,6 +225,11 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         name="NewsroomArticle"
         getComponent={() => NewsroomArticleScreen}
         options={{title: title(msg`Article`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="Events"
+        getComponent={() => EventsScreen}
+        options={{title: title(msg`Events`)}}
       />
       <Stack.Screen
         name="Moderation"

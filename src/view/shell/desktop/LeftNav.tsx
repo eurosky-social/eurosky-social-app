@@ -49,6 +49,7 @@ import {
   BulletList_Filled_Corner0_Rounded as ListFilledIcon,
   BulletList_Stroke2_Corner0_Rounded as ListIcon,
 } from '#/components/icons/BulletList'
+import {CalendarDays_Stroke2_Corner0_Rounded as CalendarIcon} from '#/components/icons/CalendarDays'
 import {type Props as SVGIconProps} from '#/components/icons/common'
 import {DotGrid3x1_Stroke2_Corner0_Rounded as EllipsisIcon} from '#/components/icons/DotGrid'
 import {EditBig_Stroke2_Corner2_Rounded as EditBigIcon} from '#/components/icons/EditBig'
@@ -699,6 +700,16 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             icons={{
               inactive: NewspaperIcon,
               active: NewspaperFilledIcon,
+            }}
+          />
+          <NavItem
+            label={l`Events`}
+            href="/events"
+            navItem="events"
+            minimal={leftNavMinimal}
+            icons={{
+              inactive: CalendarIcon,
+              active: CalendarIcon,
             }}
           />
           <NavItem

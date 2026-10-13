@@ -97,6 +97,7 @@ export type Events = {
       | 'feeds'
       | 'lists'
       | 'news'
+      | 'events'
       | 'saved'
       | 'settings'
       | 'menu'

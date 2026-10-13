@@ -21,6 +21,7 @@ import {CENTER_COLUMN_OFFSET} from '#/components/Layout'
 import {InlineLinkText, Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
+import {EventsRightRail} from '#/features/events/components/EventsRightRail'
 import {NewsroomArticleRightRail} from '#/features/newsrooms/article/NewsroomArticleRightRail'
 import {NewsroomRightRail} from '#/features/newsrooms/components/NewsroomRightRail'
 
@@ -117,9 +118,16 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
           maxHeight: '100vh',
         }),
       ]}>
-      {!isSearchScreen && <DesktopSearch />}
+      {routeName === 'Events' ? (
+        // The events screen swaps search and feeds for its own feed picker.
+        <EventsRightRail />
+      ) : (
+        <>
+          {!isSearchScreen && <DesktopSearch />}
 
-      {hasSession && <DesktopFeeds />}
+          {hasSession && <DesktopFeeds />}
+        </>
+      )}
 
       <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
         <Link
