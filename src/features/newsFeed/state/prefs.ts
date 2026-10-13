@@ -16,10 +16,43 @@ export const NEWS_FEED_PREFS_NSID = 'social.mu.newsFeedPrefs'
 const NEWS_FEED_PREFS_RKEY = 'self'
 
 /**
+ * One of the reader's interests on the news page: a slice of the news by
+ * place, theme and outlet, shown as its own tab. Every filter is optional, and
+ * an empty one leaves that facet open.
+ */
+export const newsInterestSchema = z.object({
+  /** Random, stable across edits: what the page remembers a tab by. */
+  id: z.string(),
+  /**
+   * Not set from the settings yet: tabs are named after their places (see
+   * `useInterestTitle`). Kept so a name can come back without a migration.
+   */
+  name: z.string(),
+  /** ISO 3166-1 alpha-2 codes, lower case, as the news aggregator uses. */
+  countries: z.array(z.string()),
+  /**
+   * Places inside the countries, as the aggregator's label values (e.g.
+   * `nl-utrecht`). Picking any narrows their country to just those.
+   */
+  subLocations: z.array(z.string()),
+  /** The aggregator's theme slugs, e.g. `tech`. */
+  themes: z.array(z.string()),
+  /**
+   * Outlet slugs left out. Every outlet of the interest's places is in until
+   * the reader unticks it, so outlets added later join by default.
+   */
+  excludedOutlets: z.array(z.string()),
+})
+export type NewsInterest = z.infer<typeof newsInterestSchema>
+
+/**
  * Empty `topics` means setup is unfinished (callers show the topic picker).
  * Empty `regions` means no region filter, and empty `languages` no language
- * filter. `languages` came later than the rest, so a record without it reads
- * as having none rather than failing validation.
+ * filter. `languages` and `interests` came later than the rest, so a record
+ * without them reads as having none rather than failing validation.
+ *
+ * The news feed reads `topics`, `regions` and `excludedDids`; the news page
+ * reads `interests`. Both read `languages`.
  */
 export const newsFeedPrefsSchema = z.object({
   topics: z.array(z.string()),
@@ -27,6 +60,8 @@ export const newsFeedPrefsSchema = z.object({
   /** ISO 639-1 codes, e.g. `en`: the languages of the news to show. */
   languages: z.array(z.string()).default([]),
   excludedDids: z.array(z.string()),
+  /** The news page's tabs, in the reader's order. */
+  interests: z.array(newsInterestSchema).default([]),
   createdAt: z.string(),
 })
 export type NewsFeedPrefs = z.infer<typeof newsFeedPrefsSchema>
@@ -37,6 +72,7 @@ export function makeDefaultNewsFeedPrefs(): NewsFeedPrefs {
     regions: [],
     languages: [],
     excludedDids: [],
+    interests: [],
     createdAt: new Date().toISOString(),
   }
 }

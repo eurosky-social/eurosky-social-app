@@ -151,3 +151,27 @@ export interface DutchCategoriesResponse {
  * ranking of the news; `here` ranks by the outlets in the `country` asked for.
  */
 export type DutchThreadSort = 'burst' | 'latest' | 'coverage' | 'here'
+
+/**
+ * An outlet as `/api/outlets` lists it: who publishes, with the domains its
+ * articles come from. `slug` is what the news settings store and what
+ * `/api/threads?outlet=` filters by.
+ */
+export interface DutchOutletListing {
+  slug: string
+  did: string | null
+  name: string
+  /** ISO 3166-1 alpha-2, lower case. */
+  country: string | null
+  /** ISO 639-1. */
+  language: string | null
+  /** Free text: public broadcaster, national daily, regional, specialist... */
+  kind: string | null
+  domains: string[]
+  /** How many of its articles the service holds. */
+  articles: number
+}
+
+export interface DutchOutletsResponse {
+  outlets: DutchOutletListing[]
+}

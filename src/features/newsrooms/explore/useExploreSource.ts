@@ -1,9 +1,13 @@
 import {IS_DUTCH_API_CONFIGURED} from '../dutch/config'
+import {type DutchThreadFilter} from '../dutch/queries'
 import {useDutchExploreStories} from '../dutch/useDutchExploreStories'
 import {type ExploreSourceId, type ExploreStory} from './cluster'
 import {EXPLORE_SECTION_OTHER, EXPLORE_SECTIONS} from './sections'
 import {type ExploreSection} from './sections'
 import {useExploreStories} from './useExploreStories'
+
+/** One read of the whole scope. */
+const EVERYTHING: DutchThreadFilter[] = [{}]
 
 /**
  * The stories a spread renders from the given source, plus the sections to lay
@@ -16,19 +20,17 @@ import {useExploreStories} from './useExploreStories'
 export function useExploreSource({
   source,
   scope,
-  theme,
-  category,
-  country,
+  filters = EVERYTHING,
   languages,
 }: {
   source: ExploreSourceId
   /** For the Dutch source: which of the labeler's scopes to read. */
   scope?: string
-  theme?: string
-  /** For the Dutch source: a province label value, e.g. `nl-utrecht`. */
-  category?: string
-  /** For the Dutch source: an ISO country code, e.g. `fr`. */
-  country?: string
+  /**
+   * For the Dutch source: the reads that make up the page, merged into one.
+   * Unset reads the whole scope; empty reads nothing.
+   */
+  filters?: DutchThreadFilter[]
   /**
    * For the Dutch source: ISO language codes the stories must be in. RSS
    * articles carry no language, so the RSS source ignores them.
@@ -45,9 +47,7 @@ export function useExploreSource({
   const dutchActive = source === 'dutch' && IS_DUTCH_API_CONFIGURED
   const dutch = useDutchExploreStories({
     scope,
-    theme,
-    category,
-    country,
+    filters,
     languages,
     enabled: dutchActive,
   })

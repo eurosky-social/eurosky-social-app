@@ -1,5 +1,5 @@
 import {type Client} from '@atproto/lex'
-import {useQuery} from '@tanstack/react-query'
+import {useQueries, useQuery} from '@tanstack/react-query'
 import {jwtDecode} from 'jwt-decode'
 
 import {logger} from '#/logger'
@@ -18,6 +18,7 @@ import {
 import {
   type DutchCategoriesResponse,
   type DutchCategory,
+  type DutchOutletsResponse,
   type DutchTheme,
   type DutchThemesResponse,
   type DutchThread,
@@ -36,14 +37,20 @@ export const createDutchThreadsQueryKey = (args: {
   scope: string
   theme?: string
   category?: string
+  /** Comma-separated ISO codes, sorted. */
   country?: string
   lang?: string
+  /** Comma-separated outlet slugs, sorted. */
+  outlet?: string
   sort: DutchThreadSort
   limit: number
 }) => createQueryKey('dutchThreads', args)
 
 export const createDutchThreadQueryKey = (args: {id: string}) =>
   createQueryKey('dutchThread', args)
+
+export const createDutchOutletsQueryKey = () =>
+  createQueryKey('dutchOutlets', {})
 
 export const createDutchThemesQueryKey = (args: {
   scope: string
@@ -56,30 +63,40 @@ export const createDutchCategoriesQueryKey = (args: {
 }) => createQueryKey('dutchCategories', args)
 
 /**
+ * What narrows one read of `/api/threads`. Unset fields leave that facet open.
+ * The service takes several countries and outlets at once but one theme and
+ * one category, so a wider slice of the news is several of these.
+ */
+export type DutchThreadFilter = {
+  theme?: string
+  /** A label value: a province, e.g. `nl-utrecht`. */
+  category?: string
+  /** ISO country codes: threads one of their outlets covered. */
+  countries?: string[]
+  /** Outlet slugs: threads one of them covered. */
+  outlets?: string[]
+}
+
+/**
  * The labeler's threads - the stories of its news view: already clustered,
  * themed, and carrying their coverage by outlet and country, so the page
- * neither clusters nor searches for posts itself.
+ * neither clusters nor searches for posts itself. One read per filter, run
+ * side by side; the results come back in the filters' order.
  *
  * Sorted by `burst`, the service's own ranking of what is news now, unless a
  * country is asked for, where `here` puts the threads its outlets covered most
  * first.
  */
-export function useDutchThreadsQuery({
+export function useDutchThreadsQueries({
   scope = DUTCH_WORLD_SCOPE,
-  theme,
-  category,
-  country,
+  filters,
   lang,
   limit = THREADS_LIMIT,
   enabled = true,
 }: {
   /** Which of the labeler's scopes (feed selection and fit) to read. */
   scope?: string
-  theme?: string
-  /** A label value: a province, e.g. `nl-utrecht`. */
-  category?: string
-  /** An ISO country code: threads its outlets covered. */
-  country?: string
+  filters: DutchThreadFilter[]
   /**
    * An ISO language code: threads with an article in it, each with its lead
    * in that language as `leadIn`. The service takes one at a time.
@@ -87,54 +104,62 @@ export function useDutchThreadsQuery({
   lang?: string
   limit?: number
   enabled?: boolean
-} = {}) {
+}) {
   const pdsClient = useMaybePdsClient()
-  const sort: DutchThreadSort = country ? 'here' : 'burst'
-  const query = useQuery({
-    queryKey: createDutchThreadsQueryKey({
-      scope,
-      theme,
-      category,
-      country,
-      lang,
-      sort,
-      limit,
-    }),
-    /*
-     * The service refits hourly and articles trickle in between fits, so
-     * there is nothing to gain from asking more often than the page is likely
-     * to be reopened.
-     */
-    staleTime: STALE.MINUTES.FIVE,
-    enabled: enabled && IS_DUTCH_API_CONFIGURED && !!pdsClient,
-    async queryFn() {
-      const url = buildDutchApiUrl('/api/threads', {
+  const results = useQueries({
+    queries: filters.map(filter => {
+      /* Sorted so the same set is one cache entry whatever order it was saved in. */
+      const country = joinSorted(filter.countries)
+      const outlet = joinSorted(filter.outlets)
+      const params = {
         scope,
-        theme,
-        category,
+        theme: filter.theme,
+        category: filter.category,
         country,
         lang,
-        sort,
+        outlet,
+        sort: (country ? 'here' : 'burst') as DutchThreadSort,
         limit,
-      })
-      try {
-        return await fetchDutchApi<DutchThreadsResponse>(pdsClient!, url)
-      } catch (error) {
-        /* The page only says it could not load; this says why. */
-        logger.error('dutchThreads: failed to load', {safeMessage: error})
-        throw error
       }
-    },
+      return {
+        queryKey: createDutchThreadsQueryKey(params),
+        /*
+         * The service refits hourly and articles trickle in between fits, so
+         * there is nothing to gain from asking more often than the page is
+         * likely to be reopened.
+         */
+        staleTime: STALE.MINUTES.FIVE,
+        enabled: enabled && IS_DUTCH_API_CONFIGURED && !!pdsClient,
+        async queryFn() {
+          const url = buildDutchApiUrl('/api/threads', params)
+          try {
+            return await fetchDutchApi<DutchThreadsResponse>(pdsClient!, url)
+          } catch (error) {
+            /* The page only says it could not load; this says why. */
+            logger.error('dutchThreads: failed to load', {safeMessage: error})
+            throw error
+          }
+        },
+      }
+    }),
   })
 
   return {
-    threads: query.data?.threads ?? ([] as DutchThread[]),
-    /** Null until the scope has been fitted; `threads` is then empty. */
-    model: query.data?.model ?? null,
-    total: query.data?.total ?? 0,
-    isLoading: query.isLoading,
-    error: query.error,
+    /** One list per filter, each in the service's order. */
+    threadLists: results.map(
+      result => result.data?.threads ?? ([] as DutchThread[]),
+    ),
+    isLoading: results.some(result => result.isLoading),
+    /* Some of a slice is still worth showing; only none of it is an error. */
+    error:
+      results.length > 0 && results.every(result => result.error)
+        ? results[0].error
+        : null,
   }
+}
+
+function joinSorted(values: string[] | undefined): string | undefined {
+  return values?.length ? [...values].sort().join(',') : undefined
 }
 
 /**
@@ -199,6 +224,42 @@ export function useDutchThemesQuery({
   return {
     themes: query.data ?? ([] as DutchTheme[]),
     isLoading: query.isLoading,
+  }
+}
+
+/**
+ * Every outlet the service reads, for the news settings to pick from. Sorted
+ * by country then slug, as the service sends them.
+ */
+export function useDutchOutletsQuery({
+  enabled = true,
+}: {enabled?: boolean} = {}) {
+  const pdsClient = useMaybePdsClient()
+  const query = useQuery({
+    queryKey: createDutchOutletsQueryKey(),
+    /* Outlets are added by hand, on the order of days. */
+    staleTime: STALE.HOURS.ONE,
+    enabled: enabled && IS_DUTCH_API_CONFIGURED && !!pdsClient,
+    async queryFn() {
+      try {
+        const data = await fetchDutchApi<DutchOutletsResponse>(
+          pdsClient!,
+          buildDutchApiUrl('/api/outlets'),
+        )
+        return data.outlets
+      } catch (error) {
+        logger.error('dutchOutlets: failed to load', {safeMessage: error})
+        throw error
+      }
+    },
+  })
+
+  return {
+    /** Undefined until loaded, so a caller can tell none from not yet. */
+    outlets: query.data,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    refetch: query.refetch,
   }
 }
 

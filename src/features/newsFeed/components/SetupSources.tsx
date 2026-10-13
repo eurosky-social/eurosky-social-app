@@ -1,4 +1,3 @@
-import {useState} from 'react'
 import {Pressable, View} from 'react-native'
 import {type AtIdentifierString} from '@atproto/syntax'
 import {Trans, useLingui} from '@lingui/react/macro'
@@ -10,9 +9,7 @@ import {profilesQueryKey} from '#/state/queries/profile'
 import {useAppviewClient} from '#/state/session'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
-import {Button, ButtonText} from '#/components/Button'
 import {Divider} from '#/components/Divider'
-import * as Toggle from '#/components/forms/Toggle'
 import {CheckThick_Stroke2_Corner0_Rounded as CheckThick} from '#/components/icons/Check'
 import {Newspaper_Stroke2_Corner2_Rounded as Newspaper} from '#/components/icons/Newspaper'
 import * as Layout from '#/components/Layout'
@@ -21,7 +18,7 @@ import {Text} from '#/components/Typography'
 import {app} from '#/lexicons'
 import {type NewsSource, selectSources, sourceTagLabels} from '../sources'
 import {type NewsFeedPrefs} from '../state/prefs'
-import {SetupFooter} from './SetupFooter'
+import {SetupConsent} from './SetupConsent'
 import {SetupHeader} from './SetupHeader'
 
 export function SetupSources({
@@ -35,9 +32,6 @@ export function SetupSources({
   onBack: () => boolean | void
   onDone: () => void
 }) {
-  const {t: l} = useLingui()
-  const [consented, setConsented] = useState(false)
-
   const sources = selectSources(
     {
       topics: draft.topics,
@@ -109,38 +103,7 @@ export function SetupSources({
         </View>
       </Layout.Content>
 
-      <SetupFooter>
-        <View style={[a.gap_md]}>
-          <Toggle.Item
-            name="newsFeedConsent"
-            label={l`Agree to publish your selections as a public record`}
-            value={consented}
-            onChange={setConsented}
-            style={[a.align_start, a.gap_sm]}>
-            <Toggle.Checkbox />
-            <Text style={[a.flex_1, a.text_sm, a.leading_snug]}>
-              <Trans>
-                I understand my topic and source selections will be published as
-                a public record linked to my account, and agree to share them.
-              </Trans>
-            </Text>
-          </Toggle.Item>
-
-          <Divider />
-
-          <Button
-            testID="newsFeedSourcesDoneBtn"
-            label={l`Done`}
-            size="large"
-            color="primary"
-            disabled={!consented}
-            onPress={onDone}>
-            <ButtonText>
-              <Trans>Done</Trans>
-            </ButtonText>
-          </Button>
-        </View>
-      </SetupFooter>
+      <SetupConsent onDone={onDone} />
     </Layout.Screen>
   )
 }

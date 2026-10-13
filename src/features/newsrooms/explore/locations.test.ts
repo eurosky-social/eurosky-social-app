@@ -29,7 +29,7 @@ describe('sourceForRegion', () => {
     expect(sourceForRegion('nl-utrecht')).toEqual({
       source: 'dutch',
       scope: 'all',
-      category: 'nl-utrecht',
+      filters: [{category: 'nl-utrecht'}],
     })
   })
 
@@ -37,7 +37,7 @@ describe('sourceForRegion', () => {
     expect(sourceForRegion('netherlands')).toEqual({
       source: 'dutch',
       scope: 'all',
-      country: 'nl',
+      filters: [{countries: ['nl']}],
     })
   })
 
@@ -45,7 +45,7 @@ describe('sourceForRegion', () => {
     expect(sourceForRegion('uk')).toEqual({
       source: 'dutch',
       scope: 'all',
-      country: 'gb',
+      filters: [{countries: ['gb']}],
     })
   })
 

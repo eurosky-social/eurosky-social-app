@@ -41,11 +41,19 @@ export function sourceForRegion(id: string): ExploreSourceArgs | undefined {
   }
   const country = COUNTRY_CODES[id]
   if (country) {
-    return {source: 'dutch', scope: DUTCH_WORLD_SCOPE, country}
+    return {
+      source: 'dutch',
+      scope: DUTCH_WORLD_SCOPE,
+      filters: [{countries: [country]}],
+    }
   }
   const region = NEWS_REGIONS.find(r => r.id === id)
   if (region?.parent === 'netherlands') {
-    return {source: 'dutch', scope: DUTCH_WORLD_SCOPE, category: id}
+    return {
+      source: 'dutch',
+      scope: DUTCH_WORLD_SCOPE,
+      filters: [{category: id}],
+    }
   }
   return undefined
 }

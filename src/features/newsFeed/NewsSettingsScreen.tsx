@@ -5,15 +5,19 @@ import {
 import {atoms as a} from '#/alf'
 import * as Layout from '#/components/Layout'
 import {Loader} from '#/components/Loader'
+import {IS_DUTCH_API_CONFIGURED} from '#/features/newsrooms/dutch/config'
+import {NewsInterestsSetup} from './components/interests/NewsInterestsSetup'
 import {NewsFeedSetup} from './components/NewsFeedSetup'
 import {makeDefaultNewsFeedPrefs, useNewsFeedPrefsQuery} from './state/prefs'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'NewsSettings'>
 
 /**
- * The news page's settings: the same topics, regions and accounts as the news
- * feed's setup, editing the same record. The news page boosts the stories that
- * match them, so saving returns there.
+ * The news page's settings: its languages and the reader's interests, each a
+ * tab on the page, so saving returns there. They are kept in the news feed's
+ * record. Without the news aggregator the page reads RSS, which interests
+ * cannot filter, so it falls back to the news feed's topics, regions and
+ * accounts, which the page boosts the stories that match.
  */
 export function NewsSettingsScreen({navigation}: Props) {
   const {data: prefs, isLoading} = useNewsFeedPrefsQuery()
@@ -33,6 +37,16 @@ export function NewsSettingsScreen({navigation}: Props) {
           <Loader size="xl" />
         </Layout.Center>
       </Layout.Screen>
+    )
+  }
+
+  if (IS_DUTCH_API_CONFIGURED) {
+    return (
+      <NewsInterestsSetup
+        initialDraft={prefs ?? makeDefaultNewsFeedPrefs()}
+        onExit={leave}
+        onSaved={leave}
+      />
     )
   }
 
