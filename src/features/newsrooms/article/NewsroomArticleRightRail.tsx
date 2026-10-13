@@ -62,6 +62,7 @@ export function NewsroomArticleRightRail() {
         url={params.url}
         storyId={params.storyId}
         storySource={params.storySource}
+        storyView={params.storyView}
       />
       {newsroom && (
         <MoreFromNewsroom newsroom={newsroom} currentUrl={params.url} />

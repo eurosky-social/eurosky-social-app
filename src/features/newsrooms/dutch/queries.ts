@@ -27,6 +27,12 @@ import {
   type DutchThreadSort,
   type DutchThreadsResponse,
 } from './types'
+import {
+  decodeDutchThreadView,
+  type DutchThreadViewParams,
+  dutchThreadViewParams,
+  encodeDutchThreadView,
+} from './view'
 
 /**
  * How many threads the spread asks for. The page lays out a lead band plus
@@ -34,21 +40,21 @@ import {
  */
 export const THREADS_LIMIT = 40
 
-export const createDutchThreadsQueryKey = (args: {
-  scope: string
-  theme?: string
-  category?: string
-  /** Comma-separated ISO codes, sorted. */
-  country?: string
-  lang?: string
-  /** Comma-separated outlet slugs, sorted. */
-  outlet?: string
-  sort: DutchThreadSort
-  limit: number
-}) => createQueryKey('dutchThreads', args)
+export const createDutchThreadsQueryKey = (
+  args: {
+    scope: string
+    theme?: string
+    category?: string
+    sort: DutchThreadSort
+    limit: number
+  } & DutchThreadViewParams,
+) => createQueryKey('dutchThreads', args)
 
-export const createDutchThreadQueryKey = (args: {id: string}) =>
-  createQueryKey('dutchThread', args)
+export const createDutchThreadQueryKey = (args: {
+  id: string
+  /** The view the thread is read in (see `encodeDutchThreadView`). */
+  view?: string
+}) => createQueryKey('dutchThread', args)
 
 export const createDutchOutletsQueryKey = () =>
   createQueryKey('dutchOutlets', {})
@@ -79,8 +85,13 @@ export type DutchThreadFilter = {
   category?: string
   /** ISO country codes: threads one of their outlets covered. */
   countries?: string[]
-  /** Outlet slugs: threads one of them covered. */
+  /** Outlet slugs: threads one of them covered. The rest are dropped. */
   outlets?: string[]
+  /**
+   * Outlet slugs whose threads come first, and whose articles lead each event.
+   * Nothing is dropped.
+   */
+  boost?: string[]
 }
 
 /**
@@ -96,7 +107,7 @@ export type DutchThreadFilter = {
 export function useDutchThreadsQueries({
   scope = DUTCH_WORLD_SCOPE,
   filters,
-  lang,
+  languages,
   limit = THREADS_LIMIT,
   enabled = true,
 }: {
@@ -104,27 +115,30 @@ export function useDutchThreadsQueries({
   scope?: string
   filters: DutchThreadFilter[]
   /**
-   * An ISO language code: threads with an article in it, each with its lead
-   * in that language as `leadIn`. The service takes one at a time.
+   * ISO language codes: threads with an article in one, each showing only
+   * those articles and with its lead in one of them as `leadIn`.
    */
-  lang?: string
+  languages?: string[]
   limit?: number
   enabled?: boolean
 }) {
   const pdsClient = useMaybePdsClient()
+  const views = filters.map(filter => ({
+    languages,
+    countries: filter.countries,
+    outlets: filter.outlets,
+    boost: filter.boost,
+  }))
   const results = useQueries({
-    queries: filters.map(filter => {
-      /* Sorted so the same set is one cache entry whatever order it was saved in. */
-      const country = joinSorted(filter.countries)
-      const outlet = joinSorted(filter.outlets)
+    queries: views.map((view, index) => {
+      const filter = filters[index]
+      const viewParams = dutchThreadViewParams(view)
       const params = {
         scope,
         theme: filter.theme,
         category: filter.category,
-        country,
-        lang,
-        outlet,
-        sort: (country ? 'here' : 'burst') as DutchThreadSort,
+        ...viewParams,
+        sort: (viewParams.country ? 'here' : 'burst') as DutchThreadSort,
         limit,
       }
       return {
@@ -155,6 +169,8 @@ export function useDutchThreadsQueries({
     threadLists: results.map(
       result => result.data?.threads ?? ([] as DutchThread[]),
     ),
+    /** The view each list was read in, for its threads to be read again in. */
+    views: views.map(encodeDutchThreadView),
     isLoading: results.some(result => result.isLoading),
     /* Some of a slice is still worth showing; only none of it is an error. */
     error:
@@ -164,28 +180,28 @@ export function useDutchThreadsQueries({
   }
 }
 
-function joinSorted(values: string[] | undefined): string | undefined {
-  return values?.length ? [...values].sort().join(',') : undefined
-}
-
 /**
  * One thread with every event in full. The list trims each event to a few
  * articles; this is the whole coverage, for the article page.
  *
  * `id` is the one `threadStoryId` built: the thread's key, which outlives
- * refits, and the scope whose fit it is in.
+ * refits, and the scope whose fit it is in. `view` is the one the list read it
+ * in, so the page shows the articles the story was picked for.
  */
 export function useDutchThreadQuery({
   id,
+  view,
   enabled = true,
 }: {
   id?: string
+  /** From `encodeDutchThreadView`. */
+  view?: string
   enabled?: boolean
 }) {
   const pdsClient = useMaybePdsClient()
   const ref = id ? parseThreadStoryId(id) : undefined
   return useQuery({
-    queryKey: createDutchThreadQueryKey({id: id ?? ''}),
+    queryKey: createDutchThreadQueryKey({id: id ?? '', view}),
     staleTime: STALE.MINUTES.FIVE,
     enabled: enabled && !!ref && IS_DUTCH_API_CONFIGURED && !!pdsClient,
     async queryFn() {
@@ -193,6 +209,7 @@ export function useDutchThreadQuery({
         pdsClient!,
         buildDutchApiUrl(`/api/threads/${encodeURIComponent(ref!.key)}`, {
           scope: ref!.scope,
+          ...decodeDutchThreadView(view),
         }),
       )
       return data.thread

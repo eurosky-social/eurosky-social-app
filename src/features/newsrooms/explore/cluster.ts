@@ -95,6 +95,12 @@ export interface ExploreStory {
    * unset.
    */
   regions?: string[]
+  /**
+   * How the source was asked to show the story, for the article page to read
+   * it the same way. Only the Dutch labeler takes one (see
+   * `encodeDutchThreadView`).
+   */
+  view?: string
 }
 
 /** Shared headline words below which two articles are never the same story. */

@@ -133,14 +133,13 @@ region with no counterpart on a story boosts nothing.
 
 ### Languages
 
-The settings' `languages` filter every story on the page, whatever the
-location. The labeler takes one `lang=` per request, so with one language
-picked the server filters the threads and names a lead article in it
-(`leadIn`); with several, the page reads a wider page of threads and keeps
-those with an article in any of them (`isThreadInLanguages`). Either way a
-story leads with an article in a picked language where it has one
-(`adaptThread`). RSS articles carry no language, so the RSS spread is not
-filtered.
+The app's content languages filter every story on the page, whatever the
+location, and the labeler applies them: every read sends them all as `lang=`
+with `articles=matching` (`dutch/view.ts`), so it returns only threads with an
+article in one, shows only those articles, and names a lead in one of them
+(`leadIn`). The article page reads its story's thread in the same view, which
+the story carries to it (`storyView`). RSS articles carry no language, so the
+RSS spread is not filtered.
 
 ### Locations
 

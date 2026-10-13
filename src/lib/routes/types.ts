@@ -40,6 +40,8 @@ export type CommonNavigatorParams = {
     /** The story the article was opened from, for its other coverage. */
     storyId?: string
     storySource?: 'rss' | 'dutch'
+    /** How the story was read, to read its coverage the same way. */
+    storyView?: string
   }
   Moderation: undefined
   ModerationInbox: undefined

@@ -68,6 +68,8 @@ export interface DutchArticle {
   /** ISO 639-1, the article's own or its feed's. */
   lang: string | null
   labels: string[]
+  /** From an outlet the read boosted. Only sent when it boosted some. */
+  boosted?: boolean
 }
 
 /** One day's burst of a thread: its lead article and a few more. */
@@ -111,12 +113,18 @@ export interface DutchThread {
   /** Null when the thread's articles have aged out of the archive. */
   lead: DutchArticle | null
   /**
-   * With `lang` asked for: the thread's lead article in that language, null
-   * when it has none. Absent otherwise.
+   * With `lang` asked for: the thread's lead article in one of those
+   * languages, a boosted outlet's first, null when it has none. Absent
+   * otherwise.
    */
   leadIn?: DutchArticle | null
   /** Most recent first, each with a few of its articles. */
   events: DutchEvent[]
+  /**
+   * A boosted outlet's article leads one of its events. Only sent when the
+   * read boosted some outlets.
+   */
+  boosted?: boolean
 }
 
 /** The service's active fit of a scope. */
