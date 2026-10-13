@@ -4,9 +4,11 @@ import {useLingui} from '@lingui/react/macro'
 import {atoms as a, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
 import {ChevronBottom_Stroke2_Corner0_Rounded as ChevronDownIcon} from '#/components/icons/Chevron'
+import {type Props as SVGIconProps} from '#/components/icons/common'
 import {Earth_Stroke2_Corner2_Rounded as WorldIcon} from '#/components/icons/Globe'
 import {PinLocation_Stroke2_Corner0_Rounded as PinIcon} from '#/components/icons/PinLocation'
 import * as Menu from '#/components/Menu'
+import {type TriggerChildProps} from '#/components/Menu/types'
 import {Text} from '#/components/Typography'
 import {type NewsRegion} from '#/features/newsFeed/sources'
 import {WORLD_REGION} from '../locations'
@@ -28,7 +30,6 @@ export function ExploreLocationPicker({
   selected: string
   onSelect: (regionId: string) => void
 }) {
-  const t = useTheme()
   const {t: l} = useLingui()
   const countries = regions.filter(region => !region.parent)
   const provinces = regions.filter(region => region.parent)
@@ -47,38 +48,19 @@ export function ExploreLocationPicker({
     <Menu.Root>
       <Menu.Trigger label={l`Choose a location`}>
         {({props}) => (
-          <Button
-            {...props}
+          <PickerButton
+            props={props}
             testID="exploreLocationPickerBtn"
             label={l`Choose a location`}
-            style={[
-              a.flex_row,
-              a.align_center,
-              a.gap_xs,
-              a.rounded_full,
-              a.px_md,
-              a.py_xs,
-              a.border,
-              {
-                borderColor: t.palette.primary_500,
-                backgroundColor: t.palette.primary_25,
-              },
-            ]}>
-            <Icon size="sm" style={{color: t.palette.primary_500}} />
-            <Text
-              emoji
-              numberOfLines={1}
-              style={[a.text_sm, a.font_bold, {color: t.palette.primary_500}]}>
-              {current ? nameOf(current) : l`World`}
-            </Text>
-            <ChevronDownIcon size="xs" style={{color: t.palette.primary_500}} />
-          </Button>
+            icon={Icon}
+            text={current ? nameOf(current) : l`World`}
+          />
         )}
       </Menu.Trigger>
       <Menu.Outer>
         <Menu.Group>
           {countries.map(region => (
-            <LocationItem
+            <PickerItem
               key={region.id}
               name={nameOf(region)}
               selected={region.id === selected}
@@ -91,7 +73,7 @@ export function ExploreLocationPicker({
             <Menu.Divider />
             <Menu.Group>
               {provinces.map(region => (
-                <LocationItem
+                <PickerItem
                   key={region.id}
                   name={nameOf(region)}
                   selected={region.id === selected}
@@ -106,7 +88,97 @@ export function ExploreLocationPicker({
   )
 }
 
-function LocationItem({
+/**
+ * The pill a picker over the topic chips opens from: what the page is scoped
+ * to, with a chevron saying it can change.
+ */
+export function PickerButton({
+  props,
+  testID,
+  label,
+  icon: Icon,
+  text,
+  grouped = false,
+}: {
+  /** The trigger props `Menu.Trigger` hands its child. */
+  props: TriggerChildProps['props']
+  testID: string
+  label: string
+  icon: React.ComponentType<SVGIconProps>
+  text: string
+  /** Inside a `PickerGroup`, which draws the pill around it instead. */
+  grouped?: boolean
+}) {
+  const t = useTheme()
+  return (
+    <Button
+      {...props}
+      testID={testID}
+      label={label}
+      style={[
+        a.flex_row,
+        a.align_center,
+        a.gap_xs,
+        a.rounded_full,
+        a.px_md,
+        a.py_xs,
+        !grouped && [a.border, pillColors(t)],
+      ]}>
+      <Icon size="sm" style={{color: t.palette.primary_500}} />
+      <Text
+        emoji
+        numberOfLines={1}
+        style={[a.text_sm, a.font_bold, {color: t.palette.primary_500}]}>
+        {text}
+      </Text>
+      <ChevronDownIcon size="xs" style={{color: t.palette.primary_500}} />
+    </Button>
+  )
+}
+
+/**
+ * Pickers that scope the page together - an interest and a place inside it -
+ * as one pill, divided by a rule, so they read as one setting.
+ */
+export function PickerGroup({children}: {children: React.ReactNode}) {
+  const t = useTheme()
+  return (
+    <View
+      style={[
+        a.flex_row,
+        a.align_stretch,
+        a.rounded_full,
+        a.border,
+        a.overflow_hidden,
+        pillColors(t),
+      ]}>
+      {children}
+    </View>
+  )
+}
+
+/** The rule between two pickers of a `PickerGroup`. */
+export function PickerGroupRule() {
+  const t = useTheme()
+  return (
+    <View
+      style={[
+        a.my_xs,
+        {width: 1, backgroundColor: t.palette.primary_500, opacity: 0.4},
+      ]}
+    />
+  )
+}
+
+function pillColors(t: ReturnType<typeof useTheme>) {
+  return {
+    borderColor: t.palette.primary_500,
+    backgroundColor: t.palette.primary_25,
+  }
+}
+
+/** One choice of a picker, ticked while it is the page's. */
+export function PickerItem({
   name,
   selected,
   onPress,

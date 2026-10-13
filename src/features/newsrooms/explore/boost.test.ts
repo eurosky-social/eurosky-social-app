@@ -8,6 +8,7 @@ function prefs(overrides: Partial<NewsFeedPrefs> = {}): NewsFeedPrefs {
     regions: [],
     languages: [],
     excludedDids: [],
+    interests: [],
     createdAt: '2026-10-06T00:00:00.000Z',
     ...overrides,
   }

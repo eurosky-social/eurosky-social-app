@@ -10,6 +10,7 @@ import {
   type CommonNavigatorParams,
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
+import {useLanguagePrefs} from '#/state/preferences/languages'
 import {useShellLayout} from '#/state/shell/shell-layout'
 import {atoms as a, native, useTheme, web} from '#/alf'
 import {ButtonIcon, ButtonText} from '#/components/Button'
@@ -20,6 +21,8 @@ import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
 import {IS_WEB} from '#/env'
 import {useNewsFeedPrefsQuery} from '#/features/newsFeed/state/prefs'
+import {DUTCH_WORLD_SCOPE, IS_DUTCH_API_CONFIGURED} from '../dutch/config'
+import {useDutchOutletsQuery} from '../dutch/queries'
 import {useCollapsingTitle} from '../hub/useCollapsingTitle'
 import {useNewsroomProfilesQuery} from '../queries'
 import {boostStories, interestsFromPrefs} from './boost'
@@ -32,6 +35,10 @@ import {
 } from './components/ExploreColumn'
 import {DepartmentColumn, DepartmentStrip} from './components/ExploreDepartment'
 import {
+  ExploreInterestPicker,
+  ExploreSubLocationPicker,
+} from './components/ExploreInterestPicker'
+import {
   ExploreLeadBand,
   LEAD_BAND_DEFAULT_STORIES,
   LEAD_BAND_MAX_STORIES,
@@ -39,11 +46,14 @@ import {
 import {
   ExploreLocationPicker,
   LocationPickerRule,
+  PickerGroup,
+  PickerGroupRule,
 } from './components/ExploreLocationPicker'
 import {ExploreSectionChips} from './components/ExploreSectionChips'
 import {ExploreSectionFront} from './components/ExploreSectionFront'
 import {ExploreSkeleton} from './components/ExploreSkeleton'
 import {BandRule, ColumnRule} from './components/Rules'
+import {filtersForInterest, SUB_LOCATIONS} from './interests'
 import {pickerRegions, sourceForRegion, WORLD_REGION} from './locations'
 import {type ExploreSection} from './sections'
 import {useExploreSource} from './useExploreSource'
@@ -75,26 +85,77 @@ export function NewsroomExploreScreen(
   const {t: l} = useLingui()
   const {wide, width} = useExploreSpread()
   const {data: prefs} = useNewsFeedPrefsQuery()
+  const {contentLanguages} = useLanguagePrefs()
   /*
-   * The locations on offer are the regions picked in the news settings. One
-   * the settings no longer offer falls back to the world.
+   * The reader's interests are read from the news aggregator, so without it
+   * the page has only the world to show.
+   */
+  const interests = IS_DUTCH_API_CONFIGURED ? (prefs?.interests ?? []) : []
+  const [interestId, setInterestId] = useState<string | undefined>()
+  /* The first interest leads, and stands in for one since deleted. */
+  const interest =
+    interests.find(candidate => candidate.id === interestId) ?? interests[0]
+  /*
+   * A place inside one of the interest's countries, picked on the page to
+   * narrow that country down. Not saved, and dropped with a country the
+   * interest no longer has.
+   */
+  const [subLocationId, setSubLocationId] = useState<string | undefined>()
+  const subLocationCountries = (interest?.countries ?? []).filter(
+    country => SUB_LOCATIONS[country],
+  )
+  const subLocation = subLocationCountries.some(country =>
+    SUB_LOCATIONS[country].some(region => region.id === subLocationId),
+  )
+    ? subLocationId
+    : undefined
+  /* Only an interest with outlets unticked needs the outlet list. */
+  const {outlets} = useDutchOutletsQuery({
+    enabled: (interest?.excludedOutlets.length ?? 0) > 0,
+  })
+  const interestFilters = interest
+    ? filtersForInterest(
+        {...interest, subLocations: subLocation ? [subLocation] : []},
+        outlets,
+      )
+    : undefined
+  /*
+   * Without interests, the locations on offer are the regions picked in the
+   * news feed's settings. One the settings no longer offer falls back to the
+   * world.
    */
   const regions = pickerRegions(prefs?.regions ?? [])
   const [regionId, setRegionId] = useState(WORLD_REGION)
   const location = regions.some(region => region.id === regionId)
     ? regionId
     : WORLD_REGION
-  /* The settings' languages filter every story on the page, wherever it is. */
-  const source = useExploreSource({
-    ...(sourceForRegion(location) ?? {source: 'rss'}),
-    languages: prefs?.languages,
-  })
-  const {sections, isLoading, isError} = source
   /*
-   * The news settings - topics, regions and accounts - also move matching
-   * stories up the page rather than filtering the rest out.
+   * The reader's content languages, as set for the rest of the app, filter
+   * every story on the page, wherever it is.
    */
-  const stories = boostStories(source.stories, interestsFromPrefs(prefs))
+  const source = useExploreSource({
+    ...(interests.length > 0
+      ? {
+          source: 'dutch' as const,
+          scope: DUTCH_WORLD_SCOPE,
+          /* Nothing to read until the outlets an interest narrows by load. */
+          filters: interestFilters ?? [],
+        }
+      : (sourceForRegion(location) ?? {source: 'rss' as const})),
+    languages: contentLanguages,
+  })
+  const {sections, isError} = source
+  const isLoading =
+    source.isLoading || (interests.length > 0 && !interestFilters)
+  /*
+   * With no interests, the news feed's topics, regions and accounts move
+   * matching stories up the page rather than filtering the rest out. An
+   * interest filters by itself, so it is left in the service's order.
+   */
+  const stories =
+    interests.length > 0
+      ? source.stories
+      : boostStories(source.stories, interestsFromPrefs(prefs))
   const profiles = useNewsroomProfilesQuery()
   const [sectionId, setSectionId] = useState<string | undefined>()
   const [leadBandCount, setLeadBandCount] = useState(LEAD_BAND_DEFAULT_STORIES)
@@ -128,6 +189,17 @@ export function NewsroomExploreScreen(
    */
   function onSelectLocation(next: string) {
     setRegionId(next)
+    scrollToTop()
+  }
+
+  /* Likewise the topic is kept across a change of interest or place. */
+  function onSelectInterest(next: string) {
+    setInterestId(next)
+    scrollToTop()
+  }
+
+  function onSelectSubLocation(next: string | undefined) {
+    setSubLocationId(next)
     scrollToTop()
   }
 
@@ -172,19 +244,22 @@ export function NewsroomExploreScreen(
                   <Trans>{BRAND.name} News</Trans>
                 </Layout.Header.TitleText>
               </Layout.Header.Content>
-              {/* Outside Header.Slot: slots are fixed-width squares and this
-               * button carries a text label. */}
-              <Link
-                testID="newsSettingsBtn"
-                to="/news/settings"
-                label={l`Choose the topics, regions, languages and accounts for your news`}
-                size="small"
-                color="secondary">
-                <ButtonIcon icon={SettingsGearIcon} />
-                <ButtonText>
-                  <Trans>Settings</Trans>
-                </ButtonText>
-              </Link>
+              {/* With interests, the settings are at the foot of their
+               * dropdown instead. Outside Header.Slot: slots are fixed-width
+               * squares and this button carries a text label. */}
+              {!interest && (
+                <Link
+                  testID="newsSettingsBtn"
+                  to="/news/settings"
+                  label={l`Choose your news interests`}
+                  size="small"
+                  color="secondary">
+                  <ButtonIcon icon={SettingsGearIcon} />
+                  <ButtonText>
+                    <Trans>Settings</Trans>
+                  </ButtonText>
+                </Link>
+              )}
             </ExploreHeaderOuter>
           </View>
           <ExploreColumn style={[t.atoms.bg]}>
@@ -197,16 +272,41 @@ export function NewsroomExploreScreen(
                 selectedId={focused?.section.id}
                 onSelect={onSelectSection}
                 leading={
-                  /* Without the labeler the world is all there is. */
-                  regions.length > 1 && (
+                  interest ? (
                     <>
-                      <ExploreLocationPicker
-                        regions={regions}
-                        selected={location}
-                        onSelect={onSelectLocation}
-                      />
+                      <PickerGroup>
+                        <ExploreInterestPicker
+                          interests={interests}
+                          selectedId={interest.id}
+                          onSelect={onSelectInterest}
+                          grouped
+                        />
+                        {subLocationCountries.map(country => (
+                          <Fragment key={country}>
+                            <PickerGroupRule />
+                            <ExploreSubLocationPicker
+                              country={country}
+                              selectedId={subLocation}
+                              onSelect={onSelectSubLocation}
+                              grouped
+                            />
+                          </Fragment>
+                        ))}
+                      </PickerGroup>
                       <LocationPickerRule />
                     </>
+                  ) : (
+                    /* Without the labeler the world is all there is. */
+                    regions.length > 1 && (
+                      <>
+                        <ExploreLocationPicker
+                          regions={regions}
+                          selected={location}
+                          onSelect={onSelectLocation}
+                        />
+                        <LocationPickerRule />
+                      </>
+                    )
                   )
                 }
               />
@@ -229,6 +329,8 @@ export function NewsroomExploreScreen(
               <Text style={[a.text_md, a.text_center]}>
                 {isError ? (
                   <Trans>Couldn’t load the news. Try again later.</Trans>
+                ) : interest ? (
+                  <Trans>Nothing matches this interest right now.</Trans>
                 ) : location === WORLD_REGION ? (
                   <Trans>No newsroom feeds are reachable right now.</Trans>
                 ) : (

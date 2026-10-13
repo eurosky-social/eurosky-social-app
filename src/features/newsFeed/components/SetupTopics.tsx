@@ -207,7 +207,7 @@ export function SetupTopics({
   )
 }
 
-function Section({
+export function Section({
   titleText,
   hintText,
   children,
@@ -234,7 +234,7 @@ function Section({
 
 // Matches the interest pills from the Interests settings (InterestButton) so
 // selection looks consistent across the app.
-function Chip({label}: {label: string}) {
+export function Chip({label}: {label: string}) {
   const t = useTheme()
   const ctx = Toggle.useItemContext()
   const interacted = ctx.hovered || ctx.focused || ctx.pressed

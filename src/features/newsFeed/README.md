@@ -33,6 +33,28 @@ article. The feed still also applies the app's content language preference
    each source's author feed and round-robins across them so every source gets
    equal representation, filtered by the user's content languages.
 
+## Interests (news page)
+
+The news page reads the news aggregator, so its settings (`/news/settings`,
+`components/interests/`) are interests rather than topics and accounts: each a
+slice of the news by countries, the aggregator's themes, and the outlets of
+those countries, every one of them in until unticked. They are set in a
+three-step wizard, which the settings open on while there are none, and
+stored as `interests` in the same record.
+
+On the page a dropdown ahead of the topic chips picks one interest, the first
+by default. When it covers the Netherlands, a second dropdown narrows it to a
+province; that choice is not saved. The page's languages are the app's content
+languages (`languagePrefs.contentLanguages`), which the settings link to
+rather than keeping a list of their own; the record's `languages` is the news
+feed's.
+
+`newsrooms/explore/interests.ts` turns an interest into reads of
+`/api/threads`. The API takes several countries and outlets per read but one
+theme and one province, so an interest is one read per theme (and province),
+and the page merges them rank by rank. Without the aggregator configured, the
+settings fall back to the news feed's setup below.
+
 ## Layout
 
 - `sources.ts` - registry + taxonomy + `selectSources`. The regions include
