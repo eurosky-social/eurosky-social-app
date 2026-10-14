@@ -70,6 +70,7 @@ import {BRAND} from '#/config/brand'
 import {IS_NATIVE, IS_WEB} from '#/env'
 import {InviteFriendsDialog} from '#/features/inviteFriends'
 import {useActorStatus} from '#/features/liveNow'
+import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
 
 const iconWidth = 26
 
@@ -284,7 +285,7 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
 
   const onPressNews = useCallback(() => {
     ax.metric('nav:click', {item: 'news', surface: 'drawer'})
-    navigation.navigate('NewsroomExplore')
+    navigation.navigate(NEWS_V2_ENABLED ? 'NewsroomExplore' : 'NewsFeed')
     setDrawerOpen(false)
   }, [navigation, setDrawerOpen, ax])
 
@@ -636,7 +637,7 @@ let NewsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
   return (
     <MenuItem
       icon={<Newspaper style={[t.atoms.text]} width={iconWidth} />}
-      label={_(msg`Newsrooms`)}
+      label={NEWS_V2_ENABLED ? _(msg`Newsrooms`) : _(msg`News`)}
       onPress={onPress}
     />
   )

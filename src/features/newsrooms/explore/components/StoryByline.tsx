@@ -7,6 +7,7 @@ import {atoms as a, useTheme} from '#/alf'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {type app} from '#/lexicons'
+import {newsroomPath} from '../../newsrooms'
 import {getPublisherName} from '../../publishers'
 import {type ArticleSharers} from '../../queries'
 import {type ExploreArticle, outletProfile} from '../cluster'
@@ -30,7 +31,7 @@ export function PublisherLabel({
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
-  const {did, name: outletName, id} = article.publisher
+  const {slug, name: outletName, id} = article.publisher
   const name = getPublisherName(profile) || outletName || id
 
   const label = (
@@ -47,10 +48,11 @@ export function PublisherLabel({
   )
 
   /*
-   * An outlet with no Bluesky account has no newsroom page to open, so it is
-   * credited without a link rather than with a dead one.
+   * Every one of the news aggregator's outlets has a newsroom, found by its
+   * slug. An RSS outlet has none to open, so it is credited without a link
+   * rather than with a dead one.
    */
-  if (!did) {
+  if (!slug) {
     return (
       <View style={[a.flex_row, a.align_center, a.gap_xs]}>
         {icon}
@@ -61,7 +63,7 @@ export function PublisherLabel({
 
   return (
     <Link
-      to={`/newsroom/${did}`}
+      to={newsroomPath({slug})}
       label={l`Open the ${name} newsroom`}
       style={[a.flex_row, a.align_center, a.gap_xs]}>
       {icon}

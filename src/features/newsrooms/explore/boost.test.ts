@@ -4,7 +4,7 @@ import {type ExploreStory} from './cluster'
 
 function prefs(overrides: Partial<NewsFeedPrefs> = {}): NewsFeedPrefs {
   return {
-    topics: ['general'],
+    topics: ['all'],
     regions: [],
     languages: [],
     excludedDids: [],
@@ -63,16 +63,19 @@ describe('interestsFromPrefs', () => {
     expect(interestsFromPrefs(prefs({topics: []}))).toBeUndefined()
   })
 
-  it('maps topics and regions onto both sources’ sections', () => {
+  it('takes the topics as sections, with the regions’ own', () => {
     const interests = interestsFromPrefs(
-      prefs({topics: ['sports', 'climate'], regions: ['global']}),
+      prefs({topics: ['sport', 'climate'], regions: ['global']}),
     )
     expect([...interests!.sectionIds].sort()).toEqual([
       'climate',
-      'environment',
       'sport',
       'world',
     ])
+  })
+
+  it('boosts no section for every topic', () => {
+    expect([...interestsFromPrefs(prefs())!.sectionIds]).toEqual([])
   })
 
   it('leaves out accounts the reader excluded', () => {
@@ -101,7 +104,7 @@ describe('boostStories', () => {
     const stories = [...filler(10), story('match', {section: 'sport'})]
     const boosted = boostStories(
       stories,
-      interestsFromPrefs(prefs({topics: ['sports']})),
+      interestsFromPrefs(prefs({topics: ['sport']})),
     )
     expect(ids(boosted).indexOf('match')).toBe(2)
   })

@@ -17,6 +17,11 @@ import {
 export interface ExploreOutlet {
   /** Stable per outlet; the registry id, or the site host for a bare feed. */
   id: string
+  /**
+   * The news aggregator's slug for the outlet: what its newsroom page is
+   * found by. Unset for an RSS outlet, which has no newsroom.
+   */
+  slug?: string
   /** Present only with a Bluesky account: drives the avatar and the byline link. */
   did?: string
   /** Fallback display name, for an outlet with no profile to read one from. */
@@ -90,6 +95,12 @@ export interface ExploreStory {
    * unset.
    */
   regions?: string[]
+  /**
+   * How the source was asked to show the story, for the article page to read
+   * it the same way. Only the Dutch labeler takes one (see
+   * `encodeDutchThreadView`).
+   */
+  view?: string
 }
 
 /** Shared headline words below which two articles are never the same story. */

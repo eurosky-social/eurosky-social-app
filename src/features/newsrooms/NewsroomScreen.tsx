@@ -6,7 +6,6 @@ import {
   type CommonNavigatorParams,
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
-import {type FeedDescriptor} from '#/state/queries/post-feed'
 import {useProfileQuery} from '#/state/queries/profile'
 import {PostFeed} from '#/view/com/posts/PostFeed'
 import {type ListMethods} from '#/view/com/util/List'
@@ -22,58 +21,66 @@ import {BRAND} from '#/config/brand'
 import {NewsroomFrontPage} from './components/NewsroomFrontPage'
 import {NewsroomMasthead} from './components/NewsroomMasthead'
 import {NewsroomRightRail} from './components/NewsroomRightRail'
-import {
-  getDefaultNewsroomPublisher,
-  getNewsroomPublisherByDid,
-  getPublisherFeedDids,
-  getPublisherName,
-} from './publishers'
-import {useNewsroomProfilesQuery} from './queries'
+import {findNewsroom, useNewsroomReporters, useNewsrooms} from './newsrooms'
+import {getPublisherName} from './publishers'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'Newsroom'>
 
+/**
+ * A newsroom: one of the news aggregator's outlets, with its masthead, its
+ * latest articles, and - where it has a Bluesky account - the conversation
+ * from it and its reporters.
+ */
 export function NewsroomScreen({route, navigation}: Props) {
   const {name} = route.params
 
-  // The URL is the single source of truth for the focused org, so navigating
-  // here from anywhere (org switcher, profile shortcut, shared link) always
-  // lands on the right publisher, including when the screen is already mounted.
-  // A DID param matches the registry directly; a handle param resolves through
-  // the live profile first (getProfile accepts any actor identifier).
-  const direct = name ? getNewsroomPublisherByDid(name) : undefined
+  /*
+   * The URL is the single source of truth for the newsroom, so navigating
+   * here from anywhere (a byline, a link chip, a profile shortcut, a shared
+   * link) lands on the right one, even when the screen is already mounted.
+   * It names the outlet by slug or by its account's DID; a handle resolves
+   * to its DID through the live profile first.
+   */
+  const {newsrooms, isLoading} = useNewsrooms()
+  const direct = findNewsroom(newsrooms, name)
+  const lookUpHandle =
+    !!name && !!newsrooms && !direct && !name.startsWith('did:')
   const {data: namedProfile, isLoading: isResolvingName} = useProfileQuery({
-    did: direct ? undefined : name,
+    did: lookUpHandle ? name : undefined,
   })
-  const resolved = namedProfile
-    ? getNewsroomPublisherByDid(namedProfile.did)
-    : undefined
-  const publisher = direct ?? resolved ?? getDefaultNewsroomPublisher()
-  const resolvingName = !direct && !!name && isResolvingName
+  const newsroom =
+    direct ??
+    (namedProfile ? findNewsroom(newsrooms, namedProfile.did) : undefined)
+  const resolving = isLoading || (lookUpHandle && isResolvingName)
 
   const t = useTheme()
   const {t: l} = useLingui()
   const {rightNavVisible} = useLayoutBreakpoints()
   const scrollElRef = useRef<ListMethods>(null)
 
-  const profiles = useNewsroomProfilesQuery()
-  const publisherName = getPublisherName(profiles.get(publisher.did))
+  const {data: profile} = useProfileQuery({did: newsroom?.did})
+  /*
+   * The conversation merges the outlet's account and its reporters', round-
+   * robin across their author feeds (see NewsFeedAPI). Held back until a
+   * verifying outlet's journalists are known, so the feed starts once.
+   */
+  const {conversationDids, isLoading: reportersLoading} =
+    useNewsroomReporters(newsroom)
+  const newsroomName = getPublisherName(profile) || newsroom?.name || ''
 
-  // Normalize the URL to the focused org's DID (`/newsroom/<did>`), waiting
-  // out an in-flight handle resolution so a handle deep link is not clobbered
-  // with the default org.
+  /* The address settles on the slug, whatever named the newsroom. */
   useEffect(() => {
-    if (resolvingName) return
-    if (name !== publisher.did) {
-      navigation.setParams({name: publisher.did})
+    if (newsroom && name !== newsroom.slug) {
+      navigation.setParams({name: newsroom.slug})
     }
-  }, [resolvingName, name, publisher.did, navigation])
+  }, [name, newsroom, navigation])
 
-  // "The conversation" merges the publisher account and its reporters,
-  // round-robin across their author feeds (see NewsFeedAPI).
-  const feed =
-    `newsroom|${getPublisherFeedDids(publisher).join(',')}` as FeedDescriptor
+  /* Without a newsroom to show, the directory lists them all. */
+  useEffect(() => {
+    if (!name) navigation.replace('NewsroomDirectory')
+  }, [name, navigation])
 
-  if (resolvingName) {
+  if (resolving || !name) {
     return (
       <Layout.Screen testID="newsroomScreen">
         <Layout.Center style={[a.flex_1, a.justify_center, a.align_center]}>
@@ -82,6 +89,53 @@ export function NewsroomScreen({route, navigation}: Props) {
       </Layout.Screen>
     )
   }
+
+  if (!newsroom) {
+    return (
+      <Layout.Screen testID="newsroomScreen">
+        <Layout.Header.Outer>
+          <Layout.Header.BackButton />
+          <Layout.Header.Content>
+            <Layout.Header.TitleText>
+              <Trans>{BRAND.name} News</Trans>
+            </Layout.Header.TitleText>
+          </Layout.Header.Content>
+          <Layout.Header.Slot />
+        </Layout.Header.Outer>
+        <Layout.Center style={[a.flex_1, a.align_center, a.gap_lg, a.p_2xl]}>
+          <Text style={[a.text_md, a.text_center]}>
+            <Trans>There is no newsroom here.</Trans>
+          </Text>
+          <Link
+            to="/newsrooms"
+            label={l`See every newsroom`}
+            size="small"
+            color="secondary">
+            <ButtonIcon icon={NewsroomsIcon} />
+            <ButtonText>
+              <Trans>All newsrooms</Trans>
+            </ButtonText>
+          </Link>
+        </Layout.Center>
+      </Layout.Screen>
+    )
+  }
+
+  const feedDids = reportersLoading ? [] : conversationDids
+  /* The journalism, then the rail inline where the shell has no column for it. */
+  const front = (
+    <>
+      <NewsroomMasthead newsroom={newsroom} />
+      <NewsroomFrontPage newsroom={newsroom} />
+      {/* The shell's right column hosts the rail on wide screens; when it
+       * is hidden, fall back to rendering it inline above the feed. */}
+      {!rightNavVisible && (
+        <View style={[a.pb_md]}>
+          <NewsroomRightRail inline />
+        </View>
+      )}
+    </>
+  )
 
   return (
     <Layout.Screen testID="newsroomScreen">
@@ -108,59 +162,58 @@ export function NewsroomScreen({route, navigation}: Props) {
         </Link>
       </Layout.Header.Outer>
 
-      <PostFeed
-        // Key on the org so switching resets feed scroll/state cleanly.
-        key={publisher.id}
-        testID="newsroomFeed"
-        scrollElRef={scrollElRef}
-        feed={feed}
-        renderEmptyState={renderEmpty}
-        // An element rather than an inline component, so header state (image
-        // loads, discussion) survives re-renders like follow-state changes.
-        ListHeaderComponent={
-          <>
-            <NewsroomMasthead publisher={publisher} />
-            {/* Editorial spine: the publisher's real published articles, with
-             * the in-network discussion of the lead story woven in. */}
-            <NewsroomFrontPage publisher={publisher} />
-            {/* The shell's right column hosts the rail on wide screens; when it
-             * is hidden, fall back to rendering it inline above the feed. */}
-            {!rightNavVisible && (
-              <View style={[a.pb_md]}>
-                <NewsroomRightRail inline />
-              </View>
-            )}
-            {/* Native social layer: the conversation around the journalism. */}
-            <View
-              style={[
-                a.flex_row,
-                a.align_center,
-                a.gap_sm,
-                a.px_lg,
-                a.py_xl,
-                a.border_t,
-                a.border_b,
-                t.atoms.border_contrast_low,
-              ]}>
-              <NewsroomsIcon
-                size="lg"
-                style={{color: publisher.accent ?? t.palette.primary_500}}
-              />
-              <Text
-                emoji
+      {feedDids.length === 0 ? (
+        /* An outlet with no accounts at all has no conversation to follow. */
+        <Layout.Content key={newsroom.slug}>{front}</Layout.Content>
+      ) : (
+        <PostFeed
+          // Key on the newsroom so switching resets feed scroll/state cleanly.
+          key={newsroom.slug}
+          testID="newsroomFeed"
+          scrollElRef={scrollElRef}
+          /*
+           * The conversation merges the outlet's account and its reporters',
+           * round-robin across their author feeds (see NewsFeedAPI).
+           */
+          feed={`newsroom|${feedDids.join(',')}`}
+          renderEmptyState={renderEmpty}
+          // An element rather than an inline component, so header state (image
+          // loads, discussion) survives re-renders like follow-state changes.
+          ListHeaderComponent={
+            <>
+              {front}
+              {/* Native social layer: the conversation around the journalism. */}
+              <View
                 style={[
-                  a.flex_1,
-                  a.text_2xl,
-                  a.font_bold,
-                  a.leading_tight,
-                  t.atoms.text,
+                  a.flex_row,
+                  a.align_center,
+                  a.gap_sm,
+                  a.px_lg,
+                  a.py_xl,
+                  a.border_t,
+                  a.border_b,
+                  t.atoms.border_contrast_low,
                 ]}>
-                <Trans>From {publisherName} and its reporters</Trans>
-              </Text>
-            </View>
-          </>
-        }
-      />
+                <NewsroomsIcon
+                  size="lg"
+                  style={{color: newsroom.accent ?? t.palette.primary_500}}
+                />
+                <Text
+                  emoji
+                  style={[
+                    a.flex_1,
+                    a.text_2xl,
+                    a.font_bold,
+                    a.leading_tight,
+                    t.atoms.text,
+                  ]}>
+                  <Trans>From {newsroomName} and its reporters</Trans>
+                </Text>
+              </View>
+            </>
+          }
+        />
+      )}
     </Layout.Screen>
   )
 }
@@ -169,7 +222,7 @@ function renderEmpty() {
   return (
     <View style={[a.flex_1, a.align_center, a.justify_center, a.p_2xl]}>
       <Text style={[a.text_md, a.text_center]}>
-        <Trans>No recent posts from this publisher.</Trans>
+        <Trans>No recent posts from this newsroom.</Trans>
       </Text>
     </View>
   )

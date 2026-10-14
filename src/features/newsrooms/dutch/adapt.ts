@@ -37,16 +37,19 @@ export interface DutchExploreStory extends ExploreStory {
  * sections; it is passed in rather than imported so the mapping stays one
  * decision in one place (see `themeSections`).
  *
- * With `languages`, the story leads with an article in one of them where the
- * thread has one, so a reader who reads only English is not handed a Dutch
- * headline for a story English outlets covered too.
+ * The service has already applied the reader's preferences (see
+ * `DutchThreadView`): the articles are the ones in their languages and places,
+ * and `leadIn` is the lead in one of their languages. Boosted outlets'
+ * articles come first after the lead. `view` is how the thread was read, kept
+ * so the article page can read it the same way.
  */
 export function adaptThread(
   thread: DutchThread,
   sectionForTheme: (theme: string | null) => ExploreSection,
-  languages: string[] = [],
+  view?: string,
 ): DutchExploreStory | undefined {
-  if (!thread.lead) return undefined
+  const leadArticle = thread.leadIn ?? thread.lead
+  if (!leadArticle) return undefined
 
   const section = sectionForTheme(thread.theme)
   const provinces = rankedProvinces(thread.provinces)
@@ -56,10 +59,9 @@ export function adaptThread(
    * own. The thread's lead is usually one of them, so the coverage is read
    * once by URL.
    */
-  const seen = new Set<string>()
+  const seen = new Set<string>([leadArticle.uri])
   const articles = [
-    ...(thread.leadIn ? [thread.leadIn] : []),
-    thread.lead,
+    ...(thread.lead ? [thread.lead] : []),
     ...thread.events.flatMap(event => [
       ...(event.lead ? [event.lead] : []),
       ...event.articles,
@@ -69,23 +71,21 @@ export function adaptThread(
     seen.add(article.uri)
     return true
   })
-  const inLanguage = (article: DutchArticle) =>
-    !!article.lang && languages.includes(article.lang)
-  const leadArticle =
-    (languages.length > 0 ? articles.find(inLanguage) : undefined) ??
-    thread.lead
+  /*
+   * Stable, so each part keeps the events' order. The service orders each
+   * event this way, but the events are concatenated here.
+   */
+  const ordered = [
+    ...articles.filter(article => article.boosted),
+    ...articles.filter(article => !article.boosted),
+  ]
   const lead = adaptArticle(leadArticle, section)
 
   return {
     id: threadStoryId(thread),
     source: 'dutch',
     lead,
-    coverage: [
-      lead,
-      ...articles
-        .filter(article => article !== leadArticle)
-        .map(article => adaptArticle(article, section)),
-    ],
+    coverage: [lead, ...ordered.map(article => adaptArticle(article, section))],
     /*
      * The API counts distinct outlets across every article of the thread,
      * including those beyond the few it returns per event, so this reads
@@ -98,15 +98,8 @@ export function adaptThread(
     provinces,
     regions: provinces,
     countries: thread.countries,
+    view,
   }
-}
-
-/** Whether any of the thread's articles is in one of the languages. */
-export function isThreadInLanguages(
-  thread: Pick<DutchThread, 'languages'>,
-  languages: string[],
-): boolean {
-  return thread.languages.some(language => languages.includes(language))
 }
 
 /**
@@ -134,7 +127,16 @@ function adaptArticle(
   article: DutchArticle,
   section: ExploreSection,
 ): ExploreArticle {
-  const item: RssItem = {
+  return {
+    publisher: outletFor(article),
+    item: articleItem(article),
+    section,
+  }
+}
+
+/** An article as the cards' feed item, which is what every card reads. */
+export function articleItem(article: DutchArticle): RssItem {
+  return {
     id: article.uri,
     title: article.title ?? '',
     link: article.uri,
@@ -147,12 +149,6 @@ function adaptArticle(
      * - the theme does that - but they carry the province through to the UI.
      */
     categories: article.labels,
-  }
-
-  return {
-    publisher: outletFor(article),
-    item,
-    section,
   }
 }
 
@@ -168,6 +164,7 @@ export function outletFor(article: DutchArticle): ExploreOutlet {
   const outlet = article.outlet
   return {
     id: host || (outlet?.slug ?? 'unknown'),
+    slug: outlet?.slug ?? undefined,
     did: outlet?.did ?? undefined,
     name: outlet?.name ?? host,
     site: host || undefined,

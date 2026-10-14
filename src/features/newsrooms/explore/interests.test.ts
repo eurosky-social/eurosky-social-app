@@ -6,6 +6,7 @@ import {
   countryOfSubLocation,
   filtersForInterest,
   mergeRanked,
+  outletCoverage,
   outletsForInterest,
 } from './interests'
 
@@ -17,6 +18,7 @@ function interest(overrides: Partial<NewsInterest> = {}): NewsInterest {
     subLocations: [],
     themes: [],
     excludedOutlets: [],
+    strictOutlets: false,
     ...overrides,
   }
 }
@@ -59,6 +61,24 @@ describe('outletsForInterest', () => {
 
   it('offers every outlet to an interest with no place', () => {
     expect(outletsForInterest(interest(), OUTLETS)).toHaveLength(4)
+  })
+})
+
+describe('outletCoverage', () => {
+  const covering = {themes: {tech: 4, politics: 2}}
+
+  it('counts the stories in the given themes', () => {
+    expect(outletCoverage(covering, ['tech'])).toBe(4)
+    expect(outletCoverage(covering, ['tech', 'sport'])).toBe(4)
+    expect(outletCoverage(covering, ['sport'])).toBe(0)
+  })
+
+  it('counts every theme when none are given', () => {
+    expect(outletCoverage(covering, [])).toBe(6)
+  })
+
+  it('is undefined when the service did not say', () => {
+    expect(outletCoverage({}, ['tech'])).toBeUndefined()
   })
 })
 
@@ -107,10 +127,45 @@ describe('filtersForInterest', () => {
     ])
   })
 
-  it('limits every read to the outlets left ticked', () => {
+  it('boosts the outlets left ticked in every read', () => {
     expect(
       filtersForInterest(
-        interest({countries: ['be'], excludedOutlets: ['hln']}),
+        interest({
+          countries: ['be'],
+          themes: ['tech', 'sport'],
+          excludedOutlets: ['hln'],
+        }),
+        OUTLETS,
+      ),
+    ).toEqual([
+      {countries: ['be'], theme: 'tech', boost: ['le-soir']},
+      {countries: ['be'], theme: 'sport', boost: ['le-soir']},
+    ])
+  })
+
+  it('boosts nothing with every outlet ticked', () => {
+    expect(filtersForInterest(interest({countries: ['be']}), OUTLETS)).toEqual([
+      {countries: ['be']},
+    ])
+  })
+
+  it('reads everything, boosting nothing, with every outlet unticked', () => {
+    expect(
+      filtersForInterest(
+        interest({countries: ['be'], excludedOutlets: ['hln', 'le-soir']}),
+        OUTLETS,
+      ),
+    ).toEqual([{countries: ['be']}])
+  })
+
+  it('limits every read to the outlets left ticked when strict', () => {
+    expect(
+      filtersForInterest(
+        interest({
+          countries: ['be'],
+          excludedOutlets: ['hln'],
+          strictOutlets: true,
+        }),
         OUTLETS,
       ),
     ).toEqual([{countries: ['be'], outlets: ['le-soir']}])
@@ -122,10 +177,14 @@ describe('filtersForInterest', () => {
     ).toBeUndefined()
   })
 
-  it('reads nothing with every outlet unticked', () => {
+  it('reads nothing with every outlet unticked when strict', () => {
     expect(
       filtersForInterest(
-        interest({countries: ['be'], excludedOutlets: ['hln', 'le-soir']}),
+        interest({
+          countries: ['be'],
+          excludedOutlets: ['hln', 'le-soir'],
+          strictOutlets: true,
+        }),
         OUTLETS,
       ),
     ).toEqual([])
@@ -139,6 +198,16 @@ describe('mergeRanked', () => {
     expect(
       mergeRanked([items('a', 'b', 'c'), items('x', 'a', 'y')]).map(i => i.id),
     ).toEqual(['a', 'x', 'b', 'c', 'y'])
+  })
+
+  it('keeps boosted items ahead, each part rank by rank', () => {
+    const boosted = (id: string) => ({id, boosted: true})
+    expect(
+      mergeRanked([
+        [{id: 'a'}, boosted('b'), {id: 'c'}],
+        [boosted('x'), {id: 'y'}, boosted('z')],
+      ]).map(i => i.id),
+    ).toEqual(['x', 'b', 'z', 'a', 'y', 'c'])
   })
 
   it('is empty with nothing to merge', () => {

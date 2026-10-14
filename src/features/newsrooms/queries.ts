@@ -3,11 +3,11 @@ import {type AtUriString, type DidString} from '@atproto/syntax'
 import {useQueries, useQuery} from '@tanstack/react-query'
 
 import {GCTIME, STALE} from '#/state/queries'
-import {useProfilesQuery} from '#/state/queries/profile'
 import {createQueryKey} from '#/state/queries/util'
 import {useAppviewClient} from '#/state/session'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
+import {useNewsroomProfiles, useNewsrooms} from './newsrooms'
 import {
   getPublisherRssUrls,
   NEWSROOM_PUBLISHERS,
@@ -117,14 +117,15 @@ function rssArticlesQueryOptions({
 }
 
 /**
- * The live profiles of every registered publisher, keyed by DID. Shares the
- * profiles cache with the switcher rail and the mastheads.
+ * The live profiles of the newsrooms with an account, keyed by DID, for the
+ * avatars on story cards. Without the news aggregator there are no newsrooms,
+ * and the RSS spread's publishers stand in.
  */
 export function useNewsroomProfilesQuery() {
-  const {data} = useProfilesQuery({
-    handles: NEWSROOM_PUBLISHERS.map(p => p.did),
-  })
-  return new Map(data?.profiles.map(p => [p.did, p]) ?? [])
+  const {newsrooms} = useNewsrooms()
+  return useNewsroomProfiles(
+    newsrooms ?? NEWSROOM_PUBLISHERS.map(publisher => ({did: publisher.did})),
+  )
 }
 
 export const createArticleDiscussionQueryKey = (args: {

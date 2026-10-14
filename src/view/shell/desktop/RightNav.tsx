@@ -22,8 +22,11 @@ import {InlineLinkText, Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
 import {EventsRightRail} from '#/features/events/components/EventsRightRail'
+import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
+import {NewsFeedRightRail as LegacyNewsFeedRightRail} from '#/features/newsFeed/legacy/NewsFeedRightRail'
 import {NewsroomArticleRightRail} from '#/features/newsrooms/article/NewsroomArticleRightRail'
 import {NewsroomRightRail} from '#/features/newsrooms/components/NewsroomRightRail'
+import {NewsroomRightRail as LegacyNewsroomRightRail} from '#/features/newsrooms/legacy/NewsroomRightRail'
 
 export function DesktopRightNav({routeName}: {routeName: string}) {
   const t = useTheme()
@@ -41,10 +44,11 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
    * keeps a right column but draws it itself (see `NewsFeedRailColumn`).
    */
   const isNewsroomExplore =
-    routeName === 'NewsroomExplore' ||
-    routeName === 'NewsroomDirectory' ||
-    routeName === 'NewsFeed' ||
-    routeName === 'NewsSettings'
+    NEWS_V2_ENABLED &&
+    (routeName === 'NewsroomExplore' ||
+      routeName === 'NewsroomDirectory' ||
+      routeName === 'NewsFeed' ||
+      routeName === 'NewsSettings')
 
   if (!rightNavVisible || isMessagesRelatedScreen || isNewsroomExplore) {
     return null
@@ -56,7 +60,15 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
   // rails, each cross-linking the other.
   const railContent =
     routeName === 'Newsroom' ? (
-      <NewsroomRightRail />
+      NEWS_V2_ENABLED ? (
+        <NewsroomRightRail />
+      ) : (
+        <LegacyNewsroomRightRail />
+      )
+    ) : !NEWS_V2_ENABLED ? (
+      routeName === 'NewsFeed' ? (
+        <LegacyNewsFeedRightRail />
+      ) : null
     ) : routeName === 'NewsroomArticle' ? (
       <NewsroomArticleRightRail />
     ) : null

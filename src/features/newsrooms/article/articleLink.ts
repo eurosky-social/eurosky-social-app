@@ -9,16 +9,21 @@ import {type RssItem} from '../rss/types'
  * what was just on screen. The real article URL travels as `url`, which is what
  * the view reads the discussion from and what "View" opens.
  *
- * The story travels by reference (source and id), so the view can list the
- * other newsrooms' coverage of it, and a shared or reloaded link still can.
+ * The story travels by reference (source, id and the view it was read in), so
+ * the view can list the other newsrooms' coverage of it, and a shared or
+ * reloaded link still can.
  */
 export function articleViewLink(
   article: ExploreArticle,
-  story?: Pick<ExploreStory, 'id' | 'source'>,
+  story?: Pick<ExploreStory, 'id' | 'source' | 'view'>,
 ) {
   return articleViewLinkFor(
     article.item,
-    {did: article.publisher.did, name: article.publisher.name},
+    {
+      did: article.publisher.did,
+      name: article.publisher.name,
+      slug: article.publisher.slug,
+    },
     story,
   )
 }
@@ -30,21 +35,30 @@ export function articleViewLink(
  */
 export function articleViewLinkFor(
   item: RssItem,
-  outlet: {did?: string; name?: string},
-  story?: Pick<ExploreStory, 'id' | 'source'>,
+  outlet: {did?: string; name?: string; slug?: string},
+  story?: Pick<ExploreStory, 'id' | 'source' | 'view'>,
 ) {
+  const params = {
+    url: item.link,
+    title: item.title || undefined,
+    image: item.imageUrl,
+    description: item.description,
+    publishedAt: item.publishedAt,
+    outletName: outlet.name,
+    outletDid: outlet.did,
+    outletSlug: outlet.slug,
+    storyId: story?.id,
+    storySource: story?.source,
+    storyView: story?.view,
+  }
   return {
     screen: 'NewsroomArticle' as const,
-    params: {
-      url: item.link,
-      title: item.title || undefined,
-      image: item.imageUrl,
-      description: item.description,
-      publishedAt: item.publishedAt,
-      outletName: outlet.name,
-      outletDid: outlet.did,
-      storyId: story?.id,
-      storySource: story?.source,
-    },
+    /*
+     * Unset values are left out: on web the params become the address, where
+     * one would read back as the string "undefined".
+     */
+    params: Object.fromEntries(
+      Object.entries(params).filter(([, value]) => value !== undefined),
+    ) as typeof params,
   }
 }

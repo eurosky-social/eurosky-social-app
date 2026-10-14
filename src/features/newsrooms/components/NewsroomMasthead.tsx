@@ -15,36 +15,60 @@ import * as ProfileCard from '#/components/ProfileCard'
 import {Text} from '#/components/Typography'
 import {VerificationCheckButton} from '#/components/verification/VerificationCheckButton'
 import {type app} from '#/lexicons'
-import {getPublisherName, type NewsroomPublisher} from '../publishers'
+import {useThemeName} from '../dutch/queries'
+import {OutletIcon} from '../explore/components/OutletIcon'
+import {type Newsroom, newsroomPath, topThemes} from '../newsrooms'
+import {getPublisherName} from '../publishers'
 import {toSingleParagraph} from '../text'
 
-export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
+export function NewsroomMasthead({newsroom}: {newsroom: Newsroom}) {
   const t = useTheme()
   const {t: l} = useLingui()
   const {gtMobile} = useBreakpoints()
-  const accent = publisher.accent ?? t.palette.primary_500
-  // The masthead is the publisher's real Bluesky profile: a link out to it,
-  // with their live avatar, name, and bio.
-  const {data: profile} = useProfileQuery({did: publisher.did})
-  const name = getPublisherName(profile)
+  const themeName = useThemeName()
+  const accent = newsroom.accent ?? t.palette.primary_500
+  /*
+   * Where the outlet has a Bluesky account, the masthead is its live profile:
+   * avatar, name, bio, follow. Otherwise it is the outlet as the aggregator
+   * knows it - its name, its site's icon, and a link out to the site.
+   */
+  const {data: profile} = useProfileQuery({did: newsroom.did})
+  const name = getPublisherName(profile) || newsroom.name
   const bio = profile?.description && toSingleParagraph(profile.description)
-  const profilePath = makeProfileLink({
-    did: publisher.did,
-    handle: profile?.handle ?? publisher.did,
-  })
+  const site = newsroom.domains[0]
+  const homeLink = newsroom.did
+    ? makeProfileLink({
+        did: newsroom.did,
+        handle: profile?.handle ?? newsroom.did,
+      })
+    : site
+      ? `https://${site}`
+      : undefined
+  const homeLabel = newsroom.did ? l`View ${name}’s profile` : l`Open ${site}`
 
-  const categoryChips = publisher.categories.length > 0 && (
+  /* What it covers, by its current stories: its sections, in effect. */
+  const themes = topThemes(newsroom, 4)
+  const categoryChips = themes.length > 0 && (
     <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
-      {publisher.categories.map(category => (
+      {themes.map(theme => (
         <View
-          key={category}
+          key={theme}
           style={[a.px_md, a.py_xs, a.rounded_full, t.atoms.bg_contrast_50]}>
           <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
-            {category}
+            {themeName(theme)}
           </Text>
         </View>
       ))}
     </View>
+  )
+
+  const avatar = newsroom.did ? (
+    <UserAvatar type="user" shape="square" size={56} avatar={profile?.avatar} />
+  ) : (
+    <OutletIcon
+      outlet={{id: newsroom.slug, name: newsroom.name, site, categories: []}}
+      size={56}
+    />
   )
 
   return (
@@ -58,14 +82,13 @@ export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
           a.align_start,
           a.gap_md,
         ]}>
-        <Link to={profilePath} label={l`View ${name}’s profile`}>
-          <UserAvatar
-            type="user"
-            shape="square"
-            size={56}
-            avatar={profile?.avatar}
-          />
-        </Link>
+        {homeLink ? (
+          <Link to={homeLink} label={homeLabel}>
+            {avatar}
+          </Link>
+        ) : (
+          avatar
+        )}
 
         {/* Everything beside the avatar shares one column, so the bio and the
          * topic chips line up under the same left edge. */}
@@ -73,8 +96,8 @@ export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
           <View
             style={[a.flex_row, a.align_start, a.justify_between, a.gap_md]}>
             <Link
-              to={profilePath}
-              label={l`View ${name}’s profile`}
+              to={homeLink ?? newsroomPath(newsroom)}
+              label={homeLabel}
               style={[a.flex_1, a.flex_col, a.align_start, a.gap_2xs]}>
               <View style={[a.flex_row, a.align_center, a.gap_xs, a.w_full]}>
                 <Text
@@ -90,10 +113,16 @@ export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
                 </Text>
                 {profile && <PublisherVerification profile={profile} />}
               </View>
-              {!!profile && (
+              {profile ? (
                 <Text style={[a.text_xs, t.atoms.text_contrast_medium]}>
                   {sanitizeHandle(profile.handle, '@')}
                 </Text>
+              ) : (
+                !!site && (
+                  <Text style={[a.text_xs, t.atoms.text_contrast_medium]}>
+                    {site}
+                  </Text>
+                )
               )}
             </Link>
 
@@ -119,7 +148,7 @@ export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
         </View>
       </View>
 
-      {/* Category filter chips, full width on mobile. Display-only in P0. */}
+      {/* Topic chips, full width on mobile. Display-only. */}
       {!gtMobile && categoryChips && (
         <View style={[a.px_lg, a.pb_md]}>{categoryChips}</View>
       )}

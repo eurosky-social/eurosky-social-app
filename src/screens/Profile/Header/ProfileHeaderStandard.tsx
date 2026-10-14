@@ -45,7 +45,7 @@ import {useAnalytics} from '#/analytics'
 import {IS_IOS, IS_NATIVE} from '#/env'
 import {InviteFriendsDialog} from '#/features/inviteFriends'
 import {useActorStatus} from '#/features/liveNow'
-import {getNewsroomPublisherByDid} from '#/features/newsrooms/publishers'
+import {useProfileNewsroomPath} from '#/features/newsrooms/useProfileNewsroomPath'
 import {type app} from '#/lexicons'
 import {GermButton} from '../components/GermButton'
 import {ProfileHeaderDisplayName} from './DisplayName'
@@ -286,7 +286,7 @@ export function HeaderStandardButtons({
 
   const isMe = currentAccount?.did === profile.did
 
-  const newsroomPublisher = getNewsroomPublisherByDid(profile.did)
+  const newsroomPath = useProfileNewsroomPath(profile.did)
 
   const onPressFollow = () => {
     playHaptic()
@@ -375,10 +375,10 @@ export function HeaderStandardButtons({
 
   return (
     <>
-      {newsroomPublisher && (
+      {newsroomPath && (
         <Link
           testID="profileHeaderNewsroomButton"
-          to={`/newsroom/${profile.did}`}
+          to={newsroomPath}
           label={_(
             msg`Visit the ${sanitizeDisplayName(
               profile.displayName || profile.handle,

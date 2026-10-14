@@ -20,7 +20,8 @@ import * as toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {VerificationCheckButton} from '#/components/verification/VerificationCheckButton'
 import {type app} from '#/lexicons'
-import {getNewsroomPublisherByDid, getPublisherName} from '../publishers'
+import {findNewsroom, newsroomPath, useNewsrooms} from '../newsrooms'
+import {getPublisherName} from '../publishers'
 import {useOgImageQuery} from '../queries'
 import {ArticleSocialStack} from './ArticleSocialStack'
 
@@ -41,6 +42,7 @@ export function ArticleHeader({
   publishedAt,
   outletName,
   outletDid,
+  outletSlug,
   sharers = [],
   anchor,
 }: {
@@ -51,6 +53,8 @@ export function ArticleHeader({
   publishedAt?: string
   outletName?: string
   outletDid?: string
+  /** The outlet's slug at the news aggregator: its newsroom. */
+  outletSlug?: string
   /** Authors of the article's discussion posts, for the social-proof row. */
   sharers?: app.bsky.actor.defs.ProfileViewBasic[]
   /**
@@ -71,12 +75,13 @@ export function ArticleHeader({
   const image = ogImage || passedImage
 
   const {data: profile} = useProfileQuery({did: outletDid})
-  const name = getPublisherName(profile) || outletName || ''
-  // A registered publisher tints its share CTA in its own accent, like the
-  // newsroom does; a bare feed outlet keeps the default primary.
-  const accent = outletDid
-    ? getNewsroomPublisherByDid(outletDid)?.accent
-    : undefined
+  const {newsrooms} = useNewsrooms()
+  /* The newsroom the byline opens, where the outlet is one of the aggregator's. */
+  const newsroom = findNewsroom(newsrooms, outletSlug ?? outletDid)
+  const name = getPublisherName(profile) || outletName || newsroom?.name || ''
+  // A newsroom with a brand accent tints its share CTA in it, like the
+  // newsroom page does; any other outlet keeps the default primary.
+  const accent = newsroom?.accent
 
   const published = publishedAt ? new Date(publishedAt) : undefined
 
@@ -106,9 +111,9 @@ export function ArticleHeader({
     <View style={[a.p_lg, a.gap_md]}>
       {/* Publisher byline, above the thumbnail, with the utility actions. */}
       <View style={[a.flex_row, a.align_center, a.gap_sm]}>
-        {!!outletDid && (
+        {newsroom && (
           <Link
-            to={`/newsroom/${outletDid}`}
+            to={newsroomPath(newsroom)}
             label={l`Open the ${name} newsroom`}
             style={[a.flex_row, a.align_center, a.gap_xs]}>
             <UserAvatar type="user" size={28} avatar={profile?.avatar} />
@@ -118,7 +123,7 @@ export function ArticleHeader({
             {!!profile && <PublisherVerification profile={profile} />}
           </Link>
         )}
-        {!outletDid && !!name && (
+        {!newsroom && !!name && (
           <Text emoji style={[a.text_md, a.font_bold, t.atoms.text]}>
             {name}
           </Text>
@@ -126,9 +131,9 @@ export function ArticleHeader({
 
         <View style={[a.flex_1]} />
 
-        {!!outletDid && (
+        {newsroom && (
           <Link
-            to={`/newsroom/${outletDid}`}
+            to={newsroomPath(newsroom)}
             label={l`Visit the ${name} newsroom`}
             size="small"
             color="secondary"
