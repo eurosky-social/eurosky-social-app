@@ -98,6 +98,7 @@ export type Events = {
       | 'lists'
       | 'news'
       | 'events'
+      | 'starterPacks'
       | 'saved'
       | 'settings'
       | 'menu'

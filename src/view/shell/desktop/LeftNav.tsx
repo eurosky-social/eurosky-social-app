@@ -78,6 +78,7 @@ import {
   SettingsGear2_Filled_Corner0_Rounded as SettingsFilledIcon,
   SettingsGear2_Stroke2_Corner0_Rounded as SettingsIcon,
 } from '#/components/icons/SettingsGear2'
+import {Tote as ToteIcon} from '#/components/icons/Tote'
 import {
   UserCircle_Filled_Corner0_Rounded as UserCircleFilledIcon,
   UserCircle_Stroke2_Corner0_Rounded as UserCircleIcon,
@@ -711,6 +712,16 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             icons={{
               inactive: CalendarIcon,
               active: CalendarIcon,
+            }}
+          />
+          <NavItem
+            label={l`Starter Packs`}
+            href="/starter-packs"
+            navItem="starterPacks"
+            minimal={leftNavMinimal}
+            icons={{
+              inactive: ToteIcon,
+              active: ToteIcon,
             }}
           />
           <NavItem

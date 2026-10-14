@@ -131,6 +131,7 @@ import {PetCompanionSettingsScreen} from '#/screens/Settings/PetCompanionSetting
 import {PrivacyAndSecuritySettingsScreen} from '#/screens/Settings/PrivacyAndSecuritySettings'
 import {SettingsScreen} from '#/screens/Settings/Settings'
 import {ThreadPreferencesScreen} from '#/screens/Settings/ThreadPreferences'
+import {OsoStarterPacksScreen} from '#/screens/StarterPack/OsoStarterPacks'
 import {
   StarterPackScreen,
   StarterPackScreenShort,
@@ -247,6 +248,11 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         name="Events"
         getComponent={() => EventsScreen}
         options={{title: title(msg`Events`)}}
+      />
+      <Stack.Screen
+        name="OsoStarterPacks"
+        getComponent={() => OsoStarterPacksScreen}
+        options={{title: title(msg`Starter Packs`)}}
       />
       <Stack.Screen
         name="Moderation"
