@@ -12,6 +12,12 @@ packageExtensions:
         optional: true
 trustPolicy: 'no-downgrade' # default: off
 trustPolicyIgnoreAfter: 10080 # 7 days, default: undefined
+trustPolicyExclude:
+  # CI's fingerprint-native action runs `pnpm dlx @expo/fingerprint` unpinned.
+  # 0.20.14 (the sdk-57 latest) is published by the same Expo maintainer as the
+  # 0.20.x before it, none with provenance; pnpm compares it with Expo's
+  # trusted-publisher canary/next releases and calls it a downgrade.
+  - '@expo/fingerprint@0.20.14'
 overrides:
   # Eurosky fork: zod is split across two majors on purpose.
   # - Default 3.24.4 (last pre-3.25): zod 3.25 restructured its internals ("Zod 4
