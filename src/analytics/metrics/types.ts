@@ -98,6 +98,7 @@ export type Events = {
       | 'lists'
       | 'news'
       | 'events'
+      | 'starterPacks'
       | 'saved'
       | 'settings'
       | 'menu'
@@ -727,7 +728,7 @@ export type Events = {
     qrShareType?: 'save' | 'copy' | 'share'
   }
   'starterPack:followAll': {
-    logContext: 'StarterPackProfilesList' | 'Onboarding'
+    logContext: 'StarterPackProfilesList' | 'Onboarding' | 'OsoStarterPacks'
     starterPack: string
     count: number
   }

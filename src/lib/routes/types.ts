@@ -30,6 +30,7 @@ export type CommonNavigatorParams = {
     to?: string
     sort?: string
   }
+  OsoStarterPacks: undefined
   NewsSettings: undefined
   Newsroom: {name?: string}
   NewsroomExplore: undefined

@@ -23,6 +23,7 @@ export const router = new Router<AllNavigatableRoutes>({
   NewsroomArticle: '/newsroom/article',
   NewsroomDirectory: '/newsrooms',
   Events: '/events',
+  OsoStarterPacks: '/starter-packs',
   Newsroom: ['/newsroom/:name', '/newsroom'],
   // moderation
   Moderation: '/moderation',
