@@ -3,7 +3,6 @@ import {describe, expect, it} from '@jest/globals'
 import {EXPLORE_SECTION_OTHER, type ExploreSection} from '../explore/sections'
 import {
   adaptThread,
-  isThreadInLanguages,
   outletFor,
   parseThreadStoryId,
   themeSections,
@@ -98,34 +97,56 @@ describe('adaptThread', () => {
    * The API returns a few articles per event but counts outlets across all
    * of them, so the count must not be re-derived from `coverage`.
    */
-  it('leads with an article in a chosen language, the rest following', () => {
-    const french = article({uri: 'https://lesoir.be/3', lang: 'fr'})
+  it('leads with the lead the service picked in the languages', () => {
     const adapted = adaptThread(
-      thread({
-        events: [{key: 'e1', day: '2026-09-20', lead: french, articles: []}],
-      }),
+      thread({leadIn: article({uri: 'https://bbc.co.uk/1', lang: 'en'})}),
       sectionForTheme,
-      ['fr'],
     )
-    expect(adapted?.lead.item.link).toBe('https://lesoir.be/3')
+    expect(adapted?.lead.item.link).toBe('https://bbc.co.uk/1')
     expect(adapted?.coverage.map(a => a.item.link)).toEqual([
-      'https://lesoir.be/3',
+      'https://bbc.co.uk/1',
       'https://nos.nl/artikel/1',
     ])
   })
 
-  it('prefers the lead the service picked in the language', () => {
-    const adapted = adaptThread(
-      thread({leadIn: article({uri: 'https://bbc.co.uk/1', lang: 'en'})}),
-      sectionForTheme,
-      ['en'],
-    )
-    expect(adapted?.lead.item.link).toBe('https://bbc.co.uk/1')
+  it('keeps the thread’s lead when the service picked none', () => {
+    const adapted = adaptThread(thread({leadIn: null}), sectionForTheme)
+    expect(adapted?.lead.item.link).toBe('https://nos.nl/artikel/1')
   })
 
-  it('keeps the thread’s lead when no article is in the languages', () => {
-    const adapted = adaptThread(thread(), sectionForTheme, ['pl'])
-    expect(adapted?.lead.item.link).toBe('https://nos.nl/artikel/1')
+  it('puts boosted outlets’ articles first after the lead', () => {
+    const adapted = adaptThread(
+      thread({
+        events: [
+          {
+            key: 'e1',
+            day: '2026-09-20',
+            lead: article({uri: 'https://nu.nl/1', boosted: false}),
+            articles: [article({uri: 'https://hln.be/2', boosted: true})],
+          },
+          {
+            key: 'e2',
+            day: '2026-09-19',
+            lead: article({uri: 'https://lesoir.be/3', boosted: true}),
+            articles: [article({uri: 'https://ad.nl/4', boosted: false})],
+          },
+        ],
+      }),
+      sectionForTheme,
+    )
+    expect(adapted?.coverage.map(a => a.item.link)).toEqual([
+      'https://nos.nl/artikel/1',
+      'https://hln.be/2',
+      'https://lesoir.be/3',
+      'https://nu.nl/1',
+      'https://ad.nl/4',
+    ])
+  })
+
+  it('carries the view the thread was read in', () => {
+    expect(adaptThread(thread(), sectionForTheme, 'lang=en')?.view).toBe(
+      'lang=en',
+    )
   })
 
   it('takes the newsroom count from the API, not from the returned articles', () => {
@@ -180,13 +201,6 @@ describe('adaptThread', () => {
     expect(adapted?.lead.item.title).toBe('')
     expect(adapted?.lead.item.description).toBeUndefined()
     expect(adapted?.lead.item.imageUrl).toBeUndefined()
-  })
-})
-
-describe('isThreadInLanguages', () => {
-  it('keeps a thread with an article in any of the languages', () => {
-    expect(isThreadInLanguages(thread(), ['en', 'fr'])).toBe(true)
-    expect(isThreadInLanguages(thread(), ['en'])).toBe(false)
   })
 })
 

@@ -326,9 +326,34 @@ function OutletsStep({
       <StepTitle
         titleText={<Trans>From which outlets?</Trans>}
         hintText={
-          <Trans>Every outlet is in. Untick the ones you do not want.</Trans>
+          interest.strictOutlets ? (
+            <Trans>Every outlet is in. Untick the ones you do not want.</Trans>
+          ) : (
+            <Trans>
+              Every outlet is in. Untick some, and the stories of the ones left
+              come first.
+            </Trans>
+          )
         }
       />
+      <Toggle.Item
+        testID="newsInterestStrictOutlets"
+        name="strictOutlets"
+        label={l`Only show these outlets`}
+        value={interest.strictOutlets}
+        onChange={strictOutlets => onChange({...interest, strictOutlets})}
+        style={[a.flex_row, a.align_center, a.gap_md]}>
+        <View style={[a.flex_1, a.gap_2xs]}>
+          <Text style={[a.text_md, a.font_semi_bold]}>
+            <Trans>Only show these outlets</Trans>
+          </Text>
+          <Text
+            style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
+            <Trans>Leave out the stories the others covered alone.</Trans>
+          </Text>
+        </View>
+        <Toggle.Switch />
+      </Toggle.Item>
       {isLoading ? (
         <Loader />
       ) : isError ? (
@@ -362,13 +387,15 @@ function OutletsStep({
               </ButtonText>
             </Button>
           </View>
-          {included.length === 0 && placeOutlets.length > 0 && (
-            <Text style={[a.text_sm, {color: t.palette.negative_500}]}>
-              <Trans>
-                With no outlets ticked, this interest shows nothing.
-              </Trans>
-            </Text>
-          )}
+          {interest.strictOutlets &&
+            included.length === 0 &&
+            placeOutlets.length > 0 && (
+              <Text style={[a.text_sm, {color: t.palette.negative_500}]}>
+                <Trans>
+                  With no outlets ticked, this interest shows nothing.
+                </Trans>
+              </Text>
+            )}
           <Toggle.Group
             type="checkbox"
             label={l`Outlets`}

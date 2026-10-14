@@ -2,28 +2,13 @@ import {useMemo} from 'react'
 
 import {mergeRanked} from '../explore/interests'
 import {EXPLORE_SECTION_OTHER, type ExploreSection} from '../explore/sections'
-import {
-  adaptThread,
-  type DutchExploreStory,
-  isThreadInLanguages,
-  themeSections,
-} from './adapt'
+import {adaptThread, type DutchExploreStory, themeSections} from './adapt'
 import {
   type DutchThreadFilter,
   THREADS_LIMIT,
   useDutchThemesQuery,
   useDutchThreadsQueries,
 } from './queries'
-
-/**
- * How many threads to read when several languages filter them on the client.
- * The service filters by one language only, so with more the page reads a
- * wider page of threads and keeps those in any of them.
- */
-const MULTI_LANGUAGE_LIMIT = 100
-
-/** A stable empty default, so the memo below is not rebuilt every render. */
-const NO_LANGUAGES: string[] = []
 
 /**
  * The labeler's threads in the shape the spread renders, alongside the
@@ -35,20 +20,26 @@ const NO_LANGUAGES: string[] = []
  *
  * Sections come from the API rather than from `EXPLORE_SECTIONS`, so they are
  * returned rather than imported by the page.
+ *
+ * The reader's languages, places and outlets are applied by the service too
+ * (see `DutchThreadView`), so nothing is filtered here either.
  */
 export function useDutchExploreStories({
   scope,
   filters,
-  languages = NO_LANGUAGES,
+  languages,
   enabled = true,
 }: {
   scope?: string
   /**
-   * The reads that make up the page, merged rank by rank (see `mergeRanked`).
-   * Empty reads nothing.
+   * The reads that make up the page, merged rank by rank with boosted
+   * threads first (see `mergeRanked`). Empty reads nothing.
    */
   filters: DutchThreadFilter[]
-  /** ISO language codes; only threads with an article in one are kept. */
+  /**
+   * ISO language codes; only threads with an article in one are read, and
+   * only those articles shown.
+   */
   languages?: string[]
   enabled?: boolean
 }): {
@@ -60,16 +51,10 @@ export function useDutchExploreStories({
 } {
   const {
     threadLists,
+    views,
     isLoading: storiesLoading,
     error,
-  } = useDutchThreadsQueries({
-    scope,
-    filters,
-    /* One language the service filters itself, and picks a lead in. */
-    lang: languages.length === 1 ? languages[0] : undefined,
-    limit: languages.length > 1 ? MULTI_LANGUAGE_LIMIT : THREADS_LIMIT,
-    enabled,
-  })
+  } = useDutchThreadsQueries({scope, filters, languages, enabled})
   /* The sections are every theme: a page of several reads spans them all. */
   const {themes, isLoading: themesLoading} = useDutchThemesQuery({
     scope,
@@ -80,30 +65,37 @@ export function useDutchExploreStories({
   const listsKey = threadLists
     .map(list => list.map(thread => thread.id).join(','))
     .join('|')
+  const viewsKey = views.join('|')
 
   const stories = useMemo(() => {
     const bySlug = new Map(sections.map(section => [section.id, section]))
     const sectionForTheme = (slug: string | null) =>
       (slug ? bySlug.get(slug) : undefined) ?? EXPLORE_SECTION_OTHER
 
-    /* Two reads can return the same thread; it shows once. */
-    const threads = mergeRanked(
-      threadLists.map(list => list.map(thread => ({id: thread.key, thread}))),
-    ).map(entry => entry.thread)
+    /*
+     * Two reads can return the same thread; it shows once, in the view of the
+     * read that ranked it first.
+     */
+    const entries = mergeRanked(
+      threadLists.map((list, index) =>
+        list.map(thread => ({
+          id: thread.key,
+          boosted: thread.boosted,
+          thread,
+          view: views[index],
+        })),
+      ),
+    )
     /*
      * A thread whose articles have aged out of the archive maps to nothing, so
      * the page never has to render a card with no lead.
      */
-    return threads
-      .filter(
-        thread =>
-          languages.length === 0 || isThreadInLanguages(thread, languages),
-      )
-      .map(thread => adaptThread(thread, sectionForTheme, languages))
+    return entries
+      .map(({thread, view}) => adaptThread(thread, sectionForTheme, view))
       .filter((story): story is DutchExploreStory => story !== undefined)
       .slice(0, THREADS_LIMIT)
     /* Keyed on the lists' contents: the queries hand back fresh arrays. */
-  }, [listsKey, sections, languages]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [listsKey, viewsKey, sections]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     stories,

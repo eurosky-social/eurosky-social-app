@@ -59,10 +59,15 @@ feed's.
 `newsrooms/explore/interests.ts` turns an interest into reads of
 `/api/threads`. The API takes several countries and outlets per read but one
 theme and one province, so an interest is one read per theme (and province),
-and the page merges them rank by rank. The outlet step reads, from
-`/api/outlets`, how many current stories each outlet has on each theme, and
-leads with the outlets that cover the interest's topics. Without the
-aggregator configured, the settings fall back to the news feed's setup below.
+and the page merges them rank by rank, boosted threads first. The outlet step
+reads, from `/api/outlets`, how many current stories each outlet has on each
+theme, and leads with the outlets that cover the interest's topics.
+
+Unticking outlets boosts the ones left: every read sends them as `boost=`, so
+their stories come first and their articles lead each story. With
+`strictOutlets` ("Only show these outlets") they are sent as `outlet=`
+instead, which drops the stories none of them covered. Without the aggregator
+configured, the settings fall back to the news feed's setup below.
 
 ## Layout
 

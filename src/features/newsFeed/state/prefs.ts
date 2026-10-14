@@ -43,6 +43,12 @@ export const newsInterestSchema = z.object({
    * the reader unticks it, so outlets added later join by default.
    */
   excludedOutlets: z.array(z.string()),
+  /**
+   * Whether the outlets left in are the only ones shown. Otherwise their
+   * stories and articles come first, and the others still show. Came later
+   * than the rest, so an interest without it boosts.
+   */
+  strictOutlets: z.boolean().default(false),
 })
 export type NewsInterest = z.infer<typeof newsInterestSchema>
 
