@@ -55,6 +55,27 @@ theme and one province, so an interest is one read per theme (and province),
 and the page merges them rank by rank. Without the aggregator configured, the
 settings fall back to the news feed's setup below.
 
+## Feature flag (news v2)
+
+The news hub - this page shaped by interests, plus the newsroom explore spread,
+directory and article pages in `src/features/newsrooms/` - ships behind
+`NEWS_V2_ENABLED` (`config.ts`). It is on only when
+`EXPO_PUBLIC_ENABLE_NEWS_V2=true` and the Dutch API URL and service DID are
+both set, so production keeps the original pages until the news API is ready.
+
+With the flag off:
+
+- `/news` and `/newsroom/:name` serve the original screens kept in
+  `legacy/` and `src/features/newsrooms/legacy/`, and the desktop right column
+  shows the original news feed rail
+- `/news/settings`, `/newsroom/explore`, `/newsroom/article` and `/newsrooms`
+  resolve to Not Found
+- the left nav, drawer and `w` shortcut point at `/news`, labelled “News”
+
+The dev, staging and Oso preview web deploys set the flag; production does
+not. Once the hub ships everywhere, delete both `legacy/` directories and the
+flag.
+
 ## Layout
 
 - `sources.ts` - registry + taxonomy + `selectSources`. The regions include

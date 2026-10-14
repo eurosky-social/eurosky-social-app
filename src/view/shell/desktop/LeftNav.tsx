@@ -89,6 +89,7 @@ import {useAgeAssurance} from '#/ageAssurance'
 import {useAnalytics} from '#/analytics'
 import {type Events} from '#/analytics/metrics/types'
 import {useActorStatus} from '#/features/liveNow'
+import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
 import {type app} from '#/lexicons'
 import {router} from '#/routes'
 import {PlatformInfo} from '../../../../modules/expo-bluesky-swiss-army'
@@ -691,10 +692,10 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             }}
           />
           <NavItem
-            label={l`Newsrooms`}
-            href="/newsroom/explore"
+            label={NEWS_V2_ENABLED ? l`Newsrooms` : l`News`}
+            href={NEWS_V2_ENABLED ? '/newsroom/explore' : '/news'}
             navItem="news"
-            relatedRoutes={NEWS_HUB_ROUTES}
+            relatedRoutes={NEWS_V2_ENABLED ? NEWS_HUB_ROUTES : undefined}
             minimal={leftNavMinimal}
             icons={{
               inactive: NewspaperIcon,
