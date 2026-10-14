@@ -728,7 +728,7 @@ export type Events = {
     qrShareType?: 'save' | 'copy' | 'share'
   }
   'starterPack:followAll': {
-    logContext: 'StarterPackProfilesList' | 'Onboarding'
+    logContext: 'StarterPackProfilesList' | 'Onboarding' | 'OsoStarterPacks'
     starterPack: string
     count: number
   }

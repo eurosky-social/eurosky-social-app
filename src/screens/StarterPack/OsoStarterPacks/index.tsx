@@ -7,13 +7,13 @@ import {
 } from '#/lib/routes/types'
 import {useStarterPackQuery} from '#/state/queries/starter-packs'
 import {List} from '#/view/com/util/List'
-import {
-  StarterPackCard,
-  StarterPackCardSkeleton,
-} from '#/screens/Search/components/StarterPackCard'
 import {atoms as a, useTheme} from '#/alf'
 import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
+import {
+  StarterPackCard,
+  StarterPackCardSkeleton,
+} from './components/StarterPackCard'
 import {OSO_CURATED_PACKS} from './osoCuratedPacks'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'OsoStarterPacks'>
