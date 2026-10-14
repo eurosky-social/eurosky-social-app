@@ -5,21 +5,38 @@ import {
   type CommonNavigatorParams,
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
+import {cleanError} from '#/lib/strings/errors'
 import {useStarterPackQuery} from '#/state/queries/starter-packs'
 import {List} from '#/view/com/util/List'
 import {atoms as a, useTheme} from '#/alf'
 import * as Layout from '#/components/Layout'
+import {ListFooter} from '#/components/Lists'
 import {Text} from '#/components/Typography'
 import {
   StarterPackCard,
   StarterPackCardSkeleton,
 } from './components/StarterPackCard'
-import {OSO_CURATED_PACKS} from './osoCuratedPacks'
+import {OSO_STARTER_PACKS_ACTOR} from './config'
+import {useOsoStarterPackUris} from './useOsoStarterPackUris'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'OsoStarterPacks'>
 
 export function OsoStarterPacksScreen(_props: Props) {
   const t = useTheme()
+  const {
+    uris,
+    isLoading,
+    isRefetching,
+    error,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useOsoStarterPackUris()
+
+  const onEndReached = () => {
+    if (hasNextPage && !isFetchingNextPage && !error) fetchNextPage()
+  }
 
   return (
     <Layout.Screen testID="osoStarterPacksScreen">
@@ -33,16 +50,30 @@ export function OsoStarterPacksScreen(_props: Props) {
         <Layout.Header.Slot />
       </Layout.Header.Outer>
       <List
-        data={OSO_CURATED_PACKS}
+        data={uris}
         keyExtractor={(uri: string) => uri}
         renderItem={({item}: {item: string}) => <StarterPackRow uri={item} />}
+        // The fallback list is fixed, so there is nothing to refresh.
+        refreshing={isRefetching}
+        onRefresh={OSO_STARTER_PACKS_ACTOR ? () => void refetch() : undefined}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={2}
         ListHeaderComponent={<View style={[a.pt_lg]} />}
         ListEmptyComponent={
-          <View style={[a.p_xl]}>
-            <Text style={[a.text_md, t.atoms.text_contrast_medium]}>
-              <Trans>No starter packs yet.</Trans>
-            </Text>
-          </View>
+          isLoading || error ? undefined : (
+            <View style={[a.p_xl]}>
+              <Text style={[a.text_md, t.atoms.text_contrast_medium]}>
+                <Trans>No starter packs yet.</Trans>
+              </Text>
+            </View>
+          )
+        }
+        ListFooterComponent={
+          <ListFooter
+            isFetchingNextPage={isLoading || isFetchingNextPage}
+            error={cleanError(error)}
+            onRetry={refetch}
+          />
         }
         sideBorders={false}
       />
