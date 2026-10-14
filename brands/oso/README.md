@@ -45,6 +45,26 @@ and uploads to its own storage zone. Before running it:
    worker (`oauth-staging.mu.social`), which uses the public JWKS shipped by
    this repo. Verify sign-in and the PDS redirect from the Oso hostname.
 
+### Other hosts and a dedicated OAuth endpoint
+
+`OSO_HOST` (default `oso.mu.social`) sets the hostname the bundle is built
+for: share links, `og:url`, OAuth client ID and redirect. The shared staging
+assertion worker only signs for `*.mu.social`, so any other host also needs
+`OSO_OAUTH_ASSERTION_URL`, pointing at Oso's own pinned instance of
+`services/oauth/bunny/index.ts`. That instance signs with a dedicated key
+whose public half is `brands/oso/oauth.public-jwks.json`; the build advertises
+it instead of Mu's key whenever `OSO_OAUTH_ASSERTION_URL` is set.
+
+```bash
+OSO_HOST=oso-app.b-cdn.net \
+  OSO_OAUTH_ASSERTION_URL=https://oso-oauth.b-cdn.net/client-assertion \
+  bash scripts/build-oso-preview.sh
+```
+
+The worker's `CLIENT_ID` / `ALLOWED_ORIGIN` must match `OSO_HOST`. Check it
+with `PUBLIC_JWKS=brands/oso/oauth.public-jwks.json` plus those values and
+`WORKER_URL` passed to `node services/oauth/test.mjs`.
+
 Noindex is **not** access control: until an access gate is configured, anyone
 with the URL can see the preview. An access gate must exempt OAuth metadata and
 allow OAuth redirects/callbacks. Do not use the wildcard worker or the inherited
