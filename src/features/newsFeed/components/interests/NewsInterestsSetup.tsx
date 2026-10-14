@@ -280,5 +280,6 @@ function makeInterest(): NewsInterest {
     subLocations: [],
     themes: [],
     excludedOutlets: [],
+    strictOutlets: false,
   }
 }

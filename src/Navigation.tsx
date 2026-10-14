@@ -149,11 +149,14 @@ import {BRAND} from '#/config/brand'
 import {IS_LIQUID_GLASS, IS_NATIVE, IS_WEB} from '#/env'
 import {EventsScreen} from '#/features/events/EventsScreen'
 import {InviteScannerScreen} from '#/features/inviteFriends'
+import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
+import {NewsFeedScreen as LegacyNewsFeedScreen} from '#/features/newsFeed/legacy/NewsFeedScreen'
 import {NewsFeedScreen} from '#/features/newsFeed/NewsFeedScreen'
 import {NewsSettingsScreen} from '#/features/newsFeed/NewsSettingsScreen'
 import {NewsroomArticleScreen} from '#/features/newsrooms/article/NewsroomArticleScreen'
 import {NewsroomDirectoryScreen} from '#/features/newsrooms/directory'
 import {NewsroomExploreScreen} from '#/features/newsrooms/explore'
+import {NewsroomScreen as LegacyNewsroomScreen} from '#/features/newsrooms/legacy/NewsroomScreen'
 import {NewsroomScreen} from '#/features/newsrooms/NewsroomScreen'
 import {router} from '#/routes'
 import {Referrer} from '../modules/expo-bluesky-swiss-army'
@@ -192,25 +195,35 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
       />
       <Stack.Screen
         name="NewsFeed"
-        getComponent={() => NewsFeedScreen}
+        getComponent={() =>
+          NEWS_V2_ENABLED ? NewsFeedScreen : LegacyNewsFeedScreen
+        }
         options={{title: title(msg`News`), requireAuth: true}}
       />
       <Stack.Screen
         name="NewsSettings"
-        getComponent={() => NewsSettingsScreen}
+        getComponent={() =>
+          NEWS_V2_ENABLED ? NewsSettingsScreen : NotFoundScreen
+        }
         options={{title: title(msg`News settings`), requireAuth: true}}
       />
       <Stack.Screen
         name="Newsroom"
-        getComponent={() => NewsroomScreen}
+        getComponent={() =>
+          NEWS_V2_ENABLED ? NewsroomScreen : LegacyNewsroomScreen
+        }
         options={{
-          title: title(msg`${BRAND.name} News`),
+          title: NEWS_V2_ENABLED
+            ? title(msg`${BRAND.name} News`)
+            : title(msg`${BRAND.name} Newsrooms`),
           requireAuth: true,
         }}
       />
       <Stack.Screen
         name="NewsroomExplore"
-        getComponent={() => NewsroomExploreScreen}
+        getComponent={() =>
+          NEWS_V2_ENABLED ? NewsroomExploreScreen : NotFoundScreen
+        }
         options={{
           title: title(msg`${BRAND.name} News`),
           requireAuth: true,
@@ -218,12 +231,16 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
       />
       <Stack.Screen
         name="NewsroomDirectory"
-        getComponent={() => NewsroomDirectoryScreen}
+        getComponent={() =>
+          NEWS_V2_ENABLED ? NewsroomDirectoryScreen : NotFoundScreen
+        }
         options={{title: title(msg`Newsrooms`), requireAuth: true}}
       />
       <Stack.Screen
         name="NewsroomArticle"
-        getComponent={() => NewsroomArticleScreen}
+        getComponent={() =>
+          NEWS_V2_ENABLED ? NewsroomArticleScreen : NotFoundScreen
+        }
         options={{title: title(msg`Article`), requireAuth: true}}
       />
       <Stack.Screen

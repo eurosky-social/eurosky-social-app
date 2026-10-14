@@ -42,8 +42,10 @@ export function NewsroomArticleScreen({route}: Props) {
     publishedAt,
     outletName,
     outletDid,
+    outletSlug,
     storyId,
     storySource,
+    storyView,
   } = route.params
   /* Where the shell has a right column, the coverage is in it instead. */
   const {rightNavVisible} = useLayoutBreakpoints()
@@ -66,6 +68,7 @@ export function NewsroomArticleScreen({route}: Props) {
         publishedAt={publishedAt}
         outletName={outletName}
         outletDid={outletDid}
+        outletSlug={outletSlug}
         sharers={sharers}
         anchor={data?.anchor ?? undefined}
       />
@@ -75,6 +78,7 @@ export function NewsroomArticleScreen({route}: Props) {
           url={url}
           storyId={storyId}
           storySource={storySource}
+          storyView={storyView}
         />
       )}
     </Layout.Center>

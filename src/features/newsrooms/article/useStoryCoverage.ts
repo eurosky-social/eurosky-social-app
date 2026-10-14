@@ -21,17 +21,21 @@ export function useStoryCoverage({
   url,
   storyId,
   storySource,
+  storyView,
 }: {
   url: string
   storyId?: string
   storySource?: ExploreSourceId
+  /** The view the Dutch labeler read the story in. */
+  storyView?: string
 }): {
-  story?: Pick<ExploreStory, 'id' | 'source'>
+  story?: Pick<ExploreStory, 'id' | 'source' | 'view'>
   coverage: ExploreArticle[]
   isLoading: boolean
 } {
   const dutch = useDutchThreadQuery({
     id: storyId,
+    view: storyView,
     enabled: storySource === 'dutch',
   })
   const rss = useExploreStories({enabled: storySource === 'rss' && !!storyId})
@@ -39,10 +43,10 @@ export function useStoryCoverage({
   if (storySource === 'dutch' && storyId) {
     /* The article page has no sections, so every article files under one. */
     const story = dutch.data
-      ? adaptThread(dutch.data, () => EXPLORE_SECTION_OTHER)
+      ? adaptThread(dutch.data, () => EXPLORE_SECTION_OTHER, storyView)
       : undefined
     return {
-      story: {id: storyId, source: 'dutch'},
+      story: {id: storyId, source: 'dutch', view: storyView},
       coverage: story?.coverage ?? [],
       isLoading: dutch.isLoading,
     }

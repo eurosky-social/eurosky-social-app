@@ -95,6 +95,9 @@ jobs:
           # signed-in user's service-auth token.
           EXPO_PUBLIC_DUTCH_API_URL: https://news-aggregator.eurosky.dev
           EXPO_PUBLIC_DUTCH_API_SERVICE_DID: did:plc:oub2sr5miponqkvdf3awv5qn
+          # Serves the news hub instead of the original news pages. Needs the
+          # Dutch API values above; production leaves it unset.
+          EXPO_PUBLIC_ENABLE_NEWS_V2: 'true'
       - name: Upload to Bunny + purge cache
         run: bash ./scripts/bunny_upload.sh
         env:

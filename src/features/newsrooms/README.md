@@ -10,18 +10,32 @@ deep-linkable at `/newsroom/:didOrHandle`.
 
 ## Data model
 
-One dataset: the **publisher registry (shared, operator-owned)** - a local list
-in `publishers.ts` mapping each publisher to its account, reporters, categories,
-and content sources. This is config, not user state, so it does not live in the
-PDS.
+The newsrooms are the **news aggregator's outlets** (`/api/outlets`): every
+outlet it reads has a newsroom, and nothing else does (`newsrooms.ts`,
+`useNewsrooms`). A newsroom is addressed by the outlet's slug,
+`/newsroom/<slug>`; its account's DID or handle resolve to it too. Without the
+aggregator configured, or signed out, there are no newsrooms: no pages, link
+chips or profile shortcuts.
 
-There is deliberately no per-user newsroom state: with every registered
-newsroom equally visible everywhere, a newsroom-level follow or subscription
-would have no observable effect. If per-user state is ever added, it should
-have exactly one job - e.g. pinning the publisher into the reader's `/news`
-feed - live on the shared `social.mu.newsFeedPrefs` record rather than a new
-collection, and gate record creation on explicit consent like the news feed
-setup does.
+- **Masthead** - the outlet's live Bluesky profile where it has an account,
+  otherwise its name and site. The topic chips are the themes it has the most
+  current stories in.
+- **Front page** - its latest articles from the aggregator
+  (`/api/outlets/{slug}/articles`), each opening onto the story it is in.
+- **Reporters** - the accounts the aggregator files under the outlet
+  (`sources.accounts`, set with `PUT /api/outlets/{slug}/accounts`), any added
+  by hand in `publishers.ts`, and, for an outlet that is a Bluesky trusted
+  verifier, the journalists it has verified (its `app.bsky.graph.verification`
+  records, read from its own repo).
+- **Conversation** - its account's posts and a bounded few of its reporters';
+  an outlet with neither has none.
+
+`publishers.ts` holds no list of newsrooms any more: only brand extras the
+aggregator does not (accent, reporters), matched by DID, and the RSS feeds the
+explore page falls back to without the aggregator.
+
+There is deliberately no per-user newsroom state; the reader's interests (see
+`newsFeed/`) already say which outlets they follow.
 
 ## The idea
 
@@ -119,14 +133,13 @@ region with no counterpart on a story boosts nothing.
 
 ### Languages
 
-The settings' `languages` filter every story on the page, whatever the
-location. The labeler takes one `lang=` per request, so with one language
-picked the server filters the threads and names a lead article in it
-(`leadIn`); with several, the page reads a wider page of threads and keeps
-those with an article in any of them (`isThreadInLanguages`). Either way a
-story leads with an article in a picked language where it has one
-(`adaptThread`). RSS articles carry no language, so the RSS spread is not
-filtered.
+The app's content languages filter every story on the page, whatever the
+location, and the labeler applies them: every read sends them all as `lang=`
+with `articles=matching` (`dutch/view.ts`), so it returns only threads with an
+article in one, shows only those articles, and names a lead in one of them
+(`leadIn`). The article page reads its story's thread in the same view, which
+the story carries to it (`storyView`). RSS articles carry no language, so the
+RSS spread is not filtered.
 
 ### Locations
 

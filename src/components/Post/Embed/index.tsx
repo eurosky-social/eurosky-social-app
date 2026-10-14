@@ -26,7 +26,9 @@ import {RichText} from '#/components/RichText'
 import {Embed as StarterPackCard} from '#/components/StarterPack/StarterPackCard'
 import {SubtleHover} from '#/components/SubtleHover'
 import {matchCustomEmbed} from '#/features/customEmbeds/registry'
-import {NewsroomLinkChip} from '#/features/newsrooms/components/NewsroomLinkChip'
+import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
+import {NewsroomLinkChip as AggregatorNewsroomLinkChip} from '#/features/newsrooms/components/NewsroomLinkChip'
+import {NewsroomLinkChip as LegacyNewsroomLinkChip} from '#/features/newsrooms/legacy/NewsroomLinkChip'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {
@@ -42,6 +44,11 @@ import {ModeratedListEmbed} from './ListEmbed'
 import {PostPlaceholder as PostPlaceholderText} from './PostPlaceholder'
 import {type CommonProps, type EmbedProps, PostEmbedViewContext} from './types'
 import {VideoEmbed} from './VideoEmbed'
+
+/** Picked once per build: the news hub's chip reads the aggregator's outlets. */
+const NewsroomLinkChip = NEWS_V2_ENABLED
+  ? AggregatorNewsroomLinkChip
+  : LegacyNewsroomLinkChip
 
 export {PostEmbedViewContext} from './types'
 

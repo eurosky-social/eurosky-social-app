@@ -34,6 +34,24 @@ export function outletsForInterest(
 }
 
 /**
+ * How many of the current stories in the themes an outlet ran an article in:
+ * in any theme when none are given. Undefined where the service did not say,
+ * so a caller can tell an outlet with nothing on the themes from one it
+ * knows nothing about.
+ */
+export function outletCoverage(
+  outlet: Pick<DutchOutletListing, 'themes'>,
+  themes: string[],
+): number | undefined {
+  if (!outlet.themes) return undefined
+  const counted =
+    themes.length > 0
+      ? themes.map(theme => outlet.themes![theme] ?? 0)
+      : Object.values(outlet.themes)
+  return counted.reduce((sum, count) => sum + count, 0)
+}
+
+/**
  * The reads of `/api/threads` that make up an interest, or `undefined` while
  * the outlets it narrows by are not known yet.
  *
@@ -43,8 +61,9 @@ export function outletsForInterest(
  *   which read one category each;
  * - each theme, or none for every theme.
  *
- * With outlets unticked, every read is limited to the ones left. Untick them
- * all and the interest reads nothing.
+ * With outlets unticked, the ones left are boosted in every read: their
+ * stories first, their articles leading. With `strictOutlets`, every read is
+ * limited to them instead, and with them all unticked it reads nothing.
  */
 export function filtersForInterest(
   interest: NewsInterest,
@@ -62,13 +81,18 @@ export function filtersForInterest(
   ]
   if (places.length === 0) places.push({})
 
-  let included: string[] | undefined
+  let byOutlet: Pick<DutchThreadFilter, 'outlets' | 'boost'> = {}
   if (interest.excludedOutlets.length > 0) {
     if (!outlets) return undefined
-    included = outletsForInterest(interest, outlets)
+    const included = outletsForInterest(interest, outlets)
       .map(outlet => outlet.slug)
       .filter(slug => !interest.excludedOutlets.includes(slug))
-    if (included.length === 0) return []
+    if (interest.strictOutlets) {
+      if (included.length === 0) return []
+      byOutlet = {outlets: included}
+    } else if (included.length > 0) {
+      byOutlet = {boost: included}
+    }
   }
 
   const themes = interest.themes.length > 0 ? interest.themes : [undefined]
@@ -76,20 +100,24 @@ export function filtersForInterest(
     themes.map(theme => ({
       ...place,
       ...(theme ? {theme} : {}),
-      ...(included ? {outlets: included} : {}),
+      ...byOutlet,
     })),
   )
 }
 
 /**
  * Several ranked lists as one: the first of each, then the second of each,
- * and so on, keeping only the first sighting of an item.
+ * and so on, keeping only the first sighting of an item. Boosted items come
+ * before the rest, each part merged this way.
  *
  * The lists come from separate reads, each ranked by the service, and the
  * scores behind those ranks are not served. Taking them rank by rank keeps
- * each list's order and lets no one read crowd out the others.
+ * each list's order and lets no one read crowd out the others. Each read puts
+ * its boosted threads first, which interleaving alone would undo.
  */
-export function mergeRanked<T extends {id: string}>(lists: T[][]): T[] {
+export function mergeRanked<T extends {id: string; boosted?: boolean}>(
+  lists: T[][],
+): T[] {
   const seen = new Set<string>()
   const merged: T[] = []
   const longest = Math.max(0, ...lists.map(list => list.length))
@@ -101,5 +129,8 @@ export function mergeRanked<T extends {id: string}>(lists: T[][]): T[] {
       merged.push(item)
     }
   }
-  return merged
+  return [
+    ...merged.filter(item => item.boosted),
+    ...merged.filter(item => !item.boosted),
+  ]
 }

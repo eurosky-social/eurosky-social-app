@@ -12,27 +12,47 @@ import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
 import {articleViewLinkFor} from '../article/articleLink'
 import {articleSearchPath} from '../discussion'
+import {articleItem, threadStoryId} from '../dutch/adapt'
+import {useDutchOutletArticlesQuery} from '../dutch/queries'
+import {type ExploreStory} from '../explore/cluster'
 import {sharedByLabel} from '../explore/components/StoryByline'
-import {getPublisherRssUrls, type NewsroomPublisher} from '../publishers'
+import {type Newsroom} from '../newsrooms'
 import {
   type ArticleSharers,
   useArticleDiscussionQuery,
   useArticleDiscussionsQuery,
   useOgImageQuery,
-  useRssArticlesQuery,
 } from '../queries'
 import {type RssItem} from '../rss/types'
 import {ArticleDiscussion} from './ArticleDiscussion'
 
-export function NewsroomFrontPage({publisher}: {publisher: NewsroomPublisher}) {
-  const urls = getPublisherRssUrls(publisher)
-  const {data: articles, isLoading} = useRssArticlesQuery({urls})
+/** The story an article is in, as the article view finds it again. */
+type ArticleStory = Pick<ExploreStory, 'id' | 'source'>
+
+export function NewsroomFrontPage({newsroom}: {newsroom: Newsroom}) {
+  /*
+   * The outlet's own articles, latest first, as the news aggregator ingested
+   * them - each with the story it is in, so opening one lists the other
+   * newsrooms' coverage too.
+   */
+  const {data, isLoading} = useDutchOutletArticlesQuery({slug: newsroom.slug})
+  const articles = data?.map(articleItem)
+  const stories = new Map(
+    (data ?? []).flatMap(article =>
+      article.thread
+        ? [
+            [
+              article.uri,
+              {id: threadStoryId(article.thread), source: 'dutch' as const},
+            ],
+          ]
+        : [],
+    ),
+  )
   const discussions = useArticleDiscussionsQuery({
     urls: articles?.map(item => item.link) ?? [],
-    publisherDid: publisher.did,
+    publisherDid: newsroom.did,
   })
-
-  if (urls.length === 0) return null
 
   /*
    * Featuring depends on every article's interaction total, so the loader
@@ -72,9 +92,13 @@ export function NewsroomFrontPage({publisher}: {publisher: NewsroomPublisher}) {
 
   return (
     <View style={[a.px_lg, a.pt_sm, a.pb_lg, a.gap_md]}>
-      <HeroArticle item={hero} publisher={publisher} />
+      <HeroArticle
+        item={hero}
+        newsroom={newsroom}
+        story={stories.get(hero.link)}
+      />
       {/* The anchor: real in-network discussion of the lead story. */}
-      <ArticleDiscussion url={hero.link} publisherDid={publisher.did} />
+      <ArticleDiscussion url={hero.link} publisherDid={newsroom.did} />
       {rest.length > 0 && (
         <>
           <Divider />
@@ -83,7 +107,8 @@ export function NewsroomFrontPage({publisher}: {publisher: NewsroomPublisher}) {
               <SecondaryArticle
                 key={item.id}
                 item={item}
-                publisher={publisher}
+                newsroom={newsroom}
+                story={stories.get(item.link)}
               />
             ))}
           </View>
@@ -95,10 +120,12 @@ export function NewsroomFrontPage({publisher}: {publisher: NewsroomPublisher}) {
 
 function HeroArticle({
   item,
-  publisher,
+  newsroom,
+  story,
 }: {
   item: RssItem
-  publisher: NewsroomPublisher
+  newsroom: Newsroom
+  story?: ArticleStory
 }) {
   const t = useTheme()
   // Upgrade the prominent hero image to the article's full-res og:image; the
@@ -109,7 +136,11 @@ function HeroArticle({
   return (
     <View style={[a.gap_sm]}>
       <Link
-        to={articleViewLinkFor(item, {did: publisher.did})}
+        to={articleViewLinkFor(
+          item,
+          {did: newsroom.did, name: newsroom.name, slug: newsroom.slug},
+          story,
+        )}
         label={item.title}
         style={[a.flex_col, a.gap_sm]}>
         {!!heroImage && (
@@ -135,8 +166,8 @@ function HeroArticle({
       </Link>
       <ArticleShareButton
         item={item}
-        publisherDid={publisher.did}
-        accent={publisher.accent}
+        publisherDid={newsroom.did}
+        accent={newsroom.accent}
         prominent
       />
     </View>
@@ -145,15 +176,17 @@ function HeroArticle({
 
 function SecondaryArticle({
   item,
-  publisher,
+  newsroom,
+  story,
 }: {
   item: RssItem
-  publisher: NewsroomPublisher
+  newsroom: Newsroom
+  story?: ArticleStory
 }) {
   const t = useTheme()
   const {data: discussion} = useArticleDiscussionQuery({
     url: item.link,
-    publisherDid: publisher.did,
+    publisherDid: newsroom.did,
   })
   // The feed thumbnail is plenty at 96px; only the hero pays for an og:image
   // scrape (a full page fetch per article).
@@ -169,7 +202,11 @@ function SecondaryArticle({
       <View style={[a.flex_1, a.flex_row, a.gap_md]}>
         {!!image && (
           <Link
-            to={articleViewLinkFor(item, {did: publisher.did})}
+            to={articleViewLinkFor(
+              item,
+              {did: newsroom.did, name: newsroom.name, slug: newsroom.slug},
+              story,
+            )}
             label={item.title}>
             <Image
               accessibilityIgnoresInvertColors
@@ -182,7 +219,11 @@ function SecondaryArticle({
         )}
         <View style={[a.flex_1, a.gap_2xs]}>
           <Link
-            to={articleViewLinkFor(item, {did: publisher.did})}
+            to={articleViewLinkFor(
+              item,
+              {did: newsroom.did, name: newsroom.name, slug: newsroom.slug},
+              story,
+            )}
             label={item.title}
             style={[a.flex_col, a.gap_2xs, a.w_full]}>
             <Text
@@ -209,7 +250,7 @@ function SecondaryArticle({
           />
         </View>
       </View>
-      <ArticleShareButton item={item} publisherDid={publisher.did} compact />
+      <ArticleShareButton item={item} publisherDid={newsroom.did} compact />
     </View>
   )
 }
