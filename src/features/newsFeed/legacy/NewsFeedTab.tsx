@@ -10,8 +10,8 @@ import {SettingsGear2_Stroke2_Corner0_Rounded as SettingsGear} from '#/component
 import * as Layout from '#/components/Layout'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
-import {selectSources} from '#/features/newsFeed/sources'
-import {type NewsFeedPrefs} from '#/features/newsFeed/state/prefs'
+import {type NewsFeedPrefs} from './prefs'
+import {selectSources} from './sources'
 
 export function NewsFeedTab({
   prefs,

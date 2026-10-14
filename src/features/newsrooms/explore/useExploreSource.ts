@@ -32,8 +32,9 @@ export function useExploreSource({
    */
   filters?: DutchThreadFilter[]
   /**
-   * For the Dutch source: ISO language codes the stories must be in. RSS
-   * articles carry no language, so the RSS source ignores them.
+   * For the Dutch source: ISO language codes the stories must be in, and the
+   * only languages of their articles shown. RSS articles carry no language,
+   * so the RSS source ignores them.
    */
   languages?: string[]
 }): {

@@ -1,8 +1,6 @@
 import {View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
-import {useProfilesQuery} from '#/state/queries/profile'
-import {UserAvatar} from '#/view/com/util/UserAvatar'
 import * as ModuleHeader from '#/screens/Search/components/ModuleHeader'
 import {atoms as a, useTheme} from '#/alf'
 import {ButtonText} from '#/components/Button'
@@ -10,11 +8,15 @@ import {Newspaper2_Stroke2_Corner2_Rounded as NewsroomsIcon} from '#/components/
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {ExploreLiveSportsWidget} from '#/features/liveSports/components/ExploreLiveSportsWidget'
+import {OutletIcon} from '#/features/newsrooms/explore/components/OutletIcon'
 import {
-  getPublisherName,
-  NEWSROOM_PUBLISHERS,
-  type NewsroomPublisher,
-} from '#/features/newsrooms/publishers'
+  type Newsroom,
+  newsroomPath,
+  storyCount,
+  useNewsroomProfiles,
+  useNewsrooms,
+} from '#/features/newsrooms/newsrooms'
+import {getPublisherName} from '#/features/newsrooms/publishers'
 import {type app} from '#/lexicons'
 import {selectSources} from '../sources'
 import {useNewsFeedPrefsQuery} from '../state/prefs'
@@ -33,14 +35,18 @@ export function NewsFeedRightRail() {
   )
 }
 
+/** How many newsrooms the module features when the feed names none. */
+const FEATURED_COUNT = 8
+
 function NewsroomsModule() {
   const t = useTheme()
   const {t: l} = useLingui()
   const {data: prefs} = useNewsFeedPrefsQuery()
+  const {newsrooms} = useNewsrooms()
 
   // With a configured feed, feature the newsrooms already among its sources;
-  // without one (or when none of its sources have a newsroom), fall back to
-  // the full directory.
+  // without one (or when none of its sources have a newsroom), feature the
+  // newsrooms with the most current stories.
   const sourceDids =
     prefs && prefs.topics.length > 0
       ? new Set(
@@ -51,18 +57,22 @@ function NewsroomsModule() {
           }).map(source => source.did),
         )
       : null
-  const fromFeed = sourceDids
-    ? NEWSROOM_PUBLISHERS.filter(p => sourceDids.has(p.did))
-    : []
-  const publishers = fromFeed.length > 0 ? fromFeed : NEWSROOM_PUBLISHERS
+  const fromFeed =
+    sourceDids && newsrooms
+      ? newsrooms.filter(
+          newsroom => newsroom.did && sourceDids.has(newsroom.did),
+        )
+      : []
+  const featured =
+    fromFeed.length > 0
+      ? fromFeed
+      : [...(newsrooms ?? [])]
+          .sort((x, y) => storyCount(y) - storyCount(x))
+          .slice(0, FEATURED_COUNT)
+  const profiles = useNewsroomProfiles(featured)
 
-  // Live org profiles, same as the newsroom's own org switcher.
-  const {data} = useProfilesQuery({
-    handles: publishers.map(p => p.did),
-  })
-  const profileByDid = new Map<string, app.bsky.actor.defs.ProfileViewDetailed>(
-    data?.profiles.map(profile => [profile.did, profile]) ?? [],
-  )
+  /* Newsrooms are the news aggregator's outlets; without it there are none. */
+  if (featured.length === 0) return null
 
   return (
     <View style={[a.pb_xl]}>
@@ -75,20 +85,20 @@ function NewsroomsModule() {
           {fromFeed.length > 0 ? (
             <Trans>Newsrooms from the sources in your news feed</Trans>
           ) : (
-            <Trans>Explore the newsrooms of our featured publishers</Trans>
+            <Trans>The newsrooms with the most stories right now</Trans>
           )}
         </Text>
         <View style={[a.gap_md]}>
-          {publishers.map(publisher => (
+          {featured.map(newsroom => (
             <FeaturedNewsroom
-              key={publisher.id}
-              publisher={publisher}
-              profile={profileByDid.get(publisher.did)}
+              key={newsroom.slug}
+              newsroom={newsroom}
+              profile={newsroom.did ? profiles.get(newsroom.did) : undefined}
             />
           ))}
         </View>
         <Link
-          to="/newsroom/explore"
+          to="/newsrooms"
           label={l`See all newsrooms`}
           color="primary"
           size="large"
@@ -103,21 +113,31 @@ function NewsroomsModule() {
 }
 
 function FeaturedNewsroom({
-  publisher,
+  newsroom,
   profile,
 }: {
-  publisher: NewsroomPublisher
+  newsroom: Newsroom
   profile?: app.bsky.actor.defs.ProfileViewDetailed
 }) {
   const {t: l} = useLingui()
-  const name = getPublisherName(profile)
+  const name = getPublisherName(profile) || newsroom.name
 
   return (
     <Link
-      to={`/newsroom/${publisher.did}`}
+      to={newsroomPath(newsroom)}
       label={l`Open the ${name} newsroom`}
       style={[a.flex_row, a.align_center, a.gap_sm]}>
-      <UserAvatar type="user" size={28} avatar={profile?.avatar} />
+      <OutletIcon
+        outlet={{
+          id: newsroom.slug,
+          did: newsroom.did,
+          name: newsroom.name,
+          site: newsroom.domains[0],
+          categories: [],
+        }}
+        profile={profile}
+        size={28}
+      />
       <Text emoji numberOfLines={1} style={[a.flex_1, a.text_sm, a.font_bold]}>
         {name}
       </Text>

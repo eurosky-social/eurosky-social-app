@@ -9,7 +9,8 @@ import * as Toggle from '#/components/forms/Toggle'
 import {Newspaper_Stroke2_Corner2_Rounded as Newspaper} from '#/components/icons/Newspaper'
 import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
-import {NEWS_LANGUAGES, NEWS_REGIONS, NEWS_TOPICS} from '../sources'
+import {useDutchThemesQuery} from '#/features/newsrooms/dutch/queries'
+import {ALL_TOPICS, NEWS_LANGUAGES, NEWS_REGIONS} from '../sources'
 import {SetupFooter} from './SetupFooter'
 import {SetupHeader} from './SetupHeader'
 
@@ -41,12 +42,22 @@ export function SetupTopics({
     region => region.parent === 'netherlands',
   )
 
+  /*
+   * The topics are the news aggregator's themes. Without it there are none to
+   * list, and every topic is the one choice left.
+   */
+  const {themes} = useDutchThemesQuery()
+  const topicChoices = [
+    {id: ALL_TOPICS, label: l`All topics`},
+    ...themes.map(theme => ({id: theme.slug, label: theme.name})),
+  ]
+
   // "All topics" is mutually exclusive with specific topics.
   const handleTopicsChange = (next: string[]) => {
-    if (next.includes('all') && !topics.includes('all')) {
-      onChangeTopics(['all'])
-    } else if (next.includes('all') && next.length > 1) {
-      onChangeTopics(next.filter(topic => topic !== 'all'))
+    if (next.includes(ALL_TOPICS) && !topics.includes(ALL_TOPICS)) {
+      onChangeTopics([ALL_TOPICS])
+    } else if (next.includes(ALL_TOPICS) && next.length > 1) {
+      onChangeTopics(next.filter(topic => topic !== ALL_TOPICS))
     } else {
       onChangeTopics(next)
     }
@@ -158,7 +169,7 @@ export function SetupTopics({
               values={topics}
               onChange={handleTopicsChange}>
               <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
-                {NEWS_TOPICS.map(topic => (
+                {topicChoices.map(topic => (
                   <Toggle.Item
                     key={topic.id}
                     name={topic.id}

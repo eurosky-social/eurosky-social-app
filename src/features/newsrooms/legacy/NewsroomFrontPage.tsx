@@ -13,17 +13,14 @@ import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
 import {ArticleDiscussion} from '#/features/newsrooms/components/ArticleDiscussion'
 import {articleSearchPath} from '#/features/newsrooms/discussion'
-import {
-  getPublisherRssUrls,
-  type NewsroomPublisher,
-} from '#/features/newsrooms/publishers'
+import {type RssItem} from '#/features/newsrooms/rss/types'
+import {getPublisherRssUrls, type NewsroomPublisher} from './publishers'
 import {
   useArticleDiscussionQuery,
   useArticleDiscussionsQuery,
   useOgImageQuery,
   useRssArticlesQuery,
-} from '#/features/newsrooms/queries'
-import {type RssItem} from '#/features/newsrooms/rss/types'
+} from './queries'
 
 export function NewsroomFrontPage({publisher}: {publisher: NewsroomPublisher}) {
   const urls = getPublisherRssUrls(publisher)

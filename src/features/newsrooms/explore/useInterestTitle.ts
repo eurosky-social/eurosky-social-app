@@ -1,7 +1,7 @@
 import {useLingui} from '@lingui/react/macro'
 
 import {type NewsInterest} from '#/features/newsFeed/state/prefs'
-import {useDutchThemesQuery} from '../dutch/queries'
+import {useThemeName} from '../dutch/queries'
 import {SUB_LOCATIONS} from './interests'
 
 /**
@@ -10,8 +10,7 @@ import {SUB_LOCATIONS} from './interests'
  */
 export function useInterestTitle(): (interest: NewsInterest) => string {
   const {t: l, i18n} = useLingui()
-  const {themes} = useDutchThemesQuery()
-  const themeNames = new Map(themes.map(theme => [theme.slug, theme.name]))
+  const themeName = useThemeName()
   const subLocationNames = new Map(
     Object.values(SUB_LOCATIONS)
       .flat()
@@ -32,7 +31,7 @@ export function useInterestTitle(): (interest: NewsInterest) => string {
       ...interest.subLocations.map(id => subLocationNames.get(id) ?? id),
     ]
     if (places.length > 0) return places.join(' · ')
-    const topics = interest.themes.map(slug => themeNames.get(slug) ?? slug)
+    const topics = interest.themes.map(themeName)
     return topics.length > 0 ? topics.join(' · ') : l`Everywhere`
   }
 }

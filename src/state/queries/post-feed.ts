@@ -22,7 +22,8 @@ import {HomeFeedAPI} from '#/lib/api/feed/home'
 import {LikesFeedAPI} from '#/lib/api/feed/likes'
 import {ListFeedAPI} from '#/lib/api/feed/list'
 import {MergeFeedAPI} from '#/lib/api/feed/merge'
-import {NewsFeedAPI} from '#/lib/api/feed/news'
+import {NewsFeedAPI as AggregatorNewsFeedAPI} from '#/lib/api/feed/news'
+import {NewsFeedAPI as LegacyNewsFeedAPI} from '#/lib/api/feed/newsLegacy'
 import {PostListFeedAPI} from '#/lib/api/feed/posts'
 import {type FeedAPI, type ReasonFeedSource} from '#/lib/api/feed/types'
 import {aggregateUserInterests} from '#/lib/api/feed/utils'
@@ -40,6 +41,7 @@ import {DEFAULT_LOGGED_OUT_PREFERENCES} from '#/state/queries/preferences/const'
 import {useAppviewClient, useSession} from '#/state/session'
 import * as userActionHistory from '#/state/userActionHistory'
 import {KnownError} from '#/view/com/posts/PostFeedErrorMessage'
+import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {useFeedTuners} from '../preferences/feed-tuners'
@@ -51,6 +53,9 @@ import {
   getEmbeddedPost,
   useAutoPagination,
 } from './util'
+
+/** The original news feed's merge, kept for builds without the news hub. */
+const NewsFeedAPI = NEWS_V2_ENABLED ? AggregatorNewsFeedAPI : LegacyNewsFeedAPI
 
 type ActorDid = string
 export type AuthorFilter =

@@ -1,5 +1,6 @@
 import {type ReactNode, useState} from 'react'
 import {View} from 'react-native'
+import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {atoms as a, useTheme} from '#/alf'
@@ -14,7 +15,10 @@ import {
 } from '#/features/newsrooms/dutch/queries'
 import {type DutchOutletListing} from '#/features/newsrooms/dutch/types'
 import {OutletIcon} from '#/features/newsrooms/explore/components/OutletIcon'
-import {outletsForInterest} from '#/features/newsrooms/explore/interests'
+import {
+  outletCoverage,
+  outletsForInterest,
+} from '#/features/newsrooms/explore/interests'
 import {countryName} from '#/features/newsrooms/explore/useInterestTitle'
 import {type NewsInterest} from '../../state/prefs'
 import {SetupFooter} from '../SetupFooter'
@@ -290,6 +294,23 @@ function OutletsStep({
   const included = placeOutlets
     .map(outlet => outlet.slug)
     .filter(slug => !interest.excludedOutlets.includes(slug))
+  /*
+   * With topics picked, the outlets that cover them lead, most stories first,
+   * and those with none on them follow on their own: still in, since they
+   * cost nothing, but no reason to keep them either. Without topics, or from
+   * a service that does not count, the outlets stay in name order.
+   */
+  const coverageOf = (outlet: DutchOutletListing) =>
+    outletCoverage(outlet, interest.themes)
+  const ranked = interest.themes.length > 0
+  const covering = ranked
+    ? placeOutlets
+        .filter(outlet => coverageOf(outlet) !== 0)
+        .sort((x, y) => (coverageOf(y) ?? 0) - (coverageOf(x) ?? 0))
+    : placeOutlets
+  const quiet = ranked
+    ? placeOutlets.filter(outlet => coverageOf(outlet) === 0)
+    : []
 
   function setIncluded(next: string[]) {
     onChange({
@@ -305,9 +326,34 @@ function OutletsStep({
       <StepTitle
         titleText={<Trans>From which outlets?</Trans>}
         hintText={
-          <Trans>Every outlet is in. Untick the ones you do not want.</Trans>
+          interest.strictOutlets ? (
+            <Trans>Every outlet is in. Untick the ones you do not want.</Trans>
+          ) : (
+            <Trans>
+              Every outlet is in. Untick some, and the stories of the ones left
+              come first.
+            </Trans>
+          )
         }
       />
+      <Toggle.Item
+        testID="newsInterestStrictOutlets"
+        name="strictOutlets"
+        label={l`Only show these outlets`}
+        value={interest.strictOutlets}
+        onChange={strictOutlets => onChange({...interest, strictOutlets})}
+        style={[a.flex_row, a.align_center, a.gap_md]}>
+        <View style={[a.flex_1, a.gap_2xs]}>
+          <Text style={[a.text_md, a.font_semi_bold]}>
+            <Trans>Only show these outlets</Trans>
+          </Text>
+          <Text
+            style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
+            <Trans>Leave out the stories the others covered alone.</Trans>
+          </Text>
+        </View>
+        <Toggle.Switch />
+      </Toggle.Item>
       {isLoading ? (
         <Loader />
       ) : isError ? (
@@ -341,21 +387,42 @@ function OutletsStep({
               </ButtonText>
             </Button>
           </View>
-          {included.length === 0 && placeOutlets.length > 0 && (
-            <Text style={[a.text_sm, {color: t.palette.negative_500}]}>
-              <Trans>
-                With no outlets ticked, this interest shows nothing.
-              </Trans>
-            </Text>
-          )}
+          {interest.strictOutlets &&
+            included.length === 0 &&
+            placeOutlets.length > 0 && (
+              <Text style={[a.text_sm, {color: t.palette.negative_500}]}>
+                <Trans>
+                  With no outlets ticked, this interest shows nothing.
+                </Trans>
+              </Text>
+            )}
           <Toggle.Group
             type="checkbox"
             label={l`Outlets`}
             values={included}
             onChange={setIncluded}>
             <View style={[a.gap_xs]}>
-              {placeOutlets.map(outlet => (
-                <OutletItem key={outlet.slug} outlet={outlet} />
+              {covering.map(outlet => (
+                <OutletItem
+                  key={outlet.slug}
+                  outlet={outlet}
+                  stories={outletCoverage(outlet, interest.themes)}
+                />
+              ))}
+              {quiet.length > 0 && (
+                <Text
+                  style={[
+                    a.pt_md,
+                    a.pb_xs,
+                    a.text_sm,
+                    a.font_semi_bold,
+                    t.atoms.text_contrast_medium,
+                  ]}>
+                  <Trans>No current stories on these topics</Trans>
+                </Text>
+              )}
+              {quiet.map(outlet => (
+                <OutletItem key={outlet.slug} outlet={outlet} quiet />
               ))}
             </View>
           </Toggle.Group>
@@ -459,15 +526,40 @@ function CompactChip({label}: {label: string}) {
   )
 }
 
-function OutletItem({outlet}: {outlet: DutchOutletListing}) {
+function OutletItem({
+  outlet,
+  stories,
+  quiet = false,
+}: {
+  outlet: DutchOutletListing
+  /** Its current stories on the interest's topics, where the service says. */
+  stories?: number
+  /** It has none on the interest's topics. */
+  quiet?: boolean
+}) {
   const t = useTheme()
   const domain = outlet.domains[0]
+  const detail =
+    stories === undefined
+      ? domain
+      : [
+          domain,
+          plural(stories, {one: '# current story', other: '# current stories'}),
+        ]
+          .filter(Boolean)
+          .join(' · ')
 
   return (
     <Toggle.Item
       name={outlet.slug}
       label={outlet.name}
-      style={[a.flex_row, a.align_center, a.gap_md, a.py_xs]}>
+      style={[
+        a.flex_row,
+        a.align_center,
+        a.gap_md,
+        a.py_xs,
+        quiet && {opacity: 0.6},
+      ]}>
       <Toggle.Checkbox />
       <OutletIcon
         outlet={{
@@ -483,11 +575,11 @@ function OutletItem({outlet}: {outlet: DutchOutletListing}) {
         <Text style={[a.text_md, a.font_semi_bold]} numberOfLines={1}>
           {outlet.name}
         </Text>
-        {domain && (
+        {detail && (
           <Text
             style={[a.text_sm, t.atoms.text_contrast_medium]}
             numberOfLines={1}>
-            {domain}
+            {detail}
           </Text>
         )}
       </View>

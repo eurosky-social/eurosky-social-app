@@ -19,14 +19,10 @@ import * as Layout from '#/components/Layout'
 import {ProfileBadges} from '#/components/ProfileBadges'
 import {Text} from '#/components/Typography'
 import {SetupFooter} from '#/features/newsFeed/components/SetupFooter'
-import {
-  type NewsSource,
-  selectSources,
-  sourceTagLabels,
-} from '#/features/newsFeed/sources'
-import {type NewsFeedPrefs} from '#/features/newsFeed/state/prefs'
 import {app} from '#/lexicons'
+import {type NewsFeedPrefs} from './prefs'
 import {SetupHeader} from './SetupHeader'
+import {type NewsSource, selectSources, sourceTagLabels} from './sources'
 
 export function SetupSources({
   draft,

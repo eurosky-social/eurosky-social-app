@@ -8,16 +8,18 @@ import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {readableAccent} from '../accent'
 import {
-  getNewsroomPublisherByUrl,
-  getPublisherName,
-  type NewsroomPublisher,
-} from '../publishers'
+  findNewsroomByUrl,
+  type Newsroom,
+  newsroomPath,
+  useNewsrooms,
+} from '../newsrooms'
+import {getPublisherName} from '../publishers'
 
 /**
  * A small pill rendered under a post's external link embed when the link
- * points at a registered publisher's site, connecting the post back to that
- * org's newsroom. Renders nothing for unregistered domains, so call sites can
- * include it unconditionally.
+ * points at a newsroom's site, connecting the post back to that newsroom.
+ * Renders nothing for other domains, and nothing at all without the news
+ * aggregator, so call sites can include it unconditionally.
  */
 export function NewsroomLinkChip({
   url,
@@ -26,33 +28,34 @@ export function NewsroomLinkChip({
   url: string
   style?: StyleProp<ViewStyle>
 }) {
-  const publisher = getNewsroomPublisherByUrl(url)
-  if (!publisher) return null
-  return <Chip publisher={publisher} style={style} />
+  const {newsrooms} = useNewsrooms()
+  const newsroom = findNewsroomByUrl(newsrooms, url)
+  if (!newsroom) return null
+  return <Chip newsroom={newsroom} style={style} />
 }
 
 /*
  * A separate component from the lookup so hooks only run for posts that
- * actually match a publisher; the profile query supplies the org's live
- * display name.
+ * actually match a newsroom; the profile query supplies the live display name
+ * of a newsroom with an account.
  */
 function Chip({
-  publisher,
+  newsroom,
   style,
 }: {
-  publisher: NewsroomPublisher
+  newsroom: Newsroom
   style?: StyleProp<ViewStyle>
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
-  const {data: profile} = useProfileQuery({did: publisher.did})
-  const name = getPublisherName(profile)
-  const accent = readableAccent(publisher.accent, t)
+  const {data: profile} = useProfileQuery({did: newsroom.did})
+  const name = getPublisherName(profile) || newsroom.name
+  const accent = readableAccent(newsroom.accent, t)
 
   return (
     <View style={[a.flex_row, style]}>
       <Link
-        to={`/newsroom/${publisher.did}`}
+        to={newsroomPath(newsroom)}
         label={name ? l`Visit the ${name} newsroom` : l`Visit this newsroom`}
         style={[a.rounded_full]}>
         {({hovered, pressed}) => (

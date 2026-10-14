@@ -7,11 +7,8 @@ import {atoms as a, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
 import {Text} from '#/components/Typography'
 import {readableAccent} from '#/features/newsrooms/accent'
-import {
-  getPublisherName,
-  type NewsroomPublisher,
-} from '#/features/newsrooms/publishers'
 import {type app} from '#/lexicons'
+import {getPublisherName, type NewsroomPublisher} from './publishers'
 
 /**
  * The top of the newsroom hub: a horizontal rail of the registered publishers.

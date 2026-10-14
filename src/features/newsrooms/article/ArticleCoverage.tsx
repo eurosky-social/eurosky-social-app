@@ -24,12 +24,14 @@ export function ArticleCoverage({
   url,
   storyId,
   storySource,
+  storyView,
   inline = false,
 }: {
   /** The article being read, left out of the list. */
   url: string
   storyId?: string
   storySource?: ExploreSourceId
+  storyView?: string
   /** Under the article, rather than in the right column. */
   inline?: boolean
 }) {
@@ -37,7 +39,12 @@ export function ArticleCoverage({
   const {t: l} = useLingui()
   const timeAgo = useGetTimeAgo()
   const profiles = useNewsroomProfilesQuery()
-  const {story, coverage} = useStoryCoverage({url, storyId, storySource})
+  const {story, coverage} = useStoryCoverage({
+    url,
+    storyId,
+    storySource,
+    storyView,
+  })
 
   const others = coverage.filter(article => article.item.link !== url)
   if (others.length === 0) return null

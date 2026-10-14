@@ -30,10 +30,11 @@ import {ExploreLiveSportsWidget} from '#/features/liveSports/components/ExploreL
 import {app} from '#/lexicons'
 import {readableAccent} from '../accent'
 import {
-  getDefaultNewsroomPublisher,
-  getNewsroomPublisherByDid,
-  type NewsroomPublisher,
-} from '../publishers'
+  findNewsroom,
+  type Newsroom,
+  useNewsroomReporters,
+  useNewsrooms,
+} from '../newsrooms'
 
 /** How many reporters the collapsed module previews. */
 const COLLAPSED_SHOWN = 2
@@ -63,13 +64,12 @@ export function NewsroomRightRail({
     if (route.name !== 'Newsroom') return undefined
     return (route.params as {name?: string} | undefined)?.name
   })
-  const publisher =
-    (routeParamName && getNewsroomPublisherByDid(routeParamName)) ||
-    getDefaultNewsroomPublisher()
+  const {newsrooms} = useNewsrooms()
+  const newsroom = findNewsroom(newsrooms, routeParamName)
 
   return (
     <View>
-      <ReportersModule publisher={publisher} collapsible={inline} />
+      {newsroom && <ReportersModule newsroom={newsroom} collapsible={inline} />}
       <NewsModule compact={inline} />
       <ExploreLiveSportsWidget />
     </View>
@@ -81,25 +81,28 @@ export function NewsroomRightRail({
  * their posts in anonymously; this is where they surface as people.
  */
 function ReportersModule({
-  publisher,
+  newsroom,
   collapsible = false,
 }: {
-  publisher: NewsroomPublisher
+  newsroom: Newsroom
   /** Hides the roster behind the header until tapped; see the rail's prop. */
   collapsible?: boolean
 }) {
   const t = useTheme()
   const {i18n, t: l} = useLingui()
   const moderationOpts = useModerationOpts()
-  const {profilesByDid, isLoading} = useReporterProfiles(publisher.reporterDids)
+  const {reporterDids, isLoading: reportersLoading} =
+    useNewsroomReporters(newsroom)
+  const {profilesByDid, isLoading: profilesLoading} =
+    useReporterProfiles(reporterDids)
+  const isLoading = reportersLoading || profilesLoading
   const [expanded, setExpanded] = useState(false)
 
   // Stay quiet until everything is loaded - same rule as the front page.
-  if (!publisher.reporterDids.length || isLoading || !moderationOpts)
-    return null
+  if (!reporterDids.length || isLoading || !moderationOpts) return null
 
   // getProfiles does not guarantee order; keep the registry's.
-  const profiles = publisher.reporterDids
+  const profiles = reporterDids
     .map(did => profilesByDid.get(did))
     .filter(profile => !!profile)
   if (!profiles.length) return null
@@ -110,7 +113,7 @@ function ReportersModule({
   const shown =
     canToggle && !expanded ? profiles.slice(0, COLLAPSED_SHOWN) : profiles
 
-  const accent = readableAccent(publisher.accent, t)
+  const accent = readableAccent(newsroom.accent, t)
 
   const header = (
     <ModuleHeader.Container

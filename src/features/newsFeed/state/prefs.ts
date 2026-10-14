@@ -7,6 +7,7 @@ import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
 import {usePdsClient, useSession} from '#/state/session'
 import {com} from '#/lexicons'
+import {topicsAsThemes} from '../sources'
 
 /**
  * Collection NSID for the per-user news feed preferences record, stored as a
@@ -42,6 +43,12 @@ export const newsInterestSchema = z.object({
    * the reader unticks it, so outlets added later join by default.
    */
   excludedOutlets: z.array(z.string()),
+  /**
+   * Whether the outlets left in are the only ones shown. Otherwise their
+   * stories and articles come first, and the others still show. Came later
+   * than the rest, so an interest without it boosts.
+   */
+  strictOutlets: z.boolean().default(false),
 })
 export type NewsInterest = z.infer<typeof newsInterestSchema>
 
@@ -51,11 +58,12 @@ export type NewsInterest = z.infer<typeof newsInterestSchema>
  * filter. `languages` and `interests` came later than the rest, so a record
  * without them reads as having none rather than failing validation.
  *
- * The news feed reads `topics`, `regions` and `excludedDids`; the news page
- * reads `interests`. Both read `languages`.
+ * The news feed reads `topics`, `regions`, `languages` and `excludedDids`;
+ * the news page reads `interests`, and the app's content languages.
  */
 export const newsFeedPrefsSchema = z.object({
-  topics: z.array(z.string()),
+  /** The news aggregator's theme slugs, or `ALL_TOPICS`. */
+  topics: z.array(z.string()).transform(topicsAsThemes),
   regions: z.array(z.string()),
   /** ISO 639-1 codes, e.g. `en`: the languages of the news to show. */
   languages: z.array(z.string()).default([]),

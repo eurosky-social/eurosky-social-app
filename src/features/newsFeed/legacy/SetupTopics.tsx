@@ -10,8 +10,8 @@ import {Newspaper_Stroke2_Corner2_Rounded as Newspaper} from '#/components/icons
 import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
 import {SetupFooter} from '#/features/newsFeed/components/SetupFooter'
-import {NEWS_REGIONS, NEWS_TOPICS} from '#/features/newsFeed/sources'
 import {SetupHeader} from './SetupHeader'
+import {NEWS_REGIONS, NEWS_TOPICS} from './sources'
 
 export function SetupTopics({
   topics,

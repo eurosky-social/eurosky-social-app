@@ -150,7 +150,7 @@ export function NewsroomExploreScreen(
   /*
    * With no interests, the news feed's topics, regions and accounts move
    * matching stories up the page rather than filtering the rest out. An
-   * interest filters by itself, so it is left in the service's order.
+   * interest filters and boosts on the service, so it is left in its order.
    */
   const stories =
     interests.length > 0

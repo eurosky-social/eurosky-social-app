@@ -11,14 +11,14 @@ import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
 import {ExploreLiveSportsWidget} from '#/features/liveSports/components/ExploreLiveSportsWidget'
-import {selectSources} from '#/features/newsFeed/sources'
-import {useNewsFeedPrefsQuery} from '#/features/newsFeed/state/prefs'
 import {
   getPublisherName,
   NEWSROOM_PUBLISHERS,
   type NewsroomPublisher,
-} from '#/features/newsrooms/publishers'
+} from '#/features/newsrooms/legacy/publishers'
 import {type app} from '#/lexicons'
+import {useNewsFeedPrefsQuery} from './prefs'
+import {selectSources} from './sources'
 
 /**
  * The news feed's right column: the mirror of the newsroom rail's "Your News"

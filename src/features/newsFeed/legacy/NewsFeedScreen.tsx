@@ -9,14 +9,14 @@ import {atoms as a} from '#/alf'
 import * as Layout from '#/components/Layout'
 import {Loader} from '#/components/Loader'
 import * as Prompt from '#/components/Prompt'
+import {NewsFeedTab} from './NewsFeedTab'
 import {
   makeDefaultNewsFeedPrefs,
   type NewsFeedPrefs,
   useNewsFeedPrefsDeleteMutation,
   useNewsFeedPrefsMutation,
   useNewsFeedPrefsQuery,
-} from '#/features/newsFeed/state/prefs'
-import {NewsFeedTab} from './NewsFeedTab'
+} from './prefs'
 import {SetupSources} from './SetupSources'
 import {SetupTopics} from './SetupTopics'
 

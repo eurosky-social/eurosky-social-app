@@ -21,8 +21,11 @@ import {Loader} from '#/components/Loader'
 import * as Menu from '#/components/Menu'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
-import {NewsroomMasthead} from '#/features/newsrooms/components/NewsroomMasthead'
-import {NewsroomRightRail} from '#/features/newsrooms/components/NewsroomRightRail'
+import {type app} from '#/lexicons'
+import {NewsroomFrontPage} from './NewsroomFrontPage'
+import {NewsroomMasthead} from './NewsroomMasthead'
+import {NewsroomRightRail} from './NewsroomRightRail'
+import {NewsroomSwitcher} from './NewsroomSwitcher'
 import {
   getDefaultNewsroomPublisher,
   getNewsroomPublisherByDid,
@@ -30,10 +33,7 @@ import {
   getPublisherName,
   NEWSROOM_PUBLISHERS,
   type NewsroomPublisher,
-} from '#/features/newsrooms/publishers'
-import {type app} from '#/lexicons'
-import {NewsroomFrontPage} from './NewsroomFrontPage'
-import {NewsroomSwitcher} from './NewsroomSwitcher'
+} from './publishers'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'Newsroom'>
 
