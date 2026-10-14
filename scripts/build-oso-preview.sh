@@ -3,7 +3,7 @@
 # The output is web-build-oso/ (or OSO_OUTPUT_DIR). Nothing is deployed here.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-ROOT="$PWD"
+export ROOT="$PWD"
 OUT="$ROOT/web-build-oso"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -17,8 +17,26 @@ rsync -a --exclude='.git' --exclude='node_modules' --exclude='web-build*' \
   "$ROOT/" "$TMP/"
 cd "$TMP"
 export BRAND_BUILD_ISOLATED=1
-export EXPO_PUBLIC_OAUTH_BASE_URL=https://oso.mu.social
-export EXPO_PUBLIC_OAUTH_ASSERTION_URL=https://oauth-staging.mu.social/client-assertion
+# Hostname the bundle is served from: share links, og:url, OAuth client_id and
+# redirect all derive from it. The shared staging assertion worker only signs
+# for *.mu.social origins; any other host needs OSO_OAUTH_ASSERTION_URL.
+export OSO_HOST="${OSO_HOST:-oso.mu.social}"
+# Oso's own pinned assertion worker (services/oauth/bunny/index.ts) signs with
+# a dedicated key, so the bundle must advertise that key's public half instead
+# of Mu's. Unset, the build keeps Mu's shared staging worker and key.
+if [[ -n "${OSO_OAUTH_ASSERTION_URL:-}" ]]; then
+  cp brands/oso/oauth.public-jwks.json src/config/oauth.public-jwks.json
+fi
+export EXPO_PUBLIC_OAUTH_ASSERTION_URL="${OSO_OAUTH_ASSERTION_URL:-https://oauth-staging.mu.social/client-assertion}"
+node -e '
+const fs = require("node:fs")
+const file = "brands/oso/brand.override.json"
+const o = JSON.parse(fs.readFileSync(file, "utf8"))
+o.hosts = [process.env.OSO_HOST]
+o.oauth.defaultBaseUrl = `https://${process.env.OSO_HOST}`
+fs.writeFileSync(file, JSON.stringify(o, null, 2) + "\n")
+'
+export EXPO_PUBLIC_OAUTH_BASE_URL="https://$OSO_HOST"
 export EXPO_PUBLIC_THEME_FONT_FAMILY=LeagueSpartan
 export EXPO_PUBLIC_THEME_BODY_SCALE=1.1
 export EXPO_PUBLIC_PARTNER_PREVIEW=1
@@ -69,10 +87,20 @@ const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const metadata = require('./web-build/oauth-client-metadata.json')
 const html = fs.readFileSync('web-build/index.html', 'utf8')
-assert.equal(metadata.client_id, 'https://oso.mu.social/oauth-client-metadata.json')
+const origin = `https://${process.env.OSO_HOST}`
+assert.equal(metadata.client_id, `${origin}/oauth-client-metadata.json`)
 assert.equal(metadata.client_name, 'oso')
-assert.deepEqual(metadata.redirect_uris, ['https://oso.mu.social/'])
-assert.match(html, /og:url" content="https:\/\/oso\.mu\.social"/)
+assert.deepEqual(metadata.redirect_uris, [`${origin}/`])
+// The advertised key must be the one the configured assertion worker signs with.
+assert.deepEqual(
+  metadata.jwks.keys.map(k => k.kid),
+  require(
+    process.env.OSO_OAUTH_ASSERTION_URL
+      ? './brands/oso/oauth.public-jwks.json'
+      : `${process.env.ROOT}/src/config/oauth.public-jwks.json`,
+  ).keys.map(k => k.kid),
+)
+assert.ok(html.includes(`og:url" content="${origin}"`))
 assert.match(html, /name="robots" content="noindex,nofollow"/)
 assert.match(html, /LeagueSpartan/)
 assert.match(fs.readFileSync('web-build/robots.txt', 'utf8'), /Disallow: \/$/m)
