@@ -24,6 +24,9 @@ import {type ComposerImage} from '#/state/gallery'
 import {createComposerImage} from '#/state/gallery'
 import {type ChatInvitePreview} from '#/state/queries/join-links'
 import {type Gif} from '#/features/gifPicker/types'
+import {isTileUri} from '#/features/tiles/detect'
+import {type TileRef} from '#/features/tiles/record'
+import {resolveTile} from '#/features/tiles/resolve'
 import {app, chat, com} from '#/lexicons'
 import {createGIFDescription} from '../gif-alt-text'
 
@@ -40,6 +43,12 @@ type ResolvedExternalLink = {
    */
   associatedRefs?: LinkMeta['associatedRefs']
   view?: LinkMeta['view']
+  /**
+   * EUROSKY: set when the link is a tile (`at://…/ing.dasl.masl/…`). The card
+   * is built from the tile's manifest, and the post pipeline turns it into a
+   * link to the post itself carrying this pointer.
+   */
+  tile?: TileRef
 }
 
 type ResolvedPostRecord = {
@@ -108,6 +117,10 @@ export async function resolveLink(
   {appviewClient, chatClient}: LinkResolvers,
   uri: string,
 ): Promise<ResolvedLink> {
+  // EUROSKY: tiles are at-URIs, which nothing below would know what to do with.
+  if (isTileUri(uri)) {
+    return resolveTileLink(uri)
+  }
   if (isShortLink(uri)) {
     uri = await resolveShortLink(uri)
   }
@@ -231,6 +244,23 @@ export async function resolveLink(
       identifier = data.did
     }
     return identifier
+  }
+}
+
+/**
+ * EUROSKY: a tile becomes an external card made from its manifest (name,
+ * description, screenshot with a play button). Its `uri` is still the at-URI
+ * here; `post()` swaps in the post's own URL once it knows the record key.
+ */
+async function resolveTileLink(uri: string): Promise<ResolvedExternalLink> {
+  const tile = await resolveTile(uri)
+  return {
+    type: 'external',
+    uri: tile.ref.uri,
+    title: tile.title,
+    description: tile.description,
+    thumb: tile.thumb,
+    tile: tile.ref,
   }
 }
 

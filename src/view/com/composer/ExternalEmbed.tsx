@@ -21,6 +21,7 @@ import {isStandardSiteEmbed} from '#/components/Post/Embed/StandardSiteEmbed/uti
 import {Embed as StarterPackEmbed} from '#/components/StarterPack/StarterPackCard'
 import {Text} from '#/components/Typography'
 import {type Gif} from '#/features/gifPicker/types'
+import {TileEmbed} from '#/features/tiles/components/TileEmbed'
 
 export const ExternalEmbedGif = ({
   onRemove,
@@ -92,6 +93,21 @@ export const ExternalEmbedLink = ({
   const linkComponent = useMemo(() => {
     if (data) {
       if (data.type === 'external') {
+        // EUROSKY: a pasted tile previews as the card the post will carry.
+        if (data.tile) {
+          return (
+            <TileEmbed
+              preview
+              tile={data.tile}
+              link={{
+                title: data.title || uri,
+                uri,
+                description: data.description,
+                thumb: data.thumb?.source.path as UriString | undefined,
+              }}
+            />
+          )
+        }
         const atProvider = getAtCardProvider(uri)
         if (
           (data.view && isStandardSiteEmbed(data.view.external)) ||

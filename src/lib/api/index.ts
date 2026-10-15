@@ -14,8 +14,10 @@ import {type LinkResolvers} from '#/lib/api/resolve'
 import {withCreator} from '#/lib/at-card'
 import {IMAGE_SIZE_CONFIG_POSTS} from '#/lib/constants'
 import {type EditedPostRecord} from '#/lib/edit-post'
+import {makeProfileLink} from '#/lib/routes/links'
 import {isNetworkError} from '#/lib/strings/errors'
 import {shortenLinks, stripInvalidMentions} from '#/lib/strings/rich-text-manip'
+import {toShareUrl} from '#/lib/strings/url-helpers'
 import {logger} from '#/logger'
 import {compressImage} from '#/state/gallery'
 import {
@@ -31,6 +33,8 @@ import {
   type PostDraft,
   type ThreadDraft,
 } from '#/view/com/composer/state/composer'
+import {TilesNotAllowedError} from '#/features/tiles/permissions'
+import {type TileExternal} from '#/features/tiles/record'
 import {app, chat, com} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {createGIFDescription} from '../gif-alt-text'
@@ -61,6 +65,25 @@ interface PostOpts {
    * PDS, never the appview.
    */
   pdsClient: Client
+  /*
+   * EUROSKY: the posting account's handle, for the link a tile card carries
+   * to the post itself. Falls back to the DID.
+   */
+  handle?: string
+  /*
+   * EUROSKY: whether this account may post tiles (verified by one of our
+   * trusted verifiers). Off by default: a tile embed then fails the post.
+   */
+  canEmbedTiles?: boolean
+}
+
+/**
+ * EUROSKY: what the embed resolver needs to know about the post being written.
+ */
+type PostContext = {
+  /** The post's own web URL, known up front because the rkey is minted here. */
+  postUrl: string
+  canEmbedTiles: boolean
 }
 
 export async function post(queryClient: QueryClient, opts: PostOpts) {
@@ -92,6 +115,25 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
   for (let i = 0; i < thread.posts.length; i++) {
     const draft = thread.posts[i]
 
+    // The sorting behavior for multiple posts sharing the same createdAt time is
+    // undefined, so what we'll do here is increment the time by 1 for every post
+    now.setMilliseconds(now.getMilliseconds() + 1)
+    tid = TID.next(tid)
+    const rkey = tid.toString()
+    const uri = `at://${did}/app.bsky.feed.post/${rkey}` as AtUriString
+    uris.push(uri)
+
+    /*
+     * EUROSKY: the rkey is minted before the embed resolves because a tile
+     * card links to the post it sits in.
+     */
+    const postContext: PostContext = {
+      postUrl: toShareUrl(
+        makeProfileLink({did, handle: opts.handle ?? ''}, 'post', rkey),
+      ),
+      canEmbedTiles: opts.canEmbedTiles ?? false,
+    }
+
     // Not awaited to avoid waterfalls.
     const rtPromise = resolveRT(opts.appviewClient, draft.richtext)
     const embedPromise = resolveEmbed(
@@ -101,6 +143,7 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
       queryClient,
       draft,
       opts.onStateChange,
+      postContext,
     )
     let labels: $Typed<com.atproto.label.defs.SelfLabels> | undefined
     if (draft.labels.length) {
@@ -109,14 +152,6 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
         values: draft.labels.map(val => ({val})),
       }
     }
-
-    // The sorting behavior for multiple posts sharing the same createdAt time is
-    // undefined, so what we'll do here is increment the time by 1 for every post
-    now.setMilliseconds(now.getMilliseconds() + 1)
-    tid = TID.next(tid)
-    const rkey = tid.toString()
-    const uri = `at://${did}/app.bsky.feed.post/${rkey}` as AtUriString
-    uris.push(uri)
 
     const rt = await rtPromise
     const embed = await embedPromise
@@ -326,6 +361,7 @@ async function resolveEmbed(
   queryClient: QueryClient,
   draft: PostDraft,
   onStateChange: ((state: string) => void) | undefined,
+  postContext: PostContext,
 ): Promise<app.bsky.feed.post.Main['embed']> {
   if (draft.embed.quote) {
     const [resolvedMedia, resolvedQuote] = await Promise.all([
@@ -336,6 +372,7 @@ async function resolveEmbed(
         queryClient,
         draft.embed,
         onStateChange,
+        postContext,
       ),
       resolveRecord(
         {appviewClient, chatClient},
@@ -365,6 +402,7 @@ async function resolveEmbed(
     queryClient,
     draft.embed,
     onStateChange,
+    postContext,
   )
   if (resolvedMedia) {
     return resolvedMedia
@@ -392,6 +430,7 @@ async function resolveMedia(
   queryClient: QueryClient,
   embedDraft: EmbedDraft,
   onStateChange: ((state: string) => void) | undefined,
+  postContext: PostContext,
 ): Promise<
   | $Typed<app.bsky.embed.external.Main>
   | $Typed<app.bsky.embed.images.Main>
@@ -532,6 +571,27 @@ async function resolveMedia(
         const {path, mime} = resolvedLink.thumb.source
         const response = await uploadBlob(pdsClient, path, mime)
         blob = response.blob
+      }
+      /*
+       * EUROSKY: a tile card links to this very post and carries a pointer to
+       * the tile, so that mu can run it in place while any other client shows
+       * a card that leads here.
+       */
+      if (resolvedLink.tile) {
+        if (!postContext.canEmbedTiles) {
+          throw new TilesNotAllowedError()
+        }
+        const external: TileExternal = {
+          uri: postContext.postUrl as UriString,
+          title: resolvedLink.title,
+          description: resolvedLink.description,
+          thumb: blob,
+          tile: resolvedLink.tile,
+        }
+        return {
+          $type: 'app.bsky.embed.external',
+          external,
+        }
       }
       return {
         $type: 'app.bsky.embed.external',

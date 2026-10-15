@@ -46,6 +46,9 @@ overrides:
   'psl': '1.9.0'
   '@types/psl': '1.1.1'
   'react-native-screens': '4.30.1'
+  # Eurosky fork: the hardened tile loader is not on npm yet (vendor/README.md);
+  # make the loader's own range resolve to the vendored lexicon build.
+  '@dasl/tile-lexicon': 'file:vendor/dasl-tile-lexicon-2.0.0-bbf5392.tgz'
 allowBuilds:
   '@sentry/cli': true
   '@swc/core': false

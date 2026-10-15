@@ -40,6 +40,7 @@ import {normalizeTextStyles} from '#/alf/typography'
 import {type Emoji} from '#/components/EmojiPicker'
 import {Portal} from '#/components/Portal'
 import {Text} from '#/components/Typography'
+import {findTileUris} from '#/features/tiles/detect'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {type TextInputProps} from './TextInput.types'
@@ -190,6 +191,18 @@ export function TextInput({
           let preventDefault = false
 
           if (clipboardData) {
+            /*
+             * EUROSKY: a pasted tile at-URI attaches the tile as the embed.
+             * Facet detection never sees at-URIs, so this is where it happens.
+             * When the paste is nothing but the URI, it stays out of the text.
+             */
+            const tileUris = findTileUris(clipboardData.getData('text/plain'))
+            if (tileUris.length > 0) {
+              onNewLink(tileUris[0])
+              if (clipboardData.getData('text/plain').trim() === tileUris[0]) {
+                return true
+              }
+            }
             if (clipboardData.types.includes('text/html')) {
               // Rich-text formatting is pasted, try retrieving plain text
               const text = clipboardData.getData('text/plain')

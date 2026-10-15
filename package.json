@@ -164,6 +164,8 @@
     "@bsky.app/video": "0.4.2",
     "@bsky.app/video-compressor": "0.2.0",
     "@bsky/sdk": "1.2.0",
+    "@dasl/tile-lexicon": "file:vendor/dasl-tile-lexicon-2.0.0-bbf5392.tgz",
+    "@dasl/tile-loader": "file:vendor/dasl-tile-loader-2.0.0-bbf5392.tgz",
     "@emoji-mart/data": "^1.2.1",
     "@emoji-mart/react": "^1.1.1",
     "@expo/metro-runtime": "~58.0.17",
@@ -398,7 +400,7 @@
       "^cborg$": "<rootDir>/node_modules/cborg/cborg.js"
     },
     "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|nanoid|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|normalize-url|react-native-svg|@sentry/.*|sentry-expo|bcp-47-match|@atproto/.*|@bsky/sdk|tlds|multiformats|uint8arrays|@ipld/.*|cborg|await-lock|lowlight|devlop)"
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|nanoid|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|normalize-url|react-native-svg|@sentry/.*|sentry-expo|bcp-47-match|@atproto/.*|@dasl/.*|@bsky/sdk|tlds|multiformats|uint8arrays|@ipld/.*|cborg|await-lock|lowlight|devlop)"
     ],
     "modulePathIgnorePatterns": [
       "__tests__/.*/__mocks__",

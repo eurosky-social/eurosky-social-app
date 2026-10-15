@@ -1,5 +1,11 @@
+import {type Client} from '@atproto/lex'
 import {type DatetimeString} from '@atproto/syntax'
-import {useQuery, useQueryClient} from '@tanstack/react-query'
+import {
+  type QueryClient,
+  queryOptions,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 import {getVerificationBacklinks} from '#/lib/verification/constellation'
 import {STALE} from '#/state/queries'
@@ -24,12 +30,17 @@ const muVerificationQueryKeyRoot = 'mu-verification'
 export const createMuVerificationQueryKey = (did: string) =>
   createQueryKey(muVerificationQueryKeyRoot, {did})
 
-export function useMuVerificationQuery({did}: {did?: string}) {
-  const qc = useQueryClient()
-  const appviewClient = useAppviewClient()
-  return useQuery<MuVerification>({
+/**
+ * The query behind `useMuVerificationQuery`, for code that needs the answer
+ * outside a render (the composer, before attaching a tile).
+ */
+export function muVerificationQueryOptions(
+  qc: QueryClient,
+  appviewClient: Client,
+  did: string | undefined,
+) {
+  return queryOptions<MuVerification>({
     queryKey: createMuVerificationQueryKey(did ?? ''),
-    enabled: !!did,
     staleTime: STALE.MINUTES.FIVE,
     queryFn: async () => {
       const trusted = await ensureTrustedVerifierDids(qc, appviewClient)
@@ -47,5 +58,14 @@ export function useMuVerificationQuery({did}: {did?: string}) {
         isVerifier: !!did && trusted.has(did),
       }
     },
+  })
+}
+
+export function useMuVerificationQuery({did}: {did?: string}) {
+  const qc = useQueryClient()
+  const appviewClient = useAppviewClient()
+  return useQuery({
+    ...muVerificationQueryOptions(qc, appviewClient, did),
+    enabled: !!did,
   })
 }
