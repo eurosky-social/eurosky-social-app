@@ -148,6 +148,7 @@ import {useAnalytics} from '#/analytics'
 import {setNavigationMetadata} from '#/analytics/metadata'
 import {BRAND} from '#/config/brand'
 import {IS_LIQUID_GLASS, IS_NATIVE, IS_WEB} from '#/env'
+import {EventScreen} from '#/features/events/EventScreen'
 import {EventsScreen} from '#/features/events/EventsScreen'
 import {InviteScannerScreen} from '#/features/inviteFriends'
 import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
@@ -248,6 +249,11 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         name="Events"
         getComponent={() => EventsScreen}
         options={{title: title(msg`Events`)}}
+      />
+      <Stack.Screen
+        name="Event"
+        getComponent={() => EventScreen}
+        options={{title: title(msg`Event`)}}
       />
       <Stack.Screen
         name="OsoStarterPacks"

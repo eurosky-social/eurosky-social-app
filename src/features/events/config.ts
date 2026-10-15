@@ -19,3 +19,6 @@ export const EVENTS_PAGE_SIZE = 30
 
 /** Most posts about an event shown under it in a feed. */
 export const EVENT_POSTS_SHOWN = 3
+
+/** Page size for the posts about an event on its own page. */
+export const EVENT_POSTS_PAGE_SIZE = 25

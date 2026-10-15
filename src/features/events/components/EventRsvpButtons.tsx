@@ -1,5 +1,5 @@
 import {useState} from 'react'
-import {View} from 'react-native'
+import {type GestureResponderEvent, View} from 'react-native'
 import {plural} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react/macro'
 
@@ -40,7 +40,10 @@ export function EventRsvpButtons({event}: {event: EventRecord}) {
   // Like a post's like button, the heart only animates after a press.
   const [hasInterestBeenToggled, setHasInterestBeenToggled] = useState(false)
 
-  const onPress = (pressed: RsvpStatus) => {
+  const onPress = (e: GestureResponderEvent, pressed: RsvpStatus) => {
+    // Don't let the press reach the feed item's link.
+    e.preventDefault()
+    e.stopPropagation()
     requireAuth(() => {
       if (pressed === INTERESTED) setHasInterestBeenToggled(true)
       mutate({
@@ -84,7 +87,7 @@ export function EventRsvpButtons({event}: {event: EventRecord}) {
                     'Accessibility label for the event “interested” button, followed by the number of interested people',
                 })
           }
-          onPress={() => onPress(INTERESTED)}
+          onPress={e => onPress(e, INTERESTED)}
           testID="eventInterestedBtn">
           <AnimatedLikeIcon
             isLiked={status === INTERESTED}
@@ -121,7 +124,7 @@ export function EventRsvpButtons({event}: {event: EventRecord}) {
                     'Accessibility label for the event “going” button, followed by the number of people going',
                 })
           }
-          onPress={() => onPress(GOING)}
+          onPress={e => onPress(e, GOING)}
           testID="eventGoingBtn">
           <PostControlButtonIcon
             icon={status === GOING ? PersonFilledIcon : PersonIcon}
