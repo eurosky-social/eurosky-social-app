@@ -191,7 +191,12 @@ function PlacesStep({
     ),
   ]
     .map(code => ({code, name: countryName(code, i18n.locale)}))
-    .sort((x, y) => x.name.localeCompare(y.name, i18n.locale))
+    /* The Netherlands leads: the aggregator covers it most closely. */
+    .sort(
+      (x, y) =>
+        Number(y.code === 'nl') - Number(x.code === 'nl') ||
+        x.name.localeCompare(y.name, i18n.locale),
+    )
 
   function setCountries(next: string[]) {
     onChange({...interest, countries: next})

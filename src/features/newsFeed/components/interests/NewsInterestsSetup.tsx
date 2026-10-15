@@ -116,7 +116,7 @@ export function NewsInterestsSetup({
   return (
     <Layout.Screen testID="newsInterestsSetup">
       <SetupHeader
-        title={l`News settings`}
+        title={l`News preferences`}
         onBack={() => {
           onExit()
           return true

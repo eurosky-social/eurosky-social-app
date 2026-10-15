@@ -204,7 +204,7 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         getComponent={() =>
           NEWS_V2_ENABLED ? NewsSettingsScreen : NotFoundScreen
         }
-        options={{title: title(msg`News settings`), requireAuth: true}}
+        options={{title: title(msg`News preferences`), requireAuth: true}}
       />
       <Stack.Screen
         name="Frontpage"
