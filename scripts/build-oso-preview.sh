@@ -12,7 +12,7 @@ trap 'rm -rf "$TMP"' EXIT
 # web-build. CI installs deps in this tree. The prepare-only option is a fast
 # local smoke test using existing dependencies, not a deployable build.
 rsync -a --exclude='.git' --exclude='node_modules' --exclude='web-build*' \
-  --exclude='.expo' --exclude='.env*' --exclude='artifacts' \
+  --exclude='.expo' --exclude='.env*' --exclude='artifacts' --exclude='.pnpm-store' \
   --exclude='ios' --exclude='android' --exclude='*.tsbuildinfo' \
   "$ROOT/" "$TMP/"
 cd "$TMP"

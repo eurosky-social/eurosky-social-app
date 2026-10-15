@@ -54,8 +54,10 @@ deploy-oso-bunny:
     EXPO_PUBLIC_DUTCH_API_SERVICE_DID: did:plc:oub2sr5miponqkvdf3awv5qn
     EXPO_PUBLIC_ENABLE_NEWS_V2: 'true'
     # The build runs in a temp copy of the repo, so point pnpm at a store inside
-    # the project dir that the GitLab cache can keep between runs.
-    PNPM_STORE_DIR: ${CI_PROJECT_DIR}/.pnpm-store
+    # the project dir that the GitLab cache can keep between runs. Set through
+    # the environment: `pnpm config set --global` fails in CI because pnpm's
+    # global bin dir is not on PATH.
+    pnpm_config_store_dir: ${CI_PROJECT_DIR}/.pnpm-store
   cache:
     key:
       files:
@@ -75,7 +77,6 @@ deploy-oso-bunny:
       }
     - apt-get update -qq && apt-get install -y -qq rsync >/dev/null
     - npm install -g --silent "$(node -p 'require("./package.json").packageManager')"
-    - pnpm config set store-dir "$PNPM_STORE_DIR" --global
   script:
     - bash scripts/build-oso-preview.sh
     - |
