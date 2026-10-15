@@ -194,27 +194,10 @@ function DialogInner({
                 <Trans>Cancel</Trans>
               </ButtonText>
             </Button>
-          )}
-          renderRight={() => (
-            <Button
-              label={l`Save`}
-              onPress={() => void onPressSave()}
-              disabled={(!!event && !dirty) || isPending}
-              size="small"
-              color="primary"
-              variant="ghost"
-              style={[a.rounded_full]}
-              testID="eventFormSaveBtn">
-              <ButtonText style={[a.text_md]}>
-                <Trans>Save</Trans>
-              </ButtonText>
-              {isPending && <ButtonIcon icon={Loader} />}
-            </Button>
           )}>
           <Dialog.HeaderText>{title}</Dialog.HeaderText>
         </Dialog.Header>
       }>
-      {saveError !== '' && <ErrorMessage message={saveError} />}
       <View style={[a.pt_xl, a.px_xl, a.pb_2xl, a.gap_xl]}>
         <View style={[a.gap_md]}>
           <Field label={l`Cover image (optional)`}>
@@ -467,6 +450,22 @@ function DialogInner({
             </SegmentedControl.Root>
           </Field>
         )}
+
+        <View style={[a.gap_md]}>
+          {saveError !== '' && <ErrorMessage message={saveError} />}
+          <Button
+            label={l`Save`}
+            onPress={() => void onPressSave()}
+            disabled={(!!event && !dirty) || isPending}
+            size="large"
+            color="primary"
+            testID="eventFormSaveBtn">
+            <ButtonText>
+              <Trans>Save</Trans>
+            </ButtonText>
+            {isPending && <ButtonIcon icon={Loader} />}
+          </Button>
+        </View>
       </View>
     </Dialog.ScrollableInner>
   )
