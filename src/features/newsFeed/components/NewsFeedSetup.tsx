@@ -12,9 +12,9 @@ import {SetupTopics} from './SetupTopics'
 
 /**
  * The two-step news setup: topics, regions and languages, then the accounts
- * they select. Nothing is written until the last step, which publishes the
- * whole draft as the prefs record. Shared by the news feed and the news page's
- * settings, so both edit the one record.
+ * they select. Nothing is written until the last step, which saves the whole
+ * draft as the news prefs. Shared by the news feed and the news page's
+ * settings, so both edit the same prefs.
  */
 export function NewsFeedSetup({
   initialDraft,
@@ -78,7 +78,7 @@ export function NewsFeedSetup({
           onChangeRegions={regions => setDraft({...draft, regions})}
           onChangeLanguages={languages => setDraft({...draft, languages})}
           onBack={onExit}
-          /* Reset deletes the published record whenever one exists, so it
+          /* Reset deletes the saved prefs whenever there are some, so it
            * confirms first. With no record, an unsaved draft just clears. */
           onReset={() => (hasRecord ? resetPromptControl.open() : clearDraft())}
           onNext={() => setStep('sources')}

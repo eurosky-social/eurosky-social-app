@@ -122,8 +122,8 @@ expands into each other outlet's own headline.
 ### Boosting from the news settings
 
 The header's Settings button opens `/news/settings`, the news feed's own setup
-(topics, regions, then the accounts they select), so both surfaces share one
-`social.mu.newsFeedPrefs` record. The page reads it to reorder stories, never
+(topics, regions, then the accounts they select), so both surfaces share the one
+set of news prefs (`newsFeed/state/prefs.ts`). The page reads it to reorder stories, never
 to hide them (`explore/boost.ts`): each kind of interest a story matches - its
 section is one of the reader's topics, it is placed in a picked province (or
 is Dutch at all, with the Netherlands picked), or one of its outlets is a selected account (by DID, or by the

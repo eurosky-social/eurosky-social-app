@@ -21,7 +21,7 @@ import {
   type NewsInterest,
   useNewsFeedPrefsMutation,
 } from '../../state/prefs'
-import {SetupConsent} from '../SetupConsent'
+import {SetupDone} from '../SetupDone'
 import {SetupHeader} from '../SetupHeader'
 import {Section} from '../SetupTopics'
 import {InterestEditor} from './InterestEditor'
@@ -202,7 +202,7 @@ export function NewsInterestsSetup({
         </View>
       </Layout.Content>
 
-      <SetupConsent
+      <SetupDone
         onDone={() => {
           void finish()
         }}
