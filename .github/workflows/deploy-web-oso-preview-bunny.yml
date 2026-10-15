@@ -43,7 +43,9 @@ jobs:
           EXPO_PUBLIC_RSS_PROXY_URL: https://rss.mu.social
           # The news page's location picker and labeler stories need both;
           # without them the page falls back to RSS and the world only.
-          EXPO_PUBLIC_DUTCH_API_URL: https://news-aggregator.eurosky.dev
+          # news.eurosky.tech answers service JWTs for the same DID as the
+          # first instance (news-aggregator.eurosky.dev), so only the URL moves.
+          EXPO_PUBLIC_DUTCH_API_URL: https://news.eurosky.tech
           EXPO_PUBLIC_DUTCH_API_SERVICE_DID: did:plc:oub2sr5miponqkvdf3awv5qn
           # Serves the news hub instead of the original news pages. Needs the
           # Dutch API values above; production leaves it unset.
