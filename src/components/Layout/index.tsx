@@ -40,7 +40,7 @@ export type ScreenProps = React.ComponentProps<typeof View> & {
   minimalShell?: boolean
   /**
    * Skips the fixed center-column edges, for a screen that lays its content out
-   * at another width and draws its own frame (e.g. the newsroom explore
+   * at another width and draws its own frame (e.g. the news explore
    * spread, which reaches into the right column).
    */
   noCenterBorders?: boolean

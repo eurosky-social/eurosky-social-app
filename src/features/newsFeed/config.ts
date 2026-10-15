@@ -1,12 +1,12 @@
-import {IS_DUTCH_API_CONFIGURED} from '#/features/newsrooms/dutch/config'
+import {IS_DUTCH_API_CONFIGURED} from '#/features/news/dutch/config'
 
 /**
- * Whether the news hub (the news page shaped by interests, the newsroom
+ * Whether the news hub (the news page shaped by interests, the frontpage
  * explore spread, the directory and the article page) replaces the original
- * news feed and newsroom pages.
+ * news feed and frontpages.
  *
  * Opt-in per build with EXPO_PUBLIC_ENABLE_NEWS_V2=true, and only once the news
- * aggregator it reads is configured (see `newsrooms/dutch/config.ts`), so a
+ * aggregator it reads is configured (see `news/dutch/config.ts`), so a
  * half-configured build keeps the original pages instead of a hub with nothing
  * to show. When off, the app serves the pages in `legacy/` and the hub's routes
  * resolve to Not Found.

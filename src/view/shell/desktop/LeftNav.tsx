@@ -405,9 +405,9 @@ interface NavItemProps {
 const NEWS_HUB_ROUTES = [
   'NewsFeed',
   'NewsSettings',
-  'NewsroomDirectory',
-  'Newsroom',
-  'NewsroomArticle',
+  'OutletDirectory',
+  'Frontpage',
+  'NewsArticle',
 ]
 
 function NavItem({
@@ -692,8 +692,8 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             }}
           />
           <NavItem
-            label={NEWS_V2_ENABLED ? l`Newsrooms` : l`News`}
-            href={NEWS_V2_ENABLED ? '/newsroom/explore' : '/news'}
+            label={l`News`}
+            href={NEWS_V2_ENABLED ? '/news/explore' : '/news'}
             navItem="news"
             relatedRoutes={NEWS_V2_ENABLED ? NEWS_HUB_ROUTES : undefined}
             minimal={leftNavMinimal}
