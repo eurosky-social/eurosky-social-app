@@ -15586,7 +15586,7 @@ msgstr "Van {frontpageName} en zijn verslaggevers"
 #: src/features/frontpages/components/FrontpageLinkChip.tsx:84
 #: src/screens/Profile/Header/ProfileHeaderStandard.tsx:392
 msgid "Frontpage"
-msgstr "Voorpagina"
+msgstr "Frontpage"
 
 #: src/features/news/explore/components/StoryCard.tsx:212
 msgid "Hide the rest of the coverage of this story"
@@ -15709,7 +15709,7 @@ msgstr "De discussiethread openen"
 
 #: src/features/news/article/NewsArticleRightRail.tsx:137
 msgid "Open the frontpage"
-msgstr "De voorpagina openen"
+msgstr "De frontpage openen"
 
 #: src/features/news/components/ArticleDiscussion.tsx:160
 msgid "Open the thread"
@@ -15719,7 +15719,7 @@ msgstr "De thread openen"
 #: src/features/news/explore/components/StoryByline.tsx:67
 #: src/features/newsFeed/components/NewsFeedRightRail.tsx:128
 msgid "Open the {name} frontpage"
-msgstr "De voorpagina van {name} openen"
+msgstr "De frontpage van {name} openen"
 
 #: src/features/frontpages/components/FrontpageRightRail.tsx:285
 #: src/features/frontpages/components/FrontpageRightRail.tsx:339
@@ -15819,7 +15819,7 @@ msgstr "Het gesprek bekijken"
 
 #: src/features/news/article/NewsArticleRightRail.tsx:139
 msgid "See the frontpage"
-msgstr "De voorpagina bekijken"
+msgstr "De frontpage bekijken"
 
 #: src/features/frontpages/components/FrontpageArticles.tsx:367
 msgid "See this story in the Atmosphere"
@@ -15894,7 +15894,7 @@ msgstr "De media met de meeste verhalen op dit moment"
 
 #: src/features/frontpages/FrontpageScreen.tsx:107
 msgid "There is no frontpage here."
-msgstr "Hier is geen voorpagina."
+msgstr "Hier is geen frontpage."
 
 #: src/features/newsFeed/components/SetupSources.tsx:71
 msgid "These accounts match your topics. Tap to remove any you do not want."
@@ -15932,16 +15932,16 @@ msgstr "Profiel van {name} bekijken"
 
 #: src/features/news/article/ArticleHeader.tsx:146
 msgid "Visit frontpage"
-msgstr "Naar de voorpagina"
+msgstr "Naar de frontpage"
 
 #: src/features/frontpages/components/FrontpageLinkChip.tsx:59
 #: src/features/news/article/ArticleHeader.tsx:141
 msgid "Visit the {name} frontpage"
-msgstr "Naar de voorpagina van {name}"
+msgstr "Naar de frontpage van {name}"
 
 #: src/features/frontpages/components/FrontpageLinkChip.tsx:59
 msgid "Visit this frontpage"
-msgstr "Naar deze voorpagina"
+msgstr "Naar deze frontpage"
 
 #: src/features/newsFeed/components/SetupTopics.tsx:165
 msgid "What kinds of stories"
@@ -16035,7 +16035,7 @@ msgstr "{first} bracht dit ook"
 
 #: src/features/frontpages/components/FrontpageLinkChip.tsx:82
 msgid "{name} Frontpage"
-msgstr "Voorpagina van {name}"
+msgstr "{name} Frontpage"
 
 #: src/features/frontpages/directory/index.tsx:258
 #: src/features/newsFeed/components/interests/InterestEditor.tsx:552
@@ -16049,3 +16049,7 @@ msgstr "{unnamed, plural, one {{first} en nog # brachten dit} other {{first} en 
 #: src/features/news/explore/components/StoryByline.tsx:171
 msgid "{unnamed, plural, one {{first}, {second} and # more covered this} other {{first}, {second} and # more covered this}}"
 msgstr "{unnamed, plural, one {{first}, {second} en nog # brachten dit} other {{first}, {second} en nog # brachten dit}}"
+
+#: src/screens/Profile/Header/ProfileHeaderStandard.tsx:383
+msgid "Visit the {0} frontpage"
+msgstr "Naar de frontpage van {0}"
