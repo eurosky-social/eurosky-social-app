@@ -26,6 +26,14 @@ npm pack ./tile-loader  --pack-destination <app>/vendor
 `^2.0.0` range resolves to the vendored build rather than the npm one, which
 lacks `tileResponseHeaders`.
 
-Once the monorepo releases, replace both with the npm versions, drop the
+## `@dasl/tile-host`
+
+The hosted page that runs one tile for the native apps' WebView, from the same
+monorepo at commit `800c2ed` (its first version; not on npm yet). The app
+only imports `@dasl/tile-host/messages`, the dependency-free schema of the
+WebView bridge; the page itself is served by webtil.es at `/host/`. Packed the
+same way.
+
+Once the monorepo releases, replace all three with the npm versions, drop the
 override, and delete the tarballs. `src/features/tiles/README.md` says what
 the app uses from them.

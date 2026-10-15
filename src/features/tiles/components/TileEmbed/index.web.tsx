@@ -14,14 +14,9 @@ import {Button, ButtonIcon} from '#/components/Button'
 import {TimesLarge_Stroke2_Corner0_Rounded as XIcon} from '#/components/icons/Times'
 import * as Toast from '#/components/Toast'
 import {type app} from '#/lexicons'
-import {
-  DEFAULT_TILE_ASPECT_RATIO,
-  MAX_TILE_HEIGHT,
-  MIN_TILE_HEIGHT,
-} from '../../constants'
-import {type TileSizing} from '../../manifest'
 import {getTileMothership} from '../../mothership'
 import {type TileRef} from '../../record'
+import {tileHeight} from '../../sizing'
 import {TileCard} from '../TileCard'
 
 type Status = 'card' | 'loading' | 'active'
@@ -139,21 +134,4 @@ export function TileEmbed({
       </Button>
     </View>
   )
-}
-
-/**
- * The frame height: the manifest's requested size scaled to the card width,
- * or its height alone, or the default aspect ratio, within sane bounds.
- */
-function tileHeight(sizing: TileSizing | undefined, width: number): number {
-  const w = width || 560
-  let h: number
-  if (sizing?.width && sizing?.height) {
-    h = (w * sizing.height) / sizing.width
-  } else if (sizing?.height) {
-    h = sizing.height
-  } else {
-    h = w / DEFAULT_TILE_ASPECT_RATIO
-  }
-  return Math.round(Math.min(MAX_TILE_HEIGHT, Math.max(MIN_TILE_HEIGHT, h)))
 }

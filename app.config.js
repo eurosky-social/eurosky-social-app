@@ -32,6 +32,27 @@ const brandMeta = brand
 const BRAND_ACCENT = brand.colors.accents[brand.colors.defaultAccent]
 const APPLE_TEAM_ID = process.env.EXPO_APPLE_TEAM_ID ?? '2472Y2UN4X'
 
+/*
+ * EUROSKY: tiles play on iOS in a WebView on a hosted page (see
+ * src/features/tiles/README.md). WKWebView only gives service workers, which
+ * the tile runtime needs, to app-bound domains, so the page's domain and the
+ * loading server's go in WKAppBoundDomains (subdomains included; ten at most).
+ */
+const TILES_HOST_URL = String(
+  process.env.EXPO_PUBLIC_TILES_HOST_URL ?? 'https://webtil.es/host/',
+)
+const TILES_LOAD_DOMAIN = String(
+  process.env.EXPO_PUBLIC_TILES_LOAD_DOMAIN ?? 'load.webtil.es',
+)
+const TILES_APP_BOUND_DOMAINS = Array.from(
+  new Set([
+    new URL(TILES_HOST_URL).hostname,
+    TILES_LOAD_DOMAIN.replace(/^https?:\/\//, '')
+      .replace(/:\d+$/, '')
+      .replace(/^load\./, ''),
+  ]),
+)
+
 /**
  * @param {import('@expo/config-types').ExpoConfig} _config
  * @returns {{ expo: import('@expo/config-types').ExpoConfig }}
@@ -94,6 +115,7 @@ module.exports = function (_config) {
         icon: IOS_ICON_FILE,
         infoPlist: {
           UISupportedInterfaceOrientations: ['UIInterfaceOrientationPortrait'],
+          WKAppBoundDomains: TILES_APP_BOUND_DOMAINS,
           CADisableMinimumFrameDurationOnPhone: true,
           UIBackgroundModes: ['remote-notification'],
           NSUserActivityTypes: ['INSendMessageIntent'],

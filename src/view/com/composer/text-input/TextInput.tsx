@@ -27,6 +27,7 @@ import {
 import {atoms as a, useAlf} from '#/alf'
 import {normalizeTextStyles} from '#/alf/typography'
 import {IS_ANDROID} from '#/env'
+import {findTileUris} from '#/features/tiles/detect'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {Autocomplete} from './mobile/Autocomplete'
@@ -67,6 +68,7 @@ export function TextInput({
 
   const pastSuggestedUris = useRef(new Set<string>())
   const prevDetectedUris = useRef(new Map<string, LinkFacetMatch>())
+  const seenTileUris = useRef(new Set<string>())
   const onChangeText = useCallback(
     async (newText: string) => {
       const mayBePaste = newText.length > prevLength.current + 1
@@ -74,6 +76,26 @@ export function TextInput({
       const newRt = new RichText({text: newText})
       newRt.detectFacetsWithoutResolution()
       setRichText(newRt)
+
+      /*
+       * EUROSKY: a tile at-URI in the text (pasted, in all likelihood)
+       * attaches the tile as the embed; facet detection never sees at-URIs.
+       * A paste that is nothing but the URI stays out of the text, as on web.
+       * A URI that leaves the text may be attached again later.
+       */
+      for (const seen of seenTileUris.current) {
+        if (!newText.includes(seen)) seenTileUris.current.delete(seen)
+      }
+      for (const tileUri of findTileUris(newText)) {
+        if (seenTileUris.current.has(tileUri)) continue
+        seenTileUris.current.add(tileUri)
+        onNewLink(tileUri)
+        if (newText.trim() === tileUri) {
+          setRichText(new RichText({text: ''}))
+          prevLength.current = 0
+          return
+        }
+      }
 
       // NOTE: BinaryFiddler
       // onChangeText happens before onSelectionChange, cursorPos is out of bound if the user deletes characters,
