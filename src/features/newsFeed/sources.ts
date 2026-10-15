@@ -2,8 +2,8 @@
  * The registry of approved news accounts, each tagged with the topics,
  * regions, and languages it covers. This is shared, operator-owned config
  * rather than per-user state, so it lives as a local list instead of in the
- * PDS. The user's own selections live in the `social.mu.newsFeedPrefs`
- * record (see ./state/prefs).
+ * PDS. The user's own selections live in their private preferences
+ * (see ./state/prefs).
  */
 
 export interface NewsRegion {
