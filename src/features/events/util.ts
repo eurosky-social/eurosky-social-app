@@ -116,6 +116,17 @@ function parseDate(value: string | {} | undefined): Date | undefined {
 const ATMO_HOSTS = ['https://atmo.rsvp', 'https://events.atmosphere.tickets']
 
 /**
+ * The event's page on atmo.rsvp, which we link to from new posts about it.
+ * Uses the organiser's handle when known, for a readable URL.
+ */
+export function getEventPostUrl(
+  event: EventRecord,
+  profile?: EventProfile,
+): string {
+  return `${ATMO_HOSTS[0]}/p/${profile?.handle ?? event.did}/e/${event.rkey}`
+}
+
+/**
  * The public web pages of other apps that render the event, as people link to
  * them in posts. Mirrors `eventShareUrls` in 40verse-atproto.
  *

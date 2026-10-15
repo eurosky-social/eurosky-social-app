@@ -19,6 +19,7 @@ import {Text} from '#/components/Typography'
 import {type app} from '#/lexicons'
 import {EventsApiError} from './api'
 import {CreateOrEditEventDialog} from './components/CreateOrEditEventDialog'
+import {EventComposerPrompt} from './components/EventComposerPrompt'
 import {EventDetails} from './components/EventDetails'
 import {EVENT_NSID, EVENT_POSTS_PAGE_SIZE} from './config'
 import {useEventPostsQuery, useEventQuery} from './queries'
@@ -135,6 +136,7 @@ function EventPostsList({
                 <Trans>Posts about this event</Trans>
               </Text>
             </View>
+            <EventComposerPrompt event={event} profile={profile} />
           </>
         }
         ListEmptyComponent={
