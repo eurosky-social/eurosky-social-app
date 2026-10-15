@@ -1,0 +1,86 @@
+# Oso: build the Oso web app and deploy it to Oso's own Bunny.net account.
+#
+# GitLab counterpart of .github/workflows/deploy-web-oso-preview-bunny.yml, but
+# every Bunny credential belongs to Oso's account, never Eurosky/Mu's. Builds
+# web-build-oso/ via scripts/build-oso-preview.sh (a disposable tree, so Mu's
+# brand files are untouched), uploads it to Oso's storage zone, then purges
+# Oso's pull zone.
+#
+# Required CI/CD variables (Settings -> CI/CD -> Variables; mark them Masked and
+# Protected, and protect the oso branch so the job can read them):
+#   OSO_BUNNY_STORAGE_ZONE      full base URL incl. zone, e.g.
+#                               https://storage.bunnycdn.com/oso-app (use the
+#                               zone's regional host if it is not in Falkenstein)
+#   OSO_BUNNY_STORAGE_PASSWORD  storage zone password (AccessKey for uploads)
+#   OSO_BUNNY_API_KEY           Oso account API key (for the cache purge)
+#   OSO_BUNNY_PULLZONE_ID       numeric pull zone id (for the cache purge)
+#
+# Optional variables, read directly by the build script:
+#   OSO_HOST                    hostname the bundle is served from
+#                               (default oso.mu.social)
+#   OSO_OAUTH_ASSERTION_URL     Oso's own OAuth assertion worker; required when
+#                               OSO_HOST is not a *.mu.social host
+#
+# The Mu edge setup (scripts/bunny_edge_setup.sh) is deliberately not run: it
+# carries mu.social URL patterns. Configure Oso's pull zone in its own account.
+
+workflow:
+  rules:
+    # Deploy on every push to oso, or on a manual "Run pipeline" from the UI.
+    - if: $CI_COMMIT_BRANCH == "oso" && $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+stages:
+  - deploy
+
+deploy-oso-bunny:
+  stage: deploy
+  image: node:24.19.0-bookworm
+  # Never run two deploys at once; GitLab queues the next one behind this.
+  resource_group: deploy-oso-bunny
+  interruptible: true
+  environment:
+    name: oso
+    url: https://${OSO_HOST}
+  variables:
+    # Project CI/CD variables override this default.
+    OSO_HOST: oso.mu.social
+    EXPO_PUBLIC_ENABLE_GEOLOCATION: 'true'
+    EXPO_PUBLIC_GEOLOCATION_URL: https://ip.mu.social
+    EXPO_PUBLIC_PLAUSIBLE_API_HOST: https://events.mu.social
+    EXPO_PUBLIC_RSS_PROXY_URL: https://rss.mu.social
+    # The news hub and the aggregator it reads; see the GitHub preview workflow.
+    EXPO_PUBLIC_DUTCH_API_URL: https://news.eurosky.tech
+    EXPO_PUBLIC_DUTCH_API_SERVICE_DID: did:plc:oub2sr5miponqkvdf3awv5qn
+    EXPO_PUBLIC_ENABLE_NEWS_V2: 'true'
+    # The build runs in a temp copy of the repo, so point pnpm at a store inside
+    # the project dir that the GitLab cache can keep between runs.
+    PNPM_STORE_DIR: ${CI_PROJECT_DIR}/.pnpm-store
+  cache:
+    key:
+      files:
+        - pnpm-lock.yaml
+    paths:
+      - .pnpm-store/
+  before_script:
+    - |
+      for v in OSO_BUNNY_STORAGE_ZONE OSO_BUNNY_STORAGE_PASSWORD OSO_BUNNY_API_KEY OSO_BUNNY_PULLZONE_ID; do
+        test -n "${!v:-}" || { echo "Set the $v CI/CD variable before deploying" >&2; exit 1; }
+      done
+    # 5945167 is Mu production; it must never receive an Oso bundle.
+    - |
+      [[ "$OSO_BUNNY_PULLZONE_ID" != 5945167 ]] || {
+        echo 'Refusing the Mu production pull zone' >&2
+        exit 1
+      }
+    - apt-get update -qq && apt-get install -y -qq rsync >/dev/null
+    - npm install -g --silent "$(node -p 'require("./package.json").packageManager')"
+    - pnpm config set store-dir "$PNPM_STORE_DIR" --global
+  script:
+    - bash scripts/build-oso-preview.sh
+    - |
+      BUNNY_STORAGE_ZONE="$OSO_BUNNY_STORAGE_ZONE" \
+      BUNNY_STORAGE_PASSWORD="$OSO_BUNNY_STORAGE_PASSWORD" \
+      BUNNY_API_KEY="$OSO_BUNNY_API_KEY" \
+      BUNNY_PULLZONE_ID="$OSO_BUNNY_PULLZONE_ID" \
+        bash scripts/bunny_upload.sh web-build-oso
