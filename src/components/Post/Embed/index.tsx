@@ -26,9 +26,9 @@ import {RichText} from '#/components/RichText'
 import {Embed as StarterPackCard} from '#/components/StarterPack/StarterPackCard'
 import {SubtleHover} from '#/components/SubtleHover'
 import {matchCustomEmbed} from '#/features/customEmbeds/registry'
+import {FrontpageLinkChip as AggregatorFrontpageLinkChip} from '#/features/frontpages/components/FrontpageLinkChip'
+import {NewsroomLinkChip as LegacyFrontpageLinkChip} from '#/features/frontpages/legacy/NewsroomLinkChip'
 import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
-import {NewsroomLinkChip as AggregatorNewsroomLinkChip} from '#/features/newsrooms/components/NewsroomLinkChip'
-import {NewsroomLinkChip as LegacyNewsroomLinkChip} from '#/features/newsrooms/legacy/NewsroomLinkChip'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {
@@ -46,9 +46,9 @@ import {type CommonProps, type EmbedProps, PostEmbedViewContext} from './types'
 import {VideoEmbed} from './VideoEmbed'
 
 /** Picked once per build: the news hub's chip reads the aggregator's outlets. */
-const NewsroomLinkChip = NEWS_V2_ENABLED
-  ? AggregatorNewsroomLinkChip
-  : LegacyNewsroomLinkChip
+const FrontpageLinkChip = NEWS_V2_ENABLED
+  ? AggregatorFrontpageLinkChip
+  : LegacyFrontpageLinkChip
 
 export {PostEmbedViewContext} from './types'
 
@@ -162,8 +162,8 @@ function MediaEmbed({
             post={rest.post}
             style={[a.mt_sm, rest.style]}
           />
-          {/* EUROSKY: links a post to the newsroom of the org it links to. */}
-          <NewsroomLinkChip url={embed.view.external.uri} style={[a.mt_xs]} />
+          {/* EUROSKY: links a post to the frontpage of the org it links to. */}
+          <FrontpageLinkChip url={embed.view.external.uri} style={[a.mt_xs]} />
         </ContentHider>
       )
     }

@@ -14,8 +14,8 @@ import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/
 import * as Layout from '#/components/Layout'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
-import {useDutchThemesQuery} from '#/features/newsrooms/dutch/queries'
-import {useInterestTitle} from '#/features/newsrooms/explore/useInterestTitle'
+import {useDutchThemesQuery} from '#/features/news/dutch/queries'
+import {useInterestTitle} from '#/features/news/explore/useInterestTitle'
 import {
   type NewsFeedPrefs,
   type NewsInterest,

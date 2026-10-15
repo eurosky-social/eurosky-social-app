@@ -5,7 +5,7 @@ import {
 import {atoms as a} from '#/alf'
 import * as Layout from '#/components/Layout'
 import {Loader} from '#/components/Loader'
-import {IS_DUTCH_API_CONFIGURED} from '#/features/newsrooms/dutch/config'
+import {IS_DUTCH_API_CONFIGURED} from '#/features/news/dutch/config'
 import {NewsInterestsSetup} from './components/interests/NewsInterestsSetup'
 import {NewsFeedSetup} from './components/NewsFeedSetup'
 import {makeDefaultNewsFeedPrefs, useNewsFeedPrefsQuery} from './state/prefs'
@@ -31,7 +31,7 @@ export function NewsSettingsScreen({navigation}: Props) {
     if (navigation.canGoBack()) {
       navigation.goBack()
     } else {
-      navigation.replace('NewsroomExplore')
+      navigation.replace('NewsExplore')
     }
   }
 

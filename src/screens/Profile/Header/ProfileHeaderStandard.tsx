@@ -30,7 +30,7 @@ import {MessageProfileButton} from '#/components/dms/MessageProfileButton'
 import {ArrowTopRight_Stroke2_Corner0_Rounded as ArrowTopRightIcon} from '#/components/icons/Arrow'
 import {ArrowShareRight_Stroke2_Corner2_Rounded as ArrowShareRight} from '#/components/icons/ArrowShareRight'
 import {Globe_Stroke2_Corner0_Rounded as Globe} from '#/components/icons/Globe'
-import {Newspaper2_Stroke2_Corner2_Rounded as NewsroomIcon} from '#/components/icons/Newspaper2'
+import {Newspaper2_Stroke2_Corner2_Rounded as FrontpageIcon} from '#/components/icons/Newspaper2'
 import {PlusLarge_Stroke2_Corner0_Rounded as Plus} from '#/components/icons/Plus'
 import {
   KnownFollowers,
@@ -43,9 +43,9 @@ import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {IS_IOS, IS_NATIVE} from '#/env'
+import {useProfileFrontpagePath} from '#/features/frontpages/useProfileFrontpagePath'
 import {InviteFriendsDialog} from '#/features/inviteFriends'
 import {useActorStatus} from '#/features/liveNow'
-import {useProfileNewsroomPath} from '#/features/newsrooms/useProfileNewsroomPath'
 import {type app} from '#/lexicons'
 import {GermButton} from '../components/GermButton'
 import {ProfileHeaderDisplayName} from './DisplayName'
@@ -286,7 +286,7 @@ export function HeaderStandardButtons({
 
   const isMe = currentAccount?.did === profile.did
 
-  const newsroomPath = useProfileNewsroomPath(profile.did)
+  const frontpagePath = useProfileFrontpagePath(profile.did)
 
   const onPressFollow = () => {
     playHaptic()
@@ -375,21 +375,21 @@ export function HeaderStandardButtons({
 
   return (
     <>
-      {newsroomPath && (
+      {frontpagePath && (
         <Link
-          testID="profileHeaderNewsroomButton"
-          to={newsroomPath}
+          testID="profileHeaderFrontpageButton"
+          to={frontpagePath}
           label={_(
             msg`Visit the ${sanitizeDisplayName(
               profile.displayName || profile.handle,
               moderation.ui('displayName'),
-            )} newsroom`,
+            )} frontpage`,
           )}
           size="small"
           color="secondary">
-          <ButtonIcon icon={NewsroomIcon} />
+          <ButtonIcon icon={FrontpageIcon} />
           <ButtonText>
-            <Trans>Newsroom</Trans>
+            <Trans>Frontpage</Trans>
           </ButtonText>
         </Link>
       )}

@@ -16,8 +16,8 @@ import {
   ExploreHeaderOuter,
   ExploreSpreadBorders,
   useExploreSpread,
-} from '#/features/newsrooms/explore/components/ExploreColumn'
-import {useCollapsingTitle} from '#/features/newsrooms/hub/useCollapsingTitle'
+} from '#/features/news/explore/components/ExploreColumn'
+import {useCollapsingTitle} from '#/features/news/hub/useCollapsingTitle'
 import {selectSources} from '../sources'
 import {type NewsFeedPrefs} from '../state/prefs'
 import {NewsFeedRailColumn} from './NewsFeedRailColumn'

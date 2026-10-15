@@ -21,11 +21,11 @@ import {CENTER_COLUMN_OFFSET} from '#/components/Layout'
 import {InlineLinkText, Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
+import {FrontpageRightRail} from '#/features/frontpages/components/FrontpageRightRail'
+import {NewsroomRightRail as LegacyFrontpageRightRail} from '#/features/frontpages/legacy/NewsroomRightRail'
+import {NewsArticleRightRail} from '#/features/news/article/NewsArticleRightRail'
 import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
 import {NewsFeedRightRail as LegacyNewsFeedRightRail} from '#/features/newsFeed/legacy/NewsFeedRightRail'
-import {NewsroomArticleRightRail} from '#/features/newsrooms/article/NewsroomArticleRightRail'
-import {NewsroomRightRail} from '#/features/newsrooms/components/NewsroomRightRail'
-import {NewsroomRightRail as LegacyNewsroomRightRail} from '#/features/newsrooms/legacy/NewsroomRightRail'
 
 export function DesktopRightNav({routeName}: {routeName: string}) {
   const t = useTheme()
@@ -38,18 +38,18 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
     useLayoutBreakpoints()
 
   /*
-   * The newsroom hub pages lay themselves out across the center and right
+   * The news hub pages lay themselves out across the center and right
    * columns, so the shell leaves the right column to them. The news feed
    * keeps a right column but draws it itself (see `NewsFeedRailColumn`).
    */
-  const isNewsroomExplore =
+  const isNewsExplore =
     NEWS_V2_ENABLED &&
-    (routeName === 'NewsroomExplore' ||
-      routeName === 'NewsroomDirectory' ||
+    (routeName === 'NewsExplore' ||
+      routeName === 'OutletDirectory' ||
       routeName === 'NewsFeed' ||
       routeName === 'NewsSettings')
 
-  if (!rightNavVisible || isMessagesRelatedScreen || isNewsroomExplore) {
+  if (!rightNavVisible || isMessagesRelatedScreen || isNewsExplore) {
     return null
   }
 
@@ -58,18 +58,18 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
   // The news surfaces swap the default search/feeds column for their own
   // rails, each cross-linking the other.
   const railContent =
-    routeName === 'Newsroom' ? (
+    routeName === 'Frontpage' ? (
       NEWS_V2_ENABLED ? (
-        <NewsroomRightRail />
+        <FrontpageRightRail />
       ) : (
-        <LegacyNewsroomRightRail />
+        <LegacyFrontpageRightRail />
       )
     ) : !NEWS_V2_ENABLED ? (
       routeName === 'NewsFeed' ? (
         <LegacyNewsFeedRightRail />
       ) : null
-    ) : routeName === 'NewsroomArticle' ? (
-      <NewsroomArticleRightRail />
+    ) : routeName === 'NewsArticle' ? (
+      <NewsArticleRightRail />
     ) : null
 
   if (railContent) {
