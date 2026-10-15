@@ -19,7 +19,7 @@ import {useThemeName} from '#/features/newsrooms/dutch/queries'
 import {app} from '#/lexicons'
 import {type NewsSource, selectSources, sourceTagLabels} from '../sources'
 import {type NewsFeedPrefs} from '../state/prefs'
-import {SetupConsent} from './SetupConsent'
+import {SetupDone} from './SetupDone'
 import {SetupHeader} from './SetupHeader'
 
 export function SetupSources({
@@ -104,7 +104,7 @@ export function SetupSources({
         </View>
       </Layout.Content>
 
-      <SetupConsent onDone={onDone} />
+      <SetupDone onDone={onDone} />
     </Layout.Screen>
   )
 }

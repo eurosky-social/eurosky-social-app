@@ -8,9 +8,10 @@ accounts matching those facets.
 
 Two datasets, deliberately stored differently:
 
-- **User selections (Dataset 1)** - per-user, synced. Stored as a published
-  atproto record in the user's PDS: collection `social.mu.newsFeedPrefs`,
-  rkey `self`. See `state/prefs.ts`.
+- **User selections (Dataset 1)** - per-user, synced, private. Stored in the
+  account's preferences on its PDS (`app.bsky.actor.putPreferences`) as one
+  item of `$type` `app.bsky.news.prefs`, which only the account can read. See
+  `state/prefs.ts`.
 - **Source registry (Dataset 2)** - shared, operator-curated config mapping
   accounts to topic / region / language tags. Local list in `sources.ts`. This
   is not a user preference, so it does not live in the PDS.
@@ -28,14 +29,27 @@ news page keeps only the stories with an article in one of them, led by that
 article. The feed still also applies the app's content language preference
 (`languagePrefs.contentLanguages`) at feed-assembly time.
 
+### Why `app.bsky.news.prefs`
+
+Preferences are private, unlike repo records, but the PDS refuses any
+preference outside the `app.bsky` namespace, so the prefs borrow Bluesky's.
+That is a stopgap: the preferences union is open, so the PDS stores the item
+and other clients' preference writes keep it, but Bluesky owns the namespace
+and could start rejecting or dropping unknown types. The lasting home is a
+server of our own, keyed by DID behind service auth.
+
+The prefs used to be a public record (collection `social.mu.newsFeedPrefs`,
+rkey `self`). Reading falls back to it while there are no prefs yet; the next
+save or reset deletes it. The `legacy/` screens still read and write that
+record, so an account that saves here loses its legacy news setup.
+
 ## Flow
 
 1. Topic / region picker -> chooses `topics` and `regions` into a draft. Nothing
    is written yet.
 2. Source review -> `selectSources(selection, {applyExclusions: false})` lists
    the matching accounts so the user can toggle individual ones into
-   `excludedDids`. Finishing requires an explicit consent toggle, which then
-   publishes the full draft as the prefs record.
+   `excludedDids`. Finishing saves the full draft as the prefs.
 3. Feed -> `selectSources(selection)` resolves the source set; a FeedAPI pulls
    each source's author feed and round-robins across them so every source gets
    equal representation, filtered by the user's content languages.
@@ -47,7 +61,7 @@ The news page reads the news aggregator, so its settings (`/news/settings`,
 slice of the news by countries, the aggregator's themes, and the outlets of
 those countries, every one of them in until unticked. They are set in a
 three-step wizard, which the settings open on while there are none, and
-stored as `interests` in the same record.
+stored as `interests` in the same prefs.
 
 On the page a dropdown ahead of the topic chips picks one interest, the first
 by default. When it covers the Netherlands, a second dropdown narrows it to a
