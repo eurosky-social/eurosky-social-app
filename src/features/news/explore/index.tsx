@@ -256,7 +256,7 @@ export function NewsExploreScreen(
                   color="secondary">
                   <ButtonIcon icon={SettingsGearIcon} />
                   <ButtonText>
-                    <Trans>Settings</Trans>
+                    <Trans>Preferences</Trans>
                   </ButtonText>
                 </Link>
               )}

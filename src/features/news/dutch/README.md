@@ -92,7 +92,8 @@ page with no change here.
 
 That makes the section labels data rather than `msg` descriptors, which a
 build-time extractor cannot see. The API serves `name` and `nameNl`, so the
-picking is a runtime choice against the active locale, not a Lingui one.
+picking is a runtime choice against the active locale, not a Lingui one:
+`useDutchThemesQuery` hands a Dutch reader `nameNl` as the theme's `name`.
 
 ## Provinces
 
@@ -186,7 +187,5 @@ and, outside this directory:
    `/api/threads?country=fr&sort=here`, so the filtering is server-side. Its
    locations are the regions picked in the news settings (see the news
    README, "Locations").
-6. Decide the theme label locale. The API serves `name` and `nameNl`; the page
-   currently takes `name`, which is wrong for a Dutch-language build.
-7. Each event arrives with its first posts and nothing renders them yet - this
+6. Each event arrives with its first posts and nothing renders them yet - this
    is where the discussion the spread previously had to search for goes.

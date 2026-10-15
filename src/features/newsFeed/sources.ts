@@ -71,12 +71,13 @@ export function topicsAsThemes(topics: string[]): string[] {
  * translation at render time.
  */
 export const NEWS_REGIONS: NewsRegion[] = [
+  // The Netherlands leads: the news aggregator covers it most closely.
+  {id: 'netherlands', label: 'Netherlands'},
   {id: 'global', label: 'Global'},
   {id: 'europe', label: 'Europe'},
   {id: 'belgium', label: 'Belgium'},
   {id: 'france', label: 'France'},
   {id: 'germany', label: 'Germany'},
-  {id: 'netherlands', label: 'Netherlands'},
   {id: 'spain', label: 'Spain'},
   {id: 'uk', label: 'UK'},
   /*

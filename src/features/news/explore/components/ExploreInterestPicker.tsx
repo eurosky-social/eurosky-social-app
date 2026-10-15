@@ -67,7 +67,7 @@ export function ExploreInterestPicker({
             onPress={() => navigation.navigate('NewsSettings')}>
             <Menu.ItemIcon icon={SettingsGearIcon} />
             <Menu.ItemText>
-              <Trans>Settings</Trans>
+              <Trans>Preferences</Trans>
             </Menu.ItemText>
           </Menu.Item>
         </Menu.Group>

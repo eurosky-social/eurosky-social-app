@@ -1,4 +1,5 @@
 import {type Client} from '@atproto/lex'
+import {useLingui} from '@lingui/react/macro'
 import {useQueries, useQuery} from '@tanstack/react-query'
 import {jwtDecode} from 'jwt-decode'
 
@@ -226,6 +227,7 @@ export function useDutchThemesQuery({
   category,
   enabled = true,
 }: {scope?: string; category?: string; enabled?: boolean} = {}) {
+  const {i18n} = useLingui()
   const pdsClient = useMaybePdsClient()
   const query = useQuery({
     queryKey: createDutchThemesQueryKey({scope, category}),
@@ -245,9 +247,20 @@ export function useDutchThemesQuery({
   })
 
   return {
-    themes: query.data ?? ([] as DutchTheme[]),
+    themes: localizeThemes(query.data ?? [], i18n.locale),
     isLoading: query.isLoading,
   }
+}
+
+/**
+ * The service names each theme in English and Dutch, so a Dutch reader gets
+ * `nameNl` in `name` and every list of topics reads in their language.
+ */
+function localizeThemes(themes: DutchTheme[], locale: string): DutchTheme[] {
+  if (locale !== 'nl' && !locale.startsWith('nl-')) return themes
+  return themes.map(theme =>
+    theme.nameNl ? {...theme, name: theme.nameNl} : theme,
+  )
 }
 
 /**

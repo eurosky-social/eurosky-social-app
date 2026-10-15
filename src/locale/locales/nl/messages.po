@@ -2862,7 +2862,7 @@ msgstr ""
 #: src/screens/Onboarding/StepInterests/index.tsx:85
 #: src/screens/Onboarding/StepInterests/index.tsx:139
 msgid "Choose an interest"
-msgstr ""
+msgstr "Kies een interesse"
 
 #: src/screens/Onboarding/StepInterests/index.tsx:140
 msgid "Choose at least one interest to continue"
@@ -8436,7 +8436,7 @@ msgstr ""
 
 #: src/screens/Settings/NotificationSettings/ActivityNotificationSettings.tsx:220
 msgid "None"
-msgstr ""
+msgstr "Geen"
 
 #: src/screens/Search/components/AdvancedSearchDialog/index.tsx:263
 #: src/screens/Search/components/AdvancedSearchDialog/index.tsx:266
@@ -15359,7 +15359,7 @@ msgstr ""
 #: src/screens/Settings/ContentAndMediaSettings.tsx:97
 #: src/screens/Settings/InterestsSettings.tsx:50
 msgid "Your interests"
-msgstr ""
+msgstr "Je interesses"
 
 #: src/screens/Settings/InterestsSettings.tsx:139
 msgctxt "toast"
@@ -15448,3 +15448,604 @@ msgstr ""
 #: src/components/verification/VerificationsDialog.tsx:67
 msgid "Your verifications"
 msgstr ""
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:254
+msgid "About what?"
+msgstr "Waarover?"
+
+#: src/features/newsFeed/components/interests/NewsInterestsSetup.tsx:154
+#: src/features/newsFeed/components/interests/NewsInterestsSetup.tsx:162
+msgid "Add an interest"
+msgstr "Interesse toevoegen"
+
+#: src/features/newsFeed/components/interests/NewsInterestsSetup.tsx:135
+msgid "Add an interest for each slice of the news you follow, like tech from anywhere, or everything from Belgian outlets."
+msgstr "Voeg een interesse toe voor elk deel van het nieuws dat je volgt, zoals tech van overal, of alles van Belgische media."
+
+#: src/features/newsFeed/components/NewsFeedTab.tsx:156
+msgid "Adjust topics"
+msgstr "Onderwerpen aanpassen"
+
+#: src/features/news/explore/components/ExploreLocationPicker.tsx:40
+msgid "All of the Netherlands"
+msgstr "Heel Nederland"
+
+#: src/features/news/explore/components/ExploreInterestPicker.tsx:101
+msgid "All of {name}"
+msgstr "Heel {name}"
+
+#: src/features/frontpages/FrontpageScreen.tsx:116
+msgid "All outlets"
+msgstr "Alle media"
+
+#: src/features/news/explore/components/ExploreSectionFront.tsx:91
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:267
+#: src/features/newsFeed/components/interests/NewsInterestsSetup.tsx:266
+#: src/features/newsFeed/components/SetupTopics.tsx:51
+msgid "All topics"
+msgstr "Alle onderwerpen"
+
+#: src/features/news/article/NewsArticleScreen.tsx:93
+#: src/Navigation.tsx:243
+msgid "Article"
+msgstr "Artikel"
+
+#: src/features/newsFeed/components/interests/NewsInterestsSetup.tsx:197
+msgid "Change languages"
+msgstr "Talen wijzigen"
+
+#: src/features/newsFeed/components/interests/NewsInterestsSetup.tsx:192
+msgid "Change your content languages"
+msgstr "Je inhoudstalen wijzigen"
+
+#: src/features/news/explore/components/ExploreLocationPicker.tsx:49
+#: src/features/news/explore/components/ExploreLocationPicker.tsx:54
+msgid "Choose a location"
+msgstr "Kies een locatie"
+
+#: src/features/news/explore/components/ExploreInterestPicker.tsx:66
+#: src/features/news/explore/index.tsx:254
+msgid "Choose your news interests"
+msgstr "Kies je nieuwsinteresses"
+
+#: src/features/news/explore/sections.ts:98
+msgid "Climate"
+msgstr "Klimaat"
+
+#: src/features/newsFeed/components/NewsFeedTab.tsx:66
+msgid "Configure"
+msgstr "Instellen"
+
+#: src/features/news/explore/index.tsx:331
+msgid "Couldn’t load the news. Try again later."
+msgstr "Het nieuws kon niet worden geladen. Probeer het later opnieuw."
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:218
+msgid "Countries"
+msgstr "Landen"
+
+#: src/features/newsFeed/components/NewsFeedTab.tsx:60
+#: src/features/newsFeed/components/NewsFeedTab.tsx:151
+msgid "Customize news feed"
+msgstr "Nieuwsfeed aanpassen"
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:130
+msgid "Delete this interest"
+msgstr "Deze interesse verwijderen"
+
+#: src/features/news/explore/components/ExploreLeadBand.tsx:109
+msgid "Developing"
+msgstr "In ontwikkeling"
+
+#: src/features/newsFeed/components/interests/NewsInterestsSetup.tsx:132
+msgid "Each one is a tab"
+msgstr "Elke interesse is een tabblad"
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:91
+msgid "Edit interest"
+msgstr "Interesse bewerken"
+
+#: src/features/newsFeed/components/interests/NewsInterestsSetup.tsx:241
+msgid "Edit {title}"
+msgstr "{title} bewerken"
+
+#: src/features/frontpages/directory/index.tsx:100
+msgid "Elsewhere"
+msgstr "Elders"
+
+#: src/features/news/explore/sections.ts:30
+msgid "Europe"
+msgstr "Europa"
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:337
+msgid "Every outlet is in. Untick some, and the stories of the ones left come first."
+msgstr "Alle media doen mee. Vink er een paar uit, dan komen de verhalen van de overige eerst."
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:335
+msgid "Every outlet is in. Untick the ones you do not want."
+msgstr "Alle media doen mee. Vink de media uit die je niet wilt."
+
+#: src/features/news/explore/useInterestTitle.ts:35
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:223
+#: src/features/newsFeed/components/interests/NewsInterestsSetup.tsx:262
+msgid "Everywhere"
+msgstr "Overal"
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:332
+msgid "From which outlets?"
+msgstr "Van welke media?"
+
+#: src/features/frontpages/directory/index.tsx:87
+msgid "From your interests"
+msgstr "Uit je interesses"
+
+#: src/features/frontpages/FrontpageScreen.tsx:210
+msgid "From {frontpageName} and its reporters"
+msgstr "Van {frontpageName} en zijn verslaggevers"
+
+#: src/features/frontpages/components/FrontpageLinkChip.tsx:84
+#: src/screens/Profile/Header/ProfileHeaderStandard.tsx:392
+msgid "Frontpage"
+msgstr "Voorpagina"
+
+#: src/features/news/explore/components/StoryCard.tsx:212
+msgid "Hide the rest of the coverage of this story"
+msgstr "De rest van de berichtgeving over dit verhaal verbergen"
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:375
+msgid "Include every outlet"
+msgstr "Alle media meenemen"
+
+#: src/features/news/explore/sections.ts:150
+msgid "Investigations"
+msgstr "Onderzoek"
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:142
+msgid "Keep this interest"
+msgstr "Deze interesse behouden"
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:385
+msgid "Leave out every outlet"
+msgstr "Alle media weglaten"
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:357
+msgid "Leave out the stories the others covered alone."
+msgstr "Laat de verhalen weg die alleen de andere media brachten."
+
+#: src/features/news/article/NewsArticleRightRail.tsx:99
+msgid "More from this outlet"
+msgstr "Meer van dit medium"
+
+#: src/features/news/article/NewsArticleRightRail.tsx:99
+msgid "More from {name}"
+msgstr "Meer van {name}"
+
+#: src/features/news/explore/components/ExploreSectionFront.tsx:125
+msgid "More in {name}"
+msgstr "Meer in {name}"
+
+#: src/features/news/explore/sections.ts:177
+msgid "More stories"
+msgstr "Meer verhalen"
+
+#: src/features/news/explore/components/ExploreInterestPicker.tsx:105
+#: src/features/news/explore/components/ExploreInterestPicker.tsx:111
+msgid "Narrow {name} down"
+msgstr "{name} verfijnen"
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:91
+msgid "New interest"
+msgstr "Nieuwe interesse"
+
+#: src/features/newsFeed/components/interests/NewsInterestsSetup.tsx:119
+#: src/Navigation.tsx:207
+msgid "News preferences"
+msgstr "Nieuwsvoorkeuren"
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:426
+msgid "No current stories on these topics"
+msgstr "Geen actuele verhalen over deze onderwerpen"
+
+#: src/features/news/explore/index.tsx:335
+msgid "No news feeds are reachable right now."
+msgstr "Er zijn nu geen nieuwsfeeds bereikbaar."
+
+#: src/features/news/explore/index.tsx:337
+msgid "No news from here right now."
+msgstr "Er is nu geen nieuws van hier."
+
+#: src/features/news/article/NewsArticleScreen.tsx:129
+msgid "No one in the network has posted about this yet."
+msgstr "Nog niemand in het netwerk heeft hierover gepost."
+
+#: src/features/frontpages/directory/index.tsx:145
+msgid "No outlets are available right now."
+msgstr "Er zijn nu geen media beschikbaar."
+
+#: src/features/frontpages/FrontpageScreen.tsx:225
+msgid "No recent posts from this outlet."
+msgstr "Geen recente posts van dit medium."
+
+#: src/features/newsFeed/components/NewsFeedTab.tsx:135
+msgid "No recent posts from your news sources."
+msgstr "Geen recente posts van je nieuwsbronnen."
+
+#: src/features/newsFeed/components/SetupSources.tsx:83
+msgid "No sources match your selected topics yet."
+msgstr "Er zijn nog geen bronnen die passen bij je gekozen onderwerpen."
+
+#: src/features/newsFeed/components/NewsFeedTab.tsx:148
+msgid "None of your news sources match the topics you picked."
+msgstr "Geen van je nieuwsbronnen past bij de onderwerpen die je hebt gekozen."
+
+#: src/features/news/explore/index.tsx:333
+msgid "Nothing matches this interest right now."
+msgstr "Er past nu niets bij deze interesse."
+
+#: src/features/newsFeed/components/SetupTopics.tsx:140
+msgid "Only show news in these"
+msgstr "Alleen nieuws in deze talen tonen"
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:347
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:353
+msgid "Only show these outlets"
+msgstr "Alleen deze media tonen"
+
+#: src/features/newsFeed/components/interests/NewsInterestsSetup.tsx:177
+msgid "Only stories in {languageNames} show, as set for the rest of the app."
+msgstr "Alleen verhalen in het {languageNames} worden getoond, zoals ingesteld voor de rest van de app."
+
+#: src/features/frontpages/components/FrontpageRightRail.tsx:344
+msgid "Open news feed"
+msgstr "Nieuwsfeed openen"
+
+#: src/features/news/article/ArticleHeader.tsx:155
+msgid "Open the article"
+msgstr "Het artikel openen"
+
+#: src/features/news/components/ArticleDiscussion.tsx:150
+msgid "Open the discussion thread"
+msgstr "De discussiethread openen"
+
+#: src/features/news/article/NewsArticleRightRail.tsx:137
+msgid "Open the frontpage"
+msgstr "De voorpagina openen"
+
+#: src/features/news/components/ArticleDiscussion.tsx:160
+msgid "Open the thread"
+msgstr "De thread openen"
+
+#: src/features/news/article/ArticleHeader.tsx:121
+#: src/features/news/explore/components/StoryByline.tsx:67
+#: src/features/newsFeed/components/NewsFeedRightRail.tsx:128
+msgid "Open the {name} frontpage"
+msgstr "De voorpagina van {name} openen"
+
+#: src/features/frontpages/components/FrontpageRightRail.tsx:285
+#: src/features/frontpages/components/FrontpageRightRail.tsx:339
+#: src/features/frontpages/FrontpageScreen.tsx:155
+msgid "Open your news feed"
+msgstr "Je nieuwsfeed openen"
+
+#: src/features/frontpages/directory/index.tsx:269
+msgid "Open {name}"
+msgstr "{name} openen"
+
+#: src/features/frontpages/components/FrontpageMasthead.tsx:47
+msgid "Open {site}"
+msgstr "{site} openen"
+
+#: src/features/newsFeed/components/interests/NewsInterestsSetup.tsx:242
+msgid "Opens the interest’s places, topics and outlets"
+msgstr "Opent de plaatsen, onderwerpen en media van de interesse"
+
+#: src/features/news/article/ArticleCoverage.tsx:55
+msgid "Other coverage"
+msgstr "Andere berichtgeving"
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:406
+#: src/Navigation.tsx:236
+msgid "Outlets"
+msgstr "Media"
+
+#: src/features/newsFeed/components/NewsFeedRightRail.tsx:86
+msgid "Outlets from the sources in your news feed"
+msgstr "Media uit de bronnen in je nieuwsfeed"
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:255
+msgid "Pick nothing for every topic."
+msgstr "Kies niets voor alle onderwerpen."
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:209
+msgid "Pick nothing for news from everywhere."
+msgstr "Kies niets voor nieuws van overal."
+
+#: src/features/news/explore/components/ExploreInterestPicker.tsx:70
+#: src/features/news/explore/index.tsx:259
+msgid "Preferences"
+msgstr "Voorkeuren"
+
+#: src/features/newsFeed/components/SetupTopics.tsx:117
+msgid "Provinces of the Netherlands"
+msgstr "Provincies van Nederland"
+
+#: src/features/newsFeed/components/SetupTopics.tsx:92
+#: src/features/newsFeed/components/SetupTopics.tsx:96
+msgid "Regions"
+msgstr "Regio's"
+
+#: src/features/newsFeed/components/NewsFeedSetup.tsx:88
+msgid "Remove your news feed?"
+msgstr "Je nieuwsfeed verwijderen?"
+
+#: src/features/news/components/ArticleDiscussion.tsx:132
+msgid "Reply to the discussion thread"
+msgstr "Reageren in de discussiethread"
+
+#: src/features/frontpages/components/FrontpageRightRail.tsx:131
+msgid "Reporters"
+msgstr "Verslaggevers"
+
+#: src/features/newsFeed/components/SetupTopics.tsx:190
+#: src/features/newsFeed/components/SetupTopics.tsx:200
+msgid "Reset"
+msgstr "Herstellen"
+
+#: src/features/newsFeed/components/SetupSources.tsx:67
+msgid "Review your sources"
+msgstr "Controleer je bronnen"
+
+#: src/features/newsFeed/components/NewsFeedRightRail.tsx:102
+#: src/features/newsFeed/components/NewsFeedRightRail.tsx:107
+msgid "See all outlets"
+msgstr "Alle media bekijken"
+
+#: src/features/news/components/ArticleDiscussion.tsx:114
+#: src/features/news/components/ArticleDiscussion.tsx:168
+msgid "See all posts featuring this article"
+msgstr "Alle posts met dit artikel bekijken"
+
+#: src/features/news/components/ArticleDiscussion.tsx:173
+msgid "See all {0, plural, one {# post} other {# posts}}"
+msgstr "{0, plural, one {# post bekijken} other {Alle # posts bekijken}}"
+
+#: src/features/frontpages/FrontpageScreen.tsx:111
+msgid "See every outlet"
+msgstr "Alle media bekijken"
+
+#: src/features/news/components/ArticleDiscussion.tsx:178
+msgid "See the conversation"
+msgstr "Het gesprek bekijken"
+
+#: src/features/news/article/NewsArticleRightRail.tsx:139
+msgid "See the frontpage"
+msgstr "De voorpagina bekijken"
+
+#: src/features/frontpages/components/FrontpageArticles.tsx:367
+msgid "See this story in the Atmosphere"
+msgstr "Dit verhaal in de Atmosphere bekijken"
+
+#: src/features/newsFeed/components/SetupTopics.tsx:82
+msgid "Select the regions, languages and topics you care about."
+msgstr "Kies de regio's, talen en onderwerpen die je belangrijk vindt."
+
+#: src/features/frontpages/components/FrontpageArticles.tsx:313
+#: src/features/news/article/ArticleHeader.tsx:202
+#: src/features/news/article/ArticleHeader.tsx:210
+msgid "Share this story"
+msgstr "Dit verhaal delen"
+
+#: src/features/frontpages/components/FrontpageArticles.tsx:306
+#: src/features/frontpages/components/FrontpageArticles.tsx:321
+msgid "Share “{0}” in a post"
+msgstr "„{0}” delen in een post"
+
+#: src/features/frontpages/components/FrontpageRightRail.tsx:155
+#: src/features/frontpages/components/FrontpageRightRail.tsx:218
+#: src/features/frontpages/components/FrontpageRightRail.tsx:229
+msgid "Show all {0} reporters"
+msgstr "Alle {0} verslaggevers tonen"
+
+#: src/features/news/explore/components/ExploreSectionChips.tsx:39
+#: src/features/news/explore/components/ExploreSectionFront.tsx:85
+msgid "Show every topic"
+msgstr "Alle onderwerpen tonen"
+
+#: src/features/frontpages/components/FrontpageRightRail.tsx:227
+msgid "Show fewer"
+msgstr "Minder tonen"
+
+#: src/features/frontpages/components/FrontpageRightRail.tsx:154
+#: src/features/frontpages/components/FrontpageRightRail.tsx:217
+msgid "Show fewer reporters"
+msgstr "Minder verslaggevers tonen"
+
+#: src/features/news/explore/components/ExploreSectionChips.tsx:47
+msgid "Show only {0}"
+msgstr "Alleen {0} tonen"
+
+#: src/features/news/explore/components/ExploreDepartment.tsx:170
+msgid "Show only {name}"
+msgstr "Alleen {name} tonen"
+
+#: src/features/news/explore/components/StoryCard.tsx:213
+msgid "Show the rest of the coverage of this story"
+msgstr "De rest van de berichtgeving over dit verhaal tonen"
+
+#: src/features/news/explore/sections.ts:145
+msgid "Sport"
+msgstr "Sport"
+
+#: src/features/newsFeed/components/interests/NewsInterestsSetup.tsx:182
+msgid "Stories in every language show, as set for the rest of the app."
+msgstr "Verhalen in alle talen worden getoond, zoals ingesteld voor de rest van de app."
+
+#: src/features/news/explore/sections.ts:79
+msgid "Technology"
+msgstr "Technologie"
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:600
+msgid "The outlets could not be loaded."
+msgstr "De media konden niet worden geladen."
+
+#: src/features/newsFeed/components/NewsFeedRightRail.tsx:88
+msgid "The outlets with the most stories right now"
+msgstr "De media met de meeste verhalen op dit moment"
+
+#: src/features/frontpages/FrontpageScreen.tsx:107
+msgid "There is no frontpage here."
+msgstr "Hier is geen voorpagina."
+
+#: src/features/newsFeed/components/SetupSources.tsx:71
+msgid "These accounts match your topics. Tap to remove any you do not want."
+msgstr "Deze accounts passen bij je onderwerpen. Tik om de accounts te verwijderen die je niet wilt."
+
+#: src/features/newsFeed/components/NewsFeedSetup.tsx:89
+msgid "This deletes your saved topics and sources from your account. You can set up the feed again anytime."
+msgstr "Hiermee worden je opgeslagen onderwerpen en bronnen uit je account verwijderd. Je kunt de feed altijd opnieuw instellen."
+
+#: src/features/news/components/ArticleDiscussion.tsx:117
+msgid "This story in the Atmosphere"
+msgstr "Dit verhaal in de Atmosphere"
+
+#: src/features/newsFeed/components/SetupSources.tsx:133
+msgid "Toggle whether this source appears in your news feed"
+msgstr "Instellen of deze bron in je nieuwsfeed verschijnt"
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:262
+#: src/features/newsFeed/components/SetupTopics.tsx:164
+#: src/features/newsFeed/components/SetupTopics.tsx:168
+msgid "Topics"
+msgstr "Onderwerpen"
+
+#: src/features/news/article/ArticleHeader.tsx:220
+msgid "View"
+msgstr "Bekijken"
+
+#: src/features/news/article/ArticleHeader.tsx:215
+msgid "View the article"
+msgstr "Het artikel bekijken"
+
+#: src/features/frontpages/components/FrontpageMasthead.tsx:47
+msgid "View {name}’s profile"
+msgstr "Profiel van {name} bekijken"
+
+#: src/features/news/article/ArticleHeader.tsx:146
+msgid "Visit frontpage"
+msgstr "Naar de voorpagina"
+
+#: src/features/frontpages/components/FrontpageLinkChip.tsx:59
+#: src/features/news/article/ArticleHeader.tsx:141
+msgid "Visit the {name} frontpage"
+msgstr "Naar de voorpagina van {name}"
+
+#: src/features/frontpages/components/FrontpageLinkChip.tsx:59
+msgid "Visit this frontpage"
+msgstr "Naar deze voorpagina"
+
+#: src/features/newsFeed/components/SetupTopics.tsx:165
+msgid "What kinds of stories"
+msgstr "Wat voor verhalen"
+
+#: src/features/newsFeed/components/SetupTopics.tsx:78
+msgid "What should your news feed cover?"
+msgstr "Waar moet je nieuwsfeed over gaan?"
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:208
+msgid "Where from?"
+msgstr "Waarvandaan?"
+
+#: src/features/newsFeed/components/SetupTopics.tsx:93
+msgid "Where in the world"
+msgstr "Waar in de wereld"
+
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:399
+msgid "With no outlets ticked, this interest shows nothing."
+msgstr "Zonder aangevinkte media toont deze interesse niets."
+
+#: src/features/news/explore/components/ExploreLocationPicker.tsx:39
+#: src/features/news/explore/components/ExploreLocationPicker.tsx:56
+#: src/features/news/explore/sections.ts:155
+msgid "World"
+msgstr "Wereld"
+
+#: src/features/frontpages/components/FrontpageRightRail.tsx:312
+#: src/features/frontpages/components/FrontpageRightRail.tsx:329
+msgid "Your News"
+msgstr "Jouw nieuws"
+
+#: src/features/newsFeed/components/interests/NewsInterestsSetup.tsx:174
+msgid "Your content languages"
+msgstr "Je inhoudstalen"
+
+#: src/features/newsFeed/components/NewsFeedRightRail.tsx:81
+msgid "Your outlets"
+msgstr "Jouw media"
+
+#: src/features/frontpages/components/FrontpageRightRail.tsx:333
+msgid "Your personalized feed of stories from across your sources."
+msgstr "Je persoonlijke feed met verhalen uit al je bronnen."
+
+#: src/features/newsFeed/components/SetupDone.tsx:22
+msgid "Your selections are saved privately to your account. Only you can see them."
+msgstr "Je keuzes worden privé in je account opgeslagen. Alleen jij kunt ze zien."
+
+#: src/features/news/explore/components/StoryByline.tsx:161
+msgid "{0, plural, one {# more article on this} other {# more articles on this}}"
+msgstr "{0, plural, one {Nog # artikel hierover} other {Nog # artikelen hierover}}"
+
+#: src/features/news/explore/components/ExploreSectionFront.tsx:79
+msgid "{0, plural, one {# story across outlets} other {# stories across outlets}}"
+msgstr "{0, plural, one {# verhaal bij verschillende media} other {# verhalen bij verschillende media}}"
+
+#: src/features/news/article/ArticleSocialStack.tsx:45
+msgid "{0, plural, one {Shared by # connection} other {Shared by # connections}}"
+msgstr "{0, plural, one {Gedeeld door # connectie} other {Gedeeld door # connecties}}"
+
+#: src/features/news/article/ArticleSocialStack.tsx:51
+#: src/features/news/explore/components/StoryByline.tsx:233
+msgid "{0, plural, one {Shared by # person} other {Shared by # people}}"
+msgstr "{0, plural, one {Gedeeld door # persoon} other {Gedeeld door # mensen}}"
+
+#: src/features/news/explore/components/StoryByline.tsx:229
+msgid "{0, plural, one {Shared by #+ people} other {Shared by #+ people}}"
+msgstr "{0, plural, one {Gedeeld door #+ mensen} other {Gedeeld door #+ mensen}}"
+
+#: src/features/frontpages/directory/index.tsx:125
+#: src/features/frontpages/FrontpageScreen.tsx:100
+#: src/features/frontpages/FrontpageScreen.tsx:146
+#: src/features/news/explore/index.tsx:244
+#: src/features/newsFeed/components/NewsFeedTab.tsx:53
+#: src/Navigation.tsx:216
+#: src/Navigation.tsx:227
+msgid "{0} News"
+msgstr "{0} Nieuws"
+
+#: src/features/news/explore/components/ExploreDepartment.tsx:186
+msgid "{count, plural, one {# story} other {# stories}}"
+msgstr "{count, plural, one {# verhaal} other {# verhalen}}"
+
+#: src/features/news/explore/components/StoryByline.tsx:167
+msgid "{first} and {second} covered this too"
+msgstr "{first} en {second} brachten dit ook"
+
+#: src/features/news/explore/components/StoryByline.tsx:168
+msgid "{first} covered this too"
+msgstr "{first} bracht dit ook"
+
+#: src/features/frontpages/components/FrontpageLinkChip.tsx:82
+msgid "{name} Frontpage"
+msgstr "Voorpagina van {name}"
+
+#: src/features/frontpages/directory/index.tsx:258
+#: src/features/newsFeed/components/interests/InterestEditor.tsx:552
+msgid "{stories, plural, one {# current story} other {# current stories}}"
+msgstr "{stories, plural, one {# actueel verhaal} other {# actuele verhalen}}"
+
+#: src/features/news/explore/components/StoryByline.tsx:175
+msgid "{unnamed, plural, one {{first} and # more covered this} other {{first} and # more covered this}}"
+msgstr "{unnamed, plural, one {{first} en nog # brachten dit} other {{first} en nog # brachten dit}}"
+
+#: src/features/news/explore/components/StoryByline.tsx:171
+msgid "{unnamed, plural, one {{first}, {second} and # more covered this} other {{first}, {second} and # more covered this}}"
+msgstr "{unnamed, plural, one {{first}, {second} en nog # brachten dit} other {{first}, {second} en nog # brachten dit}}"
