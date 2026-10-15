@@ -1,3 +1,4 @@
+import {View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {Post} from '#/view/com/post/Post'
@@ -32,28 +33,51 @@ export function EventFeedItemPosts({
 
   if (!posts.length) return null
 
+  /*
+   * Indented to line up with the event's content, so the posts read as part of
+   * the event. The tinted gutter fills the gap. The wrapper draws the first
+   * border, so it spans the gutter too.
+   */
   return (
-    <>
-      {posts.map(post => (
-        <Post key={post.uri} post={post} />
+    <View
+      style={[
+        a.pl_xl,
+        a.border_t,
+        t.atoms.bg_contrast_25,
+        t.atoms.border_contrast_low,
+      ]}>
+      {posts.map((post, i) => (
+        <Post
+          key={post.uri}
+          post={post}
+          hideTopBorder={i === 0}
+          style={[a.border_l, t.atoms.bg, t.atoms.border_contrast_low]}
+        />
       ))}
       {hasNextPage && (
         <Link
           to={makeEventLink(event)}
           label={l`Show more posts about this event`}
           onPress={() => precacheEvent(event, profile)}
-          style={[a.px_xl, a.py_md, a.border_t, t.atoms.border_contrast_low]}>
+          style={[
+            a.px_xl,
+            a.py_md,
+            a.border_t,
+            a.border_l,
+            t.atoms.bg,
+            t.atoms.border_contrast_low,
+          ]}>
           {({hovered}) => (
             <Text
               style={[
                 t.atoms.text_link,
                 hovered && {textDecorationLine: 'underline'},
               ]}>
-              <Trans>Show more posts</Trans>
+              <Trans>Show more posts about this event</Trans>
             </Text>
           )}
         </Link>
       )}
-    </>
+    </View>
   )
 }
