@@ -37,6 +37,12 @@ o.oauth.defaultBaseUrl = `https://${process.env.OSO_HOST}`
 fs.writeFileSync(file, JSON.stringify(o, null, 2) + "\n")
 '
 export EXPO_PUBLIC_OAUTH_BASE_URL="https://$OSO_HOST"
+# The news hub (news v2) and the news aggregator it reads, on by default so a
+# local build matches the workflow. The aggregator accepts service JWTs for
+# this DID. Set any of them in the environment to override.
+export EXPO_PUBLIC_ENABLE_NEWS_V2="${EXPO_PUBLIC_ENABLE_NEWS_V2:-true}"
+export EXPO_PUBLIC_DUTCH_API_URL="${EXPO_PUBLIC_DUTCH_API_URL:-https://news.eurosky.tech}"
+export EXPO_PUBLIC_DUTCH_API_SERVICE_DID="${EXPO_PUBLIC_DUTCH_API_SERVICE_DID:-did:plc:oub2sr5miponqkvdf3awv5qn}"
 export EXPO_PUBLIC_THEME_FONT_FAMILY=LeagueSpartan
 export EXPO_PUBLIC_THEME_BODY_SCALE=1.1
 export EXPO_PUBLIC_PARTNER_PREVIEW=1
