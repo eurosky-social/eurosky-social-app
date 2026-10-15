@@ -1,7 +1,6 @@
 import {View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
-import {Post} from '#/view/com/post/Post'
 import {atoms as a, useTheme} from '#/alf'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
@@ -9,6 +8,7 @@ import {EVENT_POSTS_SHOWN} from '../config'
 import {useEventPostsQuery, usePrecacheEvent} from '../queries'
 import {type EventProfile, type EventRecord} from '../types'
 import {makeEventLink} from '../util'
+import {EventFeedItemPost} from './EventFeedItemPost'
 
 /**
  * A few Bluesky posts that link to the event, shown under it in a feed. Each
@@ -47,7 +47,7 @@ export function EventFeedItemPosts({
         t.atoms.border_contrast_low,
       ]}>
       {posts.map((post, i) => (
-        <Post
+        <EventFeedItemPost
           key={post.uri}
           post={post}
           hideTopBorder={i === 0}
