@@ -90,8 +90,10 @@ import {Text} from '#/components/Typography'
 import {useAgeAssurance} from '#/ageAssurance'
 import {useAnalytics} from '#/analytics'
 import {type Events} from '#/analytics/metrics/types'
+import {IS_PARTNER_PREVIEW} from '#/env'
 import {useActorStatus} from '#/features/liveNow'
 import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
+import {OsoNavFooter, OsoNavItems} from '#/features/osoNav'
 import {type app} from '#/lexicons'
 import {router} from '#/routes'
 import {PlatformInfo} from '../../../../modules/expo-bluesky-swiss-army'
@@ -254,6 +256,7 @@ function SwitchMenuItems({
   const {t: l} = useLingui()
   const {setShowLoggedOut} = useLoggedOutViewControls()
   const closeEverything = useCloseAllActiveElements()
+  const navigation = useNavigation<NavigationProp>()
 
   const onAddAnotherAccount = () => {
     setShowLoggedOut(true)
@@ -280,6 +283,17 @@ function SwitchMenuItems({
         </>
       )}
       <SwitcherMenuProfileLink />
+      {/* Oso's sidebar has no Settings item, so it lives in this menu. */}
+      {IS_PARTNER_PREVIEW && (
+        <Menu.Item
+          label={l`Settings`}
+          onPress={() => navigation.navigate('Settings')}>
+          <Menu.ItemIcon icon={SettingsIcon} />
+          <Menu.ItemText>
+            <Trans>Settings</Trans>
+          </Menu.ItemText>
+        </Menu.Item>
+      )}
       <Menu.Item label={l`Add another account`} onPress={onAddAnotherAccount}>
         <Menu.ItemIcon icon={PlusIcon} />
         <Menu.ItemText>
@@ -653,6 +667,7 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
         a.p_lg,
         styles.leftNav,
         !hasSession && !leftNavMinimal && {width: LEFT_NAV_PWI_WIDTH},
+        hasSession && IS_PARTNER_PREVIEW && a.h_full,
         leftNavMinimal && [
           {width: LEFT_NAV_MINIMAL_WIDTH},
           a.h_full,
@@ -681,7 +696,15 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
           <NavSignupCard />
         </View>
       ) : null}
-      {hasSession && (
+      {hasSession && IS_PARTNER_PREVIEW && (
+        <>
+          <OsoNavItems minimal={leftNavMinimal} />
+          {/* Pushes the footer links to the bottom of the screen. */}
+          <View style={a.flex_1} />
+          <OsoNavFooter />
+        </>
+      )}
+      {hasSession && !IS_PARTNER_PREVIEW && (
         <>
           <NavItem
             label={l`Home`}

@@ -49,7 +49,7 @@ import {
 import {NoFeedsPinned} from '#/screens/Home/NoFeedsPinned'
 import * as Layout from '#/components/Layout'
 import {useAnalytics} from '#/analytics'
-import {IS_LIQUID_GLASS, IS_WEB} from '#/env'
+import {IS_LIQUID_GLASS, IS_PARTNER_PREVIEW, IS_WEB} from '#/env'
 import {useDemoMode} from '#/storage/hooks/demo-mode'
 
 type Props = NativeStackScreenProps<HomeTabNavigatorParams, 'Home' | 'Start'>
@@ -97,7 +97,12 @@ export function HomeScreen(props: Props) {
           <HomeScreenReady
             {...props}
             preferences={preferences}
-            pinnedFeedInfos={pinnedFeedInfos}
+            pinnedFeedInfos={
+              // Oso's home is the Following feed alone, with no other tabs.
+              IS_PARTNER_PREVIEW
+                ? pinnedFeedInfos.filter(f => f.feedDescriptor === 'following')
+                : pinnedFeedInfos
+            }
           />
         </HomeHeaderModeProvider>
       </Layout.Screen>

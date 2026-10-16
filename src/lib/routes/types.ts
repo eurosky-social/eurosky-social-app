@@ -17,6 +17,11 @@ export type SearchFilterParams = SearchFilters
 export type SearchParams = {
   q?: string
   tab?: 'user' | 'profile' | 'feed' | 'latest'
+  /**
+   * Oso only: `explore` skips the tile hub on /search and opens the full
+   * explore page.
+   */
+  view?: 'explore'
 } & SearchFilterParams
 
 export type CommonNavigatorParams = {

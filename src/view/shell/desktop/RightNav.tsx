@@ -21,6 +21,7 @@ import {CENTER_COLUMN_OFFSET} from '#/components/Layout'
 import {InlineLinkText, Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
+import {IS_PARTNER_PREVIEW} from '#/env'
 import {EventsRightRail} from '#/features/events/components/EventsRightRail'
 import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
 import {NewsFeedRightRail as LegacyNewsFeedRightRail} from '#/features/newsFeed/legacy/NewsFeedRightRail'
@@ -72,6 +73,11 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
     ) : routeName === 'NewsroomArticle' ? (
       <NewsroomArticleRightRail />
     ) : null
+
+  // Oso keeps the right column empty on its explore and following pages.
+  if (IS_PARTNER_PREVIEW && (routeName === 'Search' || routeName === 'Home')) {
+    return null
+  }
 
   if (railContent) {
     return (
@@ -141,49 +147,54 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
         </>
       )}
 
-      <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
-        <Link
-          to={BRAND.links.donate}
-          label={_(msg`Donate`)}
-          color="secondary"
-          size="small"
-          variant="outline"
-          style={{backgroundColor: 'transparent'}}>
-          <ButtonText>
-            <Trans>Donate</Trans>
-          </ButtonText>
-        </Link>
-        {hasSession && (
-          <Link
-            to={BRAND.links.feedback}
-            label={_(msg`Send feedback`)}
-            color="secondary"
-            size="small"
-            variant="outline"
-            style={{backgroundColor: 'transparent'}}>
-            <ButtonIcon icon={Message} position="left" />
-            <ButtonText>
-              <Trans>Feedback</Trans>
-            </ButtonText>
-          </Link>
-        )}
-      </View>
+      {/* Oso shows these links at the bottom of the left menu instead. */}
+      {!IS_PARTNER_PREVIEW && (
+        <>
+          <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
+            <Link
+              to={BRAND.links.donate}
+              label={_(msg`Donate`)}
+              color="secondary"
+              size="small"
+              variant="outline"
+              style={{backgroundColor: 'transparent'}}>
+              <ButtonText>
+                <Trans>Donate</Trans>
+              </ButtonText>
+            </Link>
+            {hasSession && (
+              <Link
+                to={BRAND.links.feedback}
+                label={_(msg`Send feedback`)}
+                color="secondary"
+                size="small"
+                variant="outline"
+                style={{backgroundColor: 'transparent'}}>
+                <ButtonIcon icon={Message} position="left" />
+                <ButtonText>
+                  <Trans>Feedback</Trans>
+                </ButtonText>
+              </Link>
+            )}
+          </View>
 
-      <Text style={[a.leading_snug, t.atoms.text_contrast_low]}>
-        <InlineLinkText
-          to={BRAND.links.privacy}
-          style={[t.atoms.text_contrast_medium]}
-          label={_(msg`Privacy`)}>
-          {_(msg`Privacy`)}
-        </InlineLinkText>
-        <Text style={[t.atoms.text_contrast_low]}>{' ∙ '}</Text>
-        <InlineLinkText
-          to={BRAND.links.tos}
-          style={[t.atoms.text_contrast_medium]}
-          label={_(msg`Terms`)}>
-          {_(msg`Terms`)}
-        </InlineLinkText>
-      </Text>
+          <Text style={[a.leading_snug, t.atoms.text_contrast_low]}>
+            <InlineLinkText
+              to={BRAND.links.privacy}
+              style={[t.atoms.text_contrast_medium]}
+              label={_(msg`Privacy`)}>
+              {_(msg`Privacy`)}
+            </InlineLinkText>
+            <Text style={[t.atoms.text_contrast_low]}>{' ∙ '}</Text>
+            <InlineLinkText
+              to={BRAND.links.tos}
+              style={[t.atoms.text_contrast_medium]}
+              label={_(msg`Terms`)}>
+              {_(msg`Terms`)}
+            </InlineLinkText>
+          </Text>
+        </>
+      )}
 
       {!hasSession && leftNavMinimal && (
         <View style={[a.w_full, {height: 32}]}>

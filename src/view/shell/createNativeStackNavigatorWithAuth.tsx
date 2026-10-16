@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from 'react'
+import {useEffect, useRef} from 'react'
 import {View} from 'react-native'
 // Based on @react-navigation/native-stack/src/navigators/createNativeStackNavigator.ts
 // MIT License
@@ -123,11 +123,6 @@ function NativeStackNavigator({
   const {setShowLoggedOut} = useLoggedOutViewControls()
   const {isMobile} = useWebMediaQueries()
   const {leftNavMinimal} = useLayoutBreakpoints()
-  /*
-   * Oso shows its landing chooser once per account per app load, in place of
-   * the home feed. After a pick, Home behaves as usual.
-   */
-  const [osoLandingSeenBy, setOsoLandingSeenBy] = useState<string>()
   if (
     !hasSession &&
     (activeRouteRequiresAuth ||
@@ -145,16 +140,10 @@ function NativeStackNavigator({
   if (onboardingState.isActive) {
     return <Onboarding />
   }
-  if (
-    IS_PARTNER_PREVIEW &&
-    currentAccount &&
-    activeRoute.name === 'Home' &&
-    osoLandingSeenBy !== currentAccount.did
-  ) {
+  if (IS_PARTNER_PREVIEW && currentAccount && activeRoute.name === 'Home') {
     return (
       <OsoLanding
         onSelect={destination => {
-          setOsoLandingSeenBy(currentAccount.did)
           if (destination === 'news') {
             navigation.navigate(
               NEWS_V2_ENABLED ? 'NewsroomExplore' : 'NewsFeed',

@@ -78,9 +78,11 @@ export ROBOTS_MODE=disallow-all
 bash scripts/bunny_build.sh
 # Expo's web/ copy is not reliable for arbitrary files; copy explicitly.
 cp web/LeagueSpartan-VF.woff2 web-build/LeagueSpartan-VF.woff2
-if [[ -f web/ABCSolarDisplay-Medium.otf ]]; then
-  cp web/ABCSolarDisplay-Medium.otf web-build/ABCSolarDisplay-Medium.otf
-fi
+for font in web/ABCSolarDisplay-*.otf; do
+  if [[ -f "$font" ]]; then
+    cp "$font" web-build/
+  fi
+done
 # Expo emits Mu's native store identifiers in the web manifest even for a
 # web-only partner preview. Do not advertise the Mu apps as related to Oso.
 node <<'NODE'

@@ -40,6 +40,7 @@ import {type ListRef} from '#/view/com/util/List'
 import {ProfileHeader, ProfileHeaderLoading} from '#/screens/Profile/Header'
 import {ProfileFeedSection} from '#/screens/Profile/Sections/Feed'
 import {ProfileLabelsSection} from '#/screens/Profile/Sections/Labels'
+import {ProfileSavedSection} from '#/screens/Profile/Sections/Saved'
 import {atoms as a, useTheme} from '#/alf'
 import {Circle_And_Square_Stroke1_Corner0_Rounded_Filled as CircleAndSquareIcon} from '#/components/icons/CircleAndSquare'
 import {EditBig_Stroke2_Corner2_Rounded as EditBigIcon} from '#/components/icons/EditBig'
@@ -50,6 +51,7 @@ import {VideoClip_Stroke1_Corner0_Rounded as VideoIcon} from '#/components/icons
 import * as Layout from '#/components/Layout'
 import {ScreenHider} from '#/components/moderation/ScreenHider'
 import {ProfileStarterPacks} from '#/components/StarterPack/ProfileStarterPacks'
+import {IS_PARTNER_PREVIEW} from '#/env'
 import {type app} from '#/lexicons'
 import {navigate} from '#/Navigation'
 
@@ -197,6 +199,7 @@ function ProfileScreenLoaded({
   const mediaSectionRef = useRef<SectionRef>(null)
   const videosSectionRef = useRef<SectionRef>(null)
   const likesSectionRef = useRef<SectionRef>(null)
+  const savedSectionRef = useRef<SectionRef>(null)
   const feedsSectionRef = useRef<SectionRef>(null)
   const listsSectionRef = useRef<SectionRef>(null)
   const starterPacksSectionRef = useRef<SectionRef>(null)
@@ -221,6 +224,8 @@ function ProfileScreenLoaded({
   const showMediaTab = !hasLabeler
   const showVideosTab = !hasLabeler
   const showLikesTab = isMe
+  // Oso moves Saved out of the sidebar and onto the owner's profile.
+  const showSavedTab = isMe && IS_PARTNER_PREVIEW
   const feedGenCount = profile.associated?.feedgens || 0
   const showFeedsTab = isMe || feedGenCount > 0
   const starterPackCount = profile.associated?.starterPacks || 0
@@ -237,6 +242,9 @@ function ProfileScreenLoaded({
     showMediaTab ? _(msg`Media`) : undefined,
     showVideosTab ? _(msg`Videos`) : undefined,
     showLikesTab ? _(msg`Likes`) : undefined,
+    showSavedTab
+      ? _(msg({message: 'Saved', context: 'link to bookmarks screen'}))
+      : undefined,
     showFeedsTab ? _(msg`Feeds`) : undefined,
     showStarterPacksTab ? _(msg`Starter Packs`) : undefined,
     showListsTab && !hasLabeler ? _(msg`Lists`) : undefined,
@@ -249,6 +257,7 @@ function ProfileScreenLoaded({
   let mediaIndex: number | null = null
   let videosIndex: number | null = null
   let likesIndex: number | null = null
+  let savedIndex: number | null = null
   let feedsIndex: number | null = null
   let starterPacksIndex: number | null = null
   let listsIndex: number | null = null
@@ -269,6 +278,9 @@ function ProfileScreenLoaded({
   }
   if (showLikesTab) {
     likesIndex = nextIndex++
+  }
+  if (showSavedTab) {
+    savedIndex = nextIndex++
   }
   if (showFeedsTab) {
     feedsIndex = nextIndex++
@@ -294,6 +306,8 @@ function ProfileScreenLoaded({
         videosSectionRef.current?.scrollToTop()
       } else if (index === likesIndex) {
         likesSectionRef.current?.scrollToTop()
+      } else if (index === savedIndex) {
+        savedSectionRef.current?.scrollToTop()
       } else if (index === feedsIndex) {
         feedsSectionRef.current?.scrollToTop()
       } else if (index === starterPacksIndex) {
@@ -309,6 +323,7 @@ function ProfileScreenLoaded({
       mediaIndex,
       videosIndex,
       likesIndex,
+      savedIndex,
       feedsIndex,
       listsIndex,
       starterPacksIndex,
@@ -537,6 +552,17 @@ function ProfileScreenLoaded({
                 setScrollViewTag={setScrollViewTag}
                 emptyStateMessage={_(msg`No likes yet`)}
                 emptyStateIcon={HeartIcon}
+              />
+            )
+          : null}
+        {showSavedTab
+          ? ({headerHeight, isFocused, scrollElRef}) => (
+              <ProfileSavedSection
+                ref={savedSectionRef}
+                headerOffset={headerHeight}
+                isFocused={isFocused}
+                scrollElRef={scrollElRef as ListRef}
+                setScrollViewTag={setScrollViewTag}
               />
             )
           : null}

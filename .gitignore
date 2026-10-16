@@ -152,5 +152,5 @@ docs/superpowers/
 # pnpm
 .pnpm-store/
 
-# Oso display font: Dinamo trial file, not licensed for distribution.
-/brands/oso/ABCSolarDisplay-Medium.otf
+# Oso display fonts: Dinamo trial files, not licensed for distribution.
+/brands/oso/ABCSolarDisplay-*.otf
