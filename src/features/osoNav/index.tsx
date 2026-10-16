@@ -50,23 +50,54 @@ export function OsoNavItems({minimal}: {minimal: boolean}) {
   )
 }
 
-const BOTTOM_BAR_PILL_HEIGHT = 36
+const BOTTOM_BAR_PILL_HEIGHT = 40
 
 /**
- * The phone-width bottom bar: the same buttons and colours as the sidebar, as
- * round icon buttons, then the user's avatar, which opens the account page.
+ * The phone-width bottom bar: home, search, messages and notifications as
+ * round icon buttons in their sidebar colours, then the user's avatar, which
+ * opens the account page. The other pages are reached from the home page.
  */
 export function OsoBottomBarItems() {
+  const aa = useAgeAssurance()
+  const numUnreadNotifications = useUnreadNotifications()
+  const numUnreadMessages = useUnreadMessageCount()
+
   return (
     <View
       style={[
         a.flex_1,
         a.flex_row,
         a.align_center,
-        a.justify_between,
         a.py_sm,
+        {justifyContent: 'space-around'},
       ]}>
-      <OsoNavPillList minimal height={BOTTOM_BAR_PILL_HEIGHT} />
+      <OsoNavPill
+        kind="home"
+        href="/"
+        minimal
+        height={BOTTOM_BAR_PILL_HEIGHT}
+      />
+      <OsoNavPill
+        kind="explore"
+        href="/search"
+        minimal
+        height={BOTTOM_BAR_PILL_HEIGHT}
+      />
+      <OsoNavPill
+        kind="chat"
+        href="/messages"
+        count={aa.flags.chatDisabled ? undefined : numUnreadMessages.numUnread}
+        hasNew={!aa.flags.chatDisabled && numUnreadMessages.hasNew}
+        minimal
+        height={BOTTOM_BAR_PILL_HEIGHT}
+      />
+      <OsoNavPill
+        kind="notifications"
+        href="/notifications"
+        count={numUnreadNotifications}
+        minimal
+        height={BOTTOM_BAR_PILL_HEIGHT}
+      />
       <OsoAccountButton size={BOTTOM_BAR_PILL_HEIGHT} />
     </View>
   )
@@ -107,7 +138,7 @@ function OsoNavPillList({
       />
       <OsoNavPill
         kind="feeds"
-        href="/following"
+        href="/myfeeds"
         minimal={minimal}
         height={height}
       />

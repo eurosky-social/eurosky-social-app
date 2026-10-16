@@ -28,6 +28,7 @@ import {NewsFeedRightRail as LegacyNewsFeedRightRail} from '#/features/newsFeed/
 import {NewsroomArticleRightRail} from '#/features/newsrooms/article/NewsroomArticleRightRail'
 import {NewsroomRightRail} from '#/features/newsrooms/components/NewsroomRightRail'
 import {NewsroomRightRail as LegacyNewsroomRightRail} from '#/features/newsrooms/legacy/NewsroomRightRail'
+import {MyFeedsRightRail} from '#/features/osoMyFeeds/MyFeedsRightRail'
 
 /**
  * Pages where Oso leaves the right column empty: no search bar and no feeds.
@@ -40,7 +41,6 @@ const OSO_EMPTY_RIGHT_COLUMN_ROUTES = new Set([
   'Notifications',
   'Feeds',
   'OsoStarterPacks',
-  'OsoFollowing',
   'Profile',
   'ProfileFollowers',
   'ProfileFollows',
@@ -165,6 +165,9 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
       {routeName === 'Events' ? (
         // The events screen swaps search and feeds for its own feed picker.
         <EventsRightRail />
+      ) : routeName === 'OsoMyFeeds' ? (
+        // Oso's /myfeeds does the same with the user's pinned feeds.
+        <MyFeedsRightRail />
       ) : (
         <>
           {!isSearchScreen && <DesktopSearch />}

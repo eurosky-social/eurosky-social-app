@@ -32,7 +32,7 @@ export type CommonNavigatorParams = {
   }
   OsoStarterPacks: undefined
   OsoTrending: undefined
-  OsoFollowing: undefined
+  OsoMyFeeds: {feed?: string}
   OsoAccount: undefined
   NewsSettings: undefined
   Newsroom: {name?: string}

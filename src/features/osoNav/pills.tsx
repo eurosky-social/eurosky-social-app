@@ -6,6 +6,7 @@ import {
   Bell_Filled_Corner0_Rounded as BellFilledIcon,
   Bell_Stroke2_Corner0_Rounded as BellIcon,
 } from '#/components/icons/Bell'
+import {BrandLogo} from '#/components/icons/BrandLogo'
 import {CalendarDays_Stroke2_Corner0_Rounded as CalendarIcon} from '#/components/icons/CalendarDays'
 import {type Props as SVGIconProps} from '#/components/icons/common'
 import {
@@ -38,6 +39,7 @@ import {
 
 export const OSO_PILL_HEIGHT = 48
 export const OSO_PILL_ICON_SIZE = 28
+const OSO_TITLE_LOGO_WIDTH = 64
 
 export type OsoPillKind =
   | 'home'
@@ -241,9 +243,16 @@ export function OsoTitlePill({kind}: {kind: OsoPillKind}) {
   const Icon = pill.icons.active
 
   return (
-    <View accessibilityRole="header" style={osoPillShapeStyle(pill)}>
-      <Icon aria-hidden={true} width={OSO_PILL_ICON_SIZE} fill={pill.color} />
-      <OsoPillLabel pill={pill} />
+    <View style={[a.flex_row, a.align_center, a.gap_md]}>
+      {/*
+       * The Oso wordmark between the back button and the title. The hero logo
+       * is near-black in light mode and light in dark mode.
+       */}
+      <BrandLogo variant="hero" size={OSO_TITLE_LOGO_WIDTH} />
+      <View accessibilityRole="header" style={osoPillShapeStyle(pill)}>
+        <Icon aria-hidden={true} width={OSO_PILL_ICON_SIZE} fill={pill.color} />
+        <OsoPillLabel pill={pill} />
+      </View>
     </View>
   )
 }

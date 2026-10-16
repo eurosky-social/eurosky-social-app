@@ -95,7 +95,6 @@ import {ModerationInboxSubjectDetailsScreen} from '#/screens/ModerationInbox/Sub
 import {Screen as ModerationInteractionSettings} from '#/screens/ModerationInteractionSettings'
 import {NotificationsActivityListScreen} from '#/screens/Notifications/ActivityList'
 import {OsoAccountScreen} from '#/screens/OsoAccount'
-import {OsoFollowingScreen} from '#/screens/OsoFollowing'
 import {OsoTrendingScreen} from '#/screens/OsoTrending'
 import {PostLikedByScreen} from '#/screens/Post/PostLikedBy'
 import {PostQuotesScreen} from '#/screens/Post/PostQuotes'
@@ -162,6 +161,7 @@ import {NewsroomDirectoryScreen} from '#/features/newsrooms/directory'
 import {NewsroomExploreScreen} from '#/features/newsrooms/explore'
 import {NewsroomScreen as LegacyNewsroomScreen} from '#/features/newsrooms/legacy/NewsroomScreen'
 import {NewsroomScreen} from '#/features/newsrooms/NewsroomScreen'
+import {OsoMyFeedsScreen} from '#/features/osoMyFeeds'
 import {router} from '#/routes'
 import {Referrer} from '../modules/expo-bluesky-swiss-army'
 
@@ -263,9 +263,9 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         options={{title: title(msg`Account`), requireAuth: true}}
       />
       <Stack.Screen
-        name="OsoFollowing"
-        getComponent={() => OsoFollowingScreen}
-        options={{title: title(msg`Following`), requireAuth: true}}
+        name="OsoMyFeeds"
+        getComponent={() => OsoMyFeedsScreen}
+        options={{title: title(msg`My feeds`), requireAuth: true}}
       />
       <Stack.Screen
         name="OsoTrending"

@@ -153,7 +153,7 @@ function NativeStackNavigator({
           } else if (destination === 'explore') {
             navigation.navigate('Search')
           } else if (destination === 'feeds') {
-            navigation.navigate('OsoFollowing')
+            navigation.navigate('OsoMyFeeds')
           } else if (destination === 'chats') {
             navigation.navigate('Messages')
           } else {
