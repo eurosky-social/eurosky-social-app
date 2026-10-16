@@ -41,6 +41,7 @@ import {matchCustomEmbed} from '#/features/customEmbeds/registry'
 import {FrontpageLinkChip as AggregatorFrontpageLinkChip} from '#/features/frontpages/components/FrontpageLinkChip'
 import {NewsroomLinkChip as LegacyFrontpageLinkChip} from '#/features/frontpages/legacy/NewsroomLinkChip'
 import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
+import {useTileAutoplay} from '#/features/tiles/autoplay'
 import {TileEmbed} from '#/features/tiles/components/TileEmbed'
 import {getTileRef} from '#/features/tiles/record'
 import {app} from '#/lexicons'
@@ -110,6 +111,8 @@ function MediaEmbed({
 }: CommonProps & {
   embed: TEmbed
 }) {
+  // EUROSKY: the post a `?tile=activate` URL names skips its card.
+  const autoplayTile = useTileAutoplay(rest.post)
   switch (embed.type) {
     case 'images':
     case 'gallery': {
@@ -138,6 +141,11 @@ function MediaEmbed({
               link={embed.view.external}
               tile={tileRef}
               onOpen={rest.onOpen}
+              autoplay={autoplayTile && !rest.isWithinQuote}
+              fullWidth={
+                !rest.isWithinQuote &&
+                rest.viewContext !== PostEmbedViewContext.ChatMessage
+              }
               style={[a.mt_sm, rest.style]}
             />
           </ContentHider>

@@ -27,6 +27,7 @@ export function TileCard({
   loading = false,
   media,
   action,
+  flush = false,
   style,
 }: {
   link: app.bsky.embed.external.ViewExternal
@@ -40,6 +41,8 @@ export function TileCard({
   media?: React.ReactNode
   /** Sits at the end of the footer row, e.g. a close button. */
   action?: React.ReactNode
+  /** Edge to edge, for a running tile given its whole column: no side borders, no rounding. */
+  flush?: boolean
   style?: StyleProp<ViewStyle>
 }) {
   const t = useTheme()
@@ -62,6 +65,7 @@ export function TileCard({
         pressed && t.atoms.bg,
         style,
         borderColor,
+        flush && {borderRadius: 0, borderLeftWidth: 0, borderRightWidth: 0},
       ]}>
       {media ? (
         media

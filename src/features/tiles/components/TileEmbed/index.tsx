@@ -1,4 +1,4 @@
-import {useState} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import {
   type LayoutChangeEvent,
   type StyleProp,
@@ -37,6 +37,8 @@ export function TileEmbed({
   onOpen,
   style,
   preview = false,
+  fullWidth: _fullWidth = false,
+  autoplay = false,
 }: {
   link: app.bsky.embed.external.ViewExternal
   tile: TileRef
@@ -44,13 +46,22 @@ export function TileEmbed({
   style?: StyleProp<ViewStyle>
   /** Composer preview: not interactive. */
   preview?: boolean
+  /**
+   * Whether a running tile may spread to the edges of the post it is in.
+   * The web embed does; here the tile keeps the column, since there is no
+   * DOM to measure the post by.
+   */
+  fullWidth?: boolean
+  /** Load the tile on mount instead of waiting for a tap (`?tile=activate`). */
+  autoplay?: boolean
 }) {
   const {t: l} = useLingui()
   const queryClient = useQueryClient()
   const appviewClient = useAppviewClient()
   const author = useTileAuthor(tile)
-  const [checking, setChecking] = useState(false)
+  const [checking, setChecking] = useState(autoplay && !preview)
   const [active, setActive] = useState(false)
+  const busyRef = useRef(false)
   const [width, setWidth] = useState(0)
   const [sizing, setSizing] = useState<TileSizing | undefined>()
   const title = link.title || l`Tile`
@@ -60,7 +71,8 @@ export function TileEmbed({
   }
 
   const activate = async () => {
-    if (preview || active || checking) return
+    if (preview || active || busyRef.current) return
+    busyRef.current = true
     setChecking(true)
     try {
       if (!(await fetchIsTrustedTile(queryClient, appviewClient, tile))) {
@@ -74,8 +86,24 @@ export function TileEmbed({
       setActive(true)
     } finally {
       setChecking(false)
+      busyRef.current = false
     }
   }
+
+  /*
+   * The latest `activate` sits in a ref so the autoplay effect can call it
+   * without rerunning on every render.
+   */
+  const activateRef = useRef(activate)
+  useEffect(() => {
+    activateRef.current = activate
+  })
+  const autoplayedRef = useRef(false)
+  useEffect(() => {
+    if (!autoplay || preview || autoplayedRef.current) return
+    autoplayedRef.current = true
+    void activateRef.current()
+  }, [autoplay, preview])
 
   const deactivate = () => {
     setActive(false)

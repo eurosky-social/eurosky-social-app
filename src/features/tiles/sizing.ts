@@ -9,9 +9,12 @@ export type TileSizing = {width?: number; height?: number}
 
 /**
  * The height to render a tile at, for a given card width: the manifest's
- * requested size scaled to the width, or its height alone, or the default
- * aspect ratio, within sane bounds. Shared by the web frame and the native
- * player so a tile is the same size on both.
+ * requested size scaled to the width but never shorter than the height it
+ * asked for, or its height alone, or the default aspect ratio, within sane
+ * bounds. A tile laid out for 520px of height keeps them in a column narrower
+ * than the 720 it also asked for, the way the reference loader honours a
+ * declared height as is; a wider column grows it in proportion. Shared by the
+ * web frame and the native player so a tile is the same size on both.
  */
 export function tileHeight(
   sizing: TileSizing | undefined,
@@ -20,7 +23,7 @@ export function tileHeight(
   const w = width || 560
   let h: number
   if (sizing?.width && sizing?.height) {
-    h = (w * sizing.height) / sizing.width
+    h = Math.max((w * sizing.height) / sizing.width, sizing.height)
   } else if (sizing?.height) {
     h = sizing.height
   } else {

@@ -14,7 +14,9 @@ A tile post is an ordinary `app.bsky.embed.external` link card, so every client
 shows something sensible, plus a pointer:
 
 - `external.uri` is the URL of the post itself on mu (`/profile/<handle>/post/<rkey>`),
-  which is why `post()` mints the record key before it resolves the embed.
+  which is why `post()` mints the record key before it resolves the embed. It
+  carries `?tile=activate` (`link.ts`): opened on mu, the post skips the card
+  and loads the tile straight away (`autoplay.tsx`, set up by the thread screen).
 - `external.title` / `description` come from the manifest's `name` / `description`.
 - `external.thumb` is the manifest's first screenshot with a translucent play
   button drawn over it (`thumb.web.ts`), so the card reads as playable anywhere.
@@ -40,6 +42,8 @@ running tile instead of following the link.
 | `author.ts` | the author of a tile (the repo in its URI), the trust check, and the hook the card footer uses |
 | `mothership(.web).ts` | the page's one `TileMothership`, with a mu loader that resolves the PDS itself |
 | `sizing.ts` | the rendered height for a manifest's `sizing` and a card width, shared by web and native |
+| `link.ts` | the `?tile=activate` the card's link carries |
+| `autoplay.tsx` | the context through which the thread screen tells the post a `?tile=activate` URL names to play at once |
 | `host.ts` | the URL of the hosted page the native player loads (`@dasl/tile-host`) |
 | `components/TileCard.tsx` | the card, shared by the feed embed and the composer preview |
 | `components/TileAuthor.tsx` | the footer line: the author's avatar, name, check and handle |
@@ -52,7 +56,10 @@ Touchpoints in upstream code, each marked `EUROSKY`:
 - `lib/api/index.ts`: the rkey is minted before the embed resolves; a tile card
   gets the post URL and the pointer; a tile by an unverified author is refused.
 - `components/Post/Embed/index.tsx`: the `link` case checks the post record for a
-  pointer before the custom embed handlers.
+  pointer before the custom embed handlers, and tells the embed whether it may
+  spread to the post's edges (not in a quote or a DM) and whether to autoplay.
+- `view/screens/PostThread.tsx` and `lib/routes/types.ts`: the `tile` query param
+  on a post URL, validated and handed to `TileAutoplayProvider`.
 - `view/com/composer/text-input/TextInput.web.tsx` and `TextInput.tsx`: a tile
   at-URI pasted (web) or appearing in the text (native) attaches it, since facet
   detection never sees at-URIs; a paste that is only the URI stays out of the text.
@@ -79,6 +86,24 @@ when they are verified, and a tile by an unverified author says so in place of
 the play icon. The composer and the post pipeline apply the same check up front
 so nobody attaches a card that will never play. This is a client-side rule for
 now.
+
+## Playing
+
+On the web a running tile is given the whole post: when the card is clicked,
+the embed measures how far it sits in from the post's edges (the avatar column,
+the padding) by the test ids upstream puts on feed items and thread posts, and
+cancels that out with negative margins, so the frame runs flush from edge to
+edge, without side borders or rounding. Nothing is measured in a quote or a DM,
+where the tile keeps its card's width; native keeps the column too, having no
+DOM to measure the post by.
+
+The height follows the manifest's `sizing` at the width the tile ends up with
+(`sizing.ts`): the requested size scaled to the width but never shorter than
+the height it asked for, the way the reference loader honours a declared
+height as is; a wider column grows it in proportion; no sizing means 16:9.
+The frame fills a div whose height React owns, so a resize never remounts the
+tile. A post opened at its `?tile=activate` URL loads the tile on mount instead
+of waiting for a click.
 
 ## Loading server
 
@@ -134,7 +159,7 @@ work in the WebView for subdomains of an app-bound domain.
   button is composited with a canvas, which only the web build has.
 - The native embed starts at the default height and adjusts when the host page
   reports the manifest's size, under the loading overlay.
-- A tile's `sizing` is honoured as an aspect ratio against the card width,
-  capped between `MIN_TILE_HEIGHT` and `MAX_TILE_HEIGHT`.
+- The rendered height is capped between `MIN_TILE_HEIGHT` and `MAX_TILE_HEIGHT`
+  whatever the manifest asks for.
 - The mothership keeps a reference to every frame it has started; closing a
   tile removes the frame but the loader has no teardown API yet.

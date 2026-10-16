@@ -34,6 +34,7 @@ import {
   type ThreadDraft,
 } from '#/view/com/composer/state/composer'
 import {fetchIsTrustedTile} from '#/features/tiles/author'
+import {tilePostUrl} from '#/features/tiles/link'
 import {UntrustedTileAuthorError} from '#/features/tiles/permissions'
 import {type TileExternal} from '#/features/tiles/record'
 import {app, chat, com} from '#/lexicons'
@@ -583,7 +584,7 @@ async function resolveMedia(
           throw new UntrustedTileAuthorError()
         }
         const external: TileExternal = {
-          uri: postContext.postUrl as UriString,
+          uri: tilePostUrl(postContext.postUrl) as UriString,
           title: resolvedLink.title,
           description: resolvedLink.description,
           thumb: blob,

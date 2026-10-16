@@ -2,9 +2,15 @@ import {MAX_TILE_HEIGHT, MIN_TILE_HEIGHT} from './constants'
 import {tileHeight} from './sizing'
 
 describe('tileHeight', () => {
-  it('scales a requested size to the card width', () => {
-    expect(tileHeight({width: 800, height: 600}, 400)).toBe(300)
-    expect(tileHeight({width: 720, height: 520}, 360)).toBe(260)
+  it('grows a requested size with a wider card', () => {
+    expect(tileHeight({width: 400, height: 300}, 800)).toBe(600)
+    expect(tileHeight({width: 300, height: 400}, 600)).toBe(800)
+  })
+
+  it('never goes below the height a tile asked for', () => {
+    expect(tileHeight({width: 800, height: 600}, 400)).toBe(600)
+    expect(tileHeight({width: 720, height: 520}, 360)).toBe(520)
+    expect(tileHeight({width: 720, height: 520}, 720)).toBe(520)
   })
 
   it('uses a bare height as is, and the default ratio without sizing', () => {
