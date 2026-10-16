@@ -37,7 +37,7 @@ import {Onboarding} from '#/screens/Onboarding'
 import {SignupQueued} from '#/screens/SignupQueued'
 import {atoms as a, useLayoutBreakpoints} from '#/alf'
 import {PolicyUpdateOverlay} from '#/components/PolicyUpdateOverlay'
-import {IS_NATIVE, IS_WEB} from '#/env'
+import {IS_NATIVE, IS_PARTNER_PREVIEW, IS_WEB} from '#/env'
 import {BottomBarWeb} from './bottom-bar/BottomBarWeb'
 import {DesktopLeftNav} from './desktop/LeftNav'
 import {DesktopRightNav} from './desktop/RightNav'
@@ -121,7 +121,12 @@ function NativeStackNavigator({
   const {setShowLoggedOut} = useLoggedOutViewControls()
   const {isMobile} = useWebMediaQueries()
   const {leftNavMinimal} = useLayoutBreakpoints()
-  if (!hasSession && (activeRouteRequiresAuth || IS_NATIVE)) {
+  if (
+    !hasSession &&
+    (activeRouteRequiresAuth ||
+      IS_NATIVE ||
+      (IS_PARTNER_PREVIEW && activeRoute.name === 'Home'))
+  ) {
     return <LoggedOut />
   }
   if (hasSession && currentAccount?.signupQueued) {

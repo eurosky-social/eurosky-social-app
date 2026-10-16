@@ -235,3 +235,11 @@ export const ENABLE_APP_CONFIG =
  * fetching, Plausible, and feed feedback are independent and unaffected.
  */
 export const ENABLE_METRICS = process.env.EXPO_PUBLIC_ENABLE_METRICS !== 'false'
+
+/**
+ * Set by scripts/build-oso-preview.sh for partner (Oso) builds. Signed-out
+ * visitors to the home page get the sign-in/create-account splash instead of
+ * the public feed.
+ */
+export const IS_PARTNER_PREVIEW =
+  process.env.EXPO_PUBLIC_PARTNER_PREVIEW === '1'

@@ -44,6 +44,8 @@ for (const name of ['mark', 'wordmark', 'lockup', 'hero', 'icon', 'og']) {
   fs.rmSync(path.join(logos, `${name}.svg`), {force: true})
 }
 fs.copyFileSync(path.join(brandDir, 'mark.svg'), path.join(logos, 'mark.svg'))
+// The wordmark shown on hero surfaces such as the signed-out splash.
+fs.copyFileSync(path.join(brandDir, 'hero.svg'), path.join(logos, 'hero.svg'))
 
 // The site hosts this font; keep it in the isolated Oso bundle only. The
 // app's web theme typography selects LeagueSpartan via build-time env.

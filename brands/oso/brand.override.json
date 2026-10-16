@@ -38,7 +38,8 @@
   },
   "oauth": {
     "defaultBaseUrl": "https://oso.mu.social",
-    "clientName": "oso"
+    "clientName": "oso",
+    "signupPdsHost": "https://pds.oso.social"
   },
   "decorations": {
     "enabled": false
