@@ -20,18 +20,33 @@ export function tileResource(
   return resources[path] ?? resources[alt]
 }
 
-/** The CID of a resource, however the manifest spells its `src`. */
+/**
+ * The CID a link carries, in either form it reaches us in: the raw JSON
+ * `{$link}` of a record read straight off the wire, or the `Cid` instance the
+ * lex client turns every `{$link}` into when it parses a response. A `Cid`
+ * is recognised the way `@atproto/lex-data` itself does it, by its `bytes`;
+ * its string form is the same base32 the JSON carried.
+ */
+function linkCid(value: unknown): string | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  if ('$link' in value && typeof value.$link === 'string') return value.$link
+  if ('bytes' in value && value.bytes instanceof Uint8Array) {
+    return (value as {toString(): string}).toString()
+  }
+  return undefined
+}
+
+/**
+ * The CID of a resource, however the manifest spells its `src`: a bare
+ * cid-link, or a blob ref whose `ref` is the link.
+ */
 export function tileResourceCid(
   manifest: TileManifest,
   path: string,
 ): string | undefined {
-  const src = tileResource(manifest, path)?.src
+  const src: unknown = tileResource(manifest, path)?.src
   if (!src || typeof src !== 'object') return undefined
-  if ('$link' in src && typeof src.$link === 'string') return src.$link
-  if ('ref' in src && src.ref && typeof src.ref.$link === 'string') {
-    return src.ref.$link
-  }
-  return undefined
+  return linkCid(src) ?? ('ref' in src ? linkCid(src.ref) : undefined)
 }
 
 /** The URL of a blob on the PDS hosting a repo. */
