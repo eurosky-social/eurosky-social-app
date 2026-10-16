@@ -13,6 +13,7 @@ type ExploreSourceArgs = Parameters<typeof useExploreSource>[0]
  */
 const COUNTRY_CODES: Record<string, string> = {
   belgium: 'be',
+  dk: 'dk',
   france: 'fr',
   germany: 'de',
   netherlands: 'nl',
