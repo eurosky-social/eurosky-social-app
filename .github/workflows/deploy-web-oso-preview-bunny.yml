@@ -41,6 +41,13 @@ jobs:
           EXPO_PUBLIC_GEOLOCATION_URL: https://ip.mu.social
           EXPO_PUBLIC_PLAUSIBLE_API_HOST: https://events.mu.social
           EXPO_PUBLIC_RSS_PROXY_URL: https://rss.mu.social
+          # The news page's location picker and labeler stories need both;
+          # without them the page falls back to RSS and the world only.
+          EXPO_PUBLIC_DUTCH_API_URL: https://news-aggregator.eurosky.dev
+          EXPO_PUBLIC_DUTCH_API_SERVICE_DID: did:plc:oub2sr5miponqkvdf3awv5qn
+          # Serves the news hub instead of the original news pages. Needs the
+          # Dutch API values above; production leaves it unset.
+          EXPO_PUBLIC_ENABLE_NEWS_V2: 'true'
         run: bash scripts/build-oso-preview.sh
       # No Mu-zone secret or edge-setup script is used. The latter still has
       # mu.social URL patterns; configure noindex headers on Oso's zone itself.

@@ -16,7 +16,16 @@ export const router = new Router<AllNavigatableRoutes>({
   Settings: '/settings',
   Lists: '/lists',
   NewsFeed: '/news',
-  Newsroom: ['/newsroom/:name', '/newsroom'],
+  NewsSettings: '/news/settings',
+  /*
+   * The `/newsroom` paths are the news hub's old addresses, kept so shared
+   * links still open. The old explore and article paths are matched before
+   * the frontpage route, whose `:name` would otherwise swallow them.
+   */
+  NewsExplore: ['/news/explore', '/newsroom/explore'],
+  NewsArticle: ['/news/article', '/newsroom/article'],
+  OutletDirectory: ['/outlets', '/newsrooms'],
+  Frontpage: ['/frontpage/:name', '/frontpage', '/newsroom/:name', '/newsroom'],
   // moderation
   Moderation: '/moderation',
   ModerationInbox: '/moderation/inbox',

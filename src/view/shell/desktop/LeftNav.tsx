@@ -89,6 +89,7 @@ import {useAgeAssurance} from '#/ageAssurance'
 import {useAnalytics} from '#/analytics'
 import {type Events} from '#/analytics/metrics/types'
 import {useActorStatus} from '#/features/liveNow'
+import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
 import {type app} from '#/lexicons'
 import {router} from '#/routes'
 import {PlatformInfo} from '../../../../modules/expo-bluesky-swiss-army'
@@ -397,7 +398,18 @@ interface NavItemProps {
   label: string
   minimal: boolean
   navItem: Events['nav:click']['item']
+  /** Other routes that belong to this item's section, for its active state. */
+  relatedRoutes?: string[]
 }
+/** Every route of the news hub, so its nav item stays lit across its tabs. */
+const NEWS_HUB_ROUTES = [
+  'NewsFeed',
+  'NewsSettings',
+  'OutletDirectory',
+  'Frontpage',
+  'NewsArticle',
+]
+
 function NavItem({
   count,
   hasNew,
@@ -406,6 +418,7 @@ function NavItem({
   label,
   minimal,
   navItem,
+  relatedRoutes,
 }: NavItemProps) {
   const t = useTheme()
   const {t: l} = useLingui()
@@ -425,7 +438,9 @@ function NavItem({
         (currentRouteInfo.params as CommonNavigatorParams['Profile']).name ===
           currentAccount?.handle
       : isTab(currentRouteInfo.name, pathName)
-  const isRelated = currentRouteInfo.name.startsWith(pathName)
+  const isRelated =
+    currentRouteInfo.name.startsWith(pathName) ||
+    !!relatedRoutes?.includes(currentRouteInfo.name)
   const navigation = useNavigation<NavigationProp>()
   const onPressWrapped = useCallback(
     (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
@@ -678,8 +693,9 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
           />
           <NavItem
             label={l`News`}
-            href="/news"
+            href={NEWS_V2_ENABLED ? '/news/explore' : '/news'}
             navItem="news"
+            relatedRoutes={NEWS_V2_ENABLED ? NEWS_HUB_ROUTES : undefined}
             minimal={leftNavMinimal}
             icons={{
               inactive: NewspaperIcon,

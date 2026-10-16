@@ -23,7 +23,26 @@ export type CommonNavigatorParams = {
   NotFound: undefined
   Lists: undefined
   NewsFeed: undefined
-  Newsroom: {name?: string}
+  NewsSettings: undefined
+  Frontpage: {name?: string}
+  NewsExplore: undefined
+  OutletDirectory: undefined
+  NewsArticle: {
+    url: string
+    title?: string
+    image?: string
+    description?: string
+    publishedAt?: string
+    outletName?: string
+    outletDid?: string
+    /** The outlet's slug at the news aggregator: its frontpage. */
+    outletSlug?: string
+    /** The story the article was opened from, for its other coverage. */
+    storyId?: string
+    storySource?: 'rss' | 'dutch'
+    /** How the story was read, to read its coverage the same way. */
+    storyView?: string
+  }
   Moderation: undefined
   ModerationInbox: undefined
   ModerationInboxSettings: undefined

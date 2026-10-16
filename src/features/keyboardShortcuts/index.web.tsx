@@ -8,6 +8,7 @@ import {useSession} from '#/state/session'
 import {atoms as a, useTheme} from '#/alf'
 import * as Dialog from '#/components/Dialog'
 import {Text} from '#/components/Typography'
+import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
 import {navigate} from '#/Navigation'
 import {router} from '#/routes'
 import {listenOpenKeyboardShortcuts} from './events'
@@ -273,7 +274,7 @@ export function KeyboardShortcuts() {
         void navigate('Home')
         break
       case 'w':
-        void navigate('NewsFeed')
+        void navigate(NEWS_V2_ENABLED ? 'NewsExplore' : 'NewsFeed')
         break
       case 'e':
         void navigate('Search', {})

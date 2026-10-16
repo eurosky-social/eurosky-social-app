@@ -1,0 +1,460 @@
+import {type Client, type UriString} from '@atproto/lex'
+import {type AtUriString, type DidString} from '@atproto/syntax'
+import {useQueries, useQuery} from '@tanstack/react-query'
+
+import {GCTIME, STALE} from '#/state/queries'
+import {createQueryKey} from '#/state/queries/util'
+import {useAppviewClient} from '#/state/session'
+import {
+  useFrontpageProfiles,
+  useFrontpages,
+} from '#/features/frontpages/frontpages'
+import {app} from '#/lexicons'
+import * as bsky from '#/types/bsky'
+import {getPublisherRssUrls, type Publisher, PUBLISHERS} from './publishers'
+import {buildRssFetchUrl} from './rss/config'
+import {extractOgImage, extractSiteIcon, parseRssFeed} from './rss/parse'
+import {type RssItem} from './rss/types'
+
+const RSS_ARTICLES_TOTAL = 7
+
+export const createRssArticlesQueryKey = (args: {urls: string[]}) =>
+  createQueryKey('newsRssArticles', args)
+
+/**
+ * The publisher's latest real articles, merged across its RSS/Atom feeds and
+ * sorted newest-first. This is the page's editorial spine - the outlet's own
+ * published front page rather than reverse-chron social posts.
+ */
+export function useRssArticlesQuery({urls}: {urls: string[]}) {
+  return useQuery(rssArticlesQueryOptions({urls}))
+}
+
+/**
+ * Every registered publisher's latest articles, each set kept under its own
+ * publisher rather than merged, so the explore page can attribute a story to
+ * the outlet that ran it. Cache keys are per publisher feed URL set, so a
+ * frontpage and the explore page share one fetch.
+ */
+export function useAllPublisherArticlesQuery({
+  publishers,
+  enabled = true,
+}: {
+  publishers: Publisher[]
+  /** Set false to skip fetching entirely, e.g. when another source is active. */
+  enabled?: boolean
+}) {
+  const withFeeds = publishers.filter(p => getPublisherRssUrls(p).length > 0)
+  const results = useQueries({
+    queries: withFeeds.map(publisher =>
+      rssArticlesQueryOptions({
+        urls: getPublisherRssUrls(publisher),
+        enabled,
+      }),
+    ),
+  })
+
+  return {
+    /* A publisher whose feed is unreachable simply contributes nothing. */
+    articlesByPublisher: withFeeds.map((publisher, i) => ({
+      publisher,
+      articles: results[i]?.data ?? [],
+    })),
+    isLoading: results.some(r => r.isLoading),
+  }
+}
+
+/**
+ * Shared query definition, so one publisher's feed is fetched once whether it
+ * is read by its own frontpage or by the explore page.
+ */
+function rssArticlesQueryOptions({
+  urls,
+  enabled = true,
+}: {
+  urls: string[]
+  enabled?: boolean
+}) {
+  return {
+    queryKey: createRssArticlesQueryKey({urls}),
+    staleTime: STALE.MINUTES.FIVE,
+    enabled: enabled && urls.length > 0,
+    queryFn: async () => {
+      const feeds = await Promise.all(
+        urls.map(async url => {
+          try {
+            const res = await fetch(buildRssFetchUrl(url), {
+              headers: {
+                Accept: 'application/rss+xml, application/xml, text/xml',
+              },
+            })
+            if (!res.ok) return [] as RssItem[]
+            return parseRssFeed(await res.text())
+          } catch {
+            // A single failing feed should not empty the front page.
+            return [] as RssItem[]
+          }
+        }),
+      )
+
+      const seen = new Set<string>()
+      return feeds
+        .flat()
+        .filter(item => {
+          if (seen.has(item.id)) return false
+          seen.add(item.id)
+          return true
+        })
+        .sort(
+          (a, b) =>
+            new Date(b.publishedAt ?? 0).getTime() -
+            new Date(a.publishedAt ?? 0).getTime(),
+        )
+        .slice(0, RSS_ARTICLES_TOTAL)
+    },
+  }
+}
+
+/**
+ * The live profiles of the outlets with an account, keyed by DID, for the
+ * avatars on story cards. Without the news aggregator there are no frontpages,
+ * and the RSS spread's publishers stand in.
+ */
+export function useFrontpageProfilesQuery() {
+  const {frontpages} = useFrontpages()
+  return useFrontpageProfiles(
+    frontpages ?? PUBLISHERS.map(publisher => ({did: publisher.did})),
+  )
+}
+
+export const createArticleDiscussionQueryKey = (args: {
+  url: string
+  publisherDid?: string
+}) => createQueryKey('newsArticleDiscussion', args)
+
+/**
+ * Shared query definition for an article's discussion, so the single-article
+ * hook and the front page's all-articles lookup hit one cache entry per URL.
+ */
+function articleDiscussionQueryOptions({
+  url,
+  publisherDid,
+  client,
+}: {
+  url: string
+  publisherDid?: string
+  client: Client
+}) {
+  return {
+    queryKey: createArticleDiscussionQueryKey({url, publisherDid}),
+    staleTime: STALE.MINUTES.FIVE,
+    enabled: !!url,
+    queryFn: async () => {
+      const data = await client.call(app.bsky.feed.searchPosts, {
+        q: url,
+        url: url as UriString,
+        sort: 'top',
+        limit: 25,
+      })
+      const posts = data.posts.filter(post => postReferencesUrl(post, url))
+      let anchor = publisherDid
+        ? (posts.find(post => post.author.did === publisherDid) ?? null)
+        : null
+
+      /*
+       * The publisher's post may rank below the first page of top results. A
+       * focused author lookup prevents us from treating that as "not posted"
+       * and opening a standalone link embed instead of the canonical quote.
+       */
+      if (!anchor && publisherDid) {
+        try {
+          const publisherData = await client.call(app.bsky.feed.searchPosts, {
+            q: url,
+            url: url as UriString,
+            author: publisherDid as DidString,
+            sort: 'latest',
+            limit: 100,
+          })
+          anchor =
+            publisherData.posts.find(post => postReferencesUrl(post, url)) ??
+            null
+        } catch {
+          /* A failed anchor lookup should not hide the broader discussion. */
+        }
+      }
+
+      /*
+       * The publisher's own post wins the top slot - it is the article's
+       * canonical thread - and the rest of the conversation ranks by its
+       * interactions in the Atmosphere.
+       */
+      const rest = anchor
+        ? posts.filter(post => post.uri !== anchor.uri)
+        : posts
+      const orderedRest = [...rest].sort(
+        (a, b) => engagementScore(b) - engagementScore(a),
+      )
+      const ordered = anchor ? [anchor, ...orderedRest] : orderedRest
+      const total = Math.max(data.hitsTotal ?? posts.length, ordered.length)
+      /* The article's pull in the Atmosphere; picks the front page's featured
+       * story. */
+      const interactions = ordered.reduce(
+        (sum, post) => sum + engagementScore(post),
+        0,
+      )
+      /*
+       * People rather than posts: one account sharing an article twice is one
+       * person talking about it. Only the fetched posts can be counted, so
+       * where the search has more, the count is a lower bound.
+       */
+      const sharers: ArticleSharers = {
+        count: new Set(ordered.map(post => post.author.did)).size,
+        partial: (data.hitsTotal ?? 0) > data.posts.length,
+      }
+      return {posts: ordered, total, anchor, interactions, sharers}
+    },
+  }
+}
+
+/** How many distinct accounts shared an article. */
+export type ArticleSharers = {
+  count: number
+  /** More posts exist than were fetched, so `count` is at least this. */
+  partial: boolean
+}
+
+/**
+ * The in-network conversation about a specific article: posts across the network
+ * that link to its URL. This is the page's reason to exist - the discussion the
+ * publisher's own site and the scattered home feed don't put next to the piece.
+ *
+ * `searchPosts` indexes link facets, so a URL query surfaces posts that shared
+ * it; we then keep only posts that genuinely reference the URL (rather than
+ * merely matching its tokens).
+ *
+ * When the publisher itself posted the article, that post is the article's
+ * canonical thread: it is pinned first and returned as `anchor`, so sharing can
+ * quote it (growing one conversation) instead of starting a parallel one. The
+ * remaining posts rank by their Atmosphere interactions (likes, reposts,
+ * replies, quotes).
+ */
+export function useArticleDiscussionQuery({
+  url,
+  publisherDid,
+  enabled = true,
+}: {
+  url: string
+  publisherDid?: string
+  enabled?: boolean
+}) {
+  const client = useAppviewClient()
+  const options = articleDiscussionQueryOptions({url, publisherDid, client})
+  return useQuery({...options, enabled: enabled && options.enabled})
+}
+
+/**
+ * The discussions for a whole front page of articles at once, one cache-shared
+ * query per URL. The front page uses the per-article `interactions` totals to
+ * feature the story the Atmosphere engaged with most.
+ */
+export function useArticleDiscussionsQuery({
+  urls,
+  publisherDid,
+}: {
+  urls: string[]
+  publisherDid?: string
+}) {
+  const client = useAppviewClient()
+  return useQueries({
+    queries: urls.map(url =>
+      articleDiscussionQueryOptions({url, publisherDid, client}),
+    ),
+  })
+}
+
+/** A post's total interactions in the Atmosphere; ranks the discussion. */
+function engagementScore(post: app.bsky.feed.defs.PostView): number {
+  return (
+    (post.likeCount ?? 0) +
+    (post.repostCount ?? 0) +
+    (post.replyCount ?? 0) +
+    (post.quoteCount ?? 0)
+  )
+}
+
+/** Whether a post links to `url`, comparing normalized host + path. */
+function postReferencesUrl(
+  post: app.bsky.feed.defs.PostView,
+  url: string,
+): boolean {
+  const target = normalizeUrl(url)
+  if (!target) return false
+  for (const candidate of postUrls(post)) {
+    if (normalizeUrl(candidate) === target) return true
+  }
+  return false
+}
+
+/** All URLs a post points at: external embed, link facets, and raw text. */
+function postUrls(post: app.bsky.feed.defs.PostView): string[] {
+  const urls: string[] = []
+
+  if (
+    bsky.isType(app.bsky.embed.external.view, post.embed) &&
+    post.embed.external?.uri
+  ) {
+    urls.push(post.embed.external.uri)
+  }
+
+  if (!bsky.isType(app.bsky.feed.post, post.record)) return urls
+  const record = post.record
+  for (const facet of record.facets ?? []) {
+    for (const feature of facet.features) {
+      const uri = (feature as {uri?: string}).uri
+      if (typeof uri === 'string') urls.push(uri)
+    }
+  }
+  if (typeof record.text === 'string') {
+    const textUrls = record.text.match(/https?:\/\/\S+/gi)
+    if (textUrls) urls.push(...textUrls)
+  }
+
+  return urls
+}
+
+function normalizeUrl(url: string): string {
+  try {
+    const u = new URL(url)
+    const host = u.hostname.replace(/^www\./, '').toLowerCase()
+    const path = u.pathname.replace(/\/+$/, '').toLowerCase()
+    return host + path
+  } catch {
+    return ''
+  }
+}
+
+export const createOgImageQueryKey = (args: {url: string}) =>
+  createQueryKey('newsOgImage', args)
+
+/**
+ * The full-resolution og:image scraped from an article page, used to replace
+ * the small, soft feed thumbnail on the hero (only - scraping the HTML costs a
+ * full page fetch per article). Results are cached for an hour and React Query
+ * dedupes concurrent requests for the same URL.
+ */
+export function useOgImageQuery({
+  url,
+  enabled = true,
+}: {
+  url: string
+  enabled?: boolean
+}) {
+  return useQuery({
+    queryKey: createOgImageQueryKey({url}),
+    staleTime: STALE.HOURS.ONE,
+    enabled: enabled && !!url,
+    queryFn: async () => {
+      try {
+        const res = await fetch(buildRssFetchUrl(url), {
+          headers: {Accept: 'text/html'},
+        })
+        if (!res.ok) return null
+        return extractOgImage(await res.text()) ?? null
+      } catch {
+        return null
+      }
+    },
+  })
+}
+
+export const createSiteIconQueryKey = (args: {site: string}) =>
+  createQueryKey('newsSiteIcon', args, {persistedVersion: 1})
+
+/**
+ * The icon a site declares on its homepage, for outlets with no Bluesky avatar
+ * to show. One fetch per host, shared by every bubble and byline naming it, and
+ * persisted: a site's icon changes on the order of redesigns, so a reader
+ * should not refetch every homepage on every launch.
+ *
+ * Resolves to null rather than failing when the page or its declaration is
+ * missing, so the icon can fall back without retrying.
+ */
+export function useSiteIconQuery({
+  site,
+  enabled = true,
+}: {
+  /** The site's host, e.g. `nos.nl`. */
+  site?: string
+  enabled?: boolean
+}) {
+  return useQuery({
+    queryKey: createSiteIconQueryKey({site: site ?? ''}),
+    staleTime: STALE.INFINITY,
+    gcTime: GCTIME.INFINITY,
+    enabled: enabled && !!site,
+    queryFn: async () => {
+      const pageUrl = `https://${site}/`
+      try {
+        const res = await fetch(buildRssFetchUrl(pageUrl), {
+          headers: {Accept: 'text/html'},
+        })
+        if (!res.ok) return null
+        return extractSiteIcon(await res.text(), pageUrl) ?? null
+      } catch {
+        return null
+      }
+    },
+  })
+}
+
+/** Replies shown under each post in an article's discussion. */
+const THREAD_REPLIES_SHOWN = 3
+
+export const createArticleThreadRepliesQueryKey = (args: {uri: string}) =>
+  createQueryKey('newsArticleThreadReplies', args)
+
+/**
+ * A few replies to each post in an article's discussion, so the article page
+ * reads as conversations rather than a list of shares.
+ *
+ * Newest first, one per person, and never the post's own author: an author
+ * replying to themselves is continuing their post, not a participant joining
+ * it. One thread fetch per post, one level deep, cached per post.
+ */
+export function useArticleThreadRepliesQueries({uris}: {uris: string[]}) {
+  const client = useAppviewClient()
+  return useQueries({
+    queries: uris.map(uri => ({
+      queryKey: createArticleThreadRepliesQueryKey({uri}),
+      staleTime: STALE.MINUTES.ONE,
+      async queryFn() {
+        const data = await client.call(app.bsky.feed.getPostThread, {
+          uri: uri as AtUriString,
+          depth: 1,
+          parentHeight: 0,
+        })
+        const thread = data.thread
+        if (!bsky.isType(app.bsky.feed.defs.threadViewPost, thread)) {
+          return [] as app.bsky.feed.defs.PostView[]
+        }
+        const opDid = thread.post.author.did
+        const replies = (thread.replies ?? [])
+          .filter(reply =>
+            bsky.isType(app.bsky.feed.defs.threadViewPost, reply),
+          )
+          .map(reply => (reply as app.bsky.feed.defs.ThreadViewPost).post)
+          .filter(post => post.author.did !== opDid)
+          .sort((x, y) => y.indexedAt.localeCompare(x.indexedAt))
+        const seen = new Set<string>()
+        const shown: app.bsky.feed.defs.PostView[] = []
+        for (const post of replies) {
+          if (seen.has(post.author.did)) continue
+          seen.add(post.author.did)
+          shown.push(post)
+          if (shown.length === THREAD_REPLIES_SHOWN) break
+        }
+        return shown
+      },
+    })),
+  })
+}
