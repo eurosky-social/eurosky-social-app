@@ -18,9 +18,9 @@ import {ListFooter} from '#/components/Lists'
 import {Text} from '#/components/Typography'
 import {IS_WEB} from '#/env'
 import {CreateOrEditEventDialog} from './components/CreateOrEditEventDialog'
+import {EventFeedItem} from './components/EventFeedItem'
 import {EventFeedTabs} from './components/EventFeedTabs'
 import {EventFiltersDialog} from './components/EventFiltersDialog'
-import {EventItem} from './components/EventItem'
 import {EventSortToggle} from './components/EventSortToggle'
 import {type EventFeedId} from './feeds'
 import {
@@ -163,7 +163,7 @@ function EventsList({
       data={events}
       keyExtractor={(event: EventRecord) => event.uri}
       renderItem={({item}: {item: EventRecord}) => (
-        <EventItem
+        <EventFeedItem
           event={item}
           profile={profiles.get(item.did)}
           onEdit={() => onEdit(item)}

@@ -1,3 +1,5 @@
+import {type I18n} from '@lingui/core'
+
 import {CDN_SERVICE} from '#/lib/constants'
 import {
   type EventLocation,
@@ -77,8 +79,52 @@ function getLocationLabel(location: EventLocation): string | undefined {
   return undefined
 }
 
+/** Path of the event's page in the app. */
+export function makeEventLink(event: Pick<EventRecord, 'did' | 'rkey'>) {
+  return `/events/${event.did}/${event.rkey}`
+}
+
+/**
+ * The event's start, plus its end when present. An end on the same day only
+ * shows the time.
+ */
+export function formatEventTime(
+  i18n: I18n,
+  event: EventRecord,
+): {start: string; end?: string} | undefined {
+  const start = parseDate(event.value.startsAt)
+  if (!start) return undefined
+  const startText = i18n.date(start, {dateStyle: 'medium', timeStyle: 'short'})
+
+  const end = parseDate(event.value.endsAt)
+  if (!end || end <= start) return {start: startText}
+  const endText =
+    end.toDateString() === start.toDateString()
+      ? i18n.date(end, {timeStyle: 'short'})
+      : i18n.date(end, {dateStyle: 'medium', timeStyle: 'short'})
+  return {start: startText, end: endText}
+}
+
+/** Record timestamps can be malformed (`{}`), so parse defensively. */
+function parseDate(value: string | {} | undefined): Date | undefined {
+  if (typeof value !== 'string') return undefined
+  const date = new Date(value)
+  return isNaN(date.getTime()) ? undefined : date
+}
+
 /** Hosts that render an event at `/p/<actor>/e/<rkey>`. */
 const ATMO_HOSTS = ['https://atmo.rsvp', 'https://events.atmosphere.tickets']
+
+/**
+ * The event's page on atmo.rsvp, which we link to from new posts about it.
+ * Uses the organiser's handle when known, for a readable URL.
+ */
+export function getEventPostUrl(
+  event: EventRecord,
+  profile?: EventProfile,
+): string {
+  return `${ATMO_HOSTS[0]}/p/${profile?.handle ?? event.did}/e/${event.rkey}`
+}
 
 /**
  * The public web pages of other apps that render the event, as people link to

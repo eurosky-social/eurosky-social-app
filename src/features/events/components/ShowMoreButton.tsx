@@ -1,4 +1,4 @@
-import {LayoutAnimation} from 'react-native'
+import {type GestureResponderEvent, LayoutAnimation} from 'react-native'
 import {Trans} from '@lingui/react/macro'
 
 import {HITSLOP_10} from '#/lib/constants'
@@ -22,7 +22,10 @@ export function ShowMoreButton({
   return (
     <Button
       label={label}
-      onPress={() => {
+      onPress={(e: GestureResponderEvent) => {
+        // Don't let the press reach a link the text sits in.
+        e.preventDefault()
+        e.stopPropagation()
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
         onPress()
       }}

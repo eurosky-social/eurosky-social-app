@@ -30,6 +30,7 @@ export type CommonNavigatorParams = {
     to?: string
     sort?: string
   }
+  Event: {name: string; rkey: string}
   OsoStarterPacks: undefined
   NewsSettings: undefined
   Newsroom: {name?: string}

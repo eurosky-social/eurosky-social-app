@@ -27,7 +27,7 @@ import {Text} from '#/components/Typography'
 import {IS_NATIVE} from '#/env'
 import {type EventFormImage} from './form'
 
-/** Matches the banner in EventItem, so the crop is what the feed shows. */
+/** Matches `Event.Banner`, so the crop is what the feed shows. */
 const ASPECT_RATIO = 16 / 9
 
 /**

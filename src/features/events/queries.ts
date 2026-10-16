@@ -1,5 +1,6 @@
 import {jsonToLex, type LexMap, lexToJson, type UriString} from '@atproto/lex'
 import {AtUri} from '@atproto/syntax'
+import {moderatePost} from '@bsky/sdk/moderation'
 import {useLingui} from '@lingui/react/macro'
 import {
   type InfiniteData,
@@ -11,6 +12,7 @@ import {
 
 import {uploadBlob} from '#/lib/api'
 import {BLUESKY_APPVIEW_SERVICE} from '#/lib/constants'
+import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
 import {useAppviewClient, usePdsClient, useSession} from '#/state/session'
@@ -21,12 +23,7 @@ import {
   type EventFormValues,
   toRecord,
 } from './components/CreateOrEditEventDialog/form'
-import {
-  EVENT_NSID,
-  EVENT_POSTS_SHOWN,
-  EVENTS_PAGE_SIZE,
-  RSVP_NSID,
-} from './config'
+import {EVENT_NSID, EVENTS_PAGE_SIZE, RSVP_NSID} from './config'
 import {EVENT_FEEDS, type EventFeedId} from './feeds'
 import {type EventFilters, type EventSort, toEventSortParams} from './filters'
 import {
@@ -61,8 +58,10 @@ export const createEventFeedQueryKey = (args: {
 export const createEventQueryKey = (args: {uri: string}) =>
   createQueryKey(eventQueryKeyRoot, args)
 
-export const createEventPostsQueryKey = (args: {uri: string}) =>
-  createQueryKey(eventPostsQueryKeyRoot, args)
+export const createEventPostsQueryKey = (args: {
+  uri: string
+  pageSize: number
+}) => createQueryKey(eventPostsQueryKeyRoot, args)
 
 export const createViewerEventRsvpsQueryKey = (args: {did?: string}) =>
   createQueryKey(viewerEventRsvpsQueryKeyRoot, args)
@@ -115,49 +114,85 @@ export function useEventFeedQuery(
   })
 }
 
-/** A single event by AT-URI, with its organiser's profile. */
-export function useEventQuery({uri}: {uri: string}) {
+/**
+ * A single event by AT-URI, with its organiser's profile. Waits while `uri` is
+ * undefined, e.g. until a handle in the URL has resolved.
+ */
+export function useEventQuery({uri}: {uri?: string}) {
   return useQuery({
-    queryKey: createEventQueryKey({uri}),
-    queryFn: ({signal}) => getEvent({uri, profiles: true}, signal),
+    queryKey: createEventQueryKey({uri: uri ?? ''}),
+    enabled: !!uri,
+    queryFn: ({signal}) => getEvent({uri: uri!, profiles: true}, signal),
     staleTime: STALE.MINUTES.FIVE,
   })
 }
 
 /**
- * Bluesky posts that link to the event's page on another events app, in the
- * order post search returns them. Several URLs in one search match any of
- * them.
+ * Bluesky posts that link to the event's page on another events app, page by
+ * page in the order post search returns them. Several URLs in one search match
+ * any of them. Posts that moderation filters out of lists are dropped, as in
+ * search, so a page can hold fewer than `pageSize` posts.
  */
 export function useEventPostsQuery({
   event,
   profile,
+  pageSize,
 }: {
   event: EventRecord
   profile?: EventProfile
+  pageSize: number
 }) {
   const client = useAppviewClient()
   const {hasSession} = useSession()
+  const moderationOpts = useModerationOpts()
 
-  return useQuery({
-    queryKey: createEventPostsQueryKey({uri: event.uri}),
+  return useInfiniteQuery({
+    // The page size is part of the key, so previews and full lists don't mix.
+    queryKey: createEventPostsQueryKey({uri: event.uri, pageSize}),
     // Bluesky's post search requires authentication.
-    enabled: hasSession,
-    queryFn: async () => {
-      const data = await client.call(
+    enabled: hasSession && !!moderationOpts,
+    queryFn: ({pageParam}) =>
+      client.call(
         app.bsky.feed.searchPostsV2,
         {
           urls: getEventShareUrls(event, profile) as UriString[],
-          limit: EVENT_POSTS_SHOWN,
+          limit: pageSize,
+          cursor: pageParam,
           // Without this, search only covers recent posts.
           allTime: true,
         },
         {service: BLUESKY_APPVIEW_SERVICE},
-      )
-      return data.posts
-    },
+      ),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: page => page.cursor,
+    select: data => ({
+      ...data,
+      pages: data.pages.map(page => ({
+        ...page,
+        posts: page.posts.filter(
+          post =>
+            !moderationOpts ||
+            !moderatePost(post, moderationOpts).ui('contentList').filter,
+        ),
+      })),
+    }),
     staleTime: STALE.MINUTES.FIVE,
   })
+}
+
+/**
+ * Seeds the cache for a single event with the record a feed already has, so
+ * its page renders straight away. The feed's copy carries any optimistic RSVP
+ * changes, so it replaces whatever was cached before.
+ */
+export function usePrecacheEvent() {
+  const queryClient = useQueryClient()
+  return (event: EventRecord, profile?: EventProfile) => {
+    queryClient.setQueryData<GetRecordResponse<EventRecord>>(
+      createEventQueryKey({uri: event.uri}),
+      {...event, profiles: profile ? [profile] : undefined},
+    )
+  }
 }
 
 /**
@@ -211,7 +246,8 @@ export function useViewerEventRsvpsQuery<T = ViewerRsvps>({
 
 /**
  * Sets the signed-in user's RSVP to an event, or removes it when `next` is
- * null. Updates the viewer's RSVPs and every cached feed optimistically.
+ * null. Updates the viewer's RSVPs, every cached feed and the cached event
+ * optimistically.
  */
 export function useEventRsvpMutation() {
   const pdsClient = usePdsClient()
@@ -277,14 +313,18 @@ export function useEventRsvpMutation() {
       return {status: next, rkeys: [new AtUri(res.uri).rkey]}
     },
     onMutate: async ({event, prev, next}) => {
+      const eventKey = createEventQueryKey({uri: event.uri})
       await Promise.all([
         queryClient.cancelQueries({queryKey: viewerKey}),
         queryClient.cancelQueries({queryKey: feedsKey}),
+        queryClient.cancelQueries({queryKey: eventKey}),
       ])
       const prevViewer = queryClient.getQueryData<ViewerRsvps>(viewerKey)
       const prevFeeds = queryClient.getQueriesData<EventFeedData>({
         queryKey: feedsKey,
       })
+      const prevEvent =
+        queryClient.getQueryData<GetRecordResponse<EventRecord>>(eventKey)
 
       setViewerRsvp(
         event.uri,
@@ -306,8 +346,12 @@ export function useEventRsvpMutation() {
             }
           : data,
       )
+      queryClient.setQueryData<GetRecordResponse<EventRecord>>(
+        eventKey,
+        data => data && applyRsvpChange(data, prev?.status ?? null, next),
+      )
 
-      return {prevViewer, prevFeeds}
+      return {prevViewer, prevFeeds, eventKey, prevEvent}
     },
     onSuccess: (result, {event}) => {
       /*
@@ -322,6 +366,7 @@ export function useEventRsvpMutation() {
         for (const [key, data] of context.prevFeeds) {
           queryClient.setQueryData(key, data)
         }
+        queryClient.setQueryData(context.eventKey, context.prevEvent)
       }
       Toast.show(l`Couldn’t update your RSVP`, {type: 'error'})
     },
