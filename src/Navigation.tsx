@@ -94,6 +94,9 @@ import {ModerationInboxSettingsScreen} from '#/screens/ModerationInbox/Settings'
 import {ModerationInboxSubjectDetailsScreen} from '#/screens/ModerationInbox/Subject'
 import {Screen as ModerationInteractionSettings} from '#/screens/ModerationInteractionSettings'
 import {NotificationsActivityListScreen} from '#/screens/Notifications/ActivityList'
+import {OsoAccountScreen} from '#/screens/OsoAccount'
+import {OsoFollowingScreen} from '#/screens/OsoFollowing'
+import {OsoTrendingScreen} from '#/screens/OsoTrending'
 import {PostLikedByScreen} from '#/screens/Post/PostLikedBy'
 import {PostQuotesScreen} from '#/screens/Post/PostQuotes'
 import {PostRepostedByScreen} from '#/screens/Post/PostRepostedBy'
@@ -253,6 +256,21 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         name="OsoStarterPacks"
         getComponent={() => OsoStarterPacksScreen}
         options={{title: title(msg`Starter Packs`)}}
+      />
+      <Stack.Screen
+        name="OsoAccount"
+        getComponent={() => OsoAccountScreen}
+        options={{title: title(msg`Account`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="OsoFollowing"
+        getComponent={() => OsoFollowingScreen}
+        options={{title: title(msg`Following`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="OsoTrending"
+        getComponent={() => OsoTrendingScreen}
+        options={{title: title(msg`Trending`), requireAuth: true}}
       />
       <Stack.Screen
         name="Moderation"

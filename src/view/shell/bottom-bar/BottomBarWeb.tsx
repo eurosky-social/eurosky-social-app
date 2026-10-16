@@ -45,6 +45,8 @@ import {
 import {Text} from '#/components/Typography'
 import {useAgeAssurance} from '#/ageAssurance'
 import {useAnalytics} from '#/analytics'
+import {IS_PARTNER_PREVIEW} from '#/env'
+import {OsoBottomBarItems} from '#/features/osoNav'
 import {styles} from './BottomBarStyles'
 
 type NavItemValue = 'home' | 'search' | 'chat' | 'notifications' | 'profile'
@@ -110,7 +112,10 @@ export function BottomBarWeb() {
           footerMinimalShellTransform,
         ]}
         onLayout={event => footerHeight.set(event.nativeEvent.layout.height)}>
-        {hasSession ? (
+        {hasSession && IS_PARTNER_PREVIEW ? (
+          // Oso: the sidebar's buttons and colours, plus the account page.
+          <OsoBottomBarItems />
+        ) : hasSession ? (
           <>
             <NavItem routeName="Home" href="/" navItem="home">
               {({isActive}) => {

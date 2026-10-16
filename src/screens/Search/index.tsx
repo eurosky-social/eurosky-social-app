@@ -11,11 +11,7 @@ export function SearchScreen(
 ) {
   const queryParam = props.route?.params?.q ?? ''
 
-  if (
-    IS_PARTNER_PREVIEW &&
-    !queryParam &&
-    props.route?.params?.view !== 'explore'
-  ) {
+  if (IS_PARTNER_PREVIEW && !queryParam) {
     return <OsoExploreHub />
   }
 

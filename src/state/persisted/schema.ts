@@ -4,6 +4,7 @@ import {z} from 'zod'
 import {deviceLanguageCodes, deviceLocales} from '#/locale/deviceLocales'
 import {findSupportedAppLanguage} from '#/locale/helpers'
 import {logger} from '#/logger'
+import {IS_PARTNER_PREVIEW} from '#/env'
 import {PlatformInfo} from '../../../modules/expo-bluesky-swiss-army'
 
 const externalEmbedOptions = ['show', 'hide'] as const
@@ -202,11 +203,14 @@ export const defaults: Schema = {
     postLanguageHistory: (deviceLanguageCodes || [])
       .concat(['en', 'ja', 'pt', 'de'])
       .slice(0, 6),
-    // try full language tag first, then fallback to language code
-    appLanguage: findSupportedAppLanguage([
-      deviceLocales.at(0)?.languageTag,
-      deviceLanguageCodes[0],
-    ]),
+    // Oso is Dutch by default; everyone can still pick another language.
+    appLanguage: IS_PARTNER_PREVIEW
+      ? 'nl'
+      : // try full language tag first, then fallback to language code
+        findSupportedAppLanguage([
+          deviceLocales.at(0)?.languageTag,
+          deviceLanguageCodes[0],
+        ]),
   },
   requireAltTextEnabled: false,
   largeAltBadgeEnabled: false,

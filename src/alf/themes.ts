@@ -4,14 +4,32 @@ import {createThemes} from '@bsky.app/alf'
 // one of only two upstream files that redirect into that module.
 import {
   type AccentKey,
+  BRAND_DARK_PALETTES,
   BRAND_PALETTE,
   BRAND_SUBDUED_PALETTE,
   buildPalettes,
 } from '#/config/brand-theme'
 
-const DEFAULT_THEMES = createThemes({
-  defaultPalette: BRAND_PALETTE,
-  subduedPalette: BRAND_SUBDUED_PALETTE,
+/*
+ * Light comes from the accent's palettes, dark and dim from the dark accent's
+ * (the same palettes unless the brand sets a darkAccent).
+ */
+function createBrandThemes(palettes: ReturnType<typeof buildPalettes>) {
+  const light = createThemes({
+    defaultPalette: palettes.default,
+    subduedPalette: palettes.subdued,
+  }).light
+  const {dark, dim} = createThemes({
+    defaultPalette: palettes.dark.default,
+    subduedPalette: palettes.dark.subdued,
+  })
+  return {light, dark, dim}
+}
+
+const DEFAULT_THEMES = createBrandThemes({
+  default: BRAND_PALETTE,
+  subdued: BRAND_SUBDUED_PALETTE,
+  dark: BRAND_DARK_PALETTES,
 })
 
 export const themes = {
@@ -30,9 +48,7 @@ export const themes = {
  * above is the DEFAULT_ACCENT build.
  */
 export function buildThemes(accent: AccentKey): typeof themes {
-  const {default: defaultPalette, subdued: subduedPalette} =
-    buildPalettes(accent)
-  const t = createThemes({defaultPalette, subduedPalette})
+  const t = createBrandThemes(buildPalettes(accent))
   return {
     lightPalette: t.light.palette,
     darkPalette: t.dark.palette,

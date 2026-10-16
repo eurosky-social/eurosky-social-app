@@ -150,8 +150,14 @@ function NativeStackNavigator({
             )
           } else if (destination === 'events') {
             navigation.navigate('Events')
-          } else {
+          } else if (destination === 'explore') {
             navigation.navigate('Search')
+          } else if (destination === 'feeds') {
+            navigation.navigate('OsoFollowing')
+          } else if (destination === 'chats') {
+            navigation.navigate('Messages')
+          } else {
+            navigation.navigate('Notifications')
           }
         }}
       />

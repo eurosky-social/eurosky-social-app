@@ -17,11 +17,6 @@ export type SearchFilterParams = SearchFilters
 export type SearchParams = {
   q?: string
   tab?: 'user' | 'profile' | 'feed' | 'latest'
-  /**
-   * Oso only: `explore` skips the tile hub on /search and opens the full
-   * explore page.
-   */
-  view?: 'explore'
 } & SearchFilterParams
 
 export type CommonNavigatorParams = {
@@ -36,6 +31,9 @@ export type CommonNavigatorParams = {
     sort?: string
   }
   OsoStarterPacks: undefined
+  OsoTrending: undefined
+  OsoFollowing: undefined
+  OsoAccount: undefined
   NewsSettings: undefined
   Newsroom: {name?: string}
   NewsroomExplore: undefined

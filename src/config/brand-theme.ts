@@ -113,6 +113,14 @@ const muNeutralSubdued: ContrastRamp = {
 export const ACCENTS = brandColors.accents as Record<string, PrimaryRamp>
 export type AccentKey = keyof typeof brandColors.accents
 export const DEFAULT_ACCENT = brandColors.defaultAccent as AccentKey
+/**
+ * Accent the dark and dim themes use while the default accent is selected,
+ * when the brand sets one (Oso: its navy default would vanish on its navy
+ * dark background, so dark mode uses its green). Undefined for brands whose
+ * default accent works in every theme.
+ */
+const DARK_ACCENT = (brandColors as {darkAccent?: string}).darkAccent as
+  AccentKey | undefined
 
 function composeWith(
   base: Palette,
@@ -134,17 +142,30 @@ function composeWith(
 export function buildPalettes(accentKey: AccentKey): {
   default: Palette
   subdued: Palette
+  /** Palettes the dark and dim themes are built from. */
+  dark: {default: Palette; subdued: Palette}
 } {
   const accent = ACCENTS[accentKey]
+  const darkAccent =
+    accentKey === DEFAULT_ACCENT && DARK_ACCENT ? ACCENTS[DARK_ACCENT] : accent
   return {
     default: composeWith(DEFAULT_PALETTE, muNeutral, accent),
     subdued: composeWith(DEFAULT_SUBDUED_PALETTE, muNeutralSubdued, accent),
+    dark: {
+      default: composeWith(DEFAULT_PALETTE, muNeutral, darkAccent),
+      subdued: composeWith(
+        DEFAULT_SUBDUED_PALETTE,
+        muNeutralSubdued,
+        darkAccent,
+      ),
+    },
   }
 }
 
 const defaultPalettes = buildPalettes(DEFAULT_ACCENT)
 export const BRAND_PALETTE: Palette = defaultPalettes.default
 export const BRAND_SUBDUED_PALETTE: Palette = defaultPalettes.subdued
+export const BRAND_DARK_PALETTES = defaultPalettes.dark
 
 /**
  * Gradient overrides for `src/alf/tokens.ts`. Mostly decorative (avatar

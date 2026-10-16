@@ -29,6 +29,33 @@ import {NewsroomArticleRightRail} from '#/features/newsrooms/article/NewsroomArt
 import {NewsroomRightRail} from '#/features/newsrooms/components/NewsroomRightRail'
 import {NewsroomRightRail as LegacyNewsroomRightRail} from '#/features/newsrooms/legacy/NewsroomRightRail'
 
+/**
+ * Pages where Oso leaves the right column empty: no search bar and no feeds.
+ * The `Profile...`, `Post...` and `CustomFeed...` routes are everything under
+ * /profile/.
+ */
+const OSO_EMPTY_RIGHT_COLUMN_ROUTES = new Set([
+  'Home',
+  'Search',
+  'Notifications',
+  'Feeds',
+  'OsoStarterPacks',
+  'OsoFollowing',
+  'Profile',
+  'ProfileFollowers',
+  'ProfileFollows',
+  'ProfileKnownFollowers',
+  'ProfileSearch',
+  'ProfileList',
+  'PostThread',
+  'PostLikedBy',
+  'PostRepostedBy',
+  'PostQuotes',
+  'CustomFeed',
+  'CustomFeedLikedBy',
+  'ProfileLabelerLikedBy',
+])
+
 export function DesktopRightNav({routeName}: {routeName: string}) {
   const t = useTheme()
   const {_} = useLingui()
@@ -74,8 +101,7 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
       <NewsroomArticleRightRail />
     ) : null
 
-  // Oso keeps the right column empty on its explore and following pages.
-  if (IS_PARTNER_PREVIEW && (routeName === 'Search' || routeName === 'Home')) {
+  if (IS_PARTNER_PREVIEW && OSO_EMPTY_RIGHT_COLUMN_ROUTES.has(routeName)) {
     return null
   }
 
@@ -143,7 +169,8 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
         <>
           {!isSearchScreen && <DesktopSearch />}
 
-          {hasSession && <DesktopFeeds />}
+          {/* Oso leaves the list of the user's feeds out of the shell. */}
+          {hasSession && !IS_PARTNER_PREVIEW && <DesktopFeeds />}
         </>
       )}
 

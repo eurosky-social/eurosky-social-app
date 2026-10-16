@@ -19,8 +19,9 @@ import * as Layout from '#/components/Layout'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
-import {IS_WEB} from '#/env'
+import {IS_PARTNER_PREVIEW, IS_WEB} from '#/env'
 import {useNewsFeedPrefsQuery} from '#/features/newsFeed/state/prefs'
+import {OsoTitlePill} from '#/features/osoNav/pills'
 import {DUTCH_WORLD_SCOPE, IS_DUTCH_API_CONFIGURED} from '../dutch/config'
 import {useDutchOutletsQuery} from '../dutch/queries'
 import {useCollapsingTitle} from '../hub/useCollapsingTitle'
@@ -240,9 +241,14 @@ export function NewsroomExploreScreen(
             <ExploreHeaderOuter>
               <Layout.Header.BackButton />
               <Layout.Header.Content>
-                <Layout.Header.TitleText>
-                  <Trans>{BRAND.name} News</Trans>
-                </Layout.Header.TitleText>
+                {IS_PARTNER_PREVIEW ? (
+                  // Oso titles the page with its left menu button.
+                  <OsoTitlePill kind="news" />
+                ) : (
+                  <Layout.Header.TitleText>
+                    <Trans>{BRAND.name} News</Trans>
+                  </Layout.Header.TitleText>
+                )}
               </Layout.Header.Content>
               {/* With interests, the settings are at the foot of their
                * dropdown instead. Outside Header.Slot: slots are fixed-width

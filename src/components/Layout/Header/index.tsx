@@ -30,7 +30,7 @@ import {
 import {ScrollbarOffsetContext} from '#/components/Layout/context'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
-import {IS_IOS} from '#/env'
+import {IS_IOS, IS_PARTNER_PREVIEW} from '#/env'
 
 const HEADER_BUTTON_HITSLOP = {top: 30, bottom: 10, left: 30, right: 30}
 
@@ -162,7 +162,8 @@ export function MenuButton() {
     setDrawerOpen(true)
   }, [setDrawerOpen, ax])
 
-  return gtMobile ? null : (
+  // Oso has no drawer menu; the bottom bar reaches every page instead.
+  return gtMobile || IS_PARTNER_PREVIEW ? null : (
     <Slot>
       <Button
         label={_(msg`Open drawer menu`)}

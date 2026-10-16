@@ -4,37 +4,62 @@
   "socialHandle": "",
   "colors": {
     "neutral": {
-      "contrast_25": "#F8F8FF",
-      "contrast_50": "#F0F0FF",
-      "contrast_100": "#E2E2F0",
-      "contrast_950": "#14141F",
-      "contrast_975": "#101019",
-      "contrast_1000": "#0C0C15"
+      "contrast_0": "#F4F4F4",
+      "contrast_25": "#EDEEF0",
+      "contrast_50": "#E3E4E8",
+      "contrast_100": "#D2D4DA",
+      "contrast_200": "#B4B7C1",
+      "contrast_300": "#979BA8",
+      "contrast_400": "#7B8090",
+      "contrast_500": "#636878",
+      "contrast_600": "#4D5262",
+      "contrast_700": "#3A3E4D",
+      "contrast_800": "#2B2F3C",
+      "contrast_900": "#222532",
+      "contrast_950": "#1C1F2B",
+      "contrast_975": "#191C27",
+      "contrast_1000": "#161924"
     },
     "neutralSubduedOverrides": {
-      "contrast_900": "#20202C",
-      "contrast_950": "#1A1A25",
-      "contrast_975": "#161620",
-      "contrast_1000": "#14141F"
+      "contrast_900": "#222532",
+      "contrast_950": "#1C1F2B",
+      "contrast_975": "#191C27",
+      "contrast_1000": "#161924"
     },
     "accents": {
-      "blue": {
-        "primary_25": "#F5F5FF",
-        "primary_50": "#EEEEFF",
-        "primary_100": "#DADAFF",
-        "primary_200": "#BDBDFF",
-        "primary_300": "#9999FF",
-        "primary_400": "#6060FF",
-        "primary_500": "#1D1AFF",
-        "primary_600": "#1612E8",
-        "primary_700": "#1212B8",
-        "primary_800": "#0C0C89",
-        "primary_900": "#090963",
-        "primary_950": "#060648",
-        "primary_975": "#030330"
+      "navy": {
+        "primary_25": "#EEEFF3",
+        "primary_50": "#DFE1E8",
+        "primary_100": "#C4C8D4",
+        "primary_200": "#9DA3B5",
+        "primary_300": "#737B93",
+        "primary_400": "#454C63",
+        "primary_500": "#161924",
+        "primary_600": "#13161F",
+        "primary_700": "#10121A",
+        "primary_800": "#0D0F15",
+        "primary_900": "#0A0B10",
+        "primary_950": "#07080B",
+        "primary_975": "#040506"
+      },
+      "green": {
+        "primary_25": "#F1FFF4",
+        "primary_50": "#E2FEE8",
+        "primary_100": "#C9FED5",
+        "primary_200": "#ADFEC0",
+        "primary_300": "#95FDAD",
+        "primary_400": "#87FDA3",
+        "primary_500": "#79FD9A",
+        "primary_600": "#5FE07F",
+        "primary_700": "#48C167",
+        "primary_800": "#36A052",
+        "primary_900": "#277D3E",
+        "primary_950": "#1B5A2C",
+        "primary_975": "#0F381B"
       }
     },
-    "defaultAccent": "blue"
+    "defaultAccent": "navy",
+    "darkAccent": "green"
   },
   "oauth": {
     "defaultBaseUrl": "https://oso.mu.social",

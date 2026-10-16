@@ -16,7 +16,8 @@ import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/
 import * as Layout from '#/components/Layout'
 import {ListFooter} from '#/components/Lists'
 import {Text} from '#/components/Typography'
-import {IS_WEB} from '#/env'
+import {IS_PARTNER_PREVIEW, IS_WEB} from '#/env'
+import {OsoTitlePill} from '#/features/osoNav/pills'
 import {CreateOrEditEventDialog} from './components/CreateOrEditEventDialog'
 import {EventFeedTabs} from './components/EventFeedTabs'
 import {EventFiltersDialog} from './components/EventFiltersDialog'
@@ -60,9 +61,14 @@ export function EventsScreen({route, navigation}: Props) {
       <Layout.Header.Outer>
         <Layout.Header.BackButton />
         <Layout.Header.Content>
-          <Layout.Header.TitleText>
-            <Trans>Events</Trans>
-          </Layout.Header.TitleText>
+          {IS_PARTNER_PREVIEW ? (
+            // Oso titles the page with its left menu button.
+            <OsoTitlePill kind="events" />
+          ) : (
+            <Layout.Header.TitleText>
+              <Trans>Events</Trans>
+            </Layout.Header.TitleText>
+          )}
         </Layout.Header.Content>
         <View style={[a.flex_row, a.align_center, a.gap_sm]}>
           <EventFiltersDialog

@@ -11,6 +11,10 @@ export const OSO_COLORS = {
   grey: '#958A95',
   coral: '#FA614C',
   mint: '#AAEDE6',
+  /** Oso's main accent ("hoofdkleur") and dark background. */
+  navy: '#161924',
+  /** Oso's supporting accent ("steunkleur"), used for highlights. */
+  highlight: '#79FD9A',
 }
 
 /**

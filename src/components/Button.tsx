@@ -22,6 +22,7 @@ import {
 } from 'react-native'
 
 import {atoms as a, flatten, select, useTheme} from '#/alf'
+import {contrastRatio} from '#/alf/util/colorGeneration'
 import {type Props as SVGIconProps} from '#/components/icons/common'
 import {Text} from '#/components/Typography'
 
@@ -611,6 +612,23 @@ export const Button = forwardRef<React.ComponentRef<typeof View>, ButtonProps>(
 )
 Button.displayName = 'Button'
 
+/**
+ * Text colour for solid primary buttons: white, unless the accent is so light
+ * that white is unreadable on it (e.g. Oso's green in dark mode), in which case
+ * the theme's dark ink.
+ */
+function primaryButtonTextColor(t: ReturnType<typeof useTheme>): string {
+  const whiteContrast = contrastRatio(t.palette.primary_500, t.palette.white)
+  if (whiteContrast === null || whiteContrast >= 3) {
+    return t.palette.white
+  }
+  return select(t.name, {
+    light: t.palette.contrast_1000,
+    dim: t.palette.contrast_0,
+    dark: t.palette.contrast_0,
+  })
+}
+
 export function useSharedButtonTextStyles() {
   const t = useTheme()
   const {color, variant, disabled, size} = useButtonContext()
@@ -625,7 +643,7 @@ export function useSharedButtonTextStyles() {
     if (variant === 'solid') {
       if (color === 'primary') {
         if (!disabled) {
-          baseStyles.push({color: t.palette.white})
+          baseStyles.push({color: primaryButtonTextColor(t)})
         } else {
           baseStyles.push({
             color: select(t.name, {

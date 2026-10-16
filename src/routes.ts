@@ -24,6 +24,9 @@ export const router = new Router<AllNavigatableRoutes>({
   NewsroomDirectory: '/newsrooms',
   Events: '/events',
   OsoStarterPacks: '/starter-packs',
+  OsoTrending: '/trending',
+  OsoFollowing: '/following',
+  OsoAccount: '/account',
   Newsroom: ['/newsroom/:name', '/newsroom'],
   // moderation
   Moderation: '/moderation',

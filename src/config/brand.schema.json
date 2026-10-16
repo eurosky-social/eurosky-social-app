@@ -44,6 +44,10 @@
         "defaultAccent": {
           "type": "string",
           "description": "Which accents key this build ships and uses as the per-user default. Must be a key in accents."
+        },
+        "darkAccent": {
+          "type": "string",
+          "description": "Optional accents key used by the dark and dim themes while the default accent is selected, for brands whose default accent is too dark to read on a dark background. Must be a key in accents."
         }
       }
     },

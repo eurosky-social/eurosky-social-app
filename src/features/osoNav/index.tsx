@@ -8,40 +8,25 @@ import {type NavigationProp} from '#/lib/routes/types'
 import {emitSoftReset} from '#/state/events'
 import {useUnreadMessageCount} from '#/state/queries/messages/list-conversations'
 import {useUnreadNotifications} from '#/state/queries/notifications/unread'
+import {useProfileQuery} from '#/state/queries/profile'
+import {useSession} from '#/state/session'
 import {PressableWithHover} from '#/view/com/util/PressableWithHover'
-import {atoms as a, useTheme, web} from '#/alf'
-import {
-  Bell_Filled_Corner0_Rounded as BellFilledIcon,
-  Bell_Stroke2_Corner0_Rounded as BellIcon,
-} from '#/components/icons/Bell'
-import {CalendarDays_Stroke2_Corner0_Rounded as CalendarIcon} from '#/components/icons/CalendarDays'
-import {type Props as SVGIconProps} from '#/components/icons/common'
-import {
-  HomeOpen_Filled_Corner0_Rounded as HomeFilledIcon,
-  HomeOpen_Stoke2_Corner0_Rounded as HomeIcon,
-} from '#/components/icons/HomeOpen'
-import {
-  MagnifyingGlass_Filled_Stroke2_Corner0_Rounded as MagnifyingGlassFilledIcon,
-  MagnifyingGlass_Stroke2_Corner0_Rounded as MagnifyingGlassIcon,
-} from '#/components/icons/MagnifyingGlass'
-import {
-  Message_Stroke2_Corner0_Rounded as MessageIcon,
-  Message_Stroke2_Corner0_Rounded_Filled as MessageFilledIcon,
-} from '#/components/icons/Message'
-import {
-  Newspaper_Filled_Corner2_Rounded as NewspaperFilledIcon,
-  Newspaper_Stroke2_Corner2_Rounded as NewspaperIcon,
-} from '#/components/icons/Newspaper'
+import {UserAvatar} from '#/view/com/util/UserAvatar'
+import {atoms as a, useTheme} from '#/alf'
 import {InlineLinkText} from '#/components/Link'
 import {useAgeAssurance} from '#/ageAssurance'
 import {BRAND} from '#/config/brand'
 import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
-import {
-  OSO_COLORS,
-  OSO_DISPLAY_FEATURES,
-  OSO_DISPLAY_FONT,
-} from '#/features/osoLanding/theme'
+import {OSO_COLORS} from '#/features/osoLanding/theme'
 import {router} from '#/routes'
+import {
+  OSO_PILL_HEIGHT,
+  OSO_PILL_ICON_SIZE,
+  type OsoPillKind,
+  OsoPillLabel,
+  osoPillShapeStyle,
+  useOsoPill,
+} from './pills'
 
 /** Routes that keep the news pill highlighted while browsing the news hub. */
 const NEWS_ROUTES = [
@@ -53,118 +38,173 @@ const NEWS_ROUTES = [
   'NewsroomArticle',
 ]
 
-const PILL_HEIGHT = 48
-const ICON_SIZE = 28
-
-type Icons = {
-  inactive: React.ComponentType<SVGIconProps>
-  active: React.ComponentType<SVGIconProps>
-}
-
 /**
  * The Oso sidebar, drawn as the coloured pills from the sidebar design
  * reference with the app's usual icons. Replaces the standard nav items.
  */
 export function OsoNavItems({minimal}: {minimal: boolean}) {
-  const {t: l} = useLingui()
+  return (
+    <View style={[a.gap_md, a.pt_md, minimal && a.align_center]}>
+      <OsoNavPillList minimal={minimal} />
+    </View>
+  )
+}
+
+const BOTTOM_BAR_PILL_HEIGHT = 36
+
+/**
+ * The phone-width bottom bar: the same buttons and colours as the sidebar, as
+ * round icon buttons, then the user's avatar, which opens the account page.
+ */
+export function OsoBottomBarItems() {
+  return (
+    <View
+      style={[
+        a.flex_1,
+        a.flex_row,
+        a.align_center,
+        a.justify_between,
+        a.py_sm,
+      ]}>
+      <OsoNavPillList minimal height={BOTTOM_BAR_PILL_HEIGHT} />
+      <OsoAccountButton size={BOTTOM_BAR_PILL_HEIGHT} />
+    </View>
+  )
+}
+
+function OsoNavPillList({
+  minimal,
+  height,
+}: {
+  minimal: boolean
+  height?: number
+}) {
   const aa = useAgeAssurance()
   const numUnreadNotifications = useUnreadNotifications()
   const numUnreadMessages = useUnreadMessageCount()
 
   return (
-    <View style={[a.gap_md, a.pt_md, minimal && a.align_center]}>
+    <>
+      <OsoNavPill kind="home" href="/" minimal={minimal} height={height} />
       <OsoNavPill
-        label={l({
-          message: 'home',
-          comment:
-            'Oso sidebar link to the landing page. Lowercase on purpose.',
-        })}
-        href="/"
-        icons={{inactive: HomeIcon, active: HomeFilledIcon}}
-        background={OSO_COLORS.yellow}
-        color={OSO_COLORS.blue}
-        minimal={minimal}
-      />
-      <OsoNavPill
-        label={l({
-          message: 'news',
-          comment: 'Oso sidebar link to the news hub. Lowercase on purpose.',
-        })}
+        kind="news"
         href={NEWS_V2_ENABLED ? '/newsroom/explore' : '/news'}
         relatedRoutes={NEWS_ROUTES}
-        icons={{inactive: NewspaperIcon, active: NewspaperFilledIcon}}
-        background={OSO_COLORS.blue}
-        color={OSO_COLORS.yellow}
         minimal={minimal}
+        height={height}
       />
       <OsoNavPill
-        label={l({
-          message: 'events',
-          comment: 'Oso sidebar link to the events page. Lowercase on purpose.',
-        })}
+        kind="events"
         href="/events"
-        icons={{inactive: CalendarIcon, active: CalendarIcon}}
-        background={OSO_COLORS.green}
-        color={OSO_COLORS.violet}
         minimal={minimal}
+        height={height}
       />
       <OsoNavPill
-        label={l({
-          message: 'explore',
-          comment:
-            'Oso sidebar link to the explore page. Lowercase on purpose.',
-        })}
+        kind="explore"
         href="/search"
-        icons={{
-          inactive: MagnifyingGlassIcon,
-          active: MagnifyingGlassFilledIcon,
-        }}
-        background={OSO_COLORS.lemon}
-        color={OSO_COLORS.grey}
         minimal={minimal}
+        height={height}
       />
       <OsoNavPill
-        label={l({
-          message: 'chat',
-          comment: 'Oso sidebar link to chat. Lowercase on purpose.',
-        })}
+        kind="feeds"
+        href="/following"
+        minimal={minimal}
+        height={height}
+      />
+      <OsoNavPill
+        kind="chat"
         href="/messages"
-        icons={{inactive: MessageIcon, active: MessageFilledIcon}}
         count={aa.flags.chatDisabled ? undefined : numUnreadMessages.numUnread}
         hasNew={!aa.flags.chatDisabled && numUnreadMessages.hasNew}
-        background={OSO_COLORS.coral}
-        color={OSO_COLORS.mint}
         minimal={minimal}
+        height={height}
       />
       <OsoNavPill
-        label={l({
-          message: 'notifications',
-          comment: 'Oso sidebar link to notifications. Lowercase on purpose.',
-        })}
+        kind="notifications"
         href="/notifications"
-        icons={{inactive: BellIcon, active: BellFilledIcon}}
         count={numUnreadNotifications}
-        background={OSO_COLORS.violet}
-        color={OSO_COLORS.green}
         minimal={minimal}
+        height={height}
       />
-    </View>
+    </>
+  )
+}
+
+/** The user's avatar, linking to the Oso account page. */
+function OsoAccountButton({size}: {size: number}) {
+  const t = useTheme()
+  const {t: l} = useLingui()
+  const {currentAccount} = useSession()
+  const {data: profile} = useProfileQuery({did: currentAccount?.did})
+  const navigation = useNavigation<NavigationProp>()
+  const isActive = useNavigationState(
+    state => !!state && getCurrentRoute(state).name === 'OsoAccount',
+  )
+
+  const onPress = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) {
+      return
+    }
+    e.preventDefault()
+    navigation.navigate('OsoAccount')
+  }
+
+  return (
+    <PressableWithHover
+      style={[
+        a.rounded_full,
+        isActive && {
+          outlineWidth: 3,
+          outlineStyle: 'solid',
+          outlineColor: t.atoms.text.color,
+          outlineOffset: 2,
+        },
+      ]}
+      hoverStyle={{opacity: 0.9}}
+      // @ts-expect-error the function signature differs on web
+      onPress={onPress}
+      href="/account"
+      dataSet={{noUnderline: 1}}
+      role="link"
+      accessibilityLabel={l`Account`}
+      accessibilityHint={l`Opens your profile, settings and sign-out options`}>
+      <UserAvatar
+        avatar={profile?.avatar}
+        size={size}
+        type={profile?.associated?.labeler ? 'labeler' : 'user'}
+      />
+    </PressableWithHover>
   )
 }
 
 /**
- * Terms, Privacy, Donate and Feedback, which Oso shows at the bottom of the
- * left menu instead of in the right column.
+ * Placeholder until Oso has its own FAQ page. BRAND.links.faq still points at
+ * Bluesky's FAQ, which is why it is not used here.
  */
-export function OsoNavFooter() {
+const OSO_FAQ_URL = 'https://oso.social/faq'
+
+export type OsoFooterLink = 'faq' | 'donate' | 'feedback' | 'terms' | 'privacy'
+
+/**
+ * FAQ, Donate, Feedback, Terms and Privacy, which Oso shows at the bottom of
+ * the left menu instead of in the right column. `links` picks which to show,
+ * in this order.
+ */
+export function OsoNavFooter({
+  links: include = ['faq', 'donate', 'feedback', 'terms', 'privacy'],
+}: {
+  links?: OsoFooterLink[]
+}) {
   const t = useTheme()
   const {t: l} = useLingui()
-  const links = [
-    {label: l`Terms`, to: BRAND.links.tos},
-    {label: l`Privacy`, to: BRAND.links.privacy},
-    {label: l`Donate`, to: BRAND.links.donate},
-    {label: l`Feedback`, to: BRAND.links.feedback},
-  ]
+  const allLinks: Record<OsoFooterLink, {label: string; to: string}> = {
+    faq: {label: l`FAQ`, to: OSO_FAQ_URL},
+    donate: {label: l`Donate`, to: BRAND.links.donate},
+    feedback: {label: l`Feedback`, to: BRAND.links.feedback},
+    terms: {label: l`Terms`, to: BRAND.links.tos},
+    privacy: {label: l`Privacy`, to: BRAND.links.privacy},
+  }
+  const links = include.map(key => allLinks[key])
 
   return (
     <View style={[a.flex_row, a.flex_wrap, a.pt_lg, {columnGap: 8, rowGap: 2}]}>
@@ -182,28 +222,25 @@ export function OsoNavFooter() {
 }
 
 function OsoNavPill({
-  label,
+  kind,
   href,
   relatedRoutes,
-  icons,
   count,
   hasNew = false,
-  background,
-  color,
   minimal,
+  height = OSO_PILL_HEIGHT,
 }: {
-  label: string
+  kind: OsoPillKind
   href: string
   relatedRoutes?: string[]
-  icons: Icons
   count?: string
   hasNew?: boolean
-  background: string
-  color: string
   minimal: boolean
+  height?: number
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
+  const pill = useOsoPill(kind)
   const navigation = useNavigation<NavigationProp>()
   const [pathName] = router.matchPath(href)
   const currentRouteName = useNavigationState(state =>
@@ -211,7 +248,11 @@ function OsoNavPill({
   )
   const isCurrent = isTab(currentRouteName, pathName)
   const isActive = isCurrent || !!relatedRoutes?.includes(currentRouteName)
-  const Icon = isActive ? icons.active : icons.inactive
+  const Icon = isActive ? pill.icons.active : pill.icons.inactive
+  const iconSize =
+    height === OSO_PILL_HEIGHT
+      ? OSO_PILL_ICON_SIZE
+      : Math.round((height * OSO_PILL_ICON_SIZE) / OSO_PILL_HEIGHT)
 
   const onPress = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
     if (e.ctrlKey || e.metaKey || e.altKey) {
@@ -230,18 +271,7 @@ function OsoNavPill({
   return (
     <PressableWithHover
       style={[
-        a.flex_row,
-        a.align_center,
-        a.rounded_full,
-        a.gap_sm,
-        {
-          height: PILL_HEIGHT,
-          backgroundColor: background,
-          alignSelf: minimal ? 'center' : 'flex-start',
-        },
-        minimal
-          ? {width: PILL_HEIGHT, justifyContent: 'center'}
-          : {paddingLeft: (PILL_HEIGHT - ICON_SIZE) / 2, paddingRight: 20},
+        osoPillShapeStyle(pill, {minimal, height}),
         isActive && {
           outlineWidth: 3,
           outlineStyle: 'solid',
@@ -255,10 +285,10 @@ function OsoNavPill({
       href={href}
       dataSet={{noUnderline: 1}}
       role="link"
-      accessibilityLabel={label}
+      accessibilityLabel={pill.label}
       accessibilityHint="">
       <View>
-        <Icon aria-hidden={true} width={ICON_SIZE} fill={color} />
+        <Icon aria-hidden={true} width={iconSize} fill={pill.color} />
         {count ? (
           <Text
             accessibilityLabel={l`${plural(count, {
@@ -276,12 +306,12 @@ function OsoNavPill({
               a.text_center,
               {
                 top: -6,
-                left: ICON_SIZE - 10,
+                left: iconSize - 10,
                 minWidth: 16,
                 paddingHorizontal: 4,
                 paddingVertical: 1,
-                backgroundColor: OSO_COLORS.black,
-                color: '#FFFFFF',
+                backgroundColor: OSO_COLORS.highlight,
+                color: OSO_COLORS.navy,
               },
             ]}>
             {count}
@@ -296,27 +326,13 @@ function OsoNavPill({
                 right: -2,
                 width: 8,
                 height: 8,
-                backgroundColor: OSO_COLORS.black,
+                backgroundColor: OSO_COLORS.highlight,
               },
             ]}
           />
         ) : null}
       </View>
-      {!minimal && (
-        <Text
-          style={[
-            {
-              color,
-              fontSize: 32,
-              lineHeight: PILL_HEIGHT,
-              fontFamily: OSO_DISPLAY_FONT,
-              fontWeight: '700',
-            },
-            web({fontFeatureSettings: OSO_DISPLAY_FEATURES}),
-          ]}>
-          {label}
-        </Text>
-      )}
+      {!minimal && <OsoPillLabel pill={pill} />}
     </PressableWithHover>
   )
 }

@@ -12,6 +12,7 @@ import {atoms as a, useTheme} from '#/alf'
 import * as Layout from '#/components/Layout'
 import {ListFooter} from '#/components/Lists'
 import {Text} from '#/components/Typography'
+import {OsoTitlePill} from '#/features/osoNav/pills'
 import {
   StarterPackCard,
   StarterPackCardSkeleton,
@@ -43,9 +44,7 @@ export function OsoStarterPacksScreen(_props: Props) {
       <Layout.Header.Outer>
         <Layout.Header.BackButton />
         <Layout.Header.Content>
-          <Layout.Header.TitleText>
-            <Trans>Starter Packs</Trans>
-          </Layout.Header.TitleText>
+          <OsoTitlePill kind="starterPacks" />
         </Layout.Header.Content>
         <Layout.Header.Slot />
       </Layout.Header.Outer>
