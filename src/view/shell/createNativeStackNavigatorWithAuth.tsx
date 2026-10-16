@@ -1,4 +1,4 @@
-import {useEffect, useRef} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import {View} from 'react-native'
 // Based on @react-navigation/native-stack/src/navigators/createNativeStackNavigator.ts
 // MIT License
@@ -38,6 +38,8 @@ import {SignupQueued} from '#/screens/SignupQueued'
 import {atoms as a, useLayoutBreakpoints} from '#/alf'
 import {PolicyUpdateOverlay} from '#/components/PolicyUpdateOverlay'
 import {IS_NATIVE, IS_PARTNER_PREVIEW, IS_WEB} from '#/env'
+import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
+import {OsoLanding} from '#/features/osoLanding'
 import {BottomBarWeb} from './bottom-bar/BottomBarWeb'
 import {DesktopLeftNav} from './desktop/LeftNav'
 import {DesktopRightNav} from './desktop/RightNav'
@@ -121,6 +123,11 @@ function NativeStackNavigator({
   const {setShowLoggedOut} = useLoggedOutViewControls()
   const {isMobile} = useWebMediaQueries()
   const {leftNavMinimal} = useLayoutBreakpoints()
+  /*
+   * Oso shows its landing chooser once per account per app load, in place of
+   * the home feed. After a pick, Home behaves as usual.
+   */
+  const [osoLandingSeenBy, setOsoLandingSeenBy] = useState<string>()
   if (
     !hasSession &&
     (activeRouteRequiresAuth ||
@@ -137,6 +144,29 @@ function NativeStackNavigator({
   }
   if (onboardingState.isActive) {
     return <Onboarding />
+  }
+  if (
+    IS_PARTNER_PREVIEW &&
+    currentAccount &&
+    activeRoute.name === 'Home' &&
+    osoLandingSeenBy !== currentAccount.did
+  ) {
+    return (
+      <OsoLanding
+        onSelect={destination => {
+          setOsoLandingSeenBy(currentAccount.did)
+          if (destination === 'news') {
+            navigation.navigate(
+              NEWS_V2_ENABLED ? 'NewsroomExplore' : 'NewsFeed',
+            )
+          } else if (destination === 'events') {
+            navigation.navigate('Events')
+          } else {
+            navigation.navigate('Search')
+          }
+        }}
+      />
+    )
   }
   // On web, limit how many screens stay mounted to prevent memory growth.
   // Home is always pinned, the focused screen is always mounted, and the

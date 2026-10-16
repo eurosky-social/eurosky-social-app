@@ -53,6 +53,18 @@ fs.copyFileSync(
   path.join(brandDir, 'LeagueSpartan-VF.woff2'),
   path.join(root, 'web/LeagueSpartan-VF.woff2'),
 )
+/*
+ * Display font for the landing page tiles. It is a trial file that stays out
+ * of git, so builds without it fall back to League Spartan.
+ */
+const displayFont = path.join(brandDir, 'ABCSolarDisplay-Medium.otf')
+const hasDisplayFont = fs.existsSync(displayFont)
+if (hasDisplayFont) {
+  fs.copyFileSync(
+    displayFont,
+    path.join(root, 'web/ABCSolarDisplay-Medium.otf'),
+  )
+}
 const html = path.join(root, 'web/index.html')
 fs.writeFileSync(
   html,
@@ -63,6 +75,9 @@ fs.writeFileSync(
       '  <meta name="robots" content="noindex,nofollow">\n' +
         '  <style>\n' +
         '    @font-face { font-family: LeagueSpartan; src: url(/LeagueSpartan-VF.woff2) format("woff2"); font-weight: 100 900; font-display: swap; }\n' +
+        (hasDisplayFont
+          ? '    @font-face { font-family: ABCSolarDisplay; src: url(/ABCSolarDisplay-Medium.otf) format("opentype"); font-weight: 500; font-display: swap; }\n'
+          : '') +
         '    body { font-family: LeagueSpartan, system-ui, sans-serif; }\n' +
         '  </style>\n  </head>',
     ),
