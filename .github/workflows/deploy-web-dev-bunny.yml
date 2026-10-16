@@ -93,7 +93,7 @@ jobs:
           # Local News reads the Dutch labeler's consumer API. Neither value is
           # a secret: the DID is public, and reads are authenticated with the
           # signed-in user's service-auth token.
-          EXPO_PUBLIC_DUTCH_API_URL: https://news-aggregator.eurosky.dev
+          EXPO_PUBLIC_DUTCH_API_URL: https://news.eurosky.tech
           EXPO_PUBLIC_DUTCH_API_SERVICE_DID: did:plc:oub2sr5miponqkvdf3awv5qn
           # Serves the news hub instead of the original news pages. Needs the
           # Dutch API values above; production leaves it unset.
