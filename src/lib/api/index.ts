@@ -33,7 +33,8 @@ import {
   type PostDraft,
   type ThreadDraft,
 } from '#/view/com/composer/state/composer'
-import {TilesNotAllowedError} from '#/features/tiles/permissions'
+import {fetchIsTrustedTile} from '#/features/tiles/author'
+import {UntrustedTileAuthorError} from '#/features/tiles/permissions'
 import {type TileExternal} from '#/features/tiles/record'
 import {app, chat, com} from '#/lexicons'
 import * as bsky from '#/types/bsky'
@@ -70,11 +71,6 @@ interface PostOpts {
    * to the post itself. Falls back to the DID.
    */
   handle?: string
-  /*
-   * EUROSKY: whether this account may post tiles (verified by one of our
-   * trusted verifiers). Off by default: a tile embed then fails the post.
-   */
-  canEmbedTiles?: boolean
 }
 
 /**
@@ -83,7 +79,6 @@ interface PostOpts {
 type PostContext = {
   /** The post's own web URL, known up front because the rkey is minted here. */
   postUrl: string
-  canEmbedTiles: boolean
 }
 
 export async function post(queryClient: QueryClient, opts: PostOpts) {
@@ -131,7 +126,6 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
       postUrl: toShareUrl(
         makeProfileLink({did, handle: opts.handle ?? ''}, 'post', rkey),
       ),
-      canEmbedTiles: opts.canEmbedTiles ?? false,
     }
 
     // Not awaited to avoid waterfalls.
@@ -575,11 +569,18 @@ async function resolveMedia(
       /*
        * EUROSKY: a tile card links to this very post and carries a pointer to
        * the tile, so that mu can run it in place while any other client shows
-       * a card that leads here.
+       * a card that leads here. Anyone may post one, but only a tile by one
+       * of our verified accounts will play, so any other is refused here.
        */
       if (resolvedLink.tile) {
-        if (!postContext.canEmbedTiles) {
-          throw new TilesNotAllowedError()
+        if (
+          !(await fetchIsTrustedTile(
+            queryClient,
+            appviewClient,
+            resolvedLink.tile,
+          ))
+        ) {
+          throw new UntrustedTileAuthorError()
         }
         const external: TileExternal = {
           uri: postContext.postUrl as UriString,

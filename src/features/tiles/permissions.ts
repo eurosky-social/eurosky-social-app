@@ -1,26 +1,33 @@
 import {type Client} from '@atproto/lex'
 import {type QueryClient} from '@tanstack/react-query'
 
+import {VERIFICATION_DENYLIST_DIDS} from '#/lib/constants'
 import {
   type MuVerification,
   muVerificationQueryOptions,
 } from '#/state/queries/verification/useMuVerificationQuery'
 
 /**
- * Whether an account may post tiles: it has been verified by one of mu's
- * trusted verifiers, or is one of them. Anyone may repost or quote a tile post.
+ * Whether a tile may run: its author (the account whose repo holds the
+ * `ing.dasl.masl` record) has been verified by one of mu's trusted verifiers,
+ * or is one of them. A tile is code, so the trust root is ours alone: Bluesky's
+ * own verifications do not count here, and a denylisted account never does.
+ *
+ * Anyone may post, repost or quote a tile; the rule is about who made it.
  */
-export function canPostTiles(
+export function isTrustedTileAuthor(
+  did: string,
   verification: MuVerification | undefined,
 ): boolean {
+  if (VERIFICATION_DENYLIST_DIDS.has(did)) return false
   return (
     !!verification &&
     (verification.isVerifier || verification.verifications.length > 0)
   )
 }
 
-/** Resolves the account's verification (cached) and answers `canPostTiles`. */
-export async function fetchCanPostTiles(
+/** Resolves the author's verification (cached) and answers `isTrustedTileAuthor`. */
+export async function fetchIsTrustedTileAuthor(
   queryClient: QueryClient,
   appviewClient: Client,
   did: string,
@@ -29,15 +36,15 @@ export async function fetchCanPostTiles(
     const verification = await queryClient.fetchQuery(
       muVerificationQueryOptions(queryClient, appviewClient, did),
     )
-    return canPostTiles(verification)
+    return isTrustedTileAuthor(did, verification)
   } catch {
     return false
   }
 }
 
-/** Thrown by the post pipeline when an unverified account tries to post a tile. */
-export class TilesNotAllowedError extends Error {
+/** Thrown by the post pipeline when the tile being attached has an unverified author. */
+export class UntrustedTileAuthorError extends Error {
   constructor() {
-    super('Only verified accounts can post tiles')
+    super('Only tiles published by verified accounts can be posted')
   }
 }

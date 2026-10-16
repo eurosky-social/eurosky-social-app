@@ -1,31 +1,27 @@
 import {type StyleProp, View, type ViewStyle} from 'react-native'
 import {Image} from 'expo-image'
+import {useLingui} from '@lingui/react/macro'
 
-import {toNiceDomain} from '#/lib/strings/url-helpers'
 import {atoms as a, useTheme} from '#/alf'
 import {Divider} from '#/components/Divider'
 import {Play_Filled_Corner0_Rounded as PlayIcon} from '#/components/icons/Play'
+import {Warning_Stroke2_Corner0_Rounded as WarningIcon} from '#/components/icons/Warning'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
-import {BRAND} from '#/config/brand'
 import {type app} from '#/lexicons'
-
-/**
- * The host shown in the card footer. A posted tile card links to the post on
- * our own host; in the composer preview the link is still the tile's at-URI,
- * so show the host the card will end up linking to.
- */
-export function tileCardHost(uri: string): string {
-  return /^https?:\/\//.test(uri) ? toNiceDomain(uri) : BRAND.web.hosts[0]
-}
+import {type TileAuthor} from '../author'
+import {TileAuthorLine} from './TileAuthor'
 
 /**
  * The link card of a tile post. Looks like an external link card, with the
  * screenshot (play button included) where the thumbnail goes, or, once the
- * tile is running, the tile itself in `media`.
+ * tile is running, the tile itself in `media`. The footer names the tile's
+ * author, since it is their verification that lets the tile run; a tile whose
+ * author is not verified says so there instead of a play button.
  */
 export function TileCard({
   link,
+  author,
   hovered = false,
   pressed = false,
   loading = false,
@@ -34,6 +30,8 @@ export function TileCard({
   style,
 }: {
   link: app.bsky.embed.external.ViewExternal
+  /** The tile's author, once known. */
+  author?: TileAuthor
   hovered?: boolean
   pressed?: boolean
   /** Dims the screenshot behind a spinner while the tile loads. */
@@ -45,7 +43,9 @@ export function TileCard({
   style?: StyleProp<ViewStyle>
 }) {
   const t = useTheme()
+  const {t: l} = useLingui()
   const hasMedia = Boolean(media || link.thumb)
+  const untrusted = author?.trusted === false
   const borderColor = hovered
     ? t.atoms.border_contrast_high
     : t.atoms.border_contrast_low
@@ -124,36 +124,43 @@ export function TileCard({
             style={[
               a.flex_row,
               a.align_center,
-              a.gap_2xs,
+              a.gap_xs,
               a.pb_sm,
               {
                 paddingTop: 6, // off menu
               },
             ]}>
-            <PlayIcon
-              size="xs"
-              style={[
-                a.transition_color,
-                hovered
-                  ? t.atoms.text_contrast_medium
-                  : t.atoms.text_contrast_low,
-              ]}
-            />
-            <Text
-              numberOfLines={1}
-              style={[
-                a.flex_1,
-                a.transition_color,
-                a.text_xs,
-                a.leading_snug,
-                hovered
-                  ? t.atoms.text_contrast_high
-                  : t.atoms.text_contrast_medium,
-              ]}>
-              {tileCardHost(link.uri)}
-            </Text>
+            {untrusted ? (
+              <WarningIcon size="xs" fill={t.palette.negative_500} />
+            ) : (
+              <PlayIcon
+                size="xs"
+                style={[
+                  a.transition_color,
+                  hovered
+                    ? t.atoms.text_contrast_medium
+                    : t.atoms.text_contrast_low,
+                ]}
+              />
+            )}
+            {author ? (
+              <TileAuthorLine author={author} hovered={hovered} />
+            ) : (
+              <View style={[a.flex_1, {height: 16}]} />
+            )}
             {action}
           </View>
+          {untrusted && (
+            <Text
+              style={[
+                a.text_xs,
+                a.leading_snug,
+                a.pb_sm,
+                t.atoms.text_contrast_medium,
+              ]}>
+              {l`This tile can't be played here: its author isn't verified.`}
+            </Text>
+          )}
         </View>
       </View>
     </View>

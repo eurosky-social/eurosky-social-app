@@ -7,13 +7,16 @@ import {
 } from 'react-native'
 import {type Tile} from '@dasl/tile-loader'
 import {useLingui} from '@lingui/react/macro'
+import {useQueryClient} from '@tanstack/react-query'
 
 import {logger} from '#/logger'
+import {useAppviewClient} from '#/state/session'
 import {atoms as a} from '#/alf'
 import {Button, ButtonIcon} from '#/components/Button'
 import {TimesLarge_Stroke2_Corner0_Rounded as XIcon} from '#/components/icons/Times'
 import * as Toast from '#/components/Toast'
 import {type app} from '#/lexicons'
+import {fetchIsTrustedTile, useTileAuthor} from '../../author'
 import {getTileMothership} from '../../mothership'
 import {type TileRef} from '../../record'
 import {tileHeight} from '../../sizing'
@@ -25,6 +28,10 @@ type Status = 'card' | 'loading' | 'active'
  * A tile post's embed: the link card until it is clicked, then the tile
  * itself, running in its sandboxed frame where the screenshot was. The card
  * never follows its link; on mu the post is where the tile plays.
+ *
+ * A tile only plays if its author is one of our verified accounts. The card
+ * shows the verdict once it is known, and the click checks it afresh before
+ * anything of the tile is loaded.
  */
 export function TileEmbed({
   link,
@@ -41,6 +48,9 @@ export function TileEmbed({
   preview?: boolean
 }) {
   const {t: l} = useLingui()
+  const queryClient = useQueryClient()
+  const appviewClient = useAppviewClient()
+  const author = useTileAuthor(tile)
   const [status, setStatus] = useState<Status>('card')
   const [width, setWidth] = useState(0)
   const [height, setHeight] = useState(0)
@@ -54,9 +64,17 @@ export function TileEmbed({
 
   const activate = async () => {
     if (preview || status !== 'card') return
-    onOpen?.()
     setStatus('loading')
     try {
+      if (!(await fetchIsTrustedTile(queryClient, appviewClient, tile))) {
+        Toast.show(
+          l`This tile can't be played here: its author isn't verified.`,
+          {type: 'warning'},
+        )
+        setStatus('card')
+        return
+      }
+      onOpen?.()
       const loaded = await getTileMothership().loadTile(tile.uri)
       if (!loaded) throw new Error(`No loader matched ${tile.uri}`)
       loadedRef.current = loaded
@@ -99,6 +117,7 @@ export function TileEmbed({
       <View style={[a.w_full]} onLayout={onLayout}>
         <TileCard
           link={link}
+          author={author}
           style={style}
           media={<div ref={hostRef} style={{width: '100%', height}} />}
           action={
@@ -125,6 +144,7 @@ export function TileEmbed({
         {({hovered, pressed}) => (
           <TileCard
             link={link}
+            author={author}
             hovered={hovered}
             pressed={pressed}
             loading={status === 'loading'}

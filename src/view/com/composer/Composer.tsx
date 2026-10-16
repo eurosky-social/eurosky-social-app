@@ -91,7 +91,6 @@ import {useEditPostMutation} from '#/state/queries/post'
 import {usePreferencesQuery} from '#/state/queries/preferences'
 import {useProfileQuery} from '#/state/queries/profile'
 import {resolveLinkQueryOptions} from '#/state/queries/resolve-link'
-import {useMuVerificationQuery} from '#/state/queries/verification/useMuVerificationQuery'
 import {
   useAppviewClient,
   useChatClient,
@@ -146,12 +145,9 @@ import {
   IS_WEB_SAFARI,
 } from '#/env'
 import {type Gif} from '#/features/gifPicker/types'
+import {fetchIsTrustedTile} from '#/features/tiles/author'
 import {isTileUri} from '#/features/tiles/detect'
-import {
-  canPostTiles,
-  fetchCanPostTiles,
-  TilesNotAllowedError,
-} from '#/features/tiles/permissions'
+import {UntrustedTileAuthorError} from '#/features/tiles/permissions'
 import {app, chat} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {
@@ -283,15 +279,6 @@ export const ComposePost = ({
   const chatClient = useChatClient()
   const pdsClient = usePdsClient()
   const queryClient = useQueryClient()
-  /*
-   * EUROSKY: tiles may only be posted by accounts verified by one of our
-   * trusted verifiers. The paste-time check in ComposerPost is the friendly
-   * one; this value makes the post pipeline refuse a tile that got through.
-   */
-  const {data: muVerification} = useMuVerificationQuery({
-    did: currentAccount!.did,
-  })
-  const canEmbedTiles = canPostTiles(muVerification)
   /*
    * The host the video service-auth token is minted for. This is the same value
    * that seeds the session's PDS routing, so the audience always matches the host
@@ -1116,7 +1103,6 @@ export const ComposePost = ({
           chatClient,
           pdsClient,
           handle: currentAccount!.handle,
-          canEmbedTiles,
         })
       ).uris[0]
 
@@ -1192,8 +1178,8 @@ export const ComposePost = ({
         err = l`We're sorry! The post you are replying to has been deleted.`
       } else if (e instanceof EmbeddingDisabledError) {
         err = l`This post's author has disabled quote posts.`
-      } else if (e instanceof TilesNotAllowedError) {
-        err = l`Only verified accounts can post tiles.`
+      } else if (e instanceof UntrustedTileAuthorError) {
+        err = l`Only tiles published by verified accounts can be posted.`
       }
       setError(err)
       setIsPublishing(false)
@@ -1339,7 +1325,6 @@ export const ComposePost = ({
     thread,
     linkQueries,
     currentAccount,
-    canEmbedTiles,
   ])
 
   const handleConfirmSkipEmpty = () => {
@@ -1688,6 +1673,7 @@ let ComposerPost = memo(function ComposerPost({
   const {t: l} = useLingui()
   const queryClient = useQueryClient()
   const appviewClient = useAppviewClient()
+  const chatClient = useChatClient()
   const {data: currentProfile} = useProfileQuery({did: currentDid})
   const richtext = post.richtext
   const isTextOnly = !post.embed.link && !post.embed.quote && !post.embed.media
@@ -1718,24 +1704,42 @@ let ComposerPost = memo(function ComposerPost({
 
   const onNewLink = useCallback(
     (uri: string) => {
-      // EUROSKY: tiles are for verified accounts; others get told why.
+      /*
+       * EUROSKY: anyone may post a tile, but only a tile whose author is one
+       * of our verified accounts will play, so one by anyone else is refused
+       * here with the reason rather than attached as a card that never
+       * works. The resolution is the same cached one the preview uses; if it
+       * fails, the tile is attached anyway and the preview shows the error.
+       */
       if (isTileUri(uri)) {
-        void fetchCanPostTiles(queryClient, appviewClient, currentDid).then(
-          allowed => {
-            if (allowed) {
-              dispatchPost({type: 'embed_add_uri', uri: uri as UriString})
-            } else {
-              Toast.show(l`Only verified accounts can post tiles.`, {
-                type: 'error',
-              })
-            }
-          },
-        )
+        void (async () => {
+          let tile
+          try {
+            const resolved = await queryClient.fetchQuery(
+              resolveLinkQueryOptions({appviewClient, chatClient}, uri),
+            )
+            tile = resolved.type === 'external' ? resolved.tile : undefined
+          } catch {
+            dispatchPost({type: 'embed_add_uri', uri: uri as UriString})
+            return
+          }
+          if (
+            tile &&
+            !(await fetchIsTrustedTile(queryClient, appviewClient, tile))
+          ) {
+            Toast.show(
+              l`Only tiles published by verified accounts can be posted.`,
+              {type: 'error'},
+            )
+            return
+          }
+          dispatchPost({type: 'embed_add_uri', uri: uri as UriString})
+        })()
         return
       }
       dispatchPost({type: 'embed_add_uri', uri: uri as UriString})
     },
-    [dispatchPost, queryClient, appviewClient, currentDid, l],
+    [dispatchPost, queryClient, appviewClient, chatClient, l],
   )
 
   const onPhotoPasted = useCallback(

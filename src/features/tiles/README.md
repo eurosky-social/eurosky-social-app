@@ -36,11 +36,13 @@ running tile instead of following the link.
 | `manifest.ts` | manifest helpers: resource CIDs, blob URLs, the screenshot |
 | `resolve.ts` | reads the tile record from the author's PDS (handle or any DID) |
 | `thumb(.web).ts` | the card thumbnail; the web build composites the play button |
-| `permissions.ts` | who may post tiles, and the error the post pipeline throws |
+| `permissions.ts` | whether a tile's author is trusted, and the error the post pipeline throws |
+| `author.ts` | the author of a tile (the repo in its URI), the trust check, and the hook the card footer uses |
 | `mothership(.web).ts` | the page's one `TileMothership`, with a mu loader that resolves the PDS itself |
 | `sizing.ts` | the rendered height for a manifest's `sizing` and a card width, shared by web and native |
 | `host.ts` | the URL of the hosted page the native player loads (`@dasl/tile-host`) |
 | `components/TileCard.tsx` | the card, shared by the feed embed and the composer preview |
+| `components/TileAuthor.tsx` | the footer line: the author's avatar, name, check and handle |
 | `components/TileEmbed/` | web: card that runs the tile in the page; native: card that runs it in a WebView |
 | `components/TilePlayer.tsx` | native: the WebView on the hosted page, and the message bridge |
 
@@ -48,22 +50,35 @@ Touchpoints in upstream code, each marked `EUROSKY`:
 
 - `lib/api/resolve.ts`: a tile at-URI resolves to an external card with `tile` set.
 - `lib/api/index.ts`: the rkey is minted before the embed resolves; a tile card
-  gets the post URL and the pointer; unverified accounts are refused.
+  gets the post URL and the pointer; a tile by an unverified author is refused.
 - `components/Post/Embed/index.tsx`: the `link` case checks the post record for a
   pointer before the custom embed handlers.
 - `view/com/composer/text-input/TextInput.web.tsx` and `TextInput.tsx`: a tile
   at-URI pasted (web) or appearing in the text (native) attaches it, since facet
   detection never sees at-URIs; a paste that is only the URI stays out of the text.
 - `app.config.js`: the host page's domain in `WKAppBoundDomains` (below).
-- `view/com/composer/Composer.tsx`: the paste is gated on verification with a
-  toast; `post()` is told whether tiles are allowed.
+- `view/com/composer/Composer.tsx`: a pasted tile is resolved and its author
+  checked before it is attached; a tile by an unverified author gets a toast.
 - `view/com/composer/ExternalEmbed.tsx`: a tile link previews as its card.
 
-## Who may post
+## Who may post, and whose tiles run
 
-Only accounts verified by one of mu's trusted verifiers (`useMuVerificationQuery`,
-also verifiers themselves) may attach a tile. Anyone can repost or quote a tile
-post. This is a client-side rule for now.
+Anyone may post, repost or quote a tile. What is gated is the tile itself: it
+only runs if its *author*, the account whose repo holds the `ing.dasl.masl`
+record, is verified by one of mu's trusted verifiers (`useMuVerificationQuery`)
+or is one of them. A tile is code, so the trust root is ours alone: Bluesky's
+own verifications do not count, and a denylisted account never does
+(`permissions.ts`).
+
+The check is applied where it matters, at play time: `TileEmbed` asks
+`fetchIsTrustedTile` when the card is clicked, before the loader (web) or the
+WebView (native) touches anything of the tile. That covers posts from any
+client and authors who have lost their verification since posting. The card
+shows the verdict once it is known: the footer names the author, with the check
+when they are verified, and a tile by an unverified author says so in place of
+the play icon. The composer and the post pipeline apply the same check up front
+so nobody attaches a card that will never play. This is a client-side rule for
+now.
 
 ## Loading server
 
