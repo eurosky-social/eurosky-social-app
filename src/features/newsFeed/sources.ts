@@ -48,6 +48,7 @@ export const NEWS_REGIONS: NewsRegion[] = [
   {id: 'netherlands', label: 'Netherlands'},
   {id: 'spain', label: 'Spain'},
   {id: 'uk', label: 'UK'},
+  {id: 'dk', label: 'Denmark'},
 ]
 
 /**
@@ -1495,6 +1496,46 @@ export const NEWS_SOURCES: NewsSource[] = [
     topics: ['general', 'politics'],
     regions: ['uk'],
     langs: ['en'],
+  },
+  {
+    did: 'did:plc:pvao7wm4e4b3c7rtco4vh766',
+    handle: 'politiken.dk',
+    displayName: 'Politiken',
+    topics: ['all'],
+    regions: ['dk'],
+    langs: ['dk'],
+  },
+  {
+    did: 'did:plc:jhglrf4jb5jp4lleylz3bsiy',
+    handle: 'information.dk',
+    displayName: 'Dagbladet Information',
+    topics: ['all'],
+    regions: ['dk'],
+    langs: ['dk'],
+  },
+  {
+    did: 'did:plc:sm3r6zeqp23xqm6lpumuaamc',
+    handle: 'tjekdet.dk',
+    displayName: 'TjekDet',
+    topics: ['all'],
+    regions: ['dk'],
+    langs: ['dk'],
+  },
+  {
+    did: 'did:plc:ifhfs5naduarldztu2k5jmjs',
+    handle: 'videnskab.dk',
+    displayName: 'Videnskab.dk',
+    topics: ['science', 'health', 'climate', 'tech'],
+    regions: ['dk'],
+    langs: ['dk'],
+  },
+  {
+    did: 'did:plc:pru765sx5kjcjtujgfm3stcm',
+    handle: 'finans.dk',
+    displayName: 'Finans',
+    topics: ['general', 'politics'],
+    regions: ['dk'],
+    langs: ['dk'],
   },
 ]
 
