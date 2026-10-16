@@ -97,6 +97,7 @@ export type Events = {
       | 'feeds'
       | 'lists'
       | 'news'
+      | 'live' // EUROSKY: fork nav items
       | 'saved'
       | 'settings'
       | 'menu'
