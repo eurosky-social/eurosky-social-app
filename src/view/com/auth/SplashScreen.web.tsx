@@ -20,6 +20,7 @@ import * as Layout from '#/components/Layout'
 import {InlineLinkText} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
+import {IS_PARTNER_PREVIEW} from '#/env'
 
 export const SplashScreen = ({
   onDismiss,
@@ -83,14 +84,16 @@ export const SplashScreen = ({
                 <BetaTag />
               </View>
 
-              <Text
-                style={[
-                  a.text_md,
-                  a.font_semi_bold,
-                  t.atoms.text_contrast_medium,
-                ]}>
-                <Trans>What's up?</Trans>
-              </Text>
+              {!IS_PARTNER_PREVIEW && (
+                <Text
+                  style={[
+                    a.text_md,
+                    a.font_semi_bold,
+                    t.atoms.text_contrast_medium,
+                  ]}>
+                  <Trans>What's up?</Trans>
+                </Text>
+              )}
             </View>
 
             <View
