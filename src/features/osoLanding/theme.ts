@@ -1,16 +1,17 @@
 /**
- * Colours from the Oso design references (landing page and sidebar buttons).
+ * Colours from the Oso design references. The named swatches come from
+ * __design_references__/colors/ (blue is the "light_blue" swatch).
  */
 export const OSO_COLORS = {
-  black: '#000000',
-  yellow: '#F8FD79',
-  blue: '#5167FF',
-  green: '#00E068',
-  violet: '#5644FA',
-  lemon: '#F3FF51',
-  grey: '#958A95',
-  coral: '#FA614C',
-  mint: '#AAEDE6',
+  yellow: '#F9FD8C',
+  blue: '#5566F6',
+  green: '#66DD76',
+  skyBlue: '#B8EBE6',
+  darkBlue: '#204495',
+  grayBrown: '#938A94',
+  red: '#EE835B',
+  creme: '#FCEDC6',
+  white: '#FFFFFF',
   /** Oso's main accent ("hoofdkleur") and dark background. */
   navy: '#161924',
   /** Oso's supporting accent ("steunkleur"), used for highlights. */

@@ -66,9 +66,8 @@ export type OsoPillDefinition = {
 
 /**
  * The single definition of each Oso pill, shared by the left menu and the
- * page titles so they always look the same. Sidebar colours come from the
- * sidebar design reference; feeds and trending use the colours of their
- * tiles on the explore page.
+ * page titles so they always look the same. Starter packs and trending use
+ * the colours of their tiles on the explore page.
  */
 export function useOsoPill(kind: OsoPillKind): OsoPillDefinition {
   const {t: l} = useLingui()
@@ -80,8 +79,8 @@ export function useOsoPill(kind: OsoPillKind): OsoPillDefinition {
           message: 'home',
           comment: 'Oso link to the landing page. Lowercase on purpose.',
         }),
-        background: OSO_COLORS.yellow,
-        color: OSO_COLORS.blue,
+        background: OSO_COLORS.navy,
+        color: OSO_COLORS.white,
         icons: {inactive: HomeIcon, active: HomeFilledIcon},
         fontSize: 32,
       }
@@ -104,7 +103,7 @@ export function useOsoPill(kind: OsoPillKind): OsoPillDefinition {
             'Oso link and title for the events page. Lowercase on purpose.',
         }),
         background: OSO_COLORS.green,
-        color: OSO_COLORS.violet,
+        color: OSO_COLORS.blue,
         icons: {inactive: CalendarIcon, active: CalendarIcon},
         fontSize: 32,
       }
@@ -115,8 +114,8 @@ export function useOsoPill(kind: OsoPillKind): OsoPillDefinition {
           comment:
             'Oso link and title for the explore page. Lowercase on purpose.',
         }),
-        background: OSO_COLORS.lemon,
-        color: OSO_COLORS.grey,
+        background: OSO_COLORS.yellow,
+        color: OSO_COLORS.grayBrown,
         icons: {
           inactive: MagnifyingGlassIcon,
           active: MagnifyingGlassFilledIcon,
@@ -129,9 +128,8 @@ export function useOsoPill(kind: OsoPillKind): OsoPillDefinition {
           message: 'feeds',
           comment: 'Oso link to the feeds page. Lowercase on purpose.',
         }),
-        // Same colours as the feeds tile on the explore page.
-        background: OSO_COLORS.green,
-        color: OSO_COLORS.blue,
+        background: OSO_COLORS.red,
+        color: OSO_COLORS.skyBlue,
         icons: {inactive: HashtagIcon, active: HashtagFilledIcon},
         fontSize: 32,
       }
@@ -141,8 +139,8 @@ export function useOsoPill(kind: OsoPillKind): OsoPillDefinition {
           message: 'chats',
           comment: 'Oso link to chat. Lowercase on purpose.',
         }),
-        background: OSO_COLORS.coral,
-        color: OSO_COLORS.mint,
+        background: OSO_COLORS.creme,
+        color: OSO_COLORS.darkBlue,
         icons: {inactive: MessageIcon, active: MessageFilledIcon},
         fontSize: 32,
       }
@@ -152,8 +150,8 @@ export function useOsoPill(kind: OsoPillKind): OsoPillDefinition {
           message: 'notifications',
           comment: 'Oso link to notifications. Lowercase on purpose.',
         }),
-        background: OSO_COLORS.violet,
-        color: OSO_COLORS.green,
+        background: OSO_COLORS.white,
+        color: OSO_COLORS.navy,
         icons: {inactive: BellIcon, active: BellFilledIcon},
         fontSize: 22,
       }
@@ -164,9 +162,9 @@ export function useOsoPill(kind: OsoPillKind): OsoPillDefinition {
           comment:
             'Oso title for the starter packs page. Lowercase on purpose.',
         }),
-        // Same colours as the chat button.
-        background: OSO_COLORS.coral,
-        color: OSO_COLORS.mint,
+        // Same colours as its tile on the explore page.
+        background: OSO_COLORS.navy,
+        color: OSO_COLORS.white,
         icons: {inactive: ToteIcon, active: ToteIcon},
         fontSize: 26,
       }
@@ -176,8 +174,8 @@ export function useOsoPill(kind: OsoPillKind): OsoPillDefinition {
           message: 'trending',
           comment: 'Oso title for the trending page. Lowercase on purpose.',
         }),
-        background: OSO_COLORS.blue,
-        color: OSO_COLORS.green,
+        background: OSO_COLORS.navy,
+        color: OSO_COLORS.white,
         icons: {inactive: TrendingIcon, active: TrendingIcon},
         fontSize: 32,
       }

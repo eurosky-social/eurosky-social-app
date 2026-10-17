@@ -26,6 +26,7 @@ import {HashtagWide_Stroke1_Corner0_Rounded as HashtagWideIcon} from '#/componen
 import * as Layout from '#/components/Layout'
 import {IS_NATIVE, IS_WEB} from '#/env'
 import {EventFeedTabs} from '#/features/events/components/EventFeedTabs'
+import {OsoCollapsingHeader} from '#/features/osoNav/CollapsingHeader'
 import {OsoTitlePill} from '#/features/osoNav/pills'
 import {useMyFeedOptions} from './useMyFeedOptions'
 
@@ -49,23 +50,28 @@ export function OsoMyFeedsScreen({route, navigation}: Props) {
 
   return (
     <Layout.Screen testID="osoMyFeedsScreen">
-      <Layout.Header.Outer>
-        <Layout.Header.BackButton />
-        <Layout.Header.Content>
-          <OsoTitlePill kind="feeds" />
-        </Layout.Header.Content>
-        <Layout.Header.Slot />
-      </Layout.Header.Outer>
-      {/* The shell's right column lists the feeds on wide screens. */}
-      {!(IS_WEB && rightNavVisible) && options.length > 1 && (
-        <Layout.Center>
-          <EventFeedTabs
-            items={options}
-            selectedId={feed}
-            onSelect={id => navigation.setParams({feed: id})}
-          />
-        </Layout.Center>
-      )}
+      {/* Slides away while scrolling down, as on the news page. */}
+      <OsoCollapsingHeader
+        header={
+          <Layout.Header.Outer sticky={false}>
+            <Layout.Header.BackButton />
+            <Layout.Header.Content>
+              <OsoTitlePill kind="feeds" />
+            </Layout.Header.Content>
+            <Layout.Header.Slot />
+          </Layout.Header.Outer>
+        }>
+        {/* The shell's right column lists the feeds on wide screens. */}
+        {!(IS_WEB && rightNavVisible) && options.length > 1 && (
+          <Layout.Center>
+            <EventFeedTabs
+              items={options}
+              selectedId={feed}
+              onSelect={id => navigation.setParams({feed: id})}
+            />
+          </Layout.Center>
+        )}
+      </OsoCollapsingHeader>
       {isLoading || !preferences ? (
         <Layout.Content>
           <PostFeedLoadingPlaceholder />

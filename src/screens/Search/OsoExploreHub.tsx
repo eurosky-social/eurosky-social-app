@@ -11,6 +11,9 @@ import {OSO_COLORS} from '#/features/osoLanding/theme'
 import {OsoTileGrid} from '#/features/osoLanding/TileGrid'
 import {OsoTitlePill} from '#/features/osoNav/pills'
 
+/** All three explore tiles are black with white text. */
+const TILE_COLORS = {background: OSO_COLORS.navy, text: OSO_COLORS.white}
+
 /**
  * Oso's explore page: a search bar above landing-style tiles for starter
  * packs, trending and feeds. Shown on /search when there is no query.
@@ -60,11 +63,12 @@ export function OsoExploreHub() {
                 hint: l`Opens the starter packs page`,
                 fontScale: 0.66,
                 // Same colours as the starter packs page title.
-                colors: {background: OSO_COLORS.coral, text: OSO_COLORS.mint},
+                colors: TILE_COLORS,
                 onPress: () => navigation.navigate('OsoStarterPacks'),
               },
               {
                 testID: 'osoExploreTrending',
+                colors: TILE_COLORS,
                 label: l({
                   message: 'trending',
                   comment:
@@ -77,6 +81,7 @@ export function OsoExploreHub() {
               },
               {
                 testID: 'osoExploreFeeds',
+                colors: TILE_COLORS,
                 label: l({
                   message: 'feeds',
                   comment:

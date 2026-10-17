@@ -49,6 +49,7 @@ export function OsoAccountScreen({navigation}: Props) {
             tiles={[
               {
                 testID: 'osoAccountProfile',
+                colors: {background: OSO_COLORS.white, text: OSO_COLORS.navy},
                 label: l({
                   message: 'profile',
                   comment:
@@ -65,6 +66,7 @@ export function OsoAccountScreen({navigation}: Props) {
               },
               {
                 testID: 'osoAccountSettings',
+                colors: {background: OSO_COLORS.navy, text: OSO_COLORS.white},
                 label: l({
                   message: 'settings',
                   comment:
@@ -76,6 +78,7 @@ export function OsoAccountScreen({navigation}: Props) {
               },
               {
                 testID: 'osoAccountAddAccount',
+                colors: {background: OSO_COLORS.yellow, text: OSO_COLORS.red},
                 label: l({
                   message: 'add account',
                   comment:
@@ -98,7 +101,7 @@ export function OsoAccountScreen({navigation}: Props) {
                     'Oso account page tile for signing out. Lowercase on purpose.',
                 }),
                 hint: l`Signs you out of all your accounts`,
-                colors: {background: OSO_COLORS.lemon, text: OSO_COLORS.grey},
+                colors: {background: OSO_COLORS.red, text: OSO_COLORS.yellow},
                 onPress: () => signOutPromptControl.open(),
               },
             ]}

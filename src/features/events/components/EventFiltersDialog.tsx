@@ -24,12 +24,32 @@ const MAX_DATE = '2100-12-31'
 export function EventFiltersDialog({
   filters,
   onApply,
+  showSummary = false,
 }: {
   filters: EventFilters
   onApply: (filters: EventFilters) => void
+  /**
+   * Label the button with the applied filters (the typed place and the date
+   * range) instead of "Filters" while any are active.
+   */
+  showSummary?: boolean
 }) {
-  const {t: l} = useLingui()
+  const {t: l, i18n} = useLingui()
   const control = Dialog.useDialogControl()
+
+  const formatDay = (day: string) =>
+    i18n.date(new Date(`${day}T00:00:00`), {day: 'numeric', month: 'short'})
+  const dateRange =
+    filters.from && filters.to
+      ? `${formatDay(filters.from)} – ${formatDay(filters.to)}`
+      : filters.from
+        ? l`from ${formatDay(filters.from)}`
+        : filters.to
+          ? l`until ${formatDay(filters.to)}`
+          : undefined
+  const summary = showSummary
+    ? [filters.location, dateRange].filter(Boolean).join(' · ')
+    : ''
 
   return (
     <>
@@ -42,7 +62,7 @@ export function EventFiltersDialog({
         testID="eventFiltersBtn">
         <ButtonIcon icon={SettingsSliderIcon} />
         <ButtonText>
-          <Trans context="events">Filters</Trans>
+          {summary || <Trans context="events">Filters</Trans>}
         </ButtonText>
       </Button>
 

@@ -25,13 +25,31 @@ export function OsoLanding({
   useEnableMinimalShellMode()
 
   /*
-   * The smaller tiles take their label and colours from the matching left
-   * menu button, so the two always agree.
+   * Every tile takes its label and colours from the matching left menu
+   * button, so the two always agree.
    */
+  const news = useMenuTile(
+    'news',
+    'osoLandingNews',
+    l`Opens the news page`,
+    () => onSelect('news'),
+  )
+  const events = useMenuTile(
+    'events',
+    'osoLandingEvents',
+    l`Opens the events page`,
+    () => onSelect('events'),
+  )
+  const explore = useMenuTile(
+    'explore',
+    'osoLandingExplore',
+    l`Opens the explore page`,
+    () => onSelect('explore'),
+  )
   const feeds = useMenuTile(
     'feeds',
     'osoLandingFeeds',
-    l`Opens your Following feed`,
+    l`Opens your feeds`,
     () => onSelect('feeds'),
   )
   const chats = useMenuTile(
@@ -62,38 +80,7 @@ export function OsoLanding({
       <BrandLogo variant="mark" size={161} fill="#FFFFFF" />
       <OsoTileGrid
         holeColor={OSO_COLORS.navy}
-        tiles={[
-          {
-            testID: 'osoLandingNews',
-            label: l({
-              message: 'news',
-              comment:
-                'Oso landing page tile linking to the news hub. Lowercase on purpose.',
-            }),
-            hint: l`Opens the news page`,
-            onPress: () => onSelect('news'),
-          },
-          {
-            testID: 'osoLandingEvents',
-            label: l({
-              message: 'events',
-              comment:
-                'Oso landing page tile linking to the events page. Lowercase on purpose.',
-            }),
-            hint: l`Opens the events page`,
-            onPress: () => onSelect('events'),
-          },
-          {
-            testID: 'osoLandingExplore',
-            label: l({
-              message: 'explore',
-              comment:
-                'Oso landing page tile linking to the explore page. Lowercase on purpose.',
-            }),
-            hint: l`Opens the explore page`,
-            onPress: () => onSelect('explore'),
-          },
-        ]}
+        tiles={[news, events, explore]}
         moreTiles={[feeds, chats, notifications]}
       />
     </View>

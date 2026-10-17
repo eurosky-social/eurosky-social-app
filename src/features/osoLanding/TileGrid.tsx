@@ -1,6 +1,7 @@
-import {Pressable, Text, View} from 'react-native'
+import {useState} from 'react'
+import {Pressable, Text, useWindowDimensions, View} from 'react-native'
 
-import {atoms as a, useBreakpoints, web} from '#/alf'
+import {atoms as a, web} from '#/alf'
 import {OSO_COLORS, OSO_DISPLAY_FEATURES, OSO_DISPLAY_FONT} from './theme'
 
 export type OsoTile = {
@@ -18,16 +19,19 @@ export type OsoTile = {
 }
 
 /*
- * Sized to match the signed-out splash: no wider than a phone column on
- * phones. Desktop mirrors the reference frame (the first tile takes two
- * thirds, the other two stack on the right); phones stack all three. Any
- * further tiles sit underneath in a row of equal tiles (stacked on phones).
+ * The design is laid out at desktop size: the first tile takes two thirds of
+ * the row and the other two stack on the right, with any further tiles in an
+ * equal row underneath. Narrower screens keep that layout and scale it down
+ * as a whole, so the proportions match on every screen.
  */
-const DESKTOP = {width: 520, height: 240, rowHeight: 80, gap: 12}
-const MOBILE = {width: 320, gap: 10}
+const DESIGN = {width: 520, height: 240, rowHeight: 80, gap: 12}
+
+/** Horizontal page padding around the grid, used before it is measured. */
+const PAGE_GUTTERS = 48
 
 const HOLE = 12
 const HOLE_INSET = 8
+const RADIUS = 20
 
 /**
  * Tiles from the Oso landing page design, largest first. The first three
@@ -45,99 +49,68 @@ export function OsoTileGrid({
   /** The page colour behind the grid, shown through the punched holes. */
   holeColor: string
 }) {
-  const {gtMobile} = useBreakpoints()
+  const {width: windowWidth} = useWindowDimensions()
+  const [measuredWidth, setMeasuredWidth] = useState<number>()
   const [large, medium, small] = tiles
-  // Phones shorten the main tiles when more follow, so the page still fits.
-  const compact = moreTiles.length > 0
 
-  if (gtMobile) {
-    return (
-      <View style={{width: DESKTOP.width, gap: DESKTOP.gap}}>
-        <View style={[a.flex_row, {height: DESKTOP.height, gap: DESKTOP.gap}]}>
+  const width = Math.min(
+    DESIGN.width,
+    measuredWidth ?? windowWidth - PAGE_GUTTERS,
+  )
+  const scale = width / DESIGN.width
+  const gap = DESIGN.gap * scale
+
+  return (
+    <View
+      style={[a.w_full, {maxWidth: DESIGN.width, gap}]}
+      onLayout={e => setMeasuredWidth(e.nativeEvent.layout.width)}>
+      <View style={[a.flex_row, {height: DESIGN.height * scale, gap}]}>
+        <Tile
+          tile={large}
+          fontSize={96}
+          scale={scale}
+          background={OSO_COLORS.yellow}
+          color={OSO_COLORS.blue}
+          holeColor={holeColor}
+          style={{flex: 2}}
+        />
+        <View style={[a.flex_1, {gap}]}>
           <Tile
-            tile={large}
-            fontSize={96}
-            background={OSO_COLORS.yellow}
+            tile={medium}
+            fontSize={44}
+            scale={scale}
+            background={OSO_COLORS.blue}
+            color={OSO_COLORS.green}
+            holeColor={holeColor}
+            style={{flex: 2.5}}
+          />
+          <Tile
+            tile={small}
+            fontSize={28}
+            scale={scale}
+            background={OSO_COLORS.green}
             color={OSO_COLORS.blue}
             holeColor={holeColor}
-            style={{flex: 2}}
+            style={{flex: 1}}
           />
-          <View style={[a.flex_1, {gap: DESKTOP.gap}]}>
+        </View>
+      </View>
+      {moreTiles.length > 0 && (
+        <View style={[a.flex_row, {height: DESIGN.rowHeight * scale, gap}]}>
+          {moreTiles.map(tile => (
             <Tile
-              tile={medium}
-              fontSize={44}
-              background={OSO_COLORS.blue}
-              color={OSO_COLORS.green}
-              holeColor={holeColor}
-              style={{flex: 2.5}}
-            />
-            <Tile
-              tile={small}
-              fontSize={28}
+              key={tile.testID}
+              tile={tile}
+              fontSize={24}
+              scale={scale}
               background={OSO_COLORS.green}
               color={OSO_COLORS.blue}
               holeColor={holeColor}
               style={{flex: 1}}
             />
-          </View>
+          ))}
         </View>
-        {compact && (
-          <View
-            style={[a.flex_row, {height: DESKTOP.rowHeight, gap: DESKTOP.gap}]}>
-            {moreTiles.map(tile => (
-              <Tile
-                key={tile.testID}
-                tile={tile}
-                fontSize={24}
-                background={OSO_COLORS.green}
-                color={OSO_COLORS.blue}
-                holeColor={holeColor}
-                style={{flex: 1}}
-              />
-            ))}
-          </View>
-        )}
-      </View>
-    )
-  }
-
-  return (
-    <View style={[a.w_full, {maxWidth: MOBILE.width, gap: MOBILE.gap}]}>
-      <Tile
-        tile={large}
-        fontSize={72}
-        background={OSO_COLORS.yellow}
-        color={OSO_COLORS.blue}
-        holeColor={holeColor}
-        style={{height: compact ? 120 : 150}}
-      />
-      <Tile
-        tile={medium}
-        fontSize={44}
-        background={OSO_COLORS.blue}
-        color={OSO_COLORS.green}
-        holeColor={holeColor}
-        style={{height: compact ? 84 : 100}}
-      />
-      <Tile
-        tile={small}
-        fontSize={28}
-        background={OSO_COLORS.green}
-        color={OSO_COLORS.blue}
-        holeColor={holeColor}
-        style={{height: compact ? 60 : 64}}
-      />
-      {moreTiles.map(tile => (
-        <Tile
-          key={tile.testID}
-          tile={tile}
-          fontSize={24}
-          background={OSO_COLORS.green}
-          color={OSO_COLORS.blue}
-          holeColor={holeColor}
-          style={{height: 52}}
-        />
-      ))}
+      )}
     </View>
   )
 }
@@ -145,6 +118,7 @@ export function OsoTileGrid({
 function Tile({
   tile,
   fontSize,
+  scale,
   background,
   color,
   holeColor,
@@ -152,18 +126,22 @@ function Tile({
 }: {
   tile: OsoTile
   fontSize: number
+  /** How much the whole grid is scaled down from its design size. */
+  scale: number
   background: string
   color: string
   holeColor: string
-  style: {flex: number} | {height: number}
+  style: {flex: number}
 }) {
+  const holeSize = HOLE * scale
+  const holeInset = HOLE_INSET * scale
   const hole = {
-    width: HOLE,
-    height: HOLE,
-    borderRadius: HOLE / 2,
+    width: holeSize,
+    height: holeSize,
+    borderRadius: holeSize / 2,
     backgroundColor: holeColor,
   }
-  const size = fontSize * (tile.fontScale ?? 1)
+  const size = fontSize * (tile.fontScale ?? 1) * scale
   const tileBackground = tile.colors?.background ?? background
   const textColor = tile.colors?.text ?? color
   const lines = tile.label.split('\n').length
@@ -179,9 +157,9 @@ function Tile({
         a.justify_center,
         a.align_center,
         a.overflow_hidden,
-        a.px_md,
         {
-          borderRadius: 20,
+          paddingHorizontal: 12 * scale,
+          borderRadius: RADIUS * scale,
           backgroundColor: tileBackground,
           opacity: pressed ? 0.85 : 1,
         },
@@ -189,8 +167,8 @@ function Tile({
         style,
       ]}>
       {/* The two punched holes from the design. */}
-      <View style={[a.absolute, {top: HOLE_INSET, left: HOLE_INSET}, hole]} />
-      <View style={[a.absolute, {top: HOLE_INSET, right: HOLE_INSET}, hole]} />
+      <View style={[a.absolute, {top: holeInset, left: holeInset}, hole]} />
+      <View style={[a.absolute, {top: holeInset, right: holeInset}, hole]} />
       <Text
         numberOfLines={lines}
         style={[
