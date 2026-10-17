@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react'
 import {useAnimatedRef} from 'react-native-reanimated'
-import {useLingui} from '@lingui/react/macro'
+import {Trans, useLingui} from '@lingui/react/macro'
 import {useIsFocused} from '@react-navigation/native'
 import {useQueryClient} from '@tanstack/react-query'
 
@@ -21,9 +21,12 @@ import {type ListRef} from '#/view/com/util/List'
 import {LoadLatestBtn} from '#/view/com/util/load-latest/LoadLatestBtn'
 import {PostFeedLoadingPlaceholder} from '#/view/com/util/LoadingPlaceholder'
 import {useLayoutBreakpoints, useTheme} from '#/alf'
+import {ButtonIcon, ButtonText} from '#/components/Button'
 import {EditBig_Stroke2_Corner2_Rounded as EditBigIcon} from '#/components/icons/EditBig'
 import {HashtagWide_Stroke1_Corner0_Rounded as HashtagWideIcon} from '#/components/icons/Hashtag'
+import {SettingsSliderVertical_Stroke2_Corner0_Rounded as SettingsSliderIcon} from '#/components/icons/SettingsSlider'
 import * as Layout from '#/components/Layout'
+import {Link} from '#/components/Link'
 import {IS_NATIVE, IS_WEB} from '#/env'
 import {EventFeedTabs} from '#/features/events/components/EventFeedTabs'
 import {OsoCollapsingHeader} from '#/features/osoNav/CollapsingHeader'
@@ -58,7 +61,17 @@ export function OsoMyFeedsScreen({route, navigation}: Props) {
             <Layout.Header.Content>
               <OsoTitlePill kind="feeds" />
             </Layout.Header.Content>
-            <Layout.Header.Slot />
+            <Link
+              to="/manage_feeds"
+              label={l`Manage feeds`}
+              size="small"
+              color="secondary"
+              testID="manageFeedsBtn">
+              <ButtonIcon icon={SettingsSliderIcon} />
+              <ButtonText>
+                <Trans>Manage feeds</Trans>
+              </ButtonText>
+            </Link>
           </Layout.Header.Outer>
         }>
         {/* The shell's right column lists the feeds on wide screens. */}

@@ -29,6 +29,8 @@ import {
   Newspaper_Filled_Corner2_Rounded as NewspaperFilledIcon,
   Newspaper_Stroke2_Corner2_Rounded as NewspaperIcon,
 } from '#/components/icons/Newspaper'
+import {SettingsSliderVertical_Stroke2_Corner0_Rounded as SettingsSliderIcon} from '#/components/icons/SettingsSlider'
+import {Sparkle_Stroke2_Corner0_Rounded as SparkleIcon} from '#/components/icons/Sparkle'
 import {Tote as ToteIcon} from '#/components/icons/Tote'
 import {Trending3_Stroke2_Corner1_Rounded as TrendingIcon} from '#/components/icons/Trending'
 import {
@@ -51,6 +53,9 @@ export type OsoPillKind =
   | 'notifications'
   | 'starterPacks'
   | 'trending'
+  | 'discover'
+  | 'myFeeds'
+  | 'manageFeeds'
 
 export type OsoPillDefinition = {
   label: string
@@ -171,13 +176,50 @@ export function useOsoPill(kind: OsoPillKind): OsoPillDefinition {
     case 'trending':
       return {
         label: l({
-          message: 'trending',
-          comment: 'Oso title for the trending page. Lowercase on purpose.',
+          message: 'popular',
+          comment:
+            'Oso title for the page of trending topics. Lowercase on purpose.',
         }),
         background: OSO_COLORS.navy,
         color: OSO_COLORS.white,
         icons: {inactive: TrendingIcon, active: TrendingIcon},
         fontSize: 32,
+      }
+    case 'discover':
+      return {
+        label: l({
+          message: 'discover',
+          comment:
+            'Oso section title for feeds to discover. Lowercase on purpose.',
+        }),
+        background: OSO_COLORS.navy,
+        color: OSO_COLORS.white,
+        icons: {inactive: SparkleIcon, active: SparkleIcon},
+        fontSize: 32,
+      }
+    case 'myFeeds':
+      return {
+        label: l({
+          message: 'my feeds',
+          comment:
+            'Oso section title for the feeds the user has saved. Lowercase on purpose.',
+        }),
+        background: OSO_COLORS.navy,
+        color: OSO_COLORS.white,
+        icons: {inactive: HashtagIcon, active: HashtagFilledIcon},
+        fontSize: 30,
+      }
+    case 'manageFeeds':
+      return {
+        label: l({
+          message: 'manage feeds',
+          comment:
+            'Oso title for the page for managing feeds. Lowercase on purpose.',
+        }),
+        background: OSO_COLORS.navy,
+        color: OSO_COLORS.white,
+        icons: {inactive: SettingsSliderIcon, active: SettingsSliderIcon},
+        fontSize: 26,
       }
   }
 }
@@ -236,7 +278,14 @@ export function OsoPillLabel({pill}: {pill: OsoPillDefinition}) {
  * A pill used as a page title, so the page heading looks exactly like the
  * left menu button that leads to it.
  */
-export function OsoTitlePill({kind}: {kind: OsoPillKind}) {
+export function OsoTitlePill({
+  kind,
+  withLogo = true,
+}: {
+  kind: OsoPillKind
+  /** Section headers inside a page leave out the logo. */
+  withLogo?: boolean
+}) {
   const pill = useOsoPill(kind)
   const Icon = pill.icons.active
 
@@ -246,7 +295,7 @@ export function OsoTitlePill({kind}: {kind: OsoPillKind}) {
        * The Oso wordmark between the back button and the title. The hero logo
        * is near-black in light mode and light in dark mode.
        */}
-      <BrandLogo variant="hero" size={OSO_TITLE_LOGO_WIDTH} />
+      {withLogo && <BrandLogo variant="hero" size={OSO_TITLE_LOGO_WIDTH} />}
       <View accessibilityRole="header" style={osoPillShapeStyle(pill)}>
         <Icon aria-hidden={true} width={OSO_PILL_ICON_SIZE} fill={pill.color} />
         <OsoPillLabel pill={pill} />

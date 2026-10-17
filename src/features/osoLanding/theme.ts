@@ -9,7 +9,7 @@ export const OSO_COLORS = {
   skyBlue: '#B8EBE6',
   darkBlue: '#204495',
   grayBrown: '#938A94',
-  red: '#EE835B',
+  red: '#E86B55',
   creme: '#FCEDC6',
   white: '#FFFFFF',
   /** Oso's main accent ("hoofdkleur") and dark background. */

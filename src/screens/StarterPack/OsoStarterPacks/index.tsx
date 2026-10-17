@@ -84,7 +84,7 @@ export function OsoStarterPacksScreen(_props: Props) {
  * Loads one pack by URI. A pack that fails to load (deleted, taken down) is
  * left out rather than failing the whole list.
  */
-function StarterPackRow({uri}: {uri: string}) {
+export function StarterPackRow({uri}: {uri: string}) {
   const {data, isLoading} = useStarterPackQuery({uri})
 
   if (isLoading) {

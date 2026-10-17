@@ -161,6 +161,7 @@ import {NewsroomDirectoryScreen} from '#/features/newsrooms/directory'
 import {NewsroomExploreScreen} from '#/features/newsrooms/explore'
 import {NewsroomScreen as LegacyNewsroomScreen} from '#/features/newsrooms/legacy/NewsroomScreen'
 import {NewsroomScreen} from '#/features/newsrooms/NewsroomScreen'
+import {OsoManageFeedsScreen} from '#/features/osoFeeds/ManageFeedsScreen'
 import {OsoMyFeedsScreen} from '#/features/osoMyFeeds'
 import {router} from '#/routes'
 import {Referrer} from '../modules/expo-bluesky-swiss-army'
@@ -258,6 +259,11 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         options={{title: title(msg`Starter Packs`)}}
       />
       <Stack.Screen
+        name="OsoManageFeeds"
+        getComponent={() => OsoManageFeedsScreen}
+        options={{title: title(msg`Manage feeds`), requireAuth: true}}
+      />
+      <Stack.Screen
         name="OsoAccount"
         getComponent={() => OsoAccountScreen}
         options={{title: title(msg`Account`), requireAuth: true}}
@@ -270,7 +276,7 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
       <Stack.Screen
         name="OsoTrending"
         getComponent={() => OsoTrendingScreen}
-        options={{title: title(msg`Trending`), requireAuth: true}}
+        options={{title: title(msg`Popular`), requireAuth: true}}
       />
       <Stack.Screen
         name="Moderation"

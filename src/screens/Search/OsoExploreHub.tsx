@@ -1,28 +1,34 @@
 import {useState} from 'react'
 import {View} from 'react-native'
-import {useLingui} from '@lingui/react/macro'
+import {Trans, useLingui} from '@lingui/react/macro'
 import {useNavigation} from '@react-navigation/native'
 
 import {type NavigationProp} from '#/lib/routes/types'
-import {atoms as a, useBreakpoints, useTheme} from '#/alf'
+import {useGetTrendsQuery} from '#/state/queries/trending/useGetTrendsQuery'
+import {
+  TrendingTopicRowSkeleton,
+  TrendRow,
+} from '#/screens/Search/modules/ExploreTrendingTopics'
+import {StarterPackRow} from '#/screens/StarterPack/OsoStarterPacks'
+import {useOsoStarterPackUris} from '#/screens/StarterPack/OsoStarterPacks/useOsoStarterPackUris'
+import {atoms as a, useTheme} from '#/alf'
 import {SearchInput} from '#/components/forms/SearchInput'
 import * as Layout from '#/components/Layout'
-import {OSO_COLORS} from '#/features/osoLanding/theme'
-import {OsoTileGrid} from '#/features/osoLanding/TileGrid'
+import {InlineLinkText} from '#/components/Link'
+import {Text} from '#/components/Typography'
+import {OsoDiscoverFeeds} from '#/features/osoFeeds/DiscoverFeeds'
 import {OsoTitlePill} from '#/features/osoNav/pills'
+import {OsoSectionHeader} from '#/features/osoNav/SectionHeader'
 
-/** All three explore tiles are black with white text. */
-const TILE_COLORS = {background: OSO_COLORS.navy, text: OSO_COLORS.white}
+/** Each preview section shows this many items before "show more". */
+const PREVIEW_COUNT = 3
 
 /**
- * Oso's explore page: a search bar above landing-style tiles for starter
- * packs, trending and feeds. Shown on /search when there is no query.
+ * Oso's explore page: a search bar, then a preview of starter packs, feeds to
+ * discover and popular topics. Shown on /search when there is no query.
  */
 export function OsoExploreHub() {
-  const t = useTheme()
-  const {t: l} = useLingui()
   const navigation = useNavigation<NavigationProp>()
-  const {gtMobile} = useBreakpoints()
   const [query, setQuery] = useState('')
 
   return (
@@ -34,66 +40,99 @@ export function OsoExploreHub() {
           <OsoTitlePill kind="explore" />
         </Layout.Header.Content>
       </Layout.Header.Outer>
-      <Layout.Center>
-        <View style={[a.align_center, a.px_xl, a.pt_4xl, a.gap_xl]}>
-          {/* As wide as the tiles below it. */}
-          <View
-            style={[a.w_full, {maxWidth: gtMobile ? 520 : 320}]}
-            testID="osoExploreSearch">
-            <SearchInput
-              value={query}
-              onChangeText={setQuery}
-              onClearText={() => setQuery('')}
-              onSubmitEditing={() => {
-                const q = query.trim()
-                if (q) navigation.push('Search', {q})
-              }}
-            />
-          </View>
-          <OsoTileGrid
-            holeColor={t.atoms.bg.backgroundColor}
-            tiles={[
-              {
-                testID: 'osoExploreStarterPacks',
-                label: l({
-                  message: 'starter\npacks',
-                  comment:
-                    'Oso explore page tile linking to starter packs. Lowercase on purpose; the line break splits the label over two lines.',
-                }),
-                hint: l`Opens the starter packs page`,
-                fontScale: 0.66,
-                // Same colours as the starter packs page title.
-                colors: TILE_COLORS,
-                onPress: () => navigation.navigate('OsoStarterPacks'),
-              },
-              {
-                testID: 'osoExploreTrending',
-                colors: TILE_COLORS,
-                label: l({
-                  message: 'trending',
-                  comment:
-                    'Oso explore page tile linking to the trending page. Lowercase on purpose.',
-                }),
-                hint: l`Opens the five top trending topics`,
-                // Smaller so the word fits the narrow tile on desktop.
-                fontScale: 0.77,
-                onPress: () => navigation.navigate('OsoTrending'),
-              },
-              {
-                testID: 'osoExploreFeeds',
-                colors: TILE_COLORS,
-                label: l({
-                  message: 'feeds',
-                  comment:
-                    'Oso explore page tile linking to feeds. Lowercase on purpose.',
-                }),
-                hint: l`Opens the feeds page`,
-                onPress: () => navigation.navigate('Feeds'),
-              },
-            ]}
+      <Layout.Content>
+        <View style={[a.px_lg, a.pt_lg]} testID="osoExploreSearch">
+          <SearchInput
+            value={query}
+            onChangeText={setQuery}
+            onClearText={() => setQuery('')}
+            onSubmitEditing={() => {
+              const q = query.trim()
+              if (q) navigation.push('Search', {q})
+            }}
           />
         </View>
-      </Layout.Center>
+        <StarterPacksSection />
+        <OsoDiscoverFeeds />
+        <PopularSection />
+        <View style={{height: 100}} />
+      </Layout.Content>
     </Layout.Screen>
+  )
+}
+
+/** The first few starter packs, with a link to the full list. */
+function StarterPacksSection() {
+  const t = useTheme()
+  const {t: l} = useLingui()
+  const {uris, isLoading, hasNextPage} = useOsoStarterPackUris()
+  const hasMore = uris.length > PREVIEW_COUNT || hasNextPage
+
+  return (
+    <View>
+      <OsoSectionHeader kind="starterPacks" to="/starter-packs" />
+      {isLoading ? null : uris.length === 0 ? (
+        <Text style={[a.px_lg, a.text_md, t.atoms.text_contrast_medium]}>
+          <Trans>No starter packs yet.</Trans>
+        </Text>
+      ) : (
+        uris
+          .slice(0, PREVIEW_COUNT)
+          .map(uri => <StarterPackRow key={uri} uri={uri} />)
+      )}
+      {hasMore && (
+        <ShowMoreLink to="/starter-packs" label={l`Show more starter packs`} />
+      )}
+    </View>
+  )
+}
+
+/** The top popular topics, with a link to the popular page. */
+function PopularSection() {
+  const t = useTheme()
+  const {t: l} = useLingui()
+  const {data, isLoading, error} = useGetTrendsQuery({limit: 5})
+  const trends = data?.trends ?? []
+
+  return (
+    <View>
+      <OsoSectionHeader kind="trending" to="/trending" />
+      {isLoading ? (
+        Array.from({length: PREVIEW_COUNT}).map((_, i) => (
+          <TrendingTopicRowSkeleton key={i} />
+        ))
+      ) : error || trends.length === 0 ? (
+        <Text style={[a.px_lg, a.text_md, t.atoms.text_contrast_medium]}>
+          <Trans>Nothing is popular right now.</Trans>
+        </Text>
+      ) : (
+        trends
+          .slice(0, PREVIEW_COUNT)
+          .map((trend, index) => (
+            <TrendRow
+              key={trend.link}
+              trend={trend}
+              rank={index + 1}
+              recId={data?.recId}
+            />
+          ))
+      )}
+      {trends.length > PREVIEW_COUNT && (
+        <ShowMoreLink to="/trending" label={l`Show more popular topics`} />
+      )}
+    </View>
+  )
+}
+
+function ShowMoreLink({to, label}: {to: string; label: string}) {
+  return (
+    <View style={[a.px_lg, a.pt_sm, a.pb_md]}>
+      <InlineLinkText
+        to={to}
+        label={label}
+        style={[a.text_md, a.font_semi_bold]}>
+        {label}
+      </InlineLinkText>
+    </View>
   )
 }

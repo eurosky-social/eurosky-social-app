@@ -40,6 +40,7 @@ const OSO_EMPTY_RIGHT_COLUMN_ROUTES = new Set([
   'Search',
   'Notifications',
   'Feeds',
+  'OsoManageFeeds',
   'OsoStarterPacks',
   'Profile',
   'ProfileFollowers',
