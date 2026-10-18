@@ -13,6 +13,7 @@ import {
   Hashtag_Filled_Corner0_Rounded as HashtagFilledIcon,
   Hashtag_Stroke2_Corner0_Rounded as HashtagIcon,
 } from '#/components/icons/Hashtag'
+import {Heart2_Filled_Stroke2_Corner0_Rounded as HeartFilledIcon} from '#/components/icons/Heart2'
 import {
   HomeOpen_Filled_Corner0_Rounded as HomeFilledIcon,
   HomeOpen_Stoke2_Corner0_Rounded as HomeIcon,
@@ -29,6 +30,7 @@ import {
   Newspaper_Filled_Corner2_Rounded as NewspaperFilledIcon,
   Newspaper_Stroke2_Corner2_Rounded as NewspaperIcon,
 } from '#/components/icons/Newspaper'
+import {Person_Filled_Corner2_Rounded as PersonFilledIcon} from '#/components/icons/Person'
 import {SettingsSliderVertical_Stroke2_Corner0_Rounded as SettingsSliderIcon} from '#/components/icons/SettingsSlider'
 import {Sparkle_Stroke2_Corner0_Rounded as SparkleIcon} from '#/components/icons/Sparkle'
 import {Tote as ToteIcon} from '#/components/icons/Tote'
@@ -56,6 +58,10 @@ export type OsoPillKind =
   | 'discover'
   | 'myFeeds'
   | 'manageFeeds'
+  | 'going'
+  | 'eventsCreated'
+  | 'eventsGoing'
+  | 'eventsInterested'
 
 export type OsoPillDefinition = {
   label: string
@@ -209,6 +215,55 @@ export function useOsoPill(kind: OsoPillKind): OsoPillDefinition {
         icons: {inactive: HashtagIcon, active: HashtagFilledIcon},
         fontSize: 30,
       }
+    case 'going':
+      return {
+        label: l({
+          message: 'going',
+          comment:
+            'Oso title for the list of people going to an event. Lowercase on purpose.',
+        }),
+        // The events colours.
+        background: OSO_COLORS.green,
+        color: OSO_COLORS.blue,
+        icons: {inactive: PersonFilledIcon, active: PersonFilledIcon},
+        fontSize: 32,
+      }
+    case 'eventsCreated':
+      return {
+        label: l({
+          message: 'created by me',
+          comment:
+            'Oso section title for the events the user organised. Lowercase on purpose.',
+        }),
+        background: OSO_COLORS.navy,
+        color: OSO_COLORS.white,
+        icons: {inactive: CalendarIcon, active: CalendarIcon},
+        fontSize: 28,
+      }
+    case 'eventsGoing':
+      return {
+        label: l({
+          message: 'going',
+          comment:
+            'Oso section title for the events the user is going to. Lowercase on purpose.',
+        }),
+        background: OSO_COLORS.navy,
+        color: OSO_COLORS.white,
+        icons: {inactive: PersonFilledIcon, active: PersonFilledIcon},
+        fontSize: 28,
+      }
+    case 'eventsInterested':
+      return {
+        label: l({
+          message: 'interested',
+          comment:
+            'Oso section title for the events the user is interested in. Lowercase on purpose.',
+        }),
+        background: OSO_COLORS.navy,
+        color: OSO_COLORS.white,
+        icons: {inactive: HeartFilledIcon, active: HeartFilledIcon},
+        fontSize: 28,
+      }
     case 'manageFeeds':
       return {
         label: l({
@@ -255,15 +310,22 @@ export function osoPillShapeStyle(
   ]
 }
 
-export function OsoPillLabel({pill}: {pill: OsoPillDefinition}) {
+export function OsoPillLabel({
+  pill,
+  scale = 1,
+}: {
+  pill: OsoPillDefinition
+  /** Shrinks the label, for compact pills. */
+  scale?: number
+}) {
   return (
     <Text
       numberOfLines={1}
       style={[
         {
           color: pill.color,
-          fontSize: pill.fontSize,
-          lineHeight: OSO_PILL_HEIGHT,
+          fontSize: pill.fontSize * scale,
+          lineHeight: OSO_PILL_HEIGHT * scale,
           fontFamily: OSO_DISPLAY_FONT,
           fontWeight: '700',
         },
@@ -281,25 +343,40 @@ export function OsoPillLabel({pill}: {pill: OsoPillDefinition}) {
 export function OsoTitlePill({
   kind,
   withLogo = true,
+  compact = false,
 }: {
   kind: OsoPillKind
   /** Section headers inside a page leave out the logo. */
   withLogo?: boolean
+  /** A smaller logo and pill, for headers with several buttons beside it. */
+  compact?: boolean
 }) {
   const pill = useOsoPill(kind)
   const Icon = pill.icons.active
+  const scale = compact ? COMPACT_SCALE : 1
 
   return (
-    <View style={[a.flex_row, a.align_center, a.gap_md]}>
+    <View style={[a.flex_row, a.align_center, compact ? a.gap_sm : a.gap_md]}>
       {/*
        * The Oso wordmark between the back button and the title. The hero logo
        * is near-black in light mode and light in dark mode.
        */}
-      {withLogo && <BrandLogo variant="hero" size={OSO_TITLE_LOGO_WIDTH} />}
-      <View accessibilityRole="header" style={osoPillShapeStyle(pill)}>
-        <Icon aria-hidden={true} width={OSO_PILL_ICON_SIZE} fill={pill.color} />
-        <OsoPillLabel pill={pill} />
+      {withLogo && (
+        <BrandLogo variant="hero" size={OSO_TITLE_LOGO_WIDTH * scale} />
+      )}
+      <View
+        accessibilityRole="header"
+        style={osoPillShapeStyle(pill, {height: OSO_PILL_HEIGHT * scale})}>
+        <Icon
+          aria-hidden={true}
+          width={OSO_PILL_ICON_SIZE * scale}
+          fill={pill.color}
+        />
+        <OsoPillLabel pill={pill} scale={scale} />
       </View>
     </View>
   )
 }
+
+/** How much a compact title pill shrinks. */
+const COMPACT_SCALE = 0.72

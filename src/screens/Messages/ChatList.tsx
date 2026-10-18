@@ -55,7 +55,8 @@ import * as Menu from '#/components/Menu'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useAgeAssurance} from '#/ageAssurance'
-import {IS_NATIVE, IS_WEB} from '#/env'
+import {IS_NATIVE, IS_PARTNER_PREVIEW, IS_WEB} from '#/env'
+import {OsoTitlePill} from '#/features/osoNav/pills'
 import {type chat} from '#/lexicons'
 import {ChatDisabled} from './components/ChatDisabled'
 import {ChatListItem} from './components/ChatListItem'
@@ -550,10 +551,17 @@ export function Header({
     <Layout.Header.Outer>
       {gtMobile ? (
         <>
+          {/* Oso: a back button and the chats pill from the left menu. */}
+          {IS_PARTNER_PREVIEW && <Layout.Header.BackButton />}
           <Layout.Header.Content align="left">
-            <Layout.Header.TitleText>
-              <Trans>Chats</Trans>
-            </Layout.Header.TitleText>
+            {IS_PARTNER_PREVIEW ? (
+              // Compact, so it fits beside the requests and chat buttons.
+              <OsoTitlePill kind="chat" compact />
+            ) : (
+              <Layout.Header.TitleText>
+                <Trans>Chats</Trans>
+              </Layout.Header.TitleText>
+            )}
           </Layout.Header.Content>
 
           <View style={[a.flex_row, a.align_center, a.gap_sm]}>
@@ -589,11 +597,19 @@ export function Header({
         </>
       ) : (
         <>
-          <Layout.Header.MenuButton />
+          {IS_PARTNER_PREVIEW ? (
+            <Layout.Header.BackButton />
+          ) : (
+            <Layout.Header.MenuButton />
+          )}
           <Layout.Header.Content align="left">
-            <Layout.Header.TitleText>
-              <Trans>Chats</Trans>
-            </Layout.Header.TitleText>
+            {IS_PARTNER_PREVIEW ? (
+              <OsoTitlePill kind="chat" />
+            ) : (
+              <Layout.Header.TitleText>
+                <Trans>Chats</Trans>
+              </Layout.Header.TitleText>
+            )}
           </Layout.Header.Content>
           <InboxRequests count={requestCount} variant="ghost" />
           <Layout.Header.Slot>

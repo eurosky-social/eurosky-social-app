@@ -13,8 +13,10 @@ import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {Pencil_Stroke2_Corner0_Rounded as PencilIcon} from '#/components/icons/Pencil'
 import {Text} from '#/components/Typography'
+import {IS_PARTNER_PREVIEW} from '#/env'
 import {type EventProfile, type EventRecord} from '../types'
 import {getEventImage, getEventLocationLabel, getProfileAvatar} from '../util'
+import {EventGoingSummary} from './EventGoing'
 import {EventPosts} from './EventPosts'
 import {EventRsvpButtons} from './EventRsvpButtons'
 import {ShowMoreButton} from './ShowMoreButton'
@@ -146,6 +148,8 @@ export function EventItem({
             )}
           </View>
         </View>
+        {/* Oso: who else is going, under the buttons on the left. */}
+        {IS_PARTNER_PREVIEW && <EventGoingSummary event={event} />}
       </View>
       {/* Full width: Post brings its own padding and top border. */}
       <EventPosts event={event} profile={profile} />

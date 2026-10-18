@@ -1,4 +1,10 @@
-import {jsonToLex, type LexMap, lexToJson, type UriString} from '@atproto/lex'
+import {
+  type AtIdentifierString,
+  jsonToLex,
+  type LexMap,
+  lexToJson,
+  type UriString,
+} from '@atproto/lex'
 import {AtUri} from '@atproto/syntax'
 import {useLingui} from '@lingui/react/macro'
 import {
@@ -15,8 +21,9 @@ import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
 import {useAppviewClient, usePdsClient, useSession} from '#/state/session'
 import * as Toast from '#/components/Toast'
+import {IS_PARTNER_PREVIEW} from '#/env'
 import {app, com} from '#/lexicons'
-import {getEvent} from './api'
+import {getEvent, listRsvps} from './api'
 import {
   type EventFormValues,
   toRecord,
@@ -29,6 +36,7 @@ import {
 } from './config'
 import {EVENT_FEEDS, type EventFeedId} from './feeds'
 import {type EventFilters, type EventSort, toEventSortParams} from './filters'
+import {eventGoingQueryKeyRoot} from './goingCache'
 import {
   type Blob as BlobJson,
   type EventProfile,
@@ -45,6 +53,11 @@ const eventFeedQueryKeyRoot = 'eventFeed'
 const eventQueryKeyRoot = 'event'
 const viewerEventRsvpsQueryKeyRoot = 'viewerEventRsvps'
 const eventPostsQueryKeyRoot = 'eventPosts'
+
+/** RSVPs per status included with each event on Oso's event lists. */
+export const EVENT_RSVP_SAMPLE = 25
+
+const GOING: RsvpStatus = 'community.lexicon.calendar.rsvp#going'
 
 /**
  * Every feed shares the `eventFeed` root, so all feeds can be invalidated at
@@ -102,6 +115,8 @@ export function useEventFeedQuery(
           startsAtMin,
           ...toEventSortParams(sort),
           profiles: true,
+          // Oso shows who is going on each event, from a sample of RSVPs.
+          hydrateRsvps: IS_PARTNER_PREVIEW ? EVENT_RSVP_SAMPLE : undefined,
           limit: EVENTS_PAGE_SIZE,
           cursor: pageParam,
         },
@@ -120,6 +135,49 @@ export function useEventQuery({uri}: {uri: string}) {
   return useQuery({
     queryKey: createEventQueryKey({uri}),
     queryFn: ({signal}) => getEvent({uri, profiles: true}, signal),
+    staleTime: STALE.MINUTES.FIVE,
+  })
+}
+
+/**
+ * Everyone going to an event, a page at a time, with their Bluesky profiles
+ * (for the follow buttons in the "going" list).
+ */
+export function useEventGoingQuery({
+  uri,
+  enabled,
+}: {
+  uri: string
+  enabled: boolean
+}) {
+  const client = useAppviewClient()
+
+  return useInfiniteQuery({
+    queryKey: createQueryKey(eventGoingQueryKeyRoot, {uri}),
+    enabled,
+    queryFn: async ({pageParam, signal}) => {
+      const page = await listRsvps(
+        {
+          subjectUri: uri,
+          status: GOING,
+          // getProfiles takes at most 25 actors.
+          limit: 25,
+          cursor: pageParam,
+        },
+        signal,
+      )
+      const dids = [...new Set(page.records.map(rsvp => rsvp.did))]
+      const profiles = dids.length
+        ? (
+            await client.call(app.bsky.actor.getProfiles, {
+              actors: dids as AtIdentifierString[],
+            })
+          ).profiles
+        : []
+      return {profiles, cursor: page.cursor}
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: page => page.cursor,
     staleTime: STALE.MINUTES.FIVE,
   })
 }

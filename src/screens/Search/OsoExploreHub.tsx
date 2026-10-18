@@ -5,6 +5,7 @@ import {useNavigation} from '@react-navigation/native'
 
 import {type NavigationProp} from '#/lib/routes/types'
 import {useGetTrendsQuery} from '#/state/queries/trending/useGetTrendsQuery'
+import {SearchAutocompleteInput} from '#/screens/Search/components/SearchAutocompleteInput'
 import {
   TrendingTopicRowSkeleton,
   TrendRow,
@@ -12,7 +13,6 @@ import {
 import {StarterPackRow} from '#/screens/StarterPack/OsoStarterPacks'
 import {useOsoStarterPackUris} from '#/screens/StarterPack/OsoStarterPacks/useOsoStarterPackUris'
 import {atoms as a, useTheme} from '#/alf'
-import {SearchInput} from '#/components/forms/SearchInput'
 import * as Layout from '#/components/Layout'
 import {InlineLinkText} from '#/components/Link'
 import {Text} from '#/components/Typography'
@@ -42,12 +42,20 @@ export function OsoExploreHub() {
       </Layout.Header.Outer>
       <Layout.Content>
         <View style={[a.px_lg, a.pt_lg]} testID="osoExploreSearch">
-          <SearchInput
+          {/* Suggests people as you type, like the search page does. */}
+          <SearchAutocompleteInput
             value={query}
             onChangeText={setQuery}
             onClearText={() => setQuery('')}
             onSubmitEditing={() => {
               const q = query.trim()
+              if (q) navigation.push('Search', {q})
+            }}
+            onSelectProfile={profile =>
+              navigation.navigate('Profile', {name: profile.handle})
+            }
+            onSelectSearch={value => {
+              const q = value.trim()
               if (q) navigation.push('Search', {q})
             }}
           />

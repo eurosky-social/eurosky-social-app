@@ -26,6 +26,7 @@ import {EventFeedTabs} from './components/EventFeedTabs'
 import {EventFiltersDialog} from './components/EventFiltersDialog'
 import {EventItem} from './components/EventItem'
 import {EventSortToggle} from './components/EventSortToggle'
+import {MyEventsSections} from './components/MyEventsSections'
 import {type EventFeedId} from './feeds'
 import {
   type EventFilters,
@@ -183,12 +184,21 @@ export function EventsScreen({route, navigation}: Props) {
           </Layout.Center>
         </>
       )}
-      <EventsList
-        feed={feed}
-        filters={filters}
-        sort={sort}
-        onEdit={openEventDialog}
-      />
+      {IS_PARTNER_PREVIEW && feed === 'mine' ? (
+        // Oso splits "My events" into created, going and interested.
+        <MyEventsSections
+          filters={filters}
+          sort={sort}
+          onEdit={openEventDialog}
+        />
+      ) : (
+        <EventsList
+          feed={feed}
+          filters={filters}
+          sort={sort}
+          onEdit={openEventDialog}
+        />
+      )}
       {IS_PARTNER_PREVIEW && hasSession && !gtMobile && (
         <FAB
           testID="newEventFAB"

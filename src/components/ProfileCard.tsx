@@ -454,6 +454,11 @@ export type FollowButtonProps = {
     Metrics['profile:unfollow']['logContext']
   colorInverted?: boolean
   onFollow?: () => void
+  /**
+   * Confirm a follow or unfollow with a toast. Off where the button's own
+   * change is confirmation enough. Errors are always shown.
+   */
+  withToast?: boolean
   withIcon?: boolean
   position?: number
   contextProfileDid?: string
@@ -475,6 +480,7 @@ export function FollowButtonInner({
   withIcon = true,
   position,
   contextProfileDid,
+  withToast = true,
   ...rest
 }: FollowButtonProps) {
   const {t: l} = useLingui()
@@ -494,12 +500,14 @@ export function FollowButtonInner({
     const displayNameOrHandle = profile.displayName || profile.handle
     try {
       await queueFollow()
-      Toast.show(
-        l`Following ${sanitizeDisplayName(
-          displayNameOrHandle,
-          moderation.ui('displayName'),
-        )}`,
-      )
+      if (withToast) {
+        Toast.show(
+          l`Following ${sanitizeDisplayName(
+            displayNameOrHandle,
+            moderation.ui('displayName'),
+          )}`,
+        )
+      }
       if (onPressProp) {
         onPressProp(e)
       }
@@ -522,12 +530,14 @@ export function FollowButtonInner({
     const displayNameOrHandle = profile.displayName || profile.handle
     try {
       await queueUnfollow()
-      Toast.show(
-        l`No longer following ${sanitizeDisplayName(
-          displayNameOrHandle,
-          moderation.ui('displayName'),
-        )}`,
-      )
+      if (withToast) {
+        Toast.show(
+          l`No longer following ${sanitizeDisplayName(
+            displayNameOrHandle,
+            moderation.ui('displayName'),
+          )}`,
+        )
+      }
       if (onPressProp) {
         onPressProp(e)
       }

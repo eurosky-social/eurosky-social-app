@@ -4,6 +4,8 @@ import {
   type EventRecord,
   type GetRecordResponse,
   type ListResponse,
+  type RsvpRecord,
+  type RsvpStatus,
 } from './types'
 
 type Params = Record<string, string | number | boolean | undefined>
@@ -64,6 +66,19 @@ export function getTimelineFeed(
     {...params, feed: 'timeline'},
     signal,
   )
+}
+
+/** RSVPs to one event, optionally only those with the given status. */
+export function listRsvps(
+  params: {
+    subjectUri: string
+    status?: RsvpStatus
+    limit?: number
+    cursor?: string
+  },
+  signal?: AbortSignal,
+) {
+  return xrpcGet<ListResponse<RsvpRecord>>('rsvp.listRecords', params, signal)
 }
 
 export function getEvent(

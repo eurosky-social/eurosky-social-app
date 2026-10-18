@@ -33,6 +33,7 @@ import {findAllProfilesInQueryData as findAllProfilesInSuggestedUsersForDiscover
 import {findAllProfilesInQueryData as findAllProfilesInSuggestedUsersForExploreQueryData} from '#/state/queries/trending/useGetSuggestedUsersForExploreQuery'
 import {findAllProfilesInQueryData as findAllProfilesInSuggestedUsersForSeeMoreQueryData} from '#/state/queries/trending/useGetSuggestedUsersForSeeMoreQuery'
 import {findAllProfilesInQueryData as findAllProfilesInPostThreadV2QueryData} from '#/state/queries/usePostThread/queryCache'
+import {findAllProfilesInQueryData as findAllProfilesInEventGoingQueryData} from '#/features/events/goingCache'
 import {type app} from '#/lexicons'
 import type * as bsky from '#/types/bsky'
 import {castAsShadow, type Shadow} from './types'
@@ -314,6 +315,7 @@ function* findProfilesInCache(
   yield* findAllProfilesInMyBlockedAccountsQueryData(queryClient, did)
   yield* findAllProfilesInMyMutedAccountsQueryData(queryClient, did)
   yield* findAllProfilesInPostLikedByQueryData(queryClient, did)
+  yield* findAllProfilesInEventGoingQueryData(queryClient, did)
   yield* findAllProfilesInPostRepostedByQueryData(queryClient, did)
   yield* findAllProfilesInPostQuotesQueryData(queryClient, did)
   yield* findAllProfilesInProfileQueryData(queryClient, did)

@@ -15,6 +15,7 @@ import {
   PostControlButtonIcon,
   PostControlButtonText,
 } from '#/components/PostControls/PostControlButton'
+import {IS_PARTNER_PREVIEW} from '#/env'
 import {useEventRsvpMutation, useViewerEventRsvpsQuery} from '../queries'
 import {type EventRecord, type RsvpStatus} from '../types'
 
@@ -59,8 +60,22 @@ export function EventRsvpButtons({event}: {event: EventRecord}) {
      * Laid out like a post's controls: equal columns in a group capped at
      * 320px, with an empty third column where posts have their like button.
      */
-    <View style={[a.flex_row, a.flex_1, {maxWidth: 320}]}>
-      <View style={[a.flex_1, a.align_start, {marginLeft: -6}]}>
+    <View
+      style={[
+        a.flex_row,
+        a.flex_1,
+        /*
+         * Oso: the labelled buttons sit side by side from the left, each as
+         * wide as its label, rather than in equal columns.
+         */
+        IS_PARTNER_PREVIEW ? a.gap_md : {maxWidth: 320},
+      ]}>
+      <View
+        style={[
+          !IS_PARTNER_PREVIEW && a.flex_1,
+          a.align_start,
+          {marginLeft: -6},
+        ]}>
         <PostControlButton
           active={status === INTERESTED}
           activeColor={t.palette.pink}
@@ -90,14 +105,30 @@ export function EventRsvpButtons({event}: {event: EventRecord}) {
             isLiked={status === INTERESTED}
             hasBeenToggled={hasInterestBeenToggled}
           />
-          {interestedCount > 0 && (
+          {IS_PARTNER_PREVIEW ? (
+            // Oso spells out what each button means.
             <PostControlButtonText>
-              {formatCount(interestedCount)}
+              {interestedCount > 0
+                ? l({
+                    message: `${formatCount(interestedCount)} interested`,
+                    comment:
+                      'Event "interested" button label with the number of interested people, e.g. "12 interested"',
+                  })
+                : l({
+                    message: 'interested',
+                    comment: 'Event "interested" button label',
+                  })}
             </PostControlButtonText>
+          ) : (
+            interestedCount > 0 && (
+              <PostControlButtonText>
+                {formatCount(interestedCount)}
+              </PostControlButtonText>
+            )
           )}
         </PostControlButton>
       </View>
-      <View style={[a.flex_1, a.align_start]}>
+      <View style={[!IS_PARTNER_PREVIEW && a.flex_1, a.align_start]}>
         <PostControlButton
           active={status === GOING}
           activeColor={t.palette.primary_500}
@@ -126,14 +157,29 @@ export function EventRsvpButtons({event}: {event: EventRecord}) {
           <PostControlButtonIcon
             icon={status === GOING ? PersonFilledIcon : PersonIcon}
           />
-          {goingCount > 0 && (
+          {IS_PARTNER_PREVIEW ? (
             <PostControlButtonText>
-              {formatCount(goingCount)}
+              {goingCount > 0
+                ? l({
+                    message: `${formatCount(goingCount)} going`,
+                    comment:
+                      'Event "going" button label with the number of people going, e.g. "12 going"',
+                  })
+                : l({
+                    message: 'going',
+                    comment: 'Event "going" button label',
+                  })}
             </PostControlButtonText>
+          ) : (
+            goingCount > 0 && (
+              <PostControlButtonText>
+                {formatCount(goingCount)}
+              </PostControlButtonText>
+            )
           )}
         </PostControlButton>
       </View>
-      <View style={[a.flex_1]} />
+      {!IS_PARTNER_PREVIEW && <View style={[a.flex_1]} />}
     </View>
   )
 }
