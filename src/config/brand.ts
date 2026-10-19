@@ -52,6 +52,7 @@ export const BRAND = {
     appViewDid: appViewDidOverride || brand.services.appViewDid,
   },
   verification: brand.verification,
+  /** Legacy config/override names retained for the supporter subscription. */
   decorations: {
     enabled:
       decorationEnabledOverride === undefined

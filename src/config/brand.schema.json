@@ -110,15 +110,15 @@
     },
     "decorations": {
       "type": "object",
-      "description": "Eurosky+ profile decorations and Mollie subscription service.",
+      "description": "Supporter badges and Mollie subscriptions. Legacy key retained for deployment compatibility.",
       "properties": {
         "enabled": {
           "type": "boolean",
-          "description": "Master switch. False disables decoration queries, rendering, and settings UI."
+          "description": "Master switch. False disables supporter queries, badges, and subscription UI."
         },
         "subscriberListUris": {
           "type": "array",
-          "description": "Exact app.bsky.graph.list AT-URIs whose members receive decoration access.",
+          "description": "Exact app.bsky.graph.list AT-URIs whose members receive a supporter badge.",
           "items": {"type": "string"}
         },
         "serviceUrl": {"type": "string"},

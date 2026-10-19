@@ -60,7 +60,7 @@ export const router = new Router<AllNavigatableRoutes>({
   ContentServiceSettings: '/settings/network-services/content-service',
   AppViewTransferSettings: '/settings/network-services/transfer-app-data',
   PetCompanionSettings: '/settings/pet-companion',
-  DecorationsSettings: '/settings/decorations',
+  SupporterSettings: ['/settings/supporter', '/settings/decorations'],
   BetaFeaturesSettings: '/settings/beta-features',
   SavedFeeds: '/settings/saved-feeds',
   AccountSettings: '/settings/account',

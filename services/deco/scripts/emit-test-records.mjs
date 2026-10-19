@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Hand-write a standard Bluesky list membership for testing the decoration
+ * Hand-write a standard Bluesky list membership for testing the supporter
  * entitlement read path without Mollie or the deco service.
  *
  * Usage:
@@ -13,10 +13,7 @@
  *   LIST_URI     exact subscriber list AT-URI owned by the logged-in issuer
  *                account (required)
  *   SUBJECT_DID  member DID (default: logged-in issuer DID)
- *   FRAME        avatar frame id (default gold-ring)
- *   GRADIENT     optional display-name gradient id
- *   OUTLINE=1    add a dark outline around the gradient name
- *   MODE=revoke  remove every matching membership; leave settings dormant
+ *   MODE=revoke  remove every matching membership
  *
  * The list item uses a normal PDS-generated rkey, deliberately proving that
  * manually managed Bluesky list members work and no service-specific rkey is
@@ -27,13 +24,9 @@ import process from 'node:process'
 
 const PDS_URL = process.env.PDS_URL || 'https://bsky.social'
 const { HANDLE, APP_PASSWORD, LIST_URI } = process.env
-const FRAME = process.env.FRAME || 'gold-ring'
-const GRADIENT = process.env.GRADIENT
-const OUTLINE = process.env.OUTLINE === '1'
 const MODE = process.env.MODE || 'emit'
 
 const LIST_ITEM_COLLECTION = 'app.bsky.graph.listitem'
-const SETTINGS_COLLECTION = 'social.mu.deco.settings'
 
 if (!HANDLE || !APP_PASSWORD || !LIST_URI) {
   console.error(
@@ -111,7 +104,7 @@ if (MODE === 'revoke') {
     console.log(`deleted ${uri}`)
   }
   console.log(
-    `removed ${toDelete.length} membership(s) for ${subject}; settings left dormant`,
+    `removed ${toDelete.length} membership(s) for ${subject}`,
   )
 } else {
   const membership = await xrpc('com.atproto.repo.createRecord', {
@@ -129,34 +122,6 @@ if (MODE === 'revoke') {
     },
   })
   console.log(`membership: ${membership.uri}`)
-
-  if (subject === did) {
-    const settings = await xrpc('com.atproto.repo.putRecord', {
-      method: 'POST',
-      token: accessJwt,
-      body: {
-        repo: did,
-        collection: SETTINGS_COLLECTION,
-        rkey: 'self',
-        record: {
-          $type: SETTINGS_COLLECTION,
-          avatar: FRAME,
-          ...(GRADIENT ? { name: GRADIENT } : {}),
-          ...(GRADIENT && OUTLINE ? { nameOutline: true } : {}),
-          updatedAt: now,
-        },
-      },
-    })
-    console.log(
-      `settings: ${settings.uri} (avatar: ${FRAME}${
-        GRADIENT ? `, name: ${GRADIENT}` : ''
-      })`,
-    )
-  } else {
-    console.log(
-      `subject ${subject} differs from issuer; write settings from the subject account`,
-    )
-  }
 
   console.log('\nAdd this exact URI to decorations.subscriberListUris:')
   console.log(LIST_URI)

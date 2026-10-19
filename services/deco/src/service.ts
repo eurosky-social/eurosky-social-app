@@ -231,6 +231,13 @@ export function createDecoService(deps: ServiceDependencies) {
     // Mollie webhooks carry only an object id. Re-fetching it with our API key
     // is the authenticity check; no caller-supplied payment details are trusted.
     const payment = await deps.mollie.getPayment(paymentId)
+    /*
+     * Check before any subscription or PDS side effects. A replay after expiry
+     * must not restore list membership or overwrite a newer subscription.
+     */
+    if (await deps.db.hasProcessedPayment(payment.id)) {
+      return json({ received: true })
+    }
     const reversedAmount = Math.max(
       Number(payment.amountChargedBack?.value || 0),
       Number(payment.amountRefunded?.value || 0),
@@ -264,13 +271,19 @@ export function createDecoService(deps: ServiceDependencies) {
       throw new HttpError(
         400,
         'UnknownPayment',
-        'Payment is not associated with a decoration checkout',
+        'Payment is not associated with a supporter checkout',
       )
     }
 
     const isFirst = payment.sequenceType === 'first' ||
       payment.id === subscriber.checkoutPaymentId
-    let subscriptionId = payment.subscriptionId || subscriber.subscriptionId
+    /*
+     * A fresh first payment starts a new billing agreement. The previous
+     * subscription may have been canceled, even if its ID is still stored.
+     */
+    let subscriptionId = isFirst
+      ? undefined
+      : payment.subscriptionId || subscriber.subscriptionId
     const paidAt = payment.paidAt
     if (!paidAt) throw new Error('Paid Mollie payment has no paidAt timestamp')
     const paidUntil = paidUntilFor(paidAt, deps.config.billingMonths)

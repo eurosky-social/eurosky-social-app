@@ -30,6 +30,7 @@ export type PaidPayment = {
 export interface DecoDb {
   get(did: string): Promise<Subscriber | null>
   getByCustomerId(customerId: string): Promise<Subscriber | null>
+  hasProcessedPayment(paymentId: string): Promise<boolean>
   putCustomer(did: string, customerId: string, now: string): Promise<Subscriber>
   beginCheckout(args: {
     did: string

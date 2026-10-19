@@ -156,12 +156,12 @@
     "serviceDid": "did:web:age.mu.social"
   },
   "decorations": {
-    "$comment": "Eurosky+ profile decorations. Set enabled=false to remove the UI and read path completely. subscriberListUris are exact app.bsky.graph.list records whose members get access. Test builds override these values with EXPO_PUBLIC_DECO_* variables.",
+    "$comment": "Supporter subscriptions and fixed heart badges. The legacy decorations key and EXPO_PUBLIC_DECO_* overrides are retained for deployment compatibility. Set enabled=false to remove the UI and badge queries. subscriberListUris are exact app.bsky.graph.list records whose members receive the badge.",
     "enabled": false,
     "subscriberListUris": [],
     "serviceUrl": "https://deco.mu.social",
     "serviceDid": "did:web:deco.mu.social",
-    "manageUrl": "https://mu.social/settings/decorations"
+    "manageUrl": "https://mu.social/settings/supporter"
   },
   "fu": {
     "pickerDid": "did:plc:qycn7lwmbl5ije4jkvwksgm3"

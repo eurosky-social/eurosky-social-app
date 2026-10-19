@@ -7,12 +7,13 @@ import {usePdsClient, useSession} from '#/state/session'
 import {BRAND} from '#/config/brand'
 import {com} from '#/lexicons'
 
+/* Keep the existing service NSIDs for deployed workers and OAuth clients. */
 const GET_STATUS = 'social.mu.deco.getStatus'
 const CREATE_CHECKOUT = 'social.mu.deco.createCheckout'
 const CANCEL = 'social.mu.deco.cancel'
 const REQUEST_TIMEOUT = 10_000
 
-export type DecorationSubscriptionStatus = {
+export type SupporterSubscriptionStatus = {
   active: boolean
   paidUntil?: string
   cancelAtPeriodEnd: boolean
@@ -23,7 +24,7 @@ export type DecorationSubscriptionStatus = {
   }
 }
 
-export class DecorationSubscriptionError extends Error {
+export class SupporterSubscriptionError extends Error {
   constructor(
     message: string,
     public code?: string,
@@ -32,29 +33,27 @@ export class DecorationSubscriptionError extends Error {
   }
 }
 
-const subscriptionQueryKeyRoot = 'decoration-subscription'
-export const createDecorationSubscriptionQueryKey = (did: string) =>
-  createQueryKey(subscriptionQueryKeyRoot, {did})
-
-async function bearer(client: Client, lxm: NsidString): Promise<string> {
-  const data = await client.call(com.atproto.server.getServiceAuth, {
-    aud: BRAND.decorations.serviceDid,
-    lxm,
-  })
-  return `Bearer ${data.token}`
-}
+const supporterSubscriptionQueryKeyRoot = 'supporter-subscription'
+export const createSupporterSubscriptionQueryKey = (did: string) =>
+  createQueryKey(supporterSubscriptionQueryKeyRoot, {did})
 
 async function request<T>(
   client: Client,
   method: NsidString,
   httpMethod: 'GET' | 'POST',
 ): Promise<T> {
-  const authorization = await bearer(client, method)
+  const data = await client.call(com.atproto.server.getServiceAuth, {
+    aud: BRAND.decorations.serviceDid,
+    lxm: method,
+  })
   const response = await fetch(
     `${BRAND.decorations.serviceUrl}/xrpc/${method}`,
     {
       method: httpMethod,
-      headers: {authorization, accept: 'application/json'},
+      headers: {
+        authorization: `Bearer ${data.token}`,
+        accept: 'application/json',
+      },
       signal: AbortSignal.timeout(REQUEST_TIMEOUT),
     },
   )
@@ -63,17 +62,17 @@ async function request<T>(
       error?: unknown
       message?: unknown
     }
-    throw new DecorationSubscriptionError(
+    throw new SupporterSubscriptionError(
       typeof body.message === 'string'
         ? body.message
-        : `Decoration subscription request failed (${response.status})`,
+        : `Supporter subscription request failed (${response.status})`,
       typeof body.error === 'string' ? body.error : undefined,
     )
   }
   return (await response.json()) as T
 }
 
-export function useDecorationSubscriptionQuery({
+export function useSupporterSubscriptionQuery({
   pollUntilActive = false,
 }: {
   pollUntilActive?: boolean
@@ -83,17 +82,17 @@ export function useDecorationSubscriptionQuery({
   const did = currentAccount?.did ?? ''
 
   return useQuery({
-    queryKey: createDecorationSubscriptionQueryKey(did),
+    queryKey: createSupporterSubscriptionQueryKey(did),
     enabled: BRAND.decorations.enabled && !!did,
     staleTime: 30_000,
     queryFn: () =>
-      request<DecorationSubscriptionStatus>(pdsClient, GET_STATUS, 'GET'),
+      request<SupporterSubscriptionStatus>(pdsClient, GET_STATUS, 'GET'),
     refetchInterval: query =>
       pollUntilActive && !query.state.data?.active ? 2_000 : false,
   })
 }
 
-export function useCreateDecorationCheckoutMutation() {
+export function useCreateSupporterCheckoutMutation() {
   const pdsClient = usePdsClient()
   return useMutation({
     mutationFn: () =>
@@ -101,18 +100,18 @@ export function useCreateDecorationCheckoutMutation() {
   })
 }
 
-export function useCancelDecorationSubscriptionMutation() {
+export function useCancelSupporterSubscriptionMutation() {
   const pdsClient = usePdsClient()
   const {currentAccount} = useSession()
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: () =>
-      request<DecorationSubscriptionStatus>(pdsClient, CANCEL, 'POST'),
+      request<SupporterSubscriptionStatus>(pdsClient, CANCEL, 'POST'),
     onSuccess(status) {
       if (!currentAccount) return
       queryClient.setQueryData(
-        createDecorationSubscriptionQueryKey(currentAccount.did),
+        createSupporterSubscriptionQueryKey(currentAccount.did),
         status,
       )
     },

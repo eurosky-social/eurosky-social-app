@@ -1,15 +1,17 @@
-# Eurosky+ decoration service
+# Mu supporter subscription service
 
-Mollie subscription backend for paid profile decorations in
-`src/features/avatarDecorations/`. It runs as a Bunny Edge Script, stores
-subscription state in Bunny Database/libSQL, and manages membership in an
-exact Bluesky subscriber list owned by the Eurosky+ atproto account.
+Mollie subscription backend for the fixed heart badge in
+`src/features/supporter/`. It runs as a Bunny Edge Script, stores subscription
+state in Bunny Database/libSQL, and manages membership in an exact Bluesky
+subscriber list owned by the supporter issuer account.
 
-Decoration selection never passes through this service. The app writes the
-subscriber's `social.mu.deco.settings/self` record directly with that user's
-session. Paid entitlement is a standard `app.bsky.graph.listitem` pointing to
-the exact `DECO_SUBSCRIBER_LIST_URI`. Memberships added manually through an
-ordinary Bluesky client are valid too.
+Membership alone grants the badge. There are no cosmetic choices or user
+settings records. Paid entitlement is a standard `app.bsky.graph.listitem`
+pointing to the exact `DECO_SUBSCRIBER_LIST_URI`. Memberships added manually
+through an ordinary Bluesky client are valid too. Membership is public.
+
+The `deco` directory, existing NSIDs, environment variables, database tables,
+and service identities remain unchanged for deployment compatibility.
 
 ## Endpoints
 
@@ -47,7 +49,12 @@ Lexicon definitions are under `lexicons/social/mu/deco/`.
    charge, but keeps membership through `paidUntil`.
 5. Failed, expired, canceled, or charged-back payment notifications do not
    extend entitlement. The daily sweep removes the service-owned membership
-   after the grace period.
+   after the grace period, including when a new checkout is pending/abandoned.
+6. Successfully applied payment IDs are checked before any subscription/PDS
+   side effects. Replaying an old webhook cannot restore swept membership or
+   overwrite a newer subscription. Failed membership writes remain retryable.
+7. A new first payment creates a new recurring subscription, rather than
+   reusing a canceled subscription ID retained in the subscriber row.
 
 Service-created list-item rkeys are deterministic (`sub-` plus SHA-256 of the
 list URI and subject DID). This makes webhook writes idempotent and permits the
@@ -109,9 +116,11 @@ To run locally, load `env.example` values, use a Mollie test key, leave
 DEV_TRUST_DID_HEADER=1 deno task dev
 ```
 
-The lifecycle test uses fake Mollie and list-membership clients. It covers checkout reuse,
-first-payment activation, duplicate webhook handling, cancellation, and expiry
-sweeping without contacting Mollie or a PDS.
+The lifecycle tests use fake Mollie and list-membership clients against both
+in-memory storage and real in-memory SQLite (`node:sqlite` in current Deno 2).
+They cover checkout reuse, activation, recurring payments, cancellation,
+resubscription, webhook replay after expiry, abandoned-checkout sweeping, and
+retryable PDS failures without contacting Mollie or a PDS.
 
 `./scripts/emit-test-records.mjs` remains available for testing client rendering
 without any payment flow.

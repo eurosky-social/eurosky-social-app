@@ -115,7 +115,6 @@ import {AppPasswordsScreen} from '#/screens/Settings/AppPasswords'
 import {AutomationLabelSettingsScreen} from '#/screens/Settings/AutomationLabelSettings'
 import {BetaFeaturesSettingsScreen} from '#/screens/Settings/BetaFeaturesSettings'
 import {ContentAndMediaSettingsScreen} from '#/screens/Settings/ContentAndMediaSettings'
-import {DecorationsSettingsScreen} from '#/screens/Settings/DecorationsSettings'
 import {ExternalMediaPreferencesScreen} from '#/screens/Settings/ExternalMediaPreferences'
 import {FindContactsSettingsScreen} from '#/screens/Settings/FindContactsSettings'
 import {FollowingFeedPreferencesScreen} from '#/screens/Settings/FollowingFeedPreferences'
@@ -130,6 +129,7 @@ import {ActivityNotificationSettingsScreen} from '#/screens/Settings/Notificatio
 import {PetCompanionSettingsScreen} from '#/screens/Settings/PetCompanionSettings'
 import {PrivacyAndSecuritySettingsScreen} from '#/screens/Settings/PrivacyAndSecuritySettings'
 import {SettingsScreen} from '#/screens/Settings/Settings'
+import {SupporterSettingsScreen} from '#/screens/Settings/SupporterSettings'
 import {ThreadPreferencesScreen} from '#/screens/Settings/ThreadPreferences'
 import {
   StarterPackScreen,
@@ -478,10 +478,10 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
       />
       {BRAND.decorations.enabled && (
         <Stack.Screen
-          name="DecorationsSettings"
-          getComponent={() => DecorationsSettingsScreen}
+          name="SupporterSettings"
+          getComponent={() => SupporterSettingsScreen}
           options={{
-            title: title(msg`Profile decorations`),
+            title: title(msg`Support ${BRAND.name}`),
             requireAuth: true,
           }}
         />

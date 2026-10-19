@@ -7,7 +7,7 @@ import {
 // @atcute/crypto. Runtime code is bundled and pinned; this local declaration
 // supplies the small verifier surface we use until that upstream issue clears.
 // @ts-types="./xrpc-auth.d.ts"
-import { ServiceJwtVerifier } from 'https://esm.sh/@atcute/xrpc-server@2.0.2/auth?bundle'
+import { ServiceJwtVerifier } from '@atcute/xrpc-server/auth'
 
 import { type DecoConfig } from './config.ts'
 import { type CallerVerifier } from './types.ts'

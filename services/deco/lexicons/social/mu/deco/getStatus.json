@@ -4,7 +4,7 @@
   "defs": {
     "main": {
       "type": "query",
-      "description": "Returns the calling account's Eurosky+ decoration subscription status and current plan price.",
+      "description": "Returns the calling account's supporter subscription status and current plan price.",
       "output": {
         "encoding": "application/json",
         "schema": {

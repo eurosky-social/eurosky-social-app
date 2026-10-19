@@ -3,7 +3,7 @@ import { createClient } from '@libsql/client/web'
 import { env } from './config.ts'
 import { type DecoDb, type Subscriber } from './types.ts'
 
-const SCHEMA = `
+export const SCHEMA = `
 CREATE TABLE IF NOT EXISTS deco_subscribers (
   did                    TEXT PRIMARY KEY,
   mollie_customer_id     TEXT NOT NULL UNIQUE,
@@ -19,8 +19,8 @@ CREATE TABLE IF NOT EXISTS deco_subscribers (
   created_at             TEXT NOT NULL,
   updated_at             TEXT NOT NULL
 );
-CREATE INDEX IF NOT EXISTS deco_subscribers_expiry
-  ON deco_subscribers(status, paid_until);
+CREATE INDEX IF NOT EXISTS deco_subscribers_membership_expiry
+  ON deco_subscribers(paid_until) WHERE grant_uri IS NOT NULL;
 CREATE TABLE IF NOT EXISTS deco_processed_payments (
   payment_id TEXT PRIMARY KEY,
   did        TEXT NOT NULL,
@@ -76,6 +76,13 @@ export function createSqliteDb(sql: SqlClient): DecoDb {
         [customerId],
       )
       return fromRow(rows[0])
+    },
+    async hasProcessedPayment(paymentId) {
+      const { rows } = await sql.execute(
+        'SELECT payment_id FROM deco_processed_payments WHERE payment_id = ?',
+        [paymentId],
+      )
+      return rows.length > 0
     },
     async putCustomer(did, customerId, now) {
       await sql.execute(
@@ -165,9 +172,9 @@ export function createSqliteDb(sql: SqlClient): DecoDb {
       )
     },
     async listExpired(cutoff, limit) {
+      // Checkout state must not hide an expired membership from the sweep.
       const { rows } = await sql.execute(
-        `${SELECT} WHERE status IN ('active', 'canceling')
-          AND paid_until IS NOT NULL AND paid_until <= ?
+        `${SELECT} WHERE paid_until IS NOT NULL AND paid_until <= ?
           AND grant_uri IS NOT NULL ORDER BY paid_until ASC LIMIT ?`,
         [cutoff, limit],
       )
@@ -178,6 +185,7 @@ export function createSqliteDb(sql: SqlClient): DecoDb {
 
 export function createMemoryDb(): DecoDb {
   const subscribers = new Map<string, Subscriber>()
+  const processedPayments = new Set<string>()
 
   const clone = (value: Subscriber): Subscriber => ({ ...value })
   const save = (value: Subscriber) => subscribers.set(value.did, clone(value))
@@ -192,6 +200,9 @@ export function createMemoryDb(): DecoDb {
         (item) => item.customerId === customerId,
       )
       return value ? clone(value) : null
+    },
+    async hasProcessedPayment(paymentId) {
+      return processedPayments.has(paymentId)
     },
     async putCustomer(did, customerId, now) {
       const existing = subscribers.get(did)
@@ -265,6 +276,7 @@ export function createMemoryDb(): DecoDb {
         checkoutUrl: undefined,
         updatedAt: payment.paidAt,
       })
+      processedPayments.add(payment.paymentId)
     },
     async markCanceling(did, now) {
       const value = subscribers.get(did)
@@ -292,7 +304,6 @@ export function createMemoryDb(): DecoDb {
       return [...subscribers.values()]
         .filter(
           (value) =>
-            (value.status === 'active' || value.status === 'canceling') &&
             !!value.paidUntil &&
             value.paidUntil <= cutoff &&
             !!value.grantUri,

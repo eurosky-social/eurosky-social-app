@@ -86,11 +86,11 @@ export function loadConfig(): DecoConfig {
     mollieApiKey: required('MOLLIE_API_KEY'),
     mollieAmount,
     mollieCurrency: (env('MOLLIE_CURRENCY') || 'EUR').toUpperCase(),
-    mollieDescription: env('MOLLIE_DESCRIPTION') || 'Eurosky+ subscription',
+    mollieDescription: env('MOLLIE_DESCRIPTION') || 'Mu supporter subscription',
     billingMonths: positiveInteger('BILLING_MONTHS', 1, 12),
     checkoutRedirectUrl: cleanUrl(
       'CHECKOUT_REDIRECT_URL',
-      'https://mu.social/settings/decorations?checkout=return',
+      'https://mu.social/settings/supporter?checkout=return',
     ),
     issuerPdsUrl: cleanUrl('DECO_ISSUER_PDS_URL'),
     issuerIdentifier: required('DECO_ISSUER_IDENTIFIER'),

@@ -4,7 +4,7 @@
   "defs": {
     "main": {
       "type": "procedure",
-      "description": "Cancels renewal while preserving decorations through the paid period.",
+      "description": "Cancels renewal while preserving supporter membership through the paid period and grace period.",
       "output": {
         "encoding": "application/json",
         "schema": {

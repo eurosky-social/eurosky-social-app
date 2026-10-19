@@ -73,7 +73,7 @@ export type CommonNavigatorParams = {
   ContentServiceSettings: undefined
   AppViewTransferSettings: undefined
   PetCompanionSettings: undefined
-  DecorationsSettings: undefined
+  SupporterSettings: undefined
   BetaFeaturesSettings: undefined
   AccountSettings: undefined
   AutomationLabelSettings: undefined
