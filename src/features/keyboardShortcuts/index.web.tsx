@@ -291,9 +291,6 @@ export function KeyboardShortcuts() {
       case 'l':
         void navigate('Lists')
         break
-      case 'b':
-        void navigate('Bookmarks')
-        break
       case 'p':
         if (!currentAccount) return false
         void navigate('Profile', {name: currentAccount.handle})

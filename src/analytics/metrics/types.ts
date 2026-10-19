@@ -99,7 +99,6 @@ export type Events = {
       | 'news'
       | 'events'
       | 'starterPacks'
-      | 'saved'
       | 'settings'
       | 'menu'
     surface: 'bottomBar' | 'drawer' | 'drawerHeader' | 'topBar' | 'leftNav'

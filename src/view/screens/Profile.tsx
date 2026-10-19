@@ -41,6 +41,7 @@ import {ProfileHeader, ProfileHeaderLoading} from '#/screens/Profile/Header'
 import {ProfileFeedSection} from '#/screens/Profile/Sections/Feed'
 import {ProfileLabelsSection} from '#/screens/Profile/Sections/Labels'
 import {atoms as a, useTheme} from '#/alf'
+import {BookmarksList} from '#/components/BookmarksList'
 import {Circle_And_Square_Stroke1_Corner0_Rounded_Filled as CircleAndSquareIcon} from '#/components/icons/CircleAndSquare'
 import {EditBig_Stroke2_Corner2_Rounded as EditBigIcon} from '#/components/icons/EditBig'
 import {Heart2_Stroke1_Corner0_Rounded as HeartIcon} from '#/components/icons/Heart2'
@@ -197,6 +198,7 @@ function ProfileScreenLoaded({
   const mediaSectionRef = useRef<SectionRef>(null)
   const videosSectionRef = useRef<SectionRef>(null)
   const likesSectionRef = useRef<SectionRef>(null)
+  const savedSectionRef = useRef<SectionRef>(null)
   const feedsSectionRef = useRef<SectionRef>(null)
   const listsSectionRef = useRef<SectionRef>(null)
   const starterPacksSectionRef = useRef<SectionRef>(null)
@@ -221,6 +223,7 @@ function ProfileScreenLoaded({
   const showMediaTab = !hasLabeler
   const showVideosTab = !hasLabeler
   const showLikesTab = isMe
+  const showSavedTab = isMe
   const feedGenCount = profile.associated?.feedgens || 0
   const showFeedsTab = isMe || feedGenCount > 0
   const starterPackCount = profile.associated?.starterPacks || 0
@@ -237,6 +240,9 @@ function ProfileScreenLoaded({
     showMediaTab ? _(msg`Media`) : undefined,
     showVideosTab ? _(msg`Videos`) : undefined,
     showLikesTab ? _(msg`Likes`) : undefined,
+    showSavedTab
+      ? _(msg({message: 'Saved', context: 'profile tab for bookmarks'}))
+      : undefined,
     showFeedsTab ? _(msg`Feeds`) : undefined,
     showStarterPacksTab ? _(msg`Starter Packs`) : undefined,
     showListsTab && !hasLabeler ? _(msg`Lists`) : undefined,
@@ -249,6 +255,7 @@ function ProfileScreenLoaded({
   let mediaIndex: number | null = null
   let videosIndex: number | null = null
   let likesIndex: number | null = null
+  let savedIndex: number | null = null
   let feedsIndex: number | null = null
   let starterPacksIndex: number | null = null
   let listsIndex: number | null = null
@@ -269,6 +276,9 @@ function ProfileScreenLoaded({
   }
   if (showLikesTab) {
     likesIndex = nextIndex++
+  }
+  if (showSavedTab) {
+    savedIndex = nextIndex++
   }
   if (showFeedsTab) {
     feedsIndex = nextIndex++
@@ -294,6 +304,8 @@ function ProfileScreenLoaded({
         videosSectionRef.current?.scrollToTop()
       } else if (index === likesIndex) {
         likesSectionRef.current?.scrollToTop()
+      } else if (index === savedIndex) {
+        savedSectionRef.current?.scrollToTop()
       } else if (index === feedsIndex) {
         feedsSectionRef.current?.scrollToTop()
       } else if (index === starterPacksIndex) {
@@ -309,6 +321,7 @@ function ProfileScreenLoaded({
       mediaIndex,
       videosIndex,
       likesIndex,
+      savedIndex,
       feedsIndex,
       listsIndex,
       starterPacksIndex,
@@ -537,6 +550,15 @@ function ProfileScreenLoaded({
                 setScrollViewTag={setScrollViewTag}
                 emptyStateMessage={_(msg`No likes yet`)}
                 emptyStateIcon={HeartIcon}
+              />
+            )
+          : null}
+        {showSavedTab
+          ? ({headerHeight, scrollElRef}) => (
+              <BookmarksList
+                ref={savedSectionRef}
+                scrollElRef={scrollElRef as ListRef}
+                headerOffset={headerHeight}
               />
             )
           : null}
