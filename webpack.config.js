@@ -168,6 +168,21 @@ module.exports = async function (env, argv) {
     config.output.publicPath = 'auto'
   }
 
+  /*
+   * Terser defaults to one worker per CPU minus one, and in a container
+   * os.cpus() reports the host's cores, not the job's share. Each worker holds
+   * its own copy of the chunks it minifies, so on a memory-capped CI runner
+   * the build gets OOM-killed. TERSER_PARALLEL caps the worker count.
+   */
+  const terserParallel = parseInt(process.env.TERSER_PARALLEL ?? '', 10)
+  if (Number.isInteger(terserParallel)) {
+    for (const minimizer of config.optimization?.minimizer || []) {
+      if (minimizer?.constructor?.name === 'TerserPlugin') {
+        minimizer.options.parallel = terserParallel > 0 ? terserParallel : false
+      }
+    }
+  }
+
   if (GENERATE_STATS || OPEN_ANALYZER) {
     config.plugins.push(
       new BundleAnalyzerPlugin({
