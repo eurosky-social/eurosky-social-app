@@ -41,10 +41,6 @@ import {
   Bell_Filled_Corner0_Rounded as BellFilledIcon,
   Bell_Stroke2_Corner0_Rounded as BellIcon,
 } from '#/components/icons/Bell'
-import {
-  Bookmark as BookmarkIcon,
-  BookmarkFilled as BookmarkFilledIcon,
-} from '#/components/icons/Bookmark'
 import {CalendarDays_Stroke2_Corner0_Rounded as CalendarIcon} from '#/components/icons/CalendarDays'
 import {type Props as SVGIconProps} from '#/components/icons/common'
 import {DotGrid3x1_Stroke2_Corner0_Rounded as EllipsisIcon} from '#/components/icons/DotGrid'
@@ -749,19 +745,6 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             icons={{
               inactive: MessageIcon,
               active: MessageFilledIcon,
-            }}
-          />
-          <NavItem
-            label={l({
-              message: 'Saved',
-              context: 'link to bookmarks screen',
-            })}
-            href="/saved"
-            navItem="saved"
-            minimal={leftNavMinimal}
-            icons={{
-              inactive: BookmarkIcon,
-              active: BookmarkFilledIcon,
             }}
           />
           <NavItem
