@@ -24,6 +24,7 @@ import {EventDetails} from './components/EventDetails'
 import {EVENT_NSID, EVENT_POSTS_PAGE_SIZE} from './config'
 import {useEventPostsQuery, useEventQuery} from './queries'
 import {type EventProfile, type EventRecord} from './types'
+import {getEventShareUrls, hideEventLinks} from './util'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'Event'>
 
@@ -101,6 +102,7 @@ function EventPostsList({
   } = useEventPostsQuery({event, profile, pageSize: EVENT_POSTS_PAGE_SIZE})
 
   const posts = data?.pages.flatMap(page => page.posts) ?? []
+  const eventUrls = getEventShareUrls(event, profile)
 
   const onEndReached = () => {
     if (hasNextPage && !isFetchingNextPage && !error) void fetchNextPage()
@@ -112,7 +114,7 @@ function EventPostsList({
         data={posts}
         keyExtractor={(post: app.bsky.feed.defs.PostView) => post.uri}
         renderItem={({item}: {item: app.bsky.feed.defs.PostView}) => (
-          <Post post={item} />
+          <Post post={hideEventLinks(item, eventUrls)} />
         )}
         refreshing={isRefetching}
         onRefresh={() => void Promise.all([onRefreshEvent(), refetch()])}
