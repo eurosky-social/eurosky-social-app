@@ -1,6 +1,9 @@
+import {RichText as RichTextAPI, UnicodeString} from '@bsky/sdk/richtext'
 import {type I18n} from '@lingui/core'
 
 import {CDN_SERVICE} from '#/lib/constants'
+import {app} from '#/lexicons'
+import * as bsky from '#/types/bsky'
 import {
   type EventLocation,
   type EventMedia,
@@ -142,6 +145,78 @@ export function getEventShareUrls(
     `https://smokesignal.events/${actor}/${event.rkey}`,
     ...ATMO_HOSTS.map(host => `${host}/p/${actor}/e/${event.rkey}`),
   ])
+}
+
+/**
+ * Compares URLs by origin and path only, ignoring case, a trailing slash, the
+ * query and the fragment. Returns undefined for anything that isn't a URL.
+ */
+function normalizeUrl(url: string): string | undefined {
+  try {
+    const {origin, pathname} = new URL(url)
+    return `${origin}${pathname}`.replace(/\/+$/, '').toLowerCase()
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Returns a copy of the post without its links to the event, as from
+ * `getEventShareUrls`: the linked text is removed, and so is a link card that
+ * points at the event. Shown under the event, these only repeat it.
+ */
+export function hideEventLinks(
+  post: app.bsky.feed.defs.PostView,
+  urls: string[],
+): app.bsky.feed.defs.PostView {
+  const hidden = new Set(urls.map(normalizeUrl))
+  const isHidden = (url: string) => {
+    const normalized = normalizeUrl(url)
+    return !!normalized && hidden.has(normalized)
+  }
+
+  let updated = post
+  if (
+    bsky.isType(app.bsky.embed.external.view, post.embed) &&
+    isHidden(post.embed.external.uri)
+  ) {
+    updated = {...updated, embed: undefined}
+  }
+
+  const record = post.record
+  if (bsky.isType(app.bsky.feed.post, record) && record.facets?.length) {
+    const ranges = record.facets
+      .filter(facet =>
+        facet.features.some(
+          f => bsky.isType(app.bsky.richtext.facet.link, f) && isHidden(f.uri),
+        ),
+      )
+      .map(facet => facet.index)
+    if (ranges.length) {
+      const rt = new RichTextAPI({
+        text: record.text,
+        facets: record.facets,
+      }).clone()
+      // From the end, so earlier ranges keep their offsets.
+      for (const {byteStart, byteEnd} of [...ranges].sort(
+        (x, y) => y.byteStart - x.byteStart,
+      )) {
+        // Take a following space too, so a link mid-sentence leaves one gap.
+        const text = rt.unicodeText
+        const spaced =
+          text.slice(byteStart - 1, byteStart) === ' ' &&
+          text.slice(byteEnd, byteEnd + 1) === ' '
+        rt.delete(byteStart, spaced ? byteEnd + 1 : byteEnd)
+      }
+      rt.delete(new UnicodeString(rt.text.trimEnd()).length, rt.length)
+      rt.delete(0, rt.length - new UnicodeString(rt.text.trimStart()).length)
+      updated = {
+        ...updated,
+        record: {...record, text: rt.text, facets: rt.facets},
+      }
+    }
+  }
+  return updated
 }
 
 const RSVP_COUNT_FIELDS = {
