@@ -12,8 +12,8 @@ import {type EventProfile, type EventRecord} from '../types'
 import {getEventPostUrl} from '../util'
 
 /**
- * A prompt to post about the event, opening the composer with a link to it
- * already in the text. Modelled on `ComposerPrompt` from
+ * A prompt to post about the event, opening the composer with a link card for
+ * it attached, so the text starts empty. Modelled on `ComposerPrompt` from
  * `#/view/com/feeds/ComposerPrompt`, without its camera and image buttons.
  */
 export function EventComposerPrompt({
@@ -35,14 +35,13 @@ export function EventComposerPrompt({
     <Pressable
       onPress={() =>
         openComposer({
-          // Leaves room above the link for the post's own text.
-          text: `\n\n${getEventPostUrl(event, profile)}`,
+          externalUri: getEventPostUrl(event, profile),
           logContext: 'Other',
         })
       }
       accessibilityRole="button"
       accessibilityLabel={l`Post about this event`}
-      accessibilityHint={l`Opens the post composer with a link to the event`}
+      accessibilityHint={l`Opens the post composer with a link card for the event`}
       onPointerEnter={() => setHover(true)}
       onPointerLeave={() => setHover(false)}
       style={({pressed}) => [
