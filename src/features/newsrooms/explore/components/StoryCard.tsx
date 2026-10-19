@@ -11,6 +11,7 @@ import {
 } from '#/components/icons/Chevron'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
+import {useOsoPostLayout} from '#/features/osoPostLayout'
 import {type app} from '#/lexicons'
 import {articleViewLink} from '../../article/articleLink'
 import {useOgImageQuery} from '../../queries'
@@ -24,7 +25,21 @@ type Profiles = Map<string, app.bsky.actor.defs.ProfileViewDetailed>
  * A story given the lead treatment: image first, then source, headline, time.
  * One per band - the eye needs a single entry point into each block.
  */
-export function StoryLead({
+export function StoryLead(props: StoryLeadProps) {
+  // Oso's text-first layout lists every story as a row with a thumbnail.
+  if (useOsoPostLayout() === 'text') return <StoryRowView {...props} />
+  return <StoryLeadView {...props} />
+}
+
+type StoryLeadProps = {
+  story: ExploreStory
+  profiles: Profiles
+  sharers?: ArticleSharers
+  /** `hero` is the spread's own lead; `section` a department's. */
+  size?: 'hero' | 'section'
+}
+
+function StoryLeadView({
   story,
   profiles,
   sharers,
@@ -99,7 +114,19 @@ export function StoryLead({
  * A story in a list: headline left, thumbnail right, so a column of them keeps
  * one left edge and scans as a list rather than a stack of tiles.
  */
-export function StoryRow({
+export function StoryRow(props: StoryRowProps) {
+  // Oso's image-first layout gives every story the lead treatment.
+  if (useOsoPostLayout() === 'image') return <StoryLeadView {...props} />
+  return <StoryRowView {...props} />
+}
+
+type StoryRowProps = {
+  story: ExploreStory
+  profiles: Profiles
+  sharers?: ArticleSharers
+}
+
+function StoryRowView({
   story,
   profiles,
   sharers,
@@ -153,7 +180,21 @@ export function StoryRow({
  * competing, a column of headlines reads as a page of news rather than a feed
  * of tiles.
  */
-export function StoryHeadline({
+export function StoryHeadline(props: {
+  story: ExploreStory
+  profiles: Profiles
+}) {
+  /*
+   * In Oso's image/text layouts every story follows the chosen layout rather
+   * than the newspaper mix of leads, rows and headlines.
+   */
+  const osoLayout = useOsoPostLayout()
+  if (osoLayout === 'image') return <StoryLeadView {...props} />
+  if (osoLayout === 'text') return <StoryRowView {...props} />
+  return <StoryHeadlineView {...props} />
+}
+
+function StoryHeadlineView({
   story,
   profiles,
 }: {

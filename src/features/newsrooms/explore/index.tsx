@@ -22,6 +22,10 @@ import {BRAND} from '#/config/brand'
 import {IS_PARTNER_PREVIEW, IS_WEB} from '#/env'
 import {useNewsFeedPrefsQuery} from '#/features/newsFeed/state/prefs'
 import {OsoTitlePill} from '#/features/osoNav/pills'
+import {
+  OsoPostLayoutProvider,
+  OsoPostLayoutToggle,
+} from '#/features/osoPostLayout'
 import {DUTCH_WORLD_SCOPE, IS_DUTCH_API_CONFIGURED} from '../dutch/config'
 import {useDutchOutletsQuery} from '../dutch/queries'
 import {useCollapsingTitle} from '../hub/useCollapsingTitle'
@@ -226,7 +230,7 @@ export function NewsroomExploreScreen(
   const columnsPerBand = !wide ? 1 : width >= THREE_COLUMN_WIDTH ? 3 : 2
   const bands = buildBands(departments, columnsPerBand)
 
-  return (
+  const screen = (
     <Layout.Screen testID="newsroomExploreScreen" noCenterBorders>
       <ExploreSpreadBorders />
       {/* Header and filter bar pin together. It is one block outside
@@ -253,6 +257,7 @@ export function NewsroomExploreScreen(
               {/* With interests, the settings are at the foot of their
                * dropdown instead. Outside Header.Slot: slots are fixed-width
                * squares and this button carries a text label. */}
+              {IS_PARTNER_PREVIEW && <OsoPostLayoutToggle />}
               {!interest && (
                 <Link
                   testID="newsSettingsBtn"
@@ -407,6 +412,13 @@ export function NewsroomExploreScreen(
         </ExploreColumn>
       </Animated.ScrollView>
     </Layout.Screen>
+  )
+
+  // Oso's image/text toggle applies to the stories.
+  return IS_PARTNER_PREVIEW ? (
+    <OsoPostLayoutProvider>{screen}</OsoPostLayoutProvider>
+  ) : (
+    screen
   )
 }
 

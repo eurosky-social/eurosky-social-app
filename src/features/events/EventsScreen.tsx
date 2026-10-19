@@ -21,6 +21,10 @@ import {Text} from '#/components/Typography'
 import {IS_PARTNER_PREVIEW, IS_WEB} from '#/env'
 import {OsoCollapsingHeader} from '#/features/osoNav/CollapsingHeader'
 import {OsoTitlePill} from '#/features/osoNav/pills'
+import {
+  OsoPostLayoutProvider,
+  OsoPostLayoutToggle,
+} from '#/features/osoPostLayout'
 import {CreateOrEditEventDialog} from './components/CreateOrEditEventDialog'
 import {EventFeedTabs} from './components/EventFeedTabs'
 import {EventFiltersDialog} from './components/EventFiltersDialog'
@@ -62,7 +66,7 @@ export function EventsScreen({route, navigation}: Props) {
     eventDialogControl.open()
   }
 
-  return (
+  const screen = (
     <Layout.Screen testID="eventsScreen">
       {IS_PARTNER_PREVIEW ? (
         /*
@@ -78,21 +82,22 @@ export function EventsScreen({route, navigation}: Props) {
                 <Layout.Header.Content>
                   <OsoTitlePill kind="events" />
                 </Layout.Header.Content>
-                {hasSession && gtMobile ? (
-                  <Button
-                    label={l`New event`}
-                    color="secondary"
-                    size="small"
-                    onPress={() => openEventDialog()}
-                    testID="newEventBtn">
-                    <ButtonIcon icon={PlusIcon} />
-                    <ButtonText>
-                      <Trans context="action">New</Trans>
-                    </ButtonText>
-                  </Button>
-                ) : (
-                  <Layout.Header.Slot />
-                )}
+                <View style={[a.flex_row, a.align_center, a.gap_sm]}>
+                  <OsoPostLayoutToggle />
+                  {hasSession && gtMobile && (
+                    <Button
+                      label={l`New event`}
+                      color="secondary"
+                      size="small"
+                      onPress={() => openEventDialog()}
+                      testID="newEventBtn">
+                      <ButtonIcon icon={PlusIcon} />
+                      <ButtonText>
+                        <Trans context="action">New</Trans>
+                      </ButtonText>
+                    </Button>
+                  )}
+                </View>
               </Layout.Header.Outer>
             }>
             {!(IS_WEB && rightNavVisible) && (
@@ -220,6 +225,13 @@ export function EventsScreen({route, navigation}: Props) {
         />
       )}
     </Layout.Screen>
+  )
+
+  // Oso's image/text toggle applies to the events list.
+  return IS_PARTNER_PREVIEW ? (
+    <OsoPostLayoutProvider>{screen}</OsoPostLayoutProvider>
+  ) : (
+    screen
   )
 }
 

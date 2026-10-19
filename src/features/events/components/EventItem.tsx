@@ -14,6 +14,7 @@ import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {Pencil_Stroke2_Corner0_Rounded as PencilIcon} from '#/components/icons/Pencil'
 import {Text} from '#/components/Typography'
 import {IS_PARTNER_PREVIEW} from '#/env'
+import {useOsoPostLayout} from '#/features/osoPostLayout'
 import {type EventProfile, type EventRecord} from '../types'
 import {getEventImage, getEventLocationLabel, getProfileAvatar} from '../util'
 import {EventGoingSummary} from './EventGoing'
@@ -45,6 +46,8 @@ export function EventItem({
   const canEdit = !!onEdit && currentAccount?.did === event.did
   const {t: l, i18n} = useLingui()
   const image = getEventImage(event)
+  /* Oso's image/text toggle; undefined elsewhere (the usual banner). */
+  const osoLayout = useOsoPostLayout()
   const time = formatEventTime(i18n, event)
   const when = time?.end
     ? l({
@@ -65,91 +68,148 @@ export function EventItem({
       (profile?.handle ? sanitizeHandle(profile.handle, '@') : event.did),
   )
 
+  const organizer = (
+    <View style={[a.flex_row, a.align_center, a.gap_sm]}>
+      <UserAvatar
+        type="user"
+        size={AVATAR_SIZE}
+        avatar={profile && getProfileAvatar(profile)}
+      />
+      <Text
+        emoji
+        numberOfLines={1}
+        style={[a.flex_1, t.atoms.text_contrast_medium]}>
+        <Trans>
+          <Text emoji style={[a.font_semi_bold, t.atoms.text]}>
+            {authorName}
+          </Text>{' '}
+          is organizing
+        </Trans>
+      </Text>
+    </View>
+  )
+
+  const titleBlock = (
+    <View style={[a.flex_row, a.gap_md]}>
+      {osoLayout === 'text' && image && (
+        // Text first: a small thumbnail beside the title.
+        <Image
+          source={{uri: image.url}}
+          alt={image.alt}
+          accessibilityIgnoresInvertColors
+          loading="lazy"
+          style={[
+            a.rounded_sm,
+            t.atoms.bg_contrast_25,
+            {width: 88, height: 88},
+          ]}
+        />
+      )}
+      <View style={[a.flex_1, a.gap_xs]}>
+        <Text emoji style={[a.text_lg, a.font_bold, a.leading_snug]}>
+          {event.value.name}
+        </Text>
+        {(when || where) && (
+          <Text emoji style={[t.atoms.text_contrast_medium]}>
+            {[when, where].filter(Boolean).join(' · ')}
+          </Text>
+        )}
+      </View>
+    </View>
+  )
+
+  const descriptionBlock = description ? (
+    <View>
+      <Text
+        emoji
+        numberOfLines={limitDescription ? DESCRIPTION_MAX_LINES : undefined}
+        style={[a.leading_snug]}>
+        {description}
+      </Text>
+      {limitDescription && (
+        <ShowMoreButton
+          label={l`Expand event description`}
+          onPress={() => setLimitDescription(false)}
+        />
+      )}
+    </View>
+  ) : null
+
+  const actions = (
+    <>
+      <View style={[a.flex_row, a.align_center, a.justify_between, a.gap_sm]}>
+        <EventRsvpButtons event={event} />
+        <View style={[a.flex_row, a.align_center, a.gap_xs]}>
+          {canEdit && (
+            <Button
+              label={l`Edit event`}
+              onPress={onEdit}
+              size="small"
+              variant="ghost"
+              color="secondary"
+              hoverStyle={t.atoms.bg_contrast_25}
+              style={[a.bg_transparent]}>
+              <ButtonIcon icon={PencilIcon} />
+              <ButtonText>
+                <Trans context="action">Edit</Trans>
+              </ButtonText>
+            </Button>
+          )}
+        </View>
+      </View>
+      {/* Oso: who else is going, under the buttons on the left. */}
+      {IS_PARTNER_PREVIEW && <EventGoingSummary event={event} />}
+    </>
+  )
+
   return (
     <View style={[a.border_t, t.atoms.border_contrast_low]}>
       <View style={[a.gap_sm, a.px_xl, a.pt_lg, a.pb_sm]}>
-        <View style={[a.flex_row, a.align_center, a.gap_sm]}>
-          <UserAvatar
-            type="user"
-            size={AVATAR_SIZE}
-            avatar={profile && getProfileAvatar(profile)}
-          />
-          <Text
-            emoji
-            numberOfLines={1}
-            style={[a.flex_1, t.atoms.text_contrast_medium]}>
-            <Trans>
-              <Text emoji style={[a.font_semi_bold, t.atoms.text]}>
-                {authorName}
-              </Text>{' '}
-              is organizing
-            </Trans>
-          </Text>
-        </View>
-        {image && (
-          <Image
-            source={{uri: image.url}}
-            alt={image.alt}
-            accessibilityIgnoresInvertColors
-            loading="lazy"
-            style={[
-              a.w_full,
-              a.rounded_md,
-              t.atoms.bg_contrast_25,
-              {aspectRatio: BANNER_ASPECT_RATIO},
-            ]}
-          />
-        )}
-        <View style={[a.gap_xs]}>
-          <Text emoji style={[a.text_lg, a.font_bold, a.leading_snug]}>
-            {event.value.name}
-          </Text>
-          {(when || where) && (
-            <Text emoji style={[t.atoms.text_contrast_medium]}>
-              {[when, where].filter(Boolean).join(' · ')}
-            </Text>
-          )}
-        </View>
-        {description && (
-          <View>
-            <Text
-              emoji
-              numberOfLines={
-                limitDescription ? DESCRIPTION_MAX_LINES : undefined
-              }
-              style={[a.leading_snug]}>
-              {description}
-            </Text>
-            {limitDescription && (
-              <ShowMoreButton
-                label={l`Expand event description`}
-                onPress={() => setLimitDescription(false)}
+        {osoLayout === 'image' && image ? (
+          /*
+           * Oso's image-first layout, as in Flashes: who organises, the
+           * picture, the buttons, then the details and description.
+           */
+          <>
+            {organizer}
+            <Image
+              source={{uri: image.url}}
+              alt={image.alt}
+              accessibilityIgnoresInvertColors
+              loading="lazy"
+              style={[
+                a.w_full,
+                a.rounded_md,
+                t.atoms.bg_contrast_25,
+                {aspectRatio: 4 / 3},
+              ]}
+            />
+            {actions}
+            {titleBlock}
+            {descriptionBlock}
+          </>
+        ) : (
+          <>
+            {organizer}
+            {image && !osoLayout && (
+              <Image
+                source={{uri: image.url}}
+                alt={image.alt}
+                accessibilityIgnoresInvertColors
+                loading="lazy"
+                style={[
+                  a.w_full,
+                  a.rounded_md,
+                  t.atoms.bg_contrast_25,
+                  {aspectRatio: BANNER_ASPECT_RATIO},
+                ]}
               />
             )}
-          </View>
+            {titleBlock}
+            {descriptionBlock}
+            {actions}
+          </>
         )}
-        <View style={[a.flex_row, a.align_center, a.justify_between, a.gap_sm]}>
-          <EventRsvpButtons event={event} />
-          <View style={[a.flex_row, a.align_center, a.gap_xs]}>
-            {canEdit && (
-              <Button
-                label={l`Edit event`}
-                onPress={onEdit}
-                size="small"
-                variant="ghost"
-                color="secondary"
-                hoverStyle={t.atoms.bg_contrast_25}
-                style={[a.bg_transparent]}>
-                <ButtonIcon icon={PencilIcon} />
-                <ButtonText>
-                  <Trans context="action">Edit</Trans>
-                </ButtonText>
-              </Button>
-            )}
-          </View>
-        </View>
-        {/* Oso: who else is going, under the buttons on the left. */}
-        {IS_PARTNER_PREVIEW && <EventGoingSummary event={event} />}
       </View>
       {/* Full width: Post brings its own padding and top border. */}
       <EventPosts event={event} profile={profile} />

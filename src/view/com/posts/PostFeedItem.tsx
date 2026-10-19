@@ -1,5 +1,6 @@
 import {memo, useCallback, useMemo, useState} from 'react'
 import {StyleSheet, View} from 'react-native'
+import {Image} from 'expo-image'
 import {AtUri} from '@atproto/syntax'
 import {type ModerationDecision} from '@bsky/sdk/moderation'
 import {RichText as RichTextAPI} from '@bsky/sdk/richtext'
@@ -54,6 +55,15 @@ import {RichText} from '#/components/RichText'
 import {SubtleHover} from '#/components/SubtleHover'
 import {Features, useAnalytics} from '#/analytics'
 import {useActorStatus} from '#/features/liveNow'
+import {useOsoPostLayout} from '#/features/osoPostLayout'
+import {OsoFlashCaption} from '#/features/osoPostLayout/FlashCaption'
+import {OsoLinkRow} from '#/features/osoPostLayout/LinkRow'
+import {
+  getPostLink,
+  getPostMediaThumb,
+  isPostMedia,
+  type PostLink,
+} from '#/features/osoPostLayout/media'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {PostFeedReason} from './PostFeedReason'
@@ -177,6 +187,17 @@ let FeedItemInner = ({
   const {currentAccount} = useSession()
 
   const [hover, setHover] = useState(false)
+  /*
+   * Inside Oso's image/text layout pages, pictures, videos and link previews
+   * move: above the post, full width, for `image`; for `text`, pictures shrink
+   * to a thumbnail beside the text and links to a compact row. Undefined
+   * everywhere else, which keeps the usual layout.
+   */
+  const osoLayout = useOsoPostLayout()
+  const isMedia = !!osoLayout && isPostMedia(post.embed)
+  const link = osoLayout ? getPostLink(post.embed) : undefined
+  const mediaFirst = osoLayout === 'image' && (isMedia || !!link?.thumb)
+  const compactMedia = osoLayout === 'text' && (isMedia || !!link)
 
   const [href] = useMemo(() => {
     const urip = new AtUri(post.uri)
@@ -391,49 +412,32 @@ let FeedItemInner = ({
           </View>
         </View>
 
-        <View style={styles.layout}>
-          <View style={styles.layoutAvi}>
-            <PreviewableUserAvatar
-              size={42}
-              profile={post.author}
-              moderation={moderation.ui('avatar')}
-              type={post.author.associated?.labeler ? 'labeler' : 'user'}
-              onBeforePress={onOpenAuthor}
-              live={live}
-            />
-            {isThreadParent && (
-              <View
-                style={[
-                  styles.replyLine,
-                  {
-                    backgroundColor: select(t.name, {
-                      light: t.palette.contrast_100,
-                      dim: t.palette.contrast_200,
-                      dark: t.palette.contrast_200,
-                    }),
-                    marginTop: live ? 8 : 4,
-                  },
-                ]}
+        {mediaFirst && post.embed ? (
+          /*
+           * Oso's image-first layout, as in Flashes: who posted, the picture
+           * at full width, the buttons, then the text with "read more".
+           */
+          <View style={[a.pt_xs, {paddingLeft: 8}]}>
+            <View style={[a.flex_row, a.align_center, a.gap_sm, a.pb_sm]}>
+              <PreviewableUserAvatar
+                size={36}
+                profile={post.author}
+                moderation={moderation.ui('avatar')}
+                type={post.author.associated?.labeler ? 'labeler' : 'user'}
+                onBeforePress={onOpenAuthor}
+                live={live}
               />
-            )}
-          </View>
-          <View
-            style={[
-              styles.layoutContent,
-              maybeApplyGalleryOffsetStyles('meta', {
-                post,
-                modui: moderation.ui('contentList'),
-                additionalCauses: additionalPostAlerts,
-              }),
-            ]}>
-            <PostMeta
-              author={post.author}
-              moderation={moderation}
-              timestamp={post.indexedAt}
-              record={record}
-              postHref={href}
-              onOpenAuthor={onOpenAuthor}
-            />
+              <View style={[a.flex_1]}>
+                <PostMeta
+                  author={post.author}
+                  moderation={moderation}
+                  timestamp={post.indexedAt}
+                  record={record}
+                  postHref={href}
+                  onOpenAuthor={onOpenAuthor}
+                />
+              </View>
+            </View>
             {showReplyTo &&
               (parentAuthor || isParentBlocked || isParentNotFound) && (
                 <PostRepliedTo
@@ -442,38 +446,129 @@ let FeedItemInner = ({
                   isParentNotFound={isParentNotFound}
                 />
               )}
-            <PostContent
-              moderation={moderation}
+            <ContentHider
+              modui={moderation.ui('contentList')}
+              ignoreMute
+              testID="contentHider-postMedia">
+              <Embed
+                embed={post.embed}
+                moderation={moderation}
+                onOpen={onOpenEmbed}
+                viewContext={PostEmbedViewContext.Feed}
+                post={post}
+                feedDescriptor={feedDescriptor}
+              />
+            </ContentHider>
+            <View style={[a.pt_xs]}>
+              <PostControls
+                post={post}
+                record={record}
+                richText={richText}
+                onPressReply={onPressReply}
+                logContext="FeedItem"
+                feedContext={feedContext}
+                reqId={reqId}
+                threadgateRecord={threadgateRecord}
+                onShowLess={onShowLess}
+                viaRepost={viaRepost}
+              />
+            </View>
+            <OsoFlashCaption
               richText={richText}
-              postNumbering={postNumbering}
-              postEmbed={post.embed}
-              postAuthor={post.author}
-              onOpenEmbed={onOpenEmbed}
-              post={post}
-              additionalPostAlerts={additionalPostAlerts}
-              feedDescriptor={feedDescriptor}
-            />
-            <PostControls
-              post={post}
-              record={record}
-              richText={richText}
-              onPressReply={onPressReply}
-              logContext="FeedItem"
-              feedContext={feedContext}
-              reqId={reqId}
-              threadgateRecord={threadgateRecord}
-              onShowLess={onShowLess}
-              viaRepost={viaRepost}
-            />
-            <KnownLikers
-              post={post}
-              feature={Features.PostFeedKnownLikersEnable}
-              outerStyle={[a.py_sm]}
+              authorHandle={post.author.handle}
             />
           </View>
+        ) : (
+          <View style={styles.layout}>
+            <View style={styles.layoutAvi}>
+              <PreviewableUserAvatar
+                size={42}
+                profile={post.author}
+                moderation={moderation.ui('avatar')}
+                type={post.author.associated?.labeler ? 'labeler' : 'user'}
+                onBeforePress={onOpenAuthor}
+                live={live}
+              />
+              {isThreadParent && (
+                <View
+                  style={[
+                    styles.replyLine,
+                    {
+                      backgroundColor: select(t.name, {
+                        light: t.palette.contrast_100,
+                        dim: t.palette.contrast_200,
+                        dark: t.palette.contrast_200,
+                      }),
+                      marginTop: live ? 8 : 4,
+                    },
+                  ]}
+                />
+              )}
+            </View>
+            <View
+              style={[
+                styles.layoutContent,
+                maybeApplyGalleryOffsetStyles('meta', {
+                  post,
+                  modui: moderation.ui('contentList'),
+                  additionalCauses: additionalPostAlerts,
+                }),
+              ]}>
+              <PostMeta
+                author={post.author}
+                moderation={moderation}
+                timestamp={post.indexedAt}
+                record={record}
+                postHref={href}
+                onOpenAuthor={onOpenAuthor}
+              />
+              {showReplyTo &&
+                (parentAuthor || isParentBlocked || isParentNotFound) && (
+                  <PostRepliedTo
+                    parentAuthor={parentAuthor}
+                    isParentBlocked={isParentBlocked}
+                    isParentNotFound={isParentNotFound}
+                  />
+                )}
+              <PostContent
+                moderation={moderation}
+                richText={richText}
+                postNumbering={postNumbering}
+                postEmbed={mediaFirst || compactMedia ? undefined : post.embed}
+                mediaThumb={
+                  compactMedia && isMedia
+                    ? getPostMediaThumb(post.embed)
+                    : undefined
+                }
+                compactLink={compactMedia ? link : undefined}
+                postAuthor={post.author}
+                onOpenEmbed={onOpenEmbed}
+                post={post}
+                additionalPostAlerts={additionalPostAlerts}
+                feedDescriptor={feedDescriptor}
+              />
+              <PostControls
+                post={post}
+                record={record}
+                richText={richText}
+                onPressReply={onPressReply}
+                logContext="FeedItem"
+                feedContext={feedContext}
+                reqId={reqId}
+                threadgateRecord={threadgateRecord}
+                onShowLess={onShowLess}
+                viaRepost={viaRepost}
+              />
+              <KnownLikers
+                post={post}
+                feature={Features.PostFeedKnownLikersEnable}
+                outerStyle={[a.py_sm]}
+              />
+            </View>
 
-          <DiscoverDebug feedContext={feedContext} />
-        </View>
+            <DiscoverDebug feedContext={feedContext} />
+          </View>
+        )}
       </Link>
     </GalleryBleed>
   )
@@ -490,6 +585,8 @@ let PostContent = ({
   onOpenEmbed,
   additionalPostAlerts,
   feedDescriptor,
+  mediaThumb,
+  compactLink,
 }: {
   moderation: ModerationDecision
   richText: RichTextAPI
@@ -500,6 +597,10 @@ let PostContent = ({
   postNumbering: FeedPostNumbering | undefined
   additionalPostAlerts?: AppModerationCause[]
   feedDescriptor?: string
+  /** A small preview shown beside the text, for Oso's text-first layout. */
+  mediaThumb?: {uri: string; alt: string}
+  /** A link preview shown as a compact row, for Oso's text-first layout. */
+  compactLink?: PostLink
 }): React.ReactNode => {
   const [limitLines, setLimitLines] = useState(
     () => countLines(richText.text) >= MAX_POST_LINES,
@@ -528,7 +629,30 @@ let PostContent = ({
         style={[a.pb_xs]}
         additionalCauses={additionalPostAlerts}
       />
-      {richText.text ? (
+      {mediaThumb ? (
+        <View style={[a.flex_row, a.gap_md, a.mb_2xs]}>
+          <Image
+            accessibilityIgnoresInvertColors
+            source={{uri: mediaThumb.uri}}
+            alt={mediaThumb.alt}
+            contentFit="cover"
+            style={[a.rounded_sm, {width: 88, height: 88}]}
+          />
+          {richText.text ? (
+            <View style={[a.flex_1]}>
+              <RichText
+                enableTags
+                testID="postText"
+                value={richText}
+                numberOfLines={MAX_POST_LINES}
+                style={[a.flex_1, a.text_md]}
+                authorHandle={postAuthor.handle}
+                shouldProxyLinks={true}
+              />
+            </View>
+          ) : null}
+        </View>
+      ) : richText.text ? (
         <View style={[a.mb_2xs]}>
           <RichText
             enableTags
@@ -560,6 +684,9 @@ let PostContent = ({
         <ThreadItemPostNumber inline={false} value={postNumbering} />
       )}
       {record && <TranslatedPost hideTranslateLink post={post} />}
+      {compactLink ? (
+        <OsoLinkRow link={compactLink} onOpen={onOpenEmbed} />
+      ) : null}
       {postEmbed ? (
         <View
           style={[

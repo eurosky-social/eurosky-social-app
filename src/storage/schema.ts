@@ -65,6 +65,11 @@ export type Device = {
   demoMode: boolean
   activitySubscriptionsNudged?: boolean
   threadgateNudged?: boolean
+  /**
+   * Oso: whether the news, events and /myfeeds pages put images first or
+   * text first. Set with the image/text toggle in those pages' headers.
+   */
+  osoPostLayout?: 'image' | 'text'
   inviteFriendsFollowersPromoDismissed?: boolean
   /**
    * Dismiss state for the policy update feed banner. Device-scoped rather than

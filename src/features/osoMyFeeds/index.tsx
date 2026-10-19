@@ -1,4 +1,5 @@
 import {useEffect, useState} from 'react'
+import {View} from 'react-native'
 import {useAnimatedRef} from 'react-native-reanimated'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {useIsFocused} from '@react-navigation/native'
@@ -20,7 +21,7 @@ import {FAB} from '#/view/com/util/fab/FAB'
 import {type ListRef} from '#/view/com/util/List'
 import {LoadLatestBtn} from '#/view/com/util/load-latest/LoadLatestBtn'
 import {PostFeedLoadingPlaceholder} from '#/view/com/util/LoadingPlaceholder'
-import {useLayoutBreakpoints, useTheme} from '#/alf'
+import {atoms as a, useLayoutBreakpoints, useTheme} from '#/alf'
 import {ButtonIcon, ButtonText} from '#/components/Button'
 import {EditBig_Stroke2_Corner2_Rounded as EditBigIcon} from '#/components/icons/EditBig'
 import {HashtagWide_Stroke1_Corner0_Rounded as HashtagWideIcon} from '#/components/icons/Hashtag'
@@ -31,6 +32,10 @@ import {IS_NATIVE, IS_WEB} from '#/env'
 import {EventFeedTabs} from '#/features/events/components/EventFeedTabs'
 import {OsoCollapsingHeader} from '#/features/osoNav/CollapsingHeader'
 import {OsoTitlePill} from '#/features/osoNav/pills'
+import {
+  OsoPostLayoutProvider,
+  OsoPostLayoutToggle,
+} from '#/features/osoPostLayout'
 import {useMyFeedOptions} from './useMyFeedOptions'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'OsoMyFeeds'>
@@ -52,76 +57,81 @@ export function OsoMyFeedsScreen({route, navigation}: Props) {
   const feed = resolveFeed(route.params?.feed)
 
   return (
-    <Layout.Screen testID="osoMyFeedsScreen">
-      {/* Slides away while scrolling down, as on the news page. */}
-      <OsoCollapsingHeader
-        header={
-          <Layout.Header.Outer sticky={false}>
-            <Layout.Header.BackButton />
-            <Layout.Header.Content>
-              <OsoTitlePill kind="feeds" />
-            </Layout.Header.Content>
-            <Link
-              to="/manage_feeds"
-              label={l`Manage feeds`}
-              size="small"
-              color="secondary"
-              testID="manageFeedsBtn">
-              <ButtonIcon icon={SettingsSliderIcon} />
-              <ButtonText>
-                <Trans>Manage feeds</Trans>
-              </ButtonText>
-            </Link>
-          </Layout.Header.Outer>
-        }>
-        {/* The shell's right column lists the feeds on wide screens. */}
-        {!(IS_WEB && rightNavVisible) && options.length > 1 && (
-          <Layout.Center>
-            <EventFeedTabs
-              items={options}
-              selectedId={feed}
-              onSelect={id => navigation.setParams({feed: id})}
-            />
-          </Layout.Center>
+    <OsoPostLayoutProvider>
+      <Layout.Screen testID="osoMyFeedsScreen">
+        {/* Slides away while scrolling down, as on the news page. */}
+        <OsoCollapsingHeader
+          header={
+            <Layout.Header.Outer sticky={false}>
+              <Layout.Header.BackButton />
+              <Layout.Header.Content>
+                <OsoTitlePill kind="feeds" />
+              </Layout.Header.Content>
+              <View style={[a.flex_row, a.align_center, a.gap_sm]}>
+                <OsoPostLayoutToggle />
+                <Link
+                  to="/manage_feeds"
+                  label={l`Manage feeds`}
+                  size="small"
+                  color="secondary"
+                  testID="manageFeedsBtn">
+                  <ButtonIcon icon={SettingsSliderIcon} />
+                  <ButtonText>
+                    <Trans>Manage feeds</Trans>
+                  </ButtonText>
+                </Link>
+              </View>
+            </Layout.Header.Outer>
+          }>
+          {/* The shell's right column lists the feeds on wide screens. */}
+          {!(IS_WEB && rightNavVisible) && options.length > 1 && (
+            <Layout.Center>
+              <EventFeedTabs
+                items={options}
+                selectedId={feed}
+                onSelect={id => navigation.setParams({feed: id})}
+              />
+            </Layout.Center>
+          )}
+        </OsoCollapsingHeader>
+        {isLoading || !preferences ? (
+          <Layout.Content>
+            <PostFeedLoadingPlaceholder />
+          </Layout.Content>
+        ) : (
+          <SelectedFeed
+            // Remount per feed so scroll position and polling start fresh.
+            key={feed}
+            feed={feed}
+            feedParams={
+              feed === 'following'
+                ? {
+                    mergeFeedEnabled: Boolean(
+                      preferences.feedViewPrefs.lab_mergeFeedEnabled,
+                    ),
+                    mergeFeedSources: preferences.feedViewPrefs
+                      .lab_mergeFeedEnabled
+                      ? preferences.savedFeeds
+                          .filter(f => f.type === 'feed' || f.type === 'list')
+                          .map(f => f.value)
+                      : [],
+                  }
+                : undefined
+            }
+          />
         )}
-      </OsoCollapsingHeader>
-      {isLoading || !preferences ? (
-        <Layout.Content>
-          <PostFeedLoadingPlaceholder />
-        </Layout.Content>
-      ) : (
-        <SelectedFeed
-          // Remount per feed so scroll position and polling start fresh.
-          key={feed}
-          feed={feed}
-          feedParams={
-            feed === 'following'
-              ? {
-                  mergeFeedEnabled: Boolean(
-                    preferences.feedViewPrefs.lab_mergeFeedEnabled,
-                  ),
-                  mergeFeedSources: preferences.feedViewPrefs
-                    .lab_mergeFeedEnabled
-                    ? preferences.savedFeeds
-                        .filter(f => f.type === 'feed' || f.type === 'list')
-                        .map(f => f.value)
-                    : [],
-                }
-              : undefined
-          }
-        />
-      )}
-      {hasSession && (
-        <FAB
-          testID="composeFAB"
-          onPress={() => openComposer({logContext: 'Fab'})}
-          icon={<EditBigIcon size="lg" fill={t.palette.white} />}
-          accessibilityRole="button"
-          accessibilityLabel={l`New post`}
-          accessibilityHint=""
-        />
-      )}
-    </Layout.Screen>
+        {hasSession && (
+          <FAB
+            testID="composeFAB"
+            onPress={() => openComposer({logContext: 'Fab'})}
+            icon={<EditBigIcon size="lg" fill={t.palette.white} />}
+            accessibilityRole="button"
+            accessibilityLabel={l`New post`}
+            accessibilityHint=""
+          />
+        )}
+      </Layout.Screen>
+    </OsoPostLayoutProvider>
   )
 }
 
