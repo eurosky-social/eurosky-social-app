@@ -6,7 +6,6 @@ import {FocusGuards, FocusScope} from 'radix-ui/internal'
 import {useLoggedOutViewControls} from '#/state/shell/logged-out'
 import {LogoHero} from '#/view/icons/LogoHero'
 import {atoms as a, flatten, useBreakpoints, useTheme, web} from '#/alf'
-import {BetaTag} from '#/components/BetaTag'
 import {Button, ButtonText} from '#/components/Button'
 import {type WelcomeModalControl} from '#/components/hooks/useWelcomeModal.shared'
 import {TimesLarge_Stroke2_Corner0_Rounded as XIcon} from '#/components/icons/Times'
@@ -95,14 +94,12 @@ export function WelcomeModal({control}: WelcomeModalProps) {
           ])}>
           <View style={[a.flex_1, a.justify_center]}>
             <View style={[a.gap_2xl, a.align_center, a.p_4xl]}>
-              <View
-                style={[a.align_center, a.justify_center, a.w_full, a.gap_sm]}>
+              <View style={[a.align_center, a.justify_center, a.w_full]}>
                 <LogoHero
                   width={140}
                   accessibilityLabel={BRAND.name}
                   accessibilityHint=""
                 />
-                <BetaTag />
               </View>
               <View style={[a.gap_sm, a.align_center, a.pt_lg, a.pb_3xl]}>
                 <Text
