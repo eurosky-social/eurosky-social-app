@@ -1,6 +1,6 @@
 {
   "name": "oso",
-  "hosts": ["oso.mu.social"],
+  "hosts": ["oso.social"],
   "socialHandle": "",
   "colors": {
     "neutral": {
@@ -37,7 +37,7 @@
     "defaultAccent": "blue"
   },
   "oauth": {
-    "defaultBaseUrl": "https://oso.mu.social",
+    "defaultBaseUrl": "https://oso.social",
     "clientName": "oso",
     "signupPdsHost": "https://pds.oso.social"
   },

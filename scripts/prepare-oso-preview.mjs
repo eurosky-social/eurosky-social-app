@@ -15,7 +15,7 @@ const base = JSON.parse(fs.readFileSync(config, 'utf8'))
 const override = JSON.parse(
   fs.readFileSync(path.join(brandDir, 'brand.override.json'), 'utf8'),
 )
-if (override.hosts?.[0] !== (process.env.OSO_HOST || 'oso.mu.social')) {
+if (override.hosts?.[0] !== (process.env.OSO_HOST || 'oso.social')) {
   throw new Error('Unexpected Oso preview host')
 }
 
