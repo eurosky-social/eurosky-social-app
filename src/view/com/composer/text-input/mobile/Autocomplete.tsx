@@ -96,6 +96,7 @@ function AutocompleteProfileCard({
         accessibilityHint="">
         <View style={[a.flex_row, a.gap_sm, a.align_center, a.flex_1]}>
           <UserAvatar
+            did={profile.did}
             avatar={profile.avatar ?? null}
             size={24}
             type={profile.associated?.labeler ? 'labeler' : 'user'}

@@ -183,6 +183,7 @@ function ReactionRow({
     <>
       <View style={[a.flex_row, a.align_center, a.gap_sm]}>
         <UserAvatar
+          did={profile.did}
           avatar={profile.avatar}
           size={42}
           type="user"

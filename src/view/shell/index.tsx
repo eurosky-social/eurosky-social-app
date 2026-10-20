@@ -45,6 +45,7 @@ import {NoAccessScreen} from '#/ageAssurance/components/NoAccessScreen'
 import {RedirectOverlay} from '#/ageAssurance/components/RedirectOverlay'
 import {PassiveAnalytics} from '#/analytics/PassiveAnalytics'
 import {IS_ANDROID, IS_IOS, IS_LIQUID_GLASS} from '#/env'
+import {HalloweenCornerWebs} from '#/features/halloween/CornerWebs'
 import {PetCompanion} from '#/features/petCompanion'
 import {RoutesContainer, TabsNavigator} from '#/Navigation'
 import {BottomSheetOutlet} from '../../../modules/bottom-sheet'
@@ -209,6 +210,8 @@ function DrawerLayout({children}: {children: React.ReactNode}) {
         }),
       }}>
       {children}
+      {/* Keep decorations inside the page so the drawer and its scrim cover them. */}
+      <HalloweenCornerWebs />
     </Drawer>
   )
 }

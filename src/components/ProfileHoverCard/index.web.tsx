@@ -472,6 +472,7 @@ function Inner({
       <View style={[a.flex_row, a.justify_between, a.align_start]}>
         <Link to={profileURL} label={_(msg`View profile`)} onPress={hide}>
           <UserAvatar
+            did={profile.did}
             size={64}
             avatar={profile.avatar}
             type={isLabeler ? 'labeler' : 'user'}

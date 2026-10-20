@@ -1743,6 +1743,7 @@ let ComposerPost = memo(function ComposerPost({
       ]}>
       <View style={[a.flex_row, IS_NATIVE && a.flex_1]}>
         <UserAvatar
+          did={currentProfile?.did}
           avatar={currentProfile?.avatar}
           size={42}
           type={currentProfile?.associated?.labeler ? 'labeler' : 'user'}

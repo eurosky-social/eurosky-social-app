@@ -63,6 +63,7 @@ export function NewsroomMasthead({publisher}: {publisher: NewsroomPublisher}) {
             type="user"
             shape="square"
             size={56}
+            did={profile?.did}
             avatar={profile?.avatar}
           />
         </Link>

@@ -78,6 +78,7 @@ import {
   setupDeviceId,
 } from '#/analytics'
 import {IS_ANDROID, IS_IOS} from '#/env'
+import {HalloweenProvider} from '#/features/halloween/context'
 import {
   prefetchLiveEvents,
   Provider as LiveEventsProvider,
@@ -112,8 +113,8 @@ function InnerApp() {
   const [isReady, setIsReady] = useState(false)
   const {currentAccount} = useSession()
   const {resumeSession} = useSessionApi()
-  const theme = useColorModeTheme()
-  const themesOverride = useThemesOverride() // Eurosky: per-user accent
+  const themesOverride = useThemesOverride()
+  const theme = useColorModeTheme(themesOverride)
   const {t: l} = useLingui()
   const hasCheckedLanding = useLandingEntry()
 
@@ -250,7 +251,9 @@ function App() {
                                 <LandingProvider>
                                   <SafeAreaProvider
                                     initialMetrics={initialWindowMetrics}>
-                                    <InnerApp />
+                                    <HalloweenProvider>
+                                      <InnerApp />
+                                    </HalloweenProvider>
                                   </SafeAreaProvider>
                                 </LandingProvider>
                               </BottomSheetProvider>

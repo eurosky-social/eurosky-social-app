@@ -20,6 +20,19 @@ Copyright (c) 2023 Phosphor Icons
 The generated components use Phosphor's regular, bold, and fill weights. Their compatibility
 export names preserve the app's existing icon API; they do not indicate their upstream source.
 
+## Lucide candy icon
+
+**Path:** `src/features/halloween/CandyIcon.tsx`
+**Source:** [Lucide candy](https://lucide.dev/icons/candy), SVG supplied for the Halloween feature
+**License:** ISC — full text at [`licenses/LUCIDE-ISC.txt`](./licenses/LUCIDE-ISC.txt)
+
+```
+Copyright (c) 2026 Lucide Icons and Contributors
+```
+
+This seasonal exception uses the same outline in both toggle states; only its color changes.
+The general UI icon system remains Phosphor.
+
 ## Material Icons
 
 **Path:** `bskyweb/static/media/MaterialIcons.*.ttf`

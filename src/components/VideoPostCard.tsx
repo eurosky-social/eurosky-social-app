@@ -90,7 +90,12 @@ export function VideoPostCard({
       )}
       <View style={[a.flex_row, a.gap_xs, a.align_center]}>
         <View style={[a.relative, a.rounded_full, {width: 20, height: 20}]}>
-          <UserAvatar type="user" size={20} avatar={post.author.avatar} />
+          <UserAvatar
+            did={post.author.did}
+            type="user"
+            size={20}
+            avatar={post.author.avatar}
+          />
           <MediaInsetBorder />
         </View>
         <Text
@@ -298,7 +303,12 @@ export function VideoPostCardTextPlaceholder({
         {author ? (
           <View style={[a.flex_row, a.gap_xs, a.align_center]}>
             <View style={[a.relative, a.rounded_full, {width: 20, height: 20}]}>
-              <UserAvatar type="user" size={20} avatar={author.avatar} />
+              <UserAvatar
+                did={author.did}
+                type="user"
+                size={20}
+                avatar={author.avatar}
+              />
               <MediaInsetBorder />
             </View>
             <Text
@@ -487,6 +497,7 @@ export function CompactVideoPostCard({
                   <UserAvatar
                     type="user"
                     size={24}
+                    did={post.author.did}
                     avatar={post.author.avatar}
                   />
                   <MediaInsetBorder />

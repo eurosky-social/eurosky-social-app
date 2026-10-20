@@ -286,6 +286,7 @@
     "tlds": "^1.234.0",
     "tldts": "^6.1.46",
     "unicode-segmenter": "0.14.5",
+    "upng-js": "^2.1.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -310,6 +311,7 @@
     "@types/psl": "1.1.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@types/upng-js": "^2.1.5",
     "@typescript/native": "npm:typescript@^7.0.2",
     "babel-jest": "^29.7.0",
     "babel-plugin-module-resolver": "^5.0.2",

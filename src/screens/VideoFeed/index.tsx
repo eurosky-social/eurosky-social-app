@@ -101,6 +101,7 @@ import {RichText} from '#/components/RichText'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {IS_ANDROID} from '#/env'
+import {useHalloween} from '#/features/halloween/context'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {Scrubber, VIDEO_PLAYER_BOTTOM_INSET} from './components/Scrubber'
@@ -943,6 +944,7 @@ function Overlay({
                   }}
                   style={[a.flex_1, a.flex_row, a.gap_md, a.align_center]}>
                   <UserAvatar
+                    did={post.author.did}
                     type="user"
                     avatar={post.author.avatar}
                     size={32}
@@ -1170,6 +1172,7 @@ function PlayPauseTapArea({
   reqId: string | undefined
 }) {
   const {t: l} = useLingui()
+  const {isActive: halloweenActive} = useHalloween()
   const doubleTapRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const playHaptic = useHaptics()
   // TODO: implement viaRepost -sfn
@@ -1232,7 +1235,9 @@ function PlayPauseTapArea({
         post.author.handle,
         '@',
       )}. Tap to play or pause the video`}
-      accessibilityHint={l`Double tap to like`}
+      accessibilityHint={
+        halloweenActive ? l`Double tap to give candy` : l`Double tap to like`
+      }
       onPress={onPress}
       style={[a.absolute, a.inset_0, a.z_10]}>
       <View />

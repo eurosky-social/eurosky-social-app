@@ -77,6 +77,7 @@ import {
   features,
   setupDeviceId,
 } from '#/analytics'
+import {HalloweenProvider} from '#/features/halloween/context'
 import {KeyboardShortcuts} from '#/features/keyboardShortcuts'
 import {
   prefetchLiveEvents,
@@ -103,8 +104,8 @@ function InnerApp() {
   const {currentAccount} = useSession()
   const {resumeSession, login} = useSessionApi()
   const onboardingDispatch = useOnboardingDispatch()
-  const theme = useColorModeTheme()
-  const themesOverride = useThemesOverride() // Eurosky: per-user accent
+  const themesOverride = useThemesOverride()
+  const theme = useColorModeTheme(themesOverride)
   const {t: l} = useLingui()
   const hasCheckedLanding = useLandingEntry()
 
@@ -248,7 +249,9 @@ function App() {
                           <LightboxStateProvider>
                             <PortalProvider>
                               <LandingProvider>
-                                <InnerApp />
+                                <HalloweenProvider>
+                                  <InnerApp />
+                                </HalloweenProvider>
                               </LandingProvider>
                             </PortalProvider>
                           </LightboxStateProvider>

@@ -95,6 +95,7 @@ let DrawerProfileCard = ({
       onPress={onPressProfile}
       style={[a.gap_sm, a.pr_lg]}>
       <UserAvatar
+        did={profile?.did}
         size={52}
         avatar={profile?.avatar}
         // See https://github.com/bluesky-social/social-app/pull/1801:

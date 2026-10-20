@@ -176,6 +176,7 @@ export function Avatar({
 
   return disabledPreview ? (
     <UserAvatar
+      did={profile.did}
       size={size}
       avatar={profile.avatar}
       type={profile.associated?.labeler ? 'labeler' : 'user'}

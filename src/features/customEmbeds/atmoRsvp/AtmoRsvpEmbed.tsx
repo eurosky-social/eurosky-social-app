@@ -192,7 +192,12 @@ export function AtmoRsvpEmbed({
                     a.rounded_full,
                     {borderWidth: 2, borderColor: t.atoms.bg.backgroundColor},
                   ]}>
-                  <UserAvatar type="user" size={24} avatar={person.avatar} />
+                  <UserAvatar
+                    did={person.did}
+                    type="user"
+                    size={24}
+                    avatar={person.avatar}
+                  />
                 </View>
               ))}
               {overflow > 0 && (

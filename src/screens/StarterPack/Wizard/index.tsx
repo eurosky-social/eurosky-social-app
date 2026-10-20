@@ -457,6 +457,7 @@ function Footer({
                 : {marginRight: 4},
             ]}>
             <UserAvatar
+              did={'did' in p ? p.did : undefined}
               avatar={p.avatar}
               size={32}
               type={state.currentStep === 'Profiles' ? 'user' : 'algo'}

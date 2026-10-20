@@ -275,6 +275,7 @@ let ProfileHeaderShell = ({
             ]}>
             <Animated.View ref={aviRef} collapsable={false}>
               <UserAvatar
+                did={profile.did}
                 type={profile.associated?.labeler ? 'labeler' : 'user'}
                 size={live.isActive ? 88 : 90}
                 avatar={profile.avatar}

@@ -304,6 +304,7 @@ export function BottomBar({navigation}: BottomTabBarProps) {
                       ],
                     ]}>
                     <UserAvatar
+                      did={demoMode ? undefined : profile?.did}
                       avatar={demoMode ? BOTTOM_BAR_AVI : profile?.avatar}
                       size={iconWidth - (isAtMyProfile ? 3 : 2)}
                       // See https://github.com/bluesky-social/social-app/pull/1801:

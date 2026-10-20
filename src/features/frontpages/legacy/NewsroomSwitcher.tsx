@@ -86,7 +86,12 @@ function OrgTab({
           ? {borderColor: accent, backgroundColor: accent + '1A'}
           : [t.atoms.border_contrast_low, t.atoms.bg_contrast_25],
       ]}>
-      <UserAvatar type="user" size={24} avatar={profile?.avatar} />
+      <UserAvatar
+        did={profile?.did}
+        type="user"
+        size={24}
+        avatar={profile?.avatar}
+      />
       <Text
         emoji
         numberOfLines={1}

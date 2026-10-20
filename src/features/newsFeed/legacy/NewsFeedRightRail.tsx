@@ -120,7 +120,12 @@ function FeaturedNewsroom({
       to={`/newsroom/${publisher.did}`}
       label={l`Open the ${name} newsroom`}
       style={[a.flex_row, a.align_center, a.gap_sm]}>
-      <UserAvatar type="user" size={28} avatar={profile?.avatar} />
+      <UserAvatar
+        did={profile?.did}
+        type="user"
+        size={28}
+        avatar={profile?.avatar}
+      />
       <Text emoji numberOfLines={1} style={[a.flex_1, a.text_sm, a.font_bold]}>
         {name}
       </Text>

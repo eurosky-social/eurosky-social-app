@@ -82,7 +82,12 @@ export function Label({
           isBlueskyLabel || !isLabeler ? (
             <desc.icon width={avi} fill={t.atoms.text_contrast_medium.color} />
           ) : (
-            <UserAvatar avatar={desc.sourceAvi} type="user" size={avi} />
+            <UserAvatar
+              did={desc.sourceDid}
+              avatar={desc.sourceAvi}
+              type="user"
+              size={avi}
+            />
           )
         }
       />

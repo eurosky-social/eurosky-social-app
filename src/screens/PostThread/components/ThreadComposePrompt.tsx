@@ -95,6 +95,7 @@ export function ThreadComposePromptPill({onPress}: {onPress: () => void}) {
         a.transition_color,
       ]}>
       <UserAvatar
+        did={profile?.did}
         size={24}
         avatar={profile?.avatar}
         type={profile?.associated?.labeler ? 'labeler' : 'user'}

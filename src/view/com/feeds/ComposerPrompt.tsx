@@ -182,6 +182,7 @@ export function ComposerPrompt() {
       ]}>
       <SubtleHover hover={hover} />
       <UserAvatar
+        did={profile.did}
         avatar={profile.avatar}
         size={42}
         type={profile.associated?.labeler ? 'labeler' : 'user'}

@@ -159,6 +159,7 @@ function KnownFollowersInner({
                 ]}>
                 <UserAvatar
                   size={SIZE}
+                  did={prof.did}
                   avatar={prof.avatar}
                   moderation={moderation.ui('avatar')}
                   type={prof.associated?.labeler ? 'labeler' : 'user'}
