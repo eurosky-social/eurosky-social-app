@@ -27,6 +27,11 @@ browser (IndexedDB).
   prod's identity. Spinning up `v10.mu.social` needs NO OAuth change: point
   its build's `EXPO_PUBLIC_OAUTH_ASSERTION_URL` at the staging worker, done.
 
+The Oso brand runs its own pair with its own key (`brands/oso/README.md`):
+`oauth.oso.social` (pinned to `oso.social`) and `oauth-staging.oso.social`
+(`ALLOWED_PARENT_DOMAIN=oso.social`, serving `dev.oso.social` and any other
+`*.oso.social` host).
+
 Both are the same strict reconstructing minter and share the same keypair
 (the committed public JWKS is inlined into every build's metadata). The
 security model is identical too: the Origin check is defense-in-depth, not
@@ -112,7 +117,7 @@ overridden via env to match the target instance.
 minter guardrails plus the wildcard origin gate (subdomains accepted with
 per-origin derived identities; apex, lookalike domains, http, explicit ports,
 and cross-environment identities rejected). `PARENT_DOMAIN` defaults to
-`mu.social`.
+`mu.social`; `PUBLIC_JWKS` works as in `test.mjs`.
 
 ```bash
 WORKER_URL=https://oauth-staging.mu.social node test-staging.mjs

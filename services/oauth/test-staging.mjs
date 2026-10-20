@@ -19,6 +19,8 @@
  *   WORKER_URL     target instance (default http://localhost:8080)
  *   PARENT_DOMAIN  apex whose subdomains the instance allows
  *                  (default mu.social; must match ALLOWED_PARENT_DOMAIN)
+ *   PUBLIC_JWKS    public JWKS file the instance's key must match (default
+ *                  src/config/oauth.public-jwks.json)
  *
  * Note: the script stamps iat/exp from its own clock and ignores whatever the
  * caller sends, so there are no iat/exp guardrail cases here - instead we
@@ -45,7 +47,8 @@ const subtle = globalThis.crypto.subtle
 // The public key the script's private counterpart must match (shared kid).
 const publicJwks = JSON.parse(
   readFileSync(
-    join(here, '..', '..', 'src', 'config', 'oauth.public-jwks.json'),
+    process.env.PUBLIC_JWKS ||
+      join(here, '..', '..', 'src', 'config', 'oauth.public-jwks.json'),
     'utf8',
   ),
 )
