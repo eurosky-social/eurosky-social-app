@@ -20,6 +20,12 @@ export const EVENTS_PAGE_SIZE = 30
 /** Most attendee avatars shown under an event. */
 export const EVENT_ATTENDEES_SHOWN = 3
 
+/**
+ * Page size for an event's RSVPs. Each page's profiles are fetched in one
+ * getProfiles call, which takes at most 25 actors.
+ */
+export const EVENT_RSVPS_PAGE_SIZE = 20
+
 /** Most posts about an event shown under it in a feed. */
 export const EVENT_POSTS_SHOWN = 3
 

@@ -4,6 +4,8 @@ import {pickEventAttendees} from './EventAttendees'
 // Only the pure helper is tested; keep the component's app imports out of Jest.
 jest.mock('#/state/queries/profile', () => ({}))
 jest.mock('#/components/AvatarStack', () => ({}))
+jest.mock('#/components/Button', () => ({}))
+jest.mock('#/alf', () => ({}))
 jest.mock('../queries', () => ({}))
 
 describe('pickEventAttendees', () => {

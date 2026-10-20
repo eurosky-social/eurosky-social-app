@@ -1,5 +1,11 @@
-import {jsonToLex, type LexMap, lexToJson, type UriString} from '@atproto/lex'
-import {AtUri} from '@atproto/syntax'
+import {
+  type Client,
+  jsonToLex,
+  type LexMap,
+  lexToJson,
+  type UriString,
+} from '@atproto/lex'
+import {type AtIdentifierString, AtUri} from '@atproto/syntax'
 import {moderatePost} from '@bsky/sdk/moderation'
 import {useLingui} from '@lingui/react/macro'
 import {
@@ -18,7 +24,7 @@ import {createQueryKey} from '#/state/queries/util'
 import {useAppviewClient, usePdsClient, useSession} from '#/state/session'
 import * as Toast from '#/components/Toast'
 import {app, com} from '#/lexicons'
-import {getEvent, getFollowingRsvps} from './api'
+import {getEvent, getFollowingRsvps, listRsvps} from './api'
 import {
   type EventFormValues,
   toRecord,
@@ -26,6 +32,7 @@ import {
 import {
   EVENT_ATTENDEES_SHOWN,
   EVENT_NSID,
+  EVENT_RSVPS_PAGE_SIZE,
   EVENTS_PAGE_SIZE,
   RSVP_NSID,
 } from './config'
@@ -49,6 +56,8 @@ const eventQueryKeyRoot = 'event'
 const viewerEventRsvpsQueryKeyRoot = 'viewerEventRsvps'
 const eventPostsQueryKeyRoot = 'eventPosts'
 const followingEventRsvpsQueryKeyRoot = 'followingEventRsvps'
+const eventRsvpsQueryKeyRoot = 'eventRsvps'
+const eventFriendRsvpsQueryKeyRoot = 'eventFriendRsvps'
 
 /**
  * Every feed shares the `eventFeed` root, so all feeds can be invalidated at
@@ -72,6 +81,16 @@ export const createEventPostsQueryKey = (args: {
 
 export const createFollowingEventRsvpsQueryKey = (args: {actor?: string}) =>
   createQueryKey(followingEventRsvpsQueryKeyRoot, args)
+
+export const createEventRsvpsQueryKey = (args: {
+  uri: string
+  status: EventRsvpsStatus
+}) => createQueryKey(eventRsvpsQueryKeyRoot, args)
+
+export const createEventFriendRsvpsQueryKey = (args: {
+  uri: string
+  actor?: string
+}) => createQueryKey(eventFriendRsvpsQueryKeyRoot, args)
 
 export const createViewerEventRsvpsQueryKey = (args: {did?: string}) =>
   createQueryKey(viewerEventRsvpsQueryKeyRoot, args)
@@ -279,6 +298,128 @@ export function useFollowingEventRsvpsQuery<T = FollowingRsvp[]>({
     select,
     staleTime: STALE.MINUTES.FIVE,
   })
+}
+
+/** The RSVP statuses listed on an event's RSVPs screen. */
+export type EventRsvpsStatus = 'going' | 'interested'
+
+type ProfileView = app.bsky.actor.defs.ProfileViewDetailed
+
+/**
+ * Bluesky profiles for `dids`, in the same order. Accounts getProfiles can't
+ * find are left out.
+ */
+async function getProfilesInOrder(
+  client: Client,
+  dids: string[],
+  signal?: AbortSignal,
+): Promise<ProfileView[]> {
+  const chunks: string[][] = []
+  for (let i = 0; i < dids.length; i += 25) chunks.push(dids.slice(i, i + 25))
+  const results = await Promise.all(
+    chunks.map(actors =>
+      client.call(
+        app.bsky.actor.getProfiles,
+        {actors: actors as AtIdentifierString[]},
+        {signal},
+      ),
+    ),
+  )
+  const byDid = new Map<string, ProfileView>(
+    results.flatMap(res => res.profiles).map(p => [p.did, p]),
+  )
+  return dids.flatMap(did => byDid.get(did) ?? [])
+}
+
+/**
+ * Everyone who RSVP'd `status` to an event, page by page, as Bluesky
+ * profiles. A person with several records can show up on more than one page,
+ * so dedupe on `did` when flattening.
+ */
+export function useEventRsvpsQuery({
+  uri,
+  status,
+  enabled = true,
+}: {
+  uri: string
+  status: EventRsvpsStatus
+  enabled?: boolean
+}) {
+  const client = useAppviewClient()
+
+  return useInfiniteQuery({
+    queryKey: createEventRsvpsQueryKey({uri, status}),
+    enabled,
+    queryFn: async ({pageParam, signal}) => {
+      const page = await listRsvps(
+        {
+          subjectUri: uri,
+          status: `community.lexicon.calendar.rsvp#${status}`,
+          limit: EVENT_RSVPS_PAGE_SIZE,
+          cursor: pageParam,
+        },
+        signal,
+      )
+      const dids = [...new Set(page.records.map(record => record.did))]
+      return {
+        profiles: await getProfilesInOrder(client, dids, signal),
+        cursor: page.cursor,
+      }
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: page => page.cursor,
+    staleTime: STALE.MINUTES.FIVE,
+  })
+}
+
+/**
+ * The people the signed-in user follows who RSVP'd to an event, as Bluesky
+ * profiles grouped by status.
+ */
+export function useEventFriendRsvpsQuery({event}: {event: EventRecord}) {
+  const client = useAppviewClient()
+  const {currentAccount} = useSession()
+  const actor = currentAccount?.did
+
+  return useQuery({
+    queryKey: createEventFriendRsvpsQueryKey({uri: event.uri, actor}),
+    enabled: !!actor,
+    queryFn: async ({signal}) => {
+      const {attendees} = await getFollowingRsvps(
+        {actor: actor!, ...getStartDayRange(event)},
+        signal,
+      )
+      const rsvps = attendees.filter(rsvp => rsvp.eventUri === event.uri)
+      const profiles = await getProfilesInOrder(
+        client,
+        rsvps.map(rsvp => rsvp.did),
+        signal,
+      )
+      const statusOf = new Map(rsvps.map(rsvp => [rsvp.did, rsvp.status]))
+      return {
+        going: profiles.filter(p => statusOf.get(p.did) === 'going'),
+        interested: profiles.filter(p => statusOf.get(p.did) === 'interested'),
+      } satisfies Record<EventRsvpsStatus, ProfileView[]>
+    },
+    staleTime: STALE.MINUTES.FIVE,
+  })
+}
+
+/**
+ * Bounds that select the day the event starts on, so `followingRsvps` only
+ * returns RSVPs to events that day, past ones included. startsAt is compared
+ * as a string, so the bare dates cover the whole day. Malformed start times
+ * get no bounds, which means upcoming events.
+ */
+function getStartDayRange(event: EventRecord) {
+  const {startsAt} = event.value
+  if (typeof startsAt !== 'string' || !/^\d{4}-\d{2}-\d{2}/.test(startsAt)) {
+    return {}
+  }
+  const startsAtMin = startsAt.slice(0, 10)
+  const nextDay = new Date(`${startsAtMin}T00:00:00Z`)
+  nextDay.setUTCDate(nextDay.getUTCDate() + 1)
+  return {startsAtMin, startsAtMax: nextDay.toISOString().slice(0, 10)}
 }
 
 /**

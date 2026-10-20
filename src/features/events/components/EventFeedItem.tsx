@@ -54,7 +54,7 @@ export function EventFeedItem({
                   {description}
                 </CollapsibleText>
               )}
-              <EventAttendees event={event} />
+              <EventAttendees event={event} profile={profile} />
               <Event.Actions>
                 <EventRsvpButtons event={event} />
                 <Event.EditButton event={event} onPress={onEdit} />

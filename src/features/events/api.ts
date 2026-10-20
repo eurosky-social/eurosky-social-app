@@ -5,6 +5,8 @@ import {
   type FollowingRsvp,
   type GetRecordResponse,
   type ListResponse,
+  type RsvpRecord,
+  type RsvpStatus,
 } from './types'
 
 type Params = Record<string, string | number | boolean | undefined>
@@ -76,6 +78,22 @@ export function getEvent(
     params,
     signal,
   )
+}
+
+/**
+ * RSVP records, e.g. to one event with `subjectUri`. One person can hold
+ * several records for the same event, so dedupe on `did`.
+ */
+export function listRsvps(
+  params: {
+    subjectUri?: string
+    status?: RsvpStatus
+    limit?: number
+    cursor?: string
+  },
+  signal?: AbortSignal,
+) {
+  return xrpcGet<ListResponse<RsvpRecord>>('rsvp.listRecords', params, signal)
 }
 
 /**

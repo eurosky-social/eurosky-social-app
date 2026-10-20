@@ -31,6 +31,7 @@ export type CommonNavigatorParams = {
     sort?: string
   }
   Event: {name: string; rkey: string}
+  EventRsvps: {name: string; rkey: string; tab?: string}
   OsoStarterPacks: undefined
   NewsSettings: undefined
   Newsroom: {name?: string}

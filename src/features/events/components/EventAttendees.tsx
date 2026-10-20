@@ -1,21 +1,35 @@
-import {View} from 'react-native'
-import {Plural} from '@lingui/react/macro'
+import {type GestureResponderEvent} from 'react-native'
+import {plural} from '@lingui/core/macro'
+import {Trans, useLingui} from '@lingui/react/macro'
+import {useNavigation} from '@react-navigation/native'
 
+import {type NavigationProp} from '#/lib/routes/types'
 import {useProfilesQuery} from '#/state/queries/profile'
 import {atoms as a, useTheme} from '#/alf'
 import {AvatarStack} from '#/components/AvatarStack'
+import {Button} from '#/components/Button'
 import {Text} from '#/components/Typography'
 import {EVENT_ATTENDEES_SHOWN} from '../config'
-import {useFollowingEventRsvpsQuery} from '../queries'
-import {type EventRecord, type FollowingRsvp} from '../types'
+import {useFollowingEventRsvpsQuery, usePrecacheEvent} from '../queries'
+import {type EventProfile, type EventRecord, type FollowingRsvp} from '../types'
 
 /**
  * Avatars of a few people going to or interested in the event, people the
  * viewer follows first, beside how many are going (or interested, when nobody
- * is going yet). Renders nothing when nobody has RSVP'd.
+ * is going yet). Pressing it opens the full list of RSVPs. Renders nothing
+ * when nobody has RSVP'd.
  */
-export function EventAttendees({event}: {event: EventRecord}) {
+export function EventAttendees({
+  event,
+  profile,
+}: {
+  event: EventRecord
+  profile?: EventProfile
+}) {
   const t = useTheme()
+  const {t: l} = useLingui()
+  const navigation = useNavigation<NavigationProp>()
+  const precacheEvent = usePrecacheEvent()
   const {data: friends, isLoading: isLoadingFriends} =
     useFollowingEventRsvpsQuery({
       select: rsvps => rsvps.filter(rsvp => rsvp.eventUri === event.uri),
@@ -35,30 +49,48 @@ export function EventAttendees({event}: {event: EventRecord}) {
     (x, y) => dids.indexOf(x.did) - dids.indexOf(y.did),
   )
 
+  const onPress = (e: GestureResponderEvent) => {
+    // Don't let the press reach the feed item's link.
+    e.preventDefault()
+    e.stopPropagation()
+    precacheEvent(event, profile)
+    navigation.navigate('EventRsvps', {
+      name: event.did,
+      rkey: event.rkey,
+      tab: goingCount > 0 ? 'going' : 'interested',
+    })
+  }
+
   return (
-    <View style={[a.flex_row, a.align_center, a.gap_xs, a.my_sm]}>
+    <Button
+      label={l`See who RSVP’d to this event`}
+      onPress={onPress}
+      style={[a.self_start, a.flex_row, a.align_center, a.gap_xs, a.my_sm]}>
       {dids.length > 0 && (
         <AvatarStack profiles={profiles} numPending={dids.length} size={18} />
       )}
       {(goingCount > 0 || interestedCount > 0) && (
-        <Text
-          style={[a.text_sm, t.atoms.text_contrast_medium, a.font_semi_bold]}>
+        <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
           {goingCount > 0 ? (
-            <Plural
-              value={goingCount}
-              one="# person is going"
-              other="# people are going"
-            />
+            <Trans>
+              <Text style={[a.font_semi_bold]}>{goingCount}</Text>{' '}
+              {plural(goingCount, {
+                one: 'person is going',
+                other: 'people are going',
+              })}
+            </Trans>
           ) : (
-            <Plural
-              value={interestedCount}
-              one="# person is interested"
-              other="# people are interested"
-            />
+            <Trans>
+              <Text style={[a.font_semi_bold]}>{interestedCount}</Text>{' '}
+              {plural(interestedCount, {
+                one: 'person is interested',
+                other: 'people are interested',
+              })}
+            </Trans>
           )}
         </Text>
       )}
-    </View>
+    </Button>
   )
 }
 

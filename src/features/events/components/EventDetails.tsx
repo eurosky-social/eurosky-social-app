@@ -36,7 +36,7 @@ export function EventDetails({
         <EventRsvpButtons event={event} />
         <Event.EditButton event={event} onPress={onEdit} />
       </Event.Actions>
-      <EventAttendees event={event} />
+      <EventAttendees event={event} profile={profile} />
     </View>
   )
 }
