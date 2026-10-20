@@ -45,7 +45,7 @@ jobs:
       - name: Build web
         run: bash ./scripts/bunny_build.sh
         env:
-          # Prod: ship the crawl-scoped robots.txt (web/robots.txt). Explicit
+          # Prod: ship the crawl-scoped robots.txt (public/robots.txt). Explicit
           # for symmetry with staging/dev; "prod" is also the build default.
           ROBOTS_MODE: prod
           # Geolocation decides which regional moderation labelers are required;

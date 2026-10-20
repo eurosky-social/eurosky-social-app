@@ -201,7 +201,7 @@ function PetCompanionInner({
     cancelAnimation(tx)
     posRef.current = tx.value
 
-    haptics('Light')
+    haptics.tap()
 
     // Play a random reaction. Looping reactions are held briefly then resumed
     // here; one-shots resume via PetSprite.onAnimationEnd.

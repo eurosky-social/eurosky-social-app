@@ -19,6 +19,8 @@ export type SearchParams = {
   tab?: 'user' | 'profile' | 'feed' | 'latest'
 } & SearchFilterParams
 
+export type ModerationInboxTab = 'reports' | 'account'
+
 export type CommonNavigatorParams = {
   NotFound: undefined
   Lists: undefined
@@ -44,10 +46,10 @@ export type CommonNavigatorParams = {
     storyView?: string
   }
   Moderation: undefined
-  ModerationInbox: undefined
+  ModerationInbox: {tab?: ModerationInboxTab}
   ModerationInboxSettings: undefined
-  ModerationInboxReportDetails: undefined
-  ModerationInboxSubjectDetails: undefined
+  ModerationInboxReportDetails: {moderationService: string; id: string}
+  ModerationInboxNoticeDetails: {moderationService: string; subject: string}
   ModerationModlists: undefined
   ModerationMutedAccounts: undefined
   ModerationBlockedAccounts: undefined
@@ -164,6 +166,7 @@ export type MessagesTabNavigatorParams = CommonNavigatorParams & {
 }
 
 export type FlatNavigatorParams = CommonNavigatorParams & {
+  Atmosphere: undefined
   Home: undefined
   Search: SearchParams
   Feeds: undefined
@@ -176,6 +179,7 @@ export type FlatNavigatorParams = CommonNavigatorParams & {
 }
 
 export type AllNavigatorParams = CommonNavigatorParams & {
+  Atmosphere: undefined
   HomeTab: undefined
   Home: undefined
   SearchTab: undefined

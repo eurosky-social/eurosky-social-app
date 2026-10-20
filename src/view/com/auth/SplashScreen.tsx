@@ -20,7 +20,7 @@ export const SplashScreen = ({
   const t = useTheme()
   const {_} = useLingui()
 
-  const playHaptic = useHaptics()
+  const haptics = useHaptics()
 
   return (
     <Animated.View
@@ -42,7 +42,7 @@ export const SplashScreen = ({
           testID="signInButton"
           onPress={() => {
             onPressSignin()
-            playHaptic('Light')
+            haptics.tap()
           }}
           label={_(msg`Sign in`)}
           accessibilityHint={_(
@@ -71,7 +71,7 @@ export const SplashScreen = ({
           testID="createAccountButton"
           onPress={() => {
             onPressCreateAccount()
-            playHaptic('Light')
+            haptics.tap()
           }}
           label={_(msg`Create new account`)}
           accessibilityHint={_(msg`Opens flow to create a new Bluesky account`)}

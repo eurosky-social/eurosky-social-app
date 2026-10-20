@@ -1,6 +1,7 @@
 import {type JSX, useCallback, useRef} from 'react'
 import * as Linking from 'expo-linking'
 import * as Notifications from 'expo-notifications'
+import {Referrer} from '@bsky.app/expo-bluesky-swiss-army'
 import {i18n, type MessageDescriptor} from '@lingui/core'
 import {msg} from '@lingui/core/macro'
 import {
@@ -12,6 +13,7 @@ import {
   createNavigationContainerRef,
   DarkTheme,
   DefaultTheme,
+  getActionFromState as getActionFromStateDefault,
   type LinkingOptions,
   NavigationContainer,
   StackActions,
@@ -57,13 +59,11 @@ import {CommunityGuidelinesScreen} from '#/view/screens/CommunityGuidelines'
 import {CopyrightPolicyScreen} from '#/view/screens/CopyrightPolicy'
 import {DebugModScreen} from '#/view/screens/DebugMod'
 import {FeedsScreen} from '#/view/screens/Feeds'
-import {HomeScreen} from '#/view/screens/Home'
 import {ListsScreen} from '#/view/screens/Lists'
 import {ModerationBlockedAccounts} from '#/view/screens/ModerationBlockedAccounts'
 import {ModerationModlistsScreen} from '#/view/screens/ModerationModlists'
 import {ModerationMutedAccounts} from '#/view/screens/ModerationMutedAccounts'
 import {NotFoundScreen} from '#/view/screens/NotFound'
-import {NotificationsScreen} from '#/view/screens/Notifications'
 import {PostThreadScreen} from '#/view/screens/PostThread'
 import {PrivacyPolicyScreen} from '#/view/screens/PrivacyPolicy'
 import {ProfileScreen} from '#/view/screens/Profile'
@@ -72,6 +72,7 @@ import {SupportScreen} from '#/view/screens/Support'
 import {TermsOfServiceScreen} from '#/view/screens/TermsOfService'
 import {BottomBar} from '#/view/shell/bottom-bar/BottomBar'
 import {createNativeStackNavigatorWithAuth} from '#/view/shell/createNativeStackNavigatorWithAuth'
+import {AtmosphereScreen} from '#/screens/Atmosphere'
 import {BookmarksScreen} from '#/screens/Bookmarks'
 import {CustomFeedScreen} from '#/screens/CustomFeed'
 import {CustomFeedLikedByScreen} from '#/screens/CustomFeed/CustomFeedLikedBy'
@@ -89,10 +90,11 @@ import {MessagesSettingsScreen} from '#/screens/Messages/Settings'
 import {ModerationScreen} from '#/screens/Moderation'
 import {Screen as ModerationVerificationSettings} from '#/screens/Moderation/VerificationSettings'
 import {ModerationInboxScreen} from '#/screens/ModerationInbox'
+import {ModerationInboxNoticeDetailsScreen} from '#/screens/ModerationInbox/Notice'
 import {ModerationInboxReportDetailsScreen} from '#/screens/ModerationInbox/Report'
 import {ModerationInboxSettingsScreen} from '#/screens/ModerationInbox/Settings'
-import {ModerationInboxSubjectDetailsScreen} from '#/screens/ModerationInbox/Subject'
 import {Screen as ModerationInteractionSettings} from '#/screens/ModerationInteractionSettings'
+import {NotificationsScreen} from '#/screens/Notifications'
 import {NotificationsActivityListScreen} from '#/screens/Notifications/ActivityList'
 import {PostLikedByScreen} from '#/screens/Post/PostLikedBy'
 import {PostQuotesScreen} from '#/screens/Post/PostQuotes'
@@ -147,6 +149,7 @@ import {useAnalytics} from '#/analytics'
 import {setNavigationMetadata} from '#/analytics/metadata'
 import {BRAND} from '#/config/brand'
 import {IS_LIQUID_GLASS, IS_NATIVE, IS_WEB} from '#/env'
+import {HomeScreen} from '#/features/followingV2/home'
 import {OutletDirectoryScreen} from '#/features/frontpages/directory'
 import {FrontpageScreen} from '#/features/frontpages/FrontpageScreen'
 import {NewsroomScreen as LegacyFrontpageScreen} from '#/features/frontpages/legacy/NewsroomScreen'
@@ -158,7 +161,6 @@ import {NewsFeedScreen as LegacyNewsFeedScreen} from '#/features/newsFeed/legacy
 import {NewsFeedScreen} from '#/features/newsFeed/NewsFeedScreen'
 import {NewsSettingsScreen} from '#/features/newsFeed/NewsSettingsScreen'
 import {router} from '#/routes'
-import {Referrer} from '../modules/expo-bluesky-swiss-army'
 
 const navigationRef = createNavigationContainerRef<AllNavigatorParams>()
 
@@ -186,6 +188,11 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         name="NotFound"
         getComponent={() => NotFoundScreen}
         options={{title: title(msg`Not Found`)}}
+      />
+      <Stack.Screen
+        name="Atmosphere"
+        getComponent={() => AtmosphereScreen}
+        options={{title: title(msg`Atmosphere`)}}
       />
       <Stack.Screen
         name="Lists"
@@ -263,8 +270,8 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         options={{title: title(msg`Your report`), requireAuth: true}}
       />
       <Stack.Screen
-        name="ModerationInboxSubjectDetails"
-        getComponent={() => ModerationInboxSubjectDetailsScreen}
+        name="ModerationInboxNoticeDetails"
+        getComponent={() => ModerationInboxNoticeDetailsScreen}
         options={{title: title(msg`Notice`), requireAuth: true}}
       />
       <Stack.Screen
@@ -925,6 +932,19 @@ const FlatNavigator = ({
  * to the navigation context.
  */
 
+/**
+ * `LINKING` has no `config`, so on its own `getActionFromState` doesn't know
+ * that Home is the HomeTab stack's initial route. For the [Home, screen] state
+ * that `getStateFromPath` builds for most links, it then resets the whole
+ * HomeTab stack, remounting Home and losing its feeds and scroll position.
+ * With this, a link opens the screen on top of the existing stack, or on top of
+ * Home if the stack hasn't mounted yet. It is defined at module scope so that
+ * `getActionFromState` can cache what it derives from it.
+ */
+const NATIVE_LINK_ACTION_CONFIG = {
+  screens: {HomeTab: {initialRouteName: 'Home'}},
+}
+
 const LINKING = {
   // TODO figure out what we are going to use
   // note: `bluesky://` is what is used in app.config.js
@@ -993,6 +1013,13 @@ const LINKING = {
       const res = buildStateObject('Flat', name, params)
       return res
     }
+  },
+
+  getActionFromState(state, options) {
+    return getActionFromStateDefault(
+      state,
+      IS_NATIVE ? NATIVE_LINK_ACTION_CONFIG : options,
+    )
   },
 } satisfies LinkingOptions<AllNavigatorParams>
 

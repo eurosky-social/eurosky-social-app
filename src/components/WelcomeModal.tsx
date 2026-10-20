@@ -1,7 +1,8 @@
 import {useEffect, useEffectEvent, useState} from 'react'
 import {Pressable, View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
-import {FocusGuards, FocusScope} from 'radix-ui/internal'
+import * as FocusGuards from '@radix-ui/react-focus-guards'
+import * as FocusScope from '@radix-ui/react-focus-scope'
 
 import {useLoggedOutViewControls} from '#/state/shell/logged-out'
 import {LogoHero} from '#/view/icons/LogoHero'
