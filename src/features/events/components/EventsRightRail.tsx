@@ -14,6 +14,7 @@ import {CalendarDays_Stroke2_Corner0_Rounded as CalendarIcon} from '#/components
 import {type Props as IconProps} from '#/components/icons/common'
 import {FilterTimeline_Stroke2_Corner0_Rounded as FilterTimeline} from '#/components/icons/FilterTimeline'
 import {Person_Stroke2_Corner0_Rounded as PersonIcon} from '#/components/icons/Person'
+import {Ticket_Stroke2_Corner0_Rounded as TicketIcon} from '#/components/icons/Ticket'
 import {Text} from '#/components/Typography'
 import {type EventFeedId} from '../feeds'
 import {type EventFeedOption, useEventFeedOptions} from '../useEventFeedOptions'
@@ -25,6 +26,7 @@ const FEED_GLYPHS: Partial<
   upcoming: CalendarIcon,
   following: FilterTimeline,
   mine: PersonIcon,
+  agenda: TicketIcon,
 }
 
 /**

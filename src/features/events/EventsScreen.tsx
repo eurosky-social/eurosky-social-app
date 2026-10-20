@@ -181,6 +181,8 @@ function EventsList({
                 <Trans>No upcoming events with the selected filters.</Trans>
               ) : feed === 'mine' ? (
                 <Trans>You haven’t created any events yet.</Trans>
+              ) : feed === 'agenda' ? (
+                <Trans>You haven’t RSVP’d to any upcoming events.</Trans>
               ) : feed === 'following' ? (
                 <Trans>No upcoming events from people you follow.</Trans>
               ) : (

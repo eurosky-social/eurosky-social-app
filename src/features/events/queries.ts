@@ -141,7 +141,8 @@ export function useEventFeedQuery(
       ),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: page => page.cursor,
-    staleTime: STALE.MINUTES.FIVE,
+    // RSVPs made elsewhere should show up as soon as "My RSVPs" is opened.
+    staleTime: feed === 'agenda' ? 0 : STALE.MINUTES.FIVE,
   })
 }
 
@@ -561,12 +562,18 @@ export function useEventRsvpMutation() {
 
       return {prevViewer, prevFeeds, eventKey, prevEvent}
     },
-    onSuccess: (result, {event}) => {
+    onSuccess: (result, {event, next}) => {
       /*
        * Write through the real record keys. We don't refetch the feeds: the
        * AppView hasn't indexed the write yet and would undo the counts.
        */
       setViewerRsvp(event.uri, result)
+      // Except "My RSVPs", which otherwise wouldn't list the event at all.
+      if (next === `${RSVP_NSID}#going` || next === `${RSVP_NSID}#interested`) {
+        void queryClient.invalidateQueries({
+          queryKey: [eventFeedQueryKeyRoot, {feed: 'agenda'}],
+        })
+      }
     },
     onError: (_err, _vars, context) => {
       if (context) {

@@ -69,6 +69,17 @@ export function getTimelineFeed(
   )
 }
 
+/**
+ * Events `actor` RSVP'd going or interested to. Contrail can't split the two
+ * statuses, and ignores `location`.
+ */
+export function getAgenda(
+  params: EventListParams & {actor: string},
+  signal?: AbortSignal,
+) {
+  return xrpcGet<ListResponse<EventRecord>>('event.agenda', params, signal)
+}
+
 export function getEvent(
   params: {uri: string; profiles?: boolean; hydrateRsvps?: number},
   signal?: AbortSignal,

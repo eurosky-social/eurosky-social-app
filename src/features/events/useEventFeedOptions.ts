@@ -33,6 +33,11 @@ export function useEventFeedOptions() {
       message: 'My events',
       comment: 'Events feed tab listing the events the user has created.',
     }),
+    agenda: l({
+      message: 'My RSVPs',
+      comment:
+        'Events feed tab listing the events the user is going to or interested in.',
+    }),
   }
 
   const options: EventFeedOption[] = EVENT_FEED_IDS.filter(
