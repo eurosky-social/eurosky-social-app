@@ -24,8 +24,8 @@ an explicitly reviewed private demonstration, not an Oso public launch.
 
 ## Deployment (not automatic)
 
-The manual workflow `.github/workflows/deploy-web-oso-preview-bunny.yml` builds
-and uploads to its own storage zone. Before running it:
+Run `.github/workflows/deploy-web.yml` manually with the `oso-preview`
+environment; it builds and uploads to Oso's own storage zone. Before running it:
 
 1. Provision a **new** Bunny storage zone and pull zone for `oso.mu.social`;
    configure HTTPS and the SPA's 404 fallback to `/index.html`. Never attach
@@ -33,10 +33,10 @@ and uploads to its own storage zone. Before running it:
 2. On that pull zone, set `X-Robots-Tag: noindex, nofollow`. The build also
    ships a disallow-all `robots.txt`. No OG middleware is installed for this
    preview; home-page metadata is Oso-branded, deep links get the generic card.
-3. Add repository secrets `OSO_PREVIEW_BUNNY_STORAGE_ZONE` (full Bunny storage
-   URL), `OSO_PREVIEW_BUNNY_STORAGE_PASSWORD`, and
-   `OSO_PREVIEW_BUNNY_PULLZONE_ID`. The existing `BUNNY_API_KEY` is used only to
-   purge that zone after upload. DNS/TLS and these credentials are not created
+3. On the `oso-preview` GitHub environment, set the secrets
+   `BUNNY_STORAGE_ZONE` (full Bunny storage URL), `BUNNY_STORAGE_PASSWORD`, and
+   `BUNNY_PULLZONE_ID` (see `.github/environments/README.md`). The shared
+   `BUNNY_API_KEY` is used only to purge that zone after upload. DNS/TLS and these credentials are not created
    by the workflow.
 4. Run the workflow manually **only after reviewing this build**. Check
    `/oauth-client-metadata.json` is publicly fetchable even if adding a preview
