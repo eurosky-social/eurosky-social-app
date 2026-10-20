@@ -1,7 +1,8 @@
 # Oso: build the Oso web app and deploy it to Oso's own Bunny.net account.
 #
-# GitLab counterpart of .github/workflows/deploy-web-oso-preview-bunny.yml, but
-# every Bunny credential belongs to Oso's account, never Eurosky/Mu's. Builds
+# GitLab counterpart of the `oso` environment in .github/workflows/
+# deploy-web.yml (build settings: .github/environments/oso.env), but every
+# Bunny credential belongs to Oso's account, never Eurosky/Mu's. Builds
 # web-build-oso/ via scripts/build-oso-preview.sh (a disposable tree, so Mu's
 # brand files are untouched), uploads it to Oso's storage zone, then purges
 # Oso's pull zone.

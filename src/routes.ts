@@ -17,16 +17,19 @@ export const router = new Router<AllNavigatableRoutes>({
   Lists: '/lists',
   NewsFeed: '/news',
   NewsSettings: '/news/settings',
-  // Matched before the publisher route, whose `:name` would otherwise swallow
-  // `/newsroom/explore` and `/newsroom/article`.
-  NewsroomExplore: '/newsroom/explore',
-  NewsroomArticle: '/newsroom/article',
-  NewsroomDirectory: '/newsrooms',
+  /*
+   * The `/newsroom` paths are the news hub's old addresses, kept so shared
+   * links still open. The old explore and article paths are matched before
+   * the frontpage route, whose `:name` would otherwise swallow them.
+   */
+  NewsExplore: ['/news/explore', '/newsroom/explore'],
+  NewsArticle: ['/news/article', '/newsroom/article'],
+  OutletDirectory: ['/outlets', '/newsrooms'],
   Events: '/events',
   Event: '/events/:name/:rkey',
   EventRsvps: '/events/:name/:rkey/rsvps',
   OsoStarterPacks: '/starter-packs',
-  Newsroom: ['/newsroom/:name', '/newsroom'],
+  Frontpage: ['/frontpage/:name', '/frontpage', '/newsroom/:name', '/newsroom'],
   // moderation
   Moderation: '/moderation',
   ModerationInbox: '/moderation/inbox',

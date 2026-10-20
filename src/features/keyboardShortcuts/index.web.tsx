@@ -274,7 +274,7 @@ export function KeyboardShortcuts() {
         void navigate('Home')
         break
       case 'w':
-        void navigate(NEWS_V2_ENABLED ? 'NewsroomExplore' : 'NewsFeed')
+        void navigate(NEWS_V2_ENABLED ? 'NewsExplore' : 'NewsFeed')
         break
       case 'e':
         void navigate('Search', {})

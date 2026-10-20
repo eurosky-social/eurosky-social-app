@@ -76,7 +76,7 @@ export type FeedDescriptor =
   | `list|${ListUri}`
   | `posts|${PostsUriList}`
   | `newsfeed|${string}`
-  | `newsroom|${string}`
+  | `frontpage|${string}`
   | 'demo'
 export interface FeedParams {
   mergeFeedEnabled?: boolean
@@ -477,8 +477,8 @@ function createApi({
   } else if (feedDesc.startsWith('newsfeed')) {
     const [__, dids] = feedDesc.split('|')
     return new NewsFeedAPI({client, dids: dids ? dids.split(',') : []})
-  } else if (feedDesc.startsWith('newsroom')) {
-    // A newsroom page merges its publisher account and reporters the same way
+  } else if (feedDesc.startsWith('frontpage')) {
+    // A frontpage merges its publisher account and reporters the same way
     // the news feed merges its sources: round-robin across author feeds.
     const [__, dids] = feedDesc.split('|')
     return new NewsFeedAPI({client, dids: dids ? dids.split(',') : []})

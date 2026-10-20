@@ -4,49 +4,49 @@ import {Trans, useLingui} from '@lingui/react/macro'
 import * as ModuleHeader from '#/screens/Search/components/ModuleHeader'
 import {atoms as a, useTheme} from '#/alf'
 import {ButtonText} from '#/components/Button'
-import {Newspaper2_Stroke2_Corner2_Rounded as NewsroomsIcon} from '#/components/icons/Newspaper2'
+import {Newspaper2_Stroke2_Corner2_Rounded as FrontpagesIcon} from '#/components/icons/Newspaper2'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
-import {ExploreLiveSportsWidget} from '#/features/liveSports/components/ExploreLiveSportsWidget'
-import {OutletIcon} from '#/features/newsrooms/explore/components/OutletIcon'
 import {
-  type Newsroom,
-  newsroomPath,
+  type Frontpage,
+  frontpagePath,
   storyCount,
-  useNewsroomProfiles,
-  useNewsrooms,
-} from '#/features/newsrooms/newsrooms'
-import {getPublisherName} from '#/features/newsrooms/publishers'
+  useFrontpageProfiles,
+  useFrontpages,
+} from '#/features/frontpages/frontpages'
+import {ExploreLiveSportsWidget} from '#/features/liveSports/components/ExploreLiveSportsWidget'
+import {OutletIcon} from '#/features/news/explore/components/OutletIcon'
+import {getPublisherName} from '#/features/news/publishers'
 import {type app} from '#/lexicons'
 import {selectSources} from '../sources'
 import {useNewsFeedPrefsQuery} from '../state/prefs'
 
 /**
- * The news feed's right column: the mirror of the newsroom rail's "Your News"
+ * The news feed's right column: the mirror of the frontpage rail's "Your News"
  * module, pointing the other way - into the publisher hubs - plus the same
  * cross-network live sports context.
  */
 export function NewsFeedRightRail() {
   return (
     <View>
-      <NewsroomsModule />
+      <OutletsModule />
       <ExploreLiveSportsWidget />
     </View>
   )
 }
 
-/** How many newsrooms the module features when the feed names none. */
+/** How many outlets the module features when the feed names none. */
 const FEATURED_COUNT = 8
 
-function NewsroomsModule() {
+function OutletsModule() {
   const t = useTheme()
   const {t: l} = useLingui()
   const {data: prefs} = useNewsFeedPrefsQuery()
-  const {newsrooms} = useNewsrooms()
+  const {frontpages} = useFrontpages()
 
-  // With a configured feed, feature the newsrooms already among its sources;
-  // without one (or when none of its sources have a newsroom), feature the
-  // newsrooms with the most current stories.
+  // With a configured feed, feature the outlets already among its sources;
+  // without one (or when none of its sources is an outlet), feature the
+  // outlets with the most current stories.
   const sourceDids =
     prefs && prefs.topics.length > 0
       ? new Set(
@@ -58,53 +58,53 @@ function NewsroomsModule() {
         )
       : null
   const fromFeed =
-    sourceDids && newsrooms
-      ? newsrooms.filter(
-          newsroom => newsroom.did && sourceDids.has(newsroom.did),
+    sourceDids && frontpages
+      ? frontpages.filter(
+          frontpage => frontpage.did && sourceDids.has(frontpage.did),
         )
       : []
   const featured =
     fromFeed.length > 0
       ? fromFeed
-      : [...(newsrooms ?? [])]
+      : [...(frontpages ?? [])]
           .sort((x, y) => storyCount(y) - storyCount(x))
           .slice(0, FEATURED_COUNT)
-  const profiles = useNewsroomProfiles(featured)
+  const profiles = useFrontpageProfiles(featured)
 
-  /* Newsrooms are the news aggregator's outlets; without it there are none. */
+  /* Outlets come from the news aggregator; without it there are none. */
   if (featured.length === 0) return null
 
   return (
     <View style={[a.pb_xl]}>
       <ModuleHeader.Container>
-        <ModuleHeader.Icon icon={NewsroomsIcon} />
-        <ModuleHeader.TitleText>{l`Your Newsrooms`}</ModuleHeader.TitleText>
+        <ModuleHeader.Icon icon={FrontpagesIcon} />
+        <ModuleHeader.TitleText>{l`Your outlets`}</ModuleHeader.TitleText>
       </ModuleHeader.Container>
       <View style={[a.px_lg, a.gap_md]}>
         <Text style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
           {fromFeed.length > 0 ? (
-            <Trans>Newsrooms from the sources in your news feed</Trans>
+            <Trans>Outlets from the sources in your news feed</Trans>
           ) : (
-            <Trans>The newsrooms with the most stories right now</Trans>
+            <Trans>The outlets with the most stories right now</Trans>
           )}
         </Text>
         <View style={[a.gap_md]}>
-          {featured.map(newsroom => (
-            <FeaturedNewsroom
-              key={newsroom.slug}
-              newsroom={newsroom}
-              profile={newsroom.did ? profiles.get(newsroom.did) : undefined}
+          {featured.map(frontpage => (
+            <FeaturedFrontpage
+              key={frontpage.slug}
+              frontpage={frontpage}
+              profile={frontpage.did ? profiles.get(frontpage.did) : undefined}
             />
           ))}
         </View>
         <Link
-          to="/newsrooms"
-          label={l`See all newsrooms`}
+          to="/outlets"
+          label={l`See all outlets`}
           color="primary"
           size="large"
           style={[a.w_full, a.justify_center]}>
           <ButtonText>
-            <Trans>See all newsrooms</Trans>
+            <Trans>See all outlets</Trans>
           </ButtonText>
         </Link>
       </View>
@@ -112,27 +112,27 @@ function NewsroomsModule() {
   )
 }
 
-function FeaturedNewsroom({
-  newsroom,
+function FeaturedFrontpage({
+  frontpage,
   profile,
 }: {
-  newsroom: Newsroom
+  frontpage: Frontpage
   profile?: app.bsky.actor.defs.ProfileViewDetailed
 }) {
   const {t: l} = useLingui()
-  const name = getPublisherName(profile) || newsroom.name
+  const name = getPublisherName(profile) || frontpage.name
 
   return (
     <Link
-      to={newsroomPath(newsroom)}
-      label={l`Open the ${name} newsroom`}
+      to={frontpagePath(frontpage)}
+      label={l`Open the ${name} frontpage`}
       style={[a.flex_row, a.align_center, a.gap_sm]}>
       <OutletIcon
         outlet={{
-          id: newsroom.slug,
-          did: newsroom.did,
-          name: newsroom.name,
-          site: newsroom.domains[0],
+          id: frontpage.slug,
+          did: frontpage.did,
+          name: frontpage.name,
+          site: frontpage.domains[0],
           categories: [],
         }}
         profile={profile}

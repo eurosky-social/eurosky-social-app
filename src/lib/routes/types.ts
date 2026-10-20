@@ -34,10 +34,10 @@ export type CommonNavigatorParams = {
   EventRsvps: {name: string; rkey: string; tab?: string}
   OsoStarterPacks: undefined
   NewsSettings: undefined
-  Newsroom: {name?: string}
-  NewsroomExplore: undefined
-  NewsroomDirectory: undefined
-  NewsroomArticle: {
+  Frontpage: {name?: string}
+  NewsExplore: undefined
+  OutletDirectory: undefined
+  NewsArticle: {
     url: string
     title?: string
     image?: string
@@ -45,7 +45,7 @@ export type CommonNavigatorParams = {
     publishedAt?: string
     outletName?: string
     outletDid?: string
-    /** The outlet's slug at the news aggregator: its newsroom. */
+    /** The outlet's slug at the news aggregator: its frontpage. */
     outletSlug?: string
     /** The story the article was opened from, for its other coverage. */
     storyId?: string
