@@ -48,7 +48,8 @@ export EXPO_PUBLIC_DUTCH_API_SERVICE_DID="${EXPO_PUBLIC_DUTCH_API_SERVICE_DID:-d
 export EXPO_PUBLIC_THEME_FONT_FAMILY=LeagueSpartan
 export EXPO_PUBLIC_THEME_BODY_SCALE=1.1
 export EXPO_PUBLIC_PARTNER_PREVIEW=1
-export EXPO_PUBLIC_PLAUSIBLE_DOMAIN=oso.mu.social
+# Plausible site follows the host (oso.social by default).
+export EXPO_PUBLIC_PLAUSIBLE_DOMAIN="$OSO_HOST"
 # Neither production Mu analytics nor the shadow-read probe belongs in a demo.
 export EXPO_PUBLIC_ENABLE_METRICS=false
 export EXPO_PUBLIC_APPVIEW_SHADOW_PERCENTAGE=0
