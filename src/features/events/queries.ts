@@ -10,6 +10,7 @@ import {moderatePost} from '@bsky/sdk/moderation'
 import {useLingui} from '@lingui/react/macro'
 import {
   type InfiniteData,
+  type QueryClient,
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -420,6 +421,35 @@ function getStartDayRange(event: EventRecord) {
   const nextDay = new Date(`${startsAtMin}T00:00:00Z`)
   nextDay.setUTCDate(nextDay.getUTCDate() + 1)
   return {startsAtMin, startsAtMax: nextDay.toISOString().slice(0, 10)}
+}
+
+/**
+ * Every cached copy of `did`'s profile in the RSVP lists, so profile shadows
+ * (e.g. following someone from the list) apply to them.
+ */
+export function* findAllProfilesInQueryData(
+  queryClient: QueryClient,
+  did: string,
+): Generator<ProfileView, void> {
+  for (const [_key, data] of queryClient.getQueriesData<
+    InfiniteData<{profiles: ProfileView[]}>
+  >({queryKey: [eventRsvpsQueryKeyRoot]})) {
+    for (const page of data?.pages ?? []) {
+      for (const profile of page.profiles) {
+        if (profile.did === did) yield profile
+      }
+    }
+  }
+  for (const [_key, data] of queryClient.getQueriesData<
+    Record<EventRsvpsStatus, ProfileView[]>
+  >({queryKey: [eventFriendRsvpsQueryKeyRoot]})) {
+    for (const profile of [
+      ...(data?.going ?? []),
+      ...(data?.interested ?? []),
+    ]) {
+      if (profile.did === did) yield profile
+    }
+  }
 }
 
 /**
