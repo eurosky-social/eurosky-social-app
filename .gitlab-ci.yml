@@ -18,9 +18,9 @@
 #
 # Optional variables, read directly by the build script:
 #   OSO_HOST                    hostname the bundle is served from
-#                               (default oso.mu.social)
-#   OSO_OAUTH_ASSERTION_URL     Oso's own OAuth assertion worker; required when
-#                               OSO_HOST is not a *.mu.social host
+#                               (default oso.social)
+#   OSO_OAUTH_ASSERTION_URL     Oso's own OAuth assertion worker (default
+#                               https://oauth.oso.social/client-assertion)
 #
 # The Mu edge setup (scripts/bunny_edge_setup.sh) is deliberately not run: it
 # carries mu.social URL patterns. Configure Oso's pull zone in its own account.
@@ -45,7 +45,7 @@ deploy-oso-bunny:
     url: https://${OSO_HOST}
   variables:
     # Project CI/CD variables override this default.
-    OSO_HOST: oso.mu.social
+    OSO_HOST: oso.social
     EXPO_PUBLIC_ENABLE_GEOLOCATION: 'true'
     EXPO_PUBLIC_GEOLOCATION_URL: https://ip.mu.social
     EXPO_PUBLIC_PLAUSIBLE_API_HOST: https://events.mu.social

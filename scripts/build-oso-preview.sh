@@ -18,16 +18,18 @@ rsync -a --exclude='.git' --exclude='node_modules' --exclude='web-build*' \
 cd "$TMP"
 export BRAND_BUILD_ISOLATED=1
 # Hostname the bundle is served from: share links, og:url, OAuth client_id and
-# redirect all derive from it. The shared staging assertion worker only signs
-# for *.mu.social origins; any other host needs OSO_OAUTH_ASSERTION_URL.
-export OSO_HOST="${OSO_HOST:-oso.mu.social}"
+# redirect all derive from it.
+export OSO_HOST="${OSO_HOST:-oso.social}"
 # Oso's own pinned assertion worker (services/oauth/bunny/index.ts) signs with
 # a dedicated key, so the bundle must advertise that key's public half instead
-# of Mu's. Unset, the build keeps Mu's shared staging worker and key.
-if [[ -n "${OSO_OAUTH_ASSERTION_URL:-}" ]]; then
+# of Mu's. Its CLIENT_ID / ALLOWED_ORIGIN must match OSO_HOST. A *.mu.social
+# host can use Mu's shared staging worker instead, which keeps Mu's key.
+export MU_SHARED_ASSERTION_URL=https://oauth-staging.mu.social/client-assertion
+export OSO_OAUTH_ASSERTION_URL="${OSO_OAUTH_ASSERTION_URL:-https://oauth.oso.social/client-assertion}"
+if [[ "$OSO_OAUTH_ASSERTION_URL" != "$MU_SHARED_ASSERTION_URL" ]]; then
   cp brands/oso/oauth.public-jwks.json src/config/oauth.public-jwks.json
 fi
-export EXPO_PUBLIC_OAUTH_ASSERTION_URL="${OSO_OAUTH_ASSERTION_URL:-https://oauth-staging.mu.social/client-assertion}"
+export EXPO_PUBLIC_OAUTH_ASSERTION_URL="$OSO_OAUTH_ASSERTION_URL"
 node -e '
 const fs = require("node:fs")
 const file = "brands/oso/brand.override.json"
@@ -46,7 +48,8 @@ export EXPO_PUBLIC_DUTCH_API_SERVICE_DID="${EXPO_PUBLIC_DUTCH_API_SERVICE_DID:-d
 export EXPO_PUBLIC_THEME_FONT_FAMILY=LeagueSpartan
 export EXPO_PUBLIC_THEME_BODY_SCALE=1.1
 export EXPO_PUBLIC_PARTNER_PREVIEW=1
-export EXPO_PUBLIC_PLAUSIBLE_DOMAIN=oso.mu.social
+# Plausible site follows the host (oso.social by default).
+export EXPO_PUBLIC_PLAUSIBLE_DOMAIN="$OSO_HOST"
 # Neither production Mu analytics nor the shadow-read probe belongs in a demo.
 export EXPO_PUBLIC_ENABLE_METRICS=false
 export EXPO_PUBLIC_APPVIEW_SHADOW_PERCENTAGE=0
@@ -101,7 +104,7 @@ assert.deepEqual(metadata.redirect_uris, [`${origin}/`])
 assert.deepEqual(
   metadata.jwks.keys.map(k => k.kid),
   require(
-    process.env.OSO_OAUTH_ASSERTION_URL
+    process.env.OSO_OAUTH_ASSERTION_URL !== process.env.MU_SHARED_ASSERTION_URL
       ? './brands/oso/oauth.public-jwks.json'
       : `${process.env.ROOT}/src/config/oauth.public-jwks.json`,
   ).keys.map(k => k.kid),

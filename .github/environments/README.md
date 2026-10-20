@@ -10,7 +10,7 @@ of the same name as a file in this directory.
 | `production`  | https://mu.social         | push to `eurosky/deploy`    | Mu    |
 | `staging`     | https://staging.mu.social | push to `eurosky/fork`      | Mu    |
 | `dev`         | https://dev.mu.social     | manual run, any branch      | Mu    |
-| `oso`         | https://oso.mu.social     | manual run from `oso`       | Oso   |
+| `oso`         | https://oso.social        | manual run from `oso`       | Oso   |
 
 ## What lives where
 
