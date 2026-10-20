@@ -245,7 +245,11 @@ function EventRsvpsTab({
           onRetry={fetchNextPage}
         />
       }
-      desktopFixedHeight
+      /*
+       * No desktopFixedHeight: its viewport-high minimum keeps the list's
+       * height from changing while short pages load, and the web List only
+       * re-checks onEndReached when its height changes.
+       */
       initialNumToRender={initialNumToRender}
       windowSize={11}
       sideBorders={false}
