@@ -33,6 +33,7 @@ import {findAllProfilesInQueryData as findAllProfilesInSuggestedUsersForDiscover
 import {findAllProfilesInQueryData as findAllProfilesInSuggestedUsersForExploreQueryData} from '#/state/queries/trending/useGetSuggestedUsersForExploreQuery'
 import {findAllProfilesInQueryData as findAllProfilesInSuggestedUsersForSeeMoreQueryData} from '#/state/queries/trending/useGetSuggestedUsersForSeeMoreQuery'
 import {findAllProfilesInQueryData as findAllProfilesInPostThreadV2QueryData} from '#/state/queries/usePostThread/queryCache'
+import {findAllProfilesInQueryData as findAllProfilesInEventRsvpsQueryData} from '#/features/events/queries'
 import {type app} from '#/lexicons'
 import type * as bsky from '#/types/bsky'
 import {castAsShadow, type Shadow} from './types'
@@ -336,4 +337,5 @@ function* findProfilesInCache(
   yield* findAllProfilesInContactMatchesQueryData(queryClient, did)
   yield* findAllProfilesInMessagesQueryData(queryClient, did)
   yield* findAllProfilesInGetConvoQueryData(queryClient, did)
+  yield* findAllProfilesInEventRsvpsQueryData(queryClient, did)
 }

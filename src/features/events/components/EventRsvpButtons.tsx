@@ -1,7 +1,7 @@
 import {useState} from 'react'
 import {type GestureResponderEvent, View} from 'react-native'
 import {plural} from '@lingui/core/macro'
-import {useLingui} from '@lingui/react/macro'
+import {Trans, useLingui} from '@lingui/react/macro'
 
 import {AnimatedLikeIcon} from '#/lib/custom-animations/LikeIcon'
 import {useRequireAuth} from '#/state/session'
@@ -23,8 +23,8 @@ const INTERESTED: RsvpStatus = 'community.lexicon.calendar.rsvp#interested'
 
 /**
  * "Interested" and "Going" toggles, built from a post's controls: an outline
- * icon with the count beside it, filled while active. Pressing the active one
- * removes the RSVP. Signed-out users are asked to sign in.
+ * icon with the count and label beside it, filled while active. Pressing the
+ * active one removes the RSVP. Signed-out users are asked to sign in.
  */
 export function EventRsvpButtons({event}: {event: EventRecord}) {
   const t = useTheme()
@@ -60,7 +60,7 @@ export function EventRsvpButtons({event}: {event: EventRecord}) {
   return (
     /*
      * Laid out like a post's controls: equal columns in a group capped at
-     * 320px, with an empty third column where posts have their like button.
+     * 320px. No empty third column like posts have, so the labels fit.
      */
     <View style={[a.flex_row, a.flex_1, {maxWidth: 320}]}>
       <View style={[a.flex_1, a.align_start, {marginLeft: -6}]}>
@@ -98,6 +98,11 @@ export function EventRsvpButtons({event}: {event: EventRecord}) {
               {formatCount(interestedCount)}
             </PostControlButtonText>
           )}
+          <PostControlButtonText>
+            <Trans comment="Label of the button to mark yourself as interested in an event">
+              Interested
+            </Trans>
+          </PostControlButtonText>
         </PostControlButton>
       </View>
       <View style={[a.flex_1, a.align_start]}>
@@ -134,9 +139,13 @@ export function EventRsvpButtons({event}: {event: EventRecord}) {
               {formatCount(goingCount)}
             </PostControlButtonText>
           )}
+          <PostControlButtonText>
+            <Trans comment="Label of the button to mark yourself as going to an event">
+              Going
+            </Trans>
+          </PostControlButtonText>
         </PostControlButton>
       </View>
-      <View style={[a.flex_1]} />
     </View>
   )
 }

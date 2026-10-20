@@ -1,6 +1,6 @@
 import {type Props as IconProps} from '#/components/icons/common'
 import {FortyVerse} from '#/components/icons/community/FortyVerse'
-import {getTimelineFeed, listEventsByLocation} from './api'
+import {getAgenda, getTimelineFeed, listEventsByLocation} from './api'
 import {type EventFilters, toEventListParams} from './filters'
 import {
   type EventListParams,
@@ -8,7 +8,8 @@ import {
   type ListResponse,
 } from './types'
 
-export type EventFeedId = 'upcoming' | 'following' | '40verse' | 'mine'
+export type EventFeedId =
+  'upcoming' | 'following' | '40verse' | 'mine' | 'agenda'
 
 /** The selectable feeds, in tab order. */
 export const EVENT_FEED_IDS: EventFeedId[] = [
@@ -16,6 +17,7 @@ export const EVENT_FEED_IDS: EventFeedId[] = [
   'following',
   '40verse',
   'mine',
+  'agenda',
 ]
 
 /** Per-user context a feed may need to fetch. */
@@ -87,5 +89,16 @@ export const EVENT_FEEDS: Record<
         },
         signal,
       ),
+  },
+  agenda: {
+    requiresAuth: true,
+    // Upcoming events the user RSVP'd going or interested to.
+    fetch: (params, filters, {actor}, signal) => {
+      const {location, ...dates} = toEventListParams(filters)
+      if (location) {
+        console.warn('Events: the location filter is ignored by this feed')
+      }
+      return getAgenda({...params, ...dates, actor: actor!}, signal)
+    },
   },
 }

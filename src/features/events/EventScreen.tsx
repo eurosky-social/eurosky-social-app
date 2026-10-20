@@ -171,7 +171,15 @@ function EventPostsList({
 function EmptyMessageText({children}: {children: React.ReactNode}) {
   const t = useTheme()
   return (
-    <Text style={[a.px_xl, a.pb_xl, a.text_md, t.atoms.text_contrast_medium]}>
+    <Text
+      style={[
+        a.px_xl,
+        a.py_xl,
+        a.text_md,
+        a.border_t,
+        t.atoms.border_contrast_low,
+        t.atoms.text_contrast_medium,
+      ]}>
       {children}
     </Text>
   )

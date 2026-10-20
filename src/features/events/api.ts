@@ -2,8 +2,11 @@ import {EVENTS_APPVIEW_URL, EVENTS_NAMESPACE} from './config'
 import {
   type EventListParams,
   type EventRecord,
+  type FollowingRsvp,
   type GetRecordResponse,
   type ListResponse,
+  type RsvpRecord,
+  type RsvpStatus,
 } from './types'
 
 type Params = Record<string, string | number | boolean | undefined>
@@ -66,12 +69,54 @@ export function getTimelineFeed(
   )
 }
 
+/**
+ * Events `actor` RSVP'd going or interested to. Contrail can't split the two
+ * statuses, and ignores `location`.
+ */
+export function getAgenda(
+  params: EventListParams & {actor: string},
+  signal?: AbortSignal,
+) {
+  return xrpcGet<ListResponse<EventRecord>>('event.agenda', params, signal)
+}
+
 export function getEvent(
-  params: {uri: string; profiles?: boolean},
+  params: {uri: string; profiles?: boolean; hydrateRsvps?: number},
   signal?: AbortSignal,
 ) {
   return xrpcGet<GetRecordResponse<EventRecord>>(
     'event.getRecord',
+    params,
+    signal,
+  )
+}
+
+/**
+ * RSVP records, e.g. to one event with `subjectUri`. One person can hold
+ * several records for the same event, so dedupe on `did`.
+ */
+export function listRsvps(
+  params: {
+    subjectUri?: string
+    status?: RsvpStatus
+    limit?: number
+    cursor?: string
+  },
+  signal?: AbortSignal,
+) {
+  return xrpcGet<ListResponse<RsvpRecord>>('rsvp.listRecords', params, signal)
+}
+
+/**
+ * Every RSVP by anyone `actor` follows, to upcoming events unless
+ * `startsAtMin`/`startsAtMax` say otherwise. Not paginated.
+ */
+export function getFollowingRsvps(
+  params: {actor: string; startsAtMin?: string; startsAtMax?: string},
+  signal?: AbortSignal,
+) {
+  return xrpcGet<{attendees: FollowingRsvp[]}>(
+    'event.followingRsvps',
     params,
     signal,
   )
