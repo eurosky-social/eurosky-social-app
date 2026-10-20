@@ -2,6 +2,7 @@ import {type GestureResponderEvent, View} from 'react-native'
 import {Image} from 'expo-image'
 import {Trans, useLingui} from '@lingui/react/macro'
 
+import {makeProfileLink} from '#/lib/routes/links'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useSession} from '#/state/session'
@@ -9,6 +10,8 @@ import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, type TextStyleProp, useTheme} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {Pencil_Stroke2_Corner0_Rounded as PencilIcon} from '#/components/icons/Pencil'
+import {InlineLinkText} from '#/components/Link'
+import {ProfileHoverCard} from '#/components/ProfileHoverCard'
 import {Text} from '#/components/Typography'
 import {type EventProfile, type EventRecord} from '../types'
 import {
@@ -35,6 +38,7 @@ export function Organizer({
   profile?: EventProfile
 }) {
   const t = useTheme()
+  const {t: l} = useLingui()
   const name = sanitizeDisplayName(
     profile?.value?.displayName ||
       (profile?.handle ? sanitizeHandle(profile.handle, '@') : did),
@@ -52,9 +56,16 @@ export function Organizer({
         numberOfLines={1}
         style={[a.flex_1, t.atoms.text_contrast_medium]}>
         <Trans>
-          <Text emoji style={[a.font_semi_bold, t.atoms.text]}>
-            {name}
-          </Text>{' '}
+          <ProfileHoverCard did={did} inline>
+            <InlineLinkText
+              to={makeProfileLink({did, handle: profile?.handle ?? ''})}
+              label={l`Go to ${name}’s profile`}
+              disableMismatchWarning
+              emoji
+              style={[a.font_semi_bold, t.atoms.text]}>
+              {name}
+            </InlineLinkText>
+          </ProfileHoverCard>{' '}
           is organizing
         </Trans>
       </Text>
