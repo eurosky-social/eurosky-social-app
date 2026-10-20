@@ -12,7 +12,7 @@
 # there). The GitHub environment holds only what must not be in git - the
 # Bunny credentials - plus the branch rules and reviewers that gate it.
 #
-# Secrets per GitHub environment (production, staging, dev, oso):
+# Secrets per GitHub environment (production, staging, dev, oso, oso-dev):
 #   BUNNY_STORAGE_ZONE      full base URL incl. zone, e.g.
 #                           https://storage.bunnycdn.com/eurosky-app
 #   BUNNY_STORAGE_PASSWORD  storage zone password (AccessKey for uploads)
