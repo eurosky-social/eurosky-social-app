@@ -24,7 +24,7 @@ an explicitly reviewed private demonstration, not an Oso public launch.
 
 ## Deployment (not automatic)
 
-Run `.github/workflows/deploy-web.yml` manually with the `oso-preview`
+Run `.github/workflows/deploy-web.yml` manually with the `oso`
 environment; it builds and uploads to Oso's own storage zone. Before running it:
 
 1. Provision a **new** Bunny storage zone and pull zone for `oso.mu.social`;
@@ -33,7 +33,7 @@ environment; it builds and uploads to Oso's own storage zone. Before running it:
 2. On that pull zone, set `X-Robots-Tag: noindex, nofollow`. The build also
    ships a disallow-all `robots.txt`. No OG middleware is installed for this
    preview; home-page metadata is Oso-branded, deep links get the generic card.
-3. On the `oso-preview` GitHub environment, set the secrets
+3. On the `oso` GitHub environment, set the secrets
    `BUNNY_STORAGE_ZONE` (full Bunny storage URL), `BUNNY_STORAGE_PASSWORD`, and
    `BUNNY_PULLZONE_ID` (see `.github/environments/README.md`). The shared
    `BUNNY_API_KEY` is used only to purge that zone after upload. DNS/TLS and these credentials are not created

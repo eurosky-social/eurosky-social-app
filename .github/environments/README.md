@@ -10,7 +10,7 @@ of the same name as a file in this directory.
 | `production`  | https://mu.social         | push to `eurosky/deploy`    | Mu    |
 | `staging`     | https://staging.mu.social | push to `eurosky/fork`      | Mu    |
 | `dev`         | https://dev.mu.social     | manual run, any branch      | Mu    |
-| `oso-preview` | https://oso.mu.social     | manual run                  | Oso   |
+| `oso`         | https://oso.mu.social     | manual run                  | Oso   |
 
 ## What lives where
 
@@ -49,7 +49,7 @@ Creating environments needs admin on the repository.
 | `production`  | `eurosky/deploy` only       | optional            |
 | `staging`     | `eurosky/fork` only         | none                |
 | `dev`         | any                         | none                |
-| `oso-preview` | any                         | recommended         |
+| `oso`         | any                         | recommended         |
 
 Secrets on each environment:
 
