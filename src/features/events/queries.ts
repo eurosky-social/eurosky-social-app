@@ -18,18 +18,24 @@ import {createQueryKey} from '#/state/queries/util'
 import {useAppviewClient, usePdsClient, useSession} from '#/state/session'
 import * as Toast from '#/components/Toast'
 import {app, com} from '#/lexicons'
-import {getEvent} from './api'
+import {getEvent, getFollowingRsvps} from './api'
 import {
   type EventFormValues,
   toRecord,
 } from './components/CreateOrEditEventDialog/form'
-import {EVENT_NSID, EVENTS_PAGE_SIZE, RSVP_NSID} from './config'
+import {
+  EVENT_ATTENDEES_SHOWN,
+  EVENT_NSID,
+  EVENTS_PAGE_SIZE,
+  RSVP_NSID,
+} from './config'
 import {EVENT_FEEDS, type EventFeedId} from './feeds'
 import {type EventFilters, type EventSort, toEventSortParams} from './filters'
 import {
   type Blob as BlobJson,
   type EventProfile,
   type EventRecord,
+  type FollowingRsvp,
   type GetRecordResponse,
   type ListResponse,
   type RsvpStatus,
@@ -42,6 +48,7 @@ const eventFeedQueryKeyRoot = 'eventFeed'
 const eventQueryKeyRoot = 'event'
 const viewerEventRsvpsQueryKeyRoot = 'viewerEventRsvps'
 const eventPostsQueryKeyRoot = 'eventPosts'
+const followingEventRsvpsQueryKeyRoot = 'followingEventRsvps'
 
 /**
  * Every feed shares the `eventFeed` root, so all feeds can be invalidated at
@@ -62,6 +69,9 @@ export const createEventPostsQueryKey = (args: {
   uri: string
   pageSize: number
 }) => createQueryKey(eventPostsQueryKeyRoot, args)
+
+export const createFollowingEventRsvpsQueryKey = (args: {actor?: string}) =>
+  createQueryKey(followingEventRsvpsQueryKeyRoot, args)
 
 export const createViewerEventRsvpsQueryKey = (args: {did?: string}) =>
   createQueryKey(viewerEventRsvpsQueryKeyRoot, args)
@@ -101,6 +111,7 @@ export function useEventFeedQuery(
           startsAtMin,
           ...toEventSortParams(sort),
           profiles: true,
+          hydrateRsvps: EVENT_ATTENDEES_SHOWN,
           limit: EVENTS_PAGE_SIZE,
           cursor: pageParam,
         },
@@ -122,7 +133,11 @@ export function useEventQuery({uri}: {uri?: string}) {
   return useQuery({
     queryKey: createEventQueryKey({uri: uri ?? ''}),
     enabled: !!uri,
-    queryFn: ({signal}) => getEvent({uri: uri!, profiles: true}, signal),
+    queryFn: ({signal}) =>
+      getEvent(
+        {uri: uri!, profiles: true, hydrateRsvps: EVENT_ATTENDEES_SHOWN},
+        signal,
+      ),
     staleTime: STALE.MINUTES.FIVE,
   })
 }
@@ -239,6 +254,28 @@ export function useViewerEventRsvpsQuery<T = ViewerRsvps>({
       } while (cursor)
       return rsvps
     },
+    select,
+    staleTime: STALE.MINUTES.FIVE,
+  })
+}
+
+/**
+ * RSVPs by everyone the signed-in user follows, to all upcoming events in one
+ * request, so every event shares it.
+ */
+export function useFollowingEventRsvpsQuery<T = FollowingRsvp[]>({
+  select,
+}: {
+  select?: (data: FollowingRsvp[]) => T
+} = {}) {
+  const {currentAccount} = useSession()
+  const actor = currentAccount?.did
+
+  return useQuery({
+    queryKey: createFollowingEventRsvpsQueryKey({actor}),
+    enabled: !!actor,
+    queryFn: async ({signal}) =>
+      (await getFollowingRsvps({actor: actor!}, signal)).attendees,
     select,
     staleTime: STALE.MINUTES.FIVE,
   })

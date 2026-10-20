@@ -106,6 +106,19 @@ export type EventProfile = {
   }
 }
 
+/**
+ * An RSVP by someone the viewer follows, from `event.followingRsvps`. Collapsed
+ * to the strongest status per person and event.
+ */
+export type FollowingRsvp = {
+  eventUri: string
+  did: string
+  handle?: string
+  avatarCid?: string
+  /** A bare word here, unlike the full token on RSVP records. */
+  status: 'going' | 'interested' | 'notgoing'
+}
+
 export type ListResponse<T> = {
   records: T[]
   /** Present only when another page exists. */

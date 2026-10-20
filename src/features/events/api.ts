@@ -2,6 +2,7 @@ import {EVENTS_APPVIEW_URL, EVENTS_NAMESPACE} from './config'
 import {
   type EventListParams,
   type EventRecord,
+  type FollowingRsvp,
   type GetRecordResponse,
   type ListResponse,
 } from './types'
@@ -67,11 +68,26 @@ export function getTimelineFeed(
 }
 
 export function getEvent(
-  params: {uri: string; profiles?: boolean},
+  params: {uri: string; profiles?: boolean; hydrateRsvps?: number},
   signal?: AbortSignal,
 ) {
   return xrpcGet<GetRecordResponse<EventRecord>>(
     'event.getRecord',
+    params,
+    signal,
+  )
+}
+
+/**
+ * Every RSVP by anyone `actor` follows, to upcoming events unless
+ * `startsAtMin`/`startsAtMax` say otherwise. Not paginated.
+ */
+export function getFollowingRsvps(
+  params: {actor: string; startsAtMin?: string; startsAtMax?: string},
+  signal?: AbortSignal,
+) {
+  return xrpcGet<{attendees: FollowingRsvp[]}>(
+    'event.followingRsvps',
     params,
     signal,
   )

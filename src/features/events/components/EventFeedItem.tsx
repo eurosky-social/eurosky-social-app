@@ -9,6 +9,7 @@ import {type EventProfile, type EventRecord} from '../types'
 import {makeEventLink} from '../util'
 import {CollapsibleText} from './CollapsibleText'
 import * as Event from './Event'
+import {EventAttendees} from './EventAttendees'
 import {EventFeedItemPosts} from './EventFeedItemPosts'
 import {EventRsvpButtons} from './EventRsvpButtons'
 
@@ -53,6 +54,7 @@ export function EventFeedItem({
                   {description}
                 </CollapsibleText>
               )}
+              <EventAttendees event={event} />
               <Event.Actions>
                 <EventRsvpButtons event={event} />
                 <Event.EditButton event={event} onPress={onEdit} />
