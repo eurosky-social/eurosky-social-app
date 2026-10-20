@@ -5,7 +5,6 @@ import {Pager} from '#/view/com/pager/Pager'
 import {TabBar} from '#/view/com/pager/TabBar'
 import {NotFoundScreen} from '#/view/screens/NotFound'
 import {atoms as a, useTheme, web} from '#/alf'
-import {BetaTag} from '#/components/BetaTag'
 import {Earth_Stroke2_Corner0_Rounded as EarthIcon} from '#/components/icons/Earth'
 import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
@@ -25,14 +24,9 @@ export function AtmosphereScreen() {
       <Layout.Header.Outer noBottomBorder sticky={false}>
         <Layout.Header.BackButton />
         <Layout.Header.Content>
-          <View style={[a.w_full, a.align_center]}>
-            <View style={[a.flex_row, a.align_center, a.gap_sm]}>
-              <Layout.Header.TitleText style={[a.text_center]}>
-                <Trans>Atmosphere</Trans>
-              </Layout.Header.TitleText>
-              <BetaTag />
-            </View>
-          </View>
+          <Layout.Header.TitleText style={[a.text_center]}>
+            <Trans>Atmosphere</Trans>
+          </Layout.Header.TitleText>
         </Layout.Header.Content>
         <Layout.Header.Slot />
       </Layout.Header.Outer>

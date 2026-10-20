@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Build the static web bundle (web-build/) for the Bunny deploy.
 #
-# Paired with scripts/bunny_upload.sh; run by the Bunny deploy workflows
-# (.github/workflows/deploy-web-bunny.yml and deploy-web-staging-bunny.yml).
+# Paired with scripts/bunny_upload.sh. Normally called by scripts/web_build.sh,
+# which loads an environment's settings first (.github/environments/).
 # The Cloudflare *Workers* path builds inline in scripts/deploy-cloudflare.sh
 # and does NOT use this script.
 #

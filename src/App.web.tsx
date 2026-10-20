@@ -118,17 +118,15 @@ function InnerApp() {
       try {
         // Finish an OAuth sign-in if we returned to the site root with
         // callback params; otherwise resume the stored session as usual.
-        if (
-          await tryFinishWebOAuthSignIn(login, () =>
-            onboardingDispatch({type: 'start'}),
-          )
-        ) {
-          return
-        }
-        if (account) {
-          await resumeSession(account)
-        } else {
-          await features.init
+        const handledOAuth = await tryFinishWebOAuthSignIn(login, () =>
+          onboardingDispatch({type: 'start'}),
+        )
+        if (!handledOAuth) {
+          if (account) {
+            await resumeSession(account)
+          } else {
+            await features.init
+          }
         }
       } catch (e) {
         logger.warn('session: resumeSession failed', {message: e})

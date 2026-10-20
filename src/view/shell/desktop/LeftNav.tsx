@@ -36,7 +36,6 @@ import {
   useTheme,
   web,
 } from '#/alf'
-import {BetaTag} from '#/components/BetaTag'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {type DialogControlProps} from '#/components/Dialog'
 import {ArrowBoxLeft_Stroke2_Corner0_Rounded as LeaveIcon} from '#/components/icons/Arrow'
@@ -392,7 +391,6 @@ function SwitchMenuItem({
 }
 
 interface NavItemProps {
-  beta?: boolean
   count?: string
   hasNew?: boolean
   href: string
@@ -416,7 +414,6 @@ const NEWS_HUB_ROUTES = [
 ]
 
 function NavItem({
-  beta,
   count,
   hasNew,
   href,
@@ -428,7 +425,6 @@ function NavItem({
 }: NavItemProps) {
   const t = useTheme()
   const {t: l} = useLingui()
-  const accessibilityLabel = beta ? l`${label}, Beta` : label
   const ax = useAnalytics()
   const {currentAccount} = useSession()
 
@@ -486,7 +482,7 @@ function NavItem({
       href={href}
       dataSet={{noUnderline: 1}}
       role="link"
-      accessibilityLabel={accessibilityLabel}
+      accessibilityLabel={label}
       accessibilityHint="">
       <View
         style={[
@@ -554,12 +550,9 @@ function NavItem({
         ) : null}
       </View>
       {!minimal && (
-        <View style={[a.flex_row, a.align_center, a.gap_sm]}>
-          <Text style={[a.text_xl, isCurrent ? a.font_bold : a.font_normal]}>
-            {label}
-          </Text>
-          {beta && <BetaTag />}
-        </View>
+        <Text style={[a.text_xl, isCurrent ? a.font_bold : a.font_normal]}>
+          {label}
+        </Text>
       )}
     </PressableWithHover>
   )
@@ -745,7 +738,6 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
               href="/atmosphere"
               navItem="atmosphere"
               minimal={leftNavMinimal}
-              beta
               icons={{
                 inactive: EarthIcon,
                 active: EarthIcon,

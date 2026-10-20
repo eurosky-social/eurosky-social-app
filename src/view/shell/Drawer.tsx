@@ -26,7 +26,6 @@ import {formatCount} from '#/view/com/util/numeric/format'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {NavSignupCard} from '#/view/shell/NavSignupCard'
 import {atoms as a, tokens, useTheme, web} from '#/alf'
-import {BetaTag} from '#/components/BetaTag'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {useDialogControl} from '#/components/Dialog'
 import {Divider} from '#/components/Divider'
@@ -481,7 +480,6 @@ interface MenuItemProps extends ComponentProps<typeof PressableScale> {
   label: string
   count?: string
   bold?: boolean
-  beta?: boolean
 }
 
 let SearchMenuItem = ({
@@ -524,7 +522,6 @@ function AtmosphereMenuItem({
     <MenuItem
       icon={<EarthIcon style={[t.atoms.text]} width={iconWidth} />}
       label={l`Atmosphere`}
-      beta
       bold={isActive}
       onPress={onPress}
     />
@@ -737,15 +734,14 @@ let SettingsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
 }
 SettingsMenuItem = memo(SettingsMenuItem)
 
-function MenuItem({icon, label, count, bold, beta, onPress}: MenuItemProps) {
+function MenuItem({icon, label, count, bold, onPress}: MenuItemProps) {
   const t = useTheme()
-  const {t: l} = useLingui()
   return (
     <Button
       testID={`menuItemButton-${label}`}
       onPress={onPress}
       accessibilityRole="tab"
-      label={beta ? l`${label}, Beta` : label}>
+      label={label}>
       {({hovered, pressed}) => (
         <View
           style={[
@@ -794,19 +790,16 @@ function MenuItem({icon, label, count, bold, beta, onPress}: MenuItemProps) {
               </View>
             ) : undefined}
           </View>
-          <View style={[a.flex_1, a.flex_row, a.align_center, a.gap_sm]}>
-            <Text
-              style={[
-                a.flex_shrink,
-                a.text_2xl,
-                bold && a.font_bold,
-                web(a.leading_snug),
-              ]}
-              numberOfLines={1}>
-              {label}
-            </Text>
-            {beta && <BetaTag />}
-          </View>
+          <Text
+            style={[
+              a.flex_1,
+              a.text_2xl,
+              bold && a.font_bold,
+              web(a.leading_snug),
+            ]}
+            numberOfLines={1}>
+            {label}
+          </Text>
         </View>
       )}
     </Button>

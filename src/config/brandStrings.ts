@@ -45,6 +45,7 @@ const APP_BRAND_MSGIDS = new Set<string>([
   '4bbQsQ', // Your contact firstAuthorName is on Bluesky
   'AETlrv', // profileName joined Bluesky using a starter pack timeAgoString ago
   'AgLgDA', // Your contact firstAuthorLink is on Bluesky
+  '1zNIpL', // Your contact <0/> is on Bluesky (notifications v2)
   'RbsMSV', // This will irreversibly delete your Bluesky account <0>currentHandle</0>... (review: account)
   'sMXDJR', // New to Bluesky? <0>Sign up</0>
   'UuBuVb', // 0plural# people have joined Bluesky via this starter pack!
@@ -52,6 +53,10 @@ const APP_BRAND_MSGIDS = new Set<string>([
   'ehdCS5', // profileName joined Bluesky timeAgoString ago
   's3c7j6', // Invite name to join Bluesky
   'vsdeY2', // You joined Bluesky using a starter pack timeAgoString ago
+  'jJp4nR', // You joined Bluesky just now
+  'cgMeG8', // You joined Bluesky using a Starter Pack just now
+  'OgXM6V', // profileName joined Bluesky just now
+  'O9K/5I', // profileName joined Bluesky using a Starter Pack just now
   '0ssEYu', // You are accessing Bluesky from a region that legally requires...
   'xZFNnS', // Unfortunately, your declared age indicates that you are not old enough... Bluesky
   'QciFed', // Unfortunately, the birthdate you have saved... too young to access Bluesky
@@ -73,6 +78,7 @@ const APP_BRAND_MSGIDS = new Set<string>([
   'UGGtmB', // ...continue enjoying all the features of Bluesky.
   'E8ogPW', // Your email has not yet been verified... all the features of Bluesky.
   'QfDITI', // Leaving Bluesky
+  'SEDOhX', // Opens 0 outside Bluesky (profile links)
   'WqbUOH', // A screenshot of the post composer... "Bluesky has drafts now!!!"
   'dKRV7a', // Post it to Bluesky or share anywhere. (group chats announcement)
   'pYv2lK', // ...let them scan the code to join you on Bluesky. (invite friends announcement)
@@ -145,6 +151,9 @@ const APP_BRAND_MSGIDS = new Set<string>([
  *   'f6UtWw'  ...Bluesky Social Terms of Service   (legal entity + doc)
  *   'TXVWpp'  Bluesky Social Terms of Service      (legal entity + doc)
  *   'kuhbOb'  See jobs at Bluesky                  (Bluesky PBC the company)
+ *   'KeyOyU'  Thanks for helping keep Bluesky safe... (Bluesky moderation
+ *   'RYETfO'  Thanks for helping keep Bluesky safe... report outcome)
+ *   'ezmI3e'  ...a site that's blocked on Bluesky  (Bluesky's link blocklist)
  */
 
 const BLUESKY_SOCIAL = /Bluesky Social\b/g
