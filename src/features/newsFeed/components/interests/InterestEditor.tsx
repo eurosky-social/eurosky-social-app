@@ -12,14 +12,14 @@ import {Text} from '#/components/Typography'
 import {
   useDutchOutletsQuery,
   useDutchThemesQuery,
-} from '#/features/newsrooms/dutch/queries'
-import {type DutchOutletListing} from '#/features/newsrooms/dutch/types'
-import {OutletIcon} from '#/features/newsrooms/explore/components/OutletIcon'
+} from '#/features/news/dutch/queries'
+import {type DutchOutletListing} from '#/features/news/dutch/types'
+import {OutletIcon} from '#/features/news/explore/components/OutletIcon'
 import {
   outletCoverage,
   outletsForInterest,
-} from '#/features/newsrooms/explore/interests'
-import {countryName} from '#/features/newsrooms/explore/useInterestTitle'
+} from '#/features/news/explore/interests'
+import {countryName} from '#/features/news/explore/useInterestTitle'
 import {type NewsInterest} from '../../state/prefs'
 import {SetupFooter} from '../SetupFooter'
 import {SetupHeader} from '../SetupHeader'
@@ -191,7 +191,12 @@ function PlacesStep({
     ),
   ]
     .map(code => ({code, name: countryName(code, i18n.locale)}))
-    .sort((x, y) => x.name.localeCompare(y.name, i18n.locale))
+    /* The Netherlands leads: the aggregator covers it most closely. */
+    .sort(
+      (x, y) =>
+        Number(y.code === 'nl') - Number(x.code === 'nl') ||
+        x.name.localeCompare(y.name, i18n.locale),
+    )
 
   function setCountries(next: string[]) {
     onChange({...interest, countries: next})

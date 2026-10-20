@@ -286,7 +286,7 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
 
   const onPressNews = useCallback(() => {
     ax.metric('nav:click', {item: 'news', surface: 'drawer'})
-    navigation.navigate(NEWS_V2_ENABLED ? 'NewsroomExplore' : 'NewsFeed')
+    navigation.navigate(NEWS_V2_ENABLED ? 'NewsExplore' : 'NewsFeed')
     setDrawerOpen(false)
   }, [navigation, setDrawerOpen, ax])
 
@@ -645,7 +645,7 @@ let NewsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
   return (
     <MenuItem
       icon={<Newspaper style={[t.atoms.text]} width={iconWidth} />}
-      label={NEWS_V2_ENABLED ? _(msg`Newsrooms`) : _(msg`News`)}
+      label={_(msg`News`)}
       onPress={onPress}
     />
   )

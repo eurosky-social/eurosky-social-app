@@ -151,16 +151,16 @@ import {IS_LIQUID_GLASS, IS_NATIVE, IS_WEB} from '#/env'
 import {EventRsvpsScreen} from '#/features/events/EventRsvpsScreen'
 import {EventScreen} from '#/features/events/EventScreen'
 import {EventsScreen} from '#/features/events/EventsScreen'
+import {OutletDirectoryScreen} from '#/features/frontpages/directory'
+import {FrontpageScreen} from '#/features/frontpages/FrontpageScreen'
+import {NewsroomScreen as LegacyFrontpageScreen} from '#/features/frontpages/legacy/NewsroomScreen'
 import {InviteScannerScreen} from '#/features/inviteFriends'
+import {NewsArticleScreen} from '#/features/news/article/NewsArticleScreen'
+import {NewsExploreScreen} from '#/features/news/explore'
 import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
 import {NewsFeedScreen as LegacyNewsFeedScreen} from '#/features/newsFeed/legacy/NewsFeedScreen'
 import {NewsFeedScreen} from '#/features/newsFeed/NewsFeedScreen'
 import {NewsSettingsScreen} from '#/features/newsFeed/NewsSettingsScreen'
-import {NewsroomArticleScreen} from '#/features/newsrooms/article/NewsroomArticleScreen'
-import {NewsroomDirectoryScreen} from '#/features/newsrooms/directory'
-import {NewsroomExploreScreen} from '#/features/newsrooms/explore'
-import {NewsroomScreen as LegacyNewsroomScreen} from '#/features/newsrooms/legacy/NewsroomScreen'
-import {NewsroomScreen} from '#/features/newsrooms/NewsroomScreen'
 import {router} from '#/routes'
 import {Referrer} from '../modules/expo-bluesky-swiss-army'
 
@@ -208,12 +208,12 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         getComponent={() =>
           NEWS_V2_ENABLED ? NewsSettingsScreen : NotFoundScreen
         }
-        options={{title: title(msg`News settings`), requireAuth: true}}
+        options={{title: title(msg`News preferences`), requireAuth: true}}
       />
       <Stack.Screen
-        name="Newsroom"
+        name="Frontpage"
         getComponent={() =>
-          NEWS_V2_ENABLED ? NewsroomScreen : LegacyNewsroomScreen
+          NEWS_V2_ENABLED ? FrontpageScreen : LegacyFrontpageScreen
         }
         options={{
           title: NEWS_V2_ENABLED
@@ -223,9 +223,9 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         }}
       />
       <Stack.Screen
-        name="NewsroomExplore"
+        name="NewsExplore"
         getComponent={() =>
-          NEWS_V2_ENABLED ? NewsroomExploreScreen : NotFoundScreen
+          NEWS_V2_ENABLED ? NewsExploreScreen : NotFoundScreen
         }
         options={{
           title: title(msg`${BRAND.name} News`),
@@ -233,16 +233,16 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         }}
       />
       <Stack.Screen
-        name="NewsroomDirectory"
+        name="OutletDirectory"
         getComponent={() =>
-          NEWS_V2_ENABLED ? NewsroomDirectoryScreen : NotFoundScreen
+          NEWS_V2_ENABLED ? OutletDirectoryScreen : NotFoundScreen
         }
-        options={{title: title(msg`Newsrooms`), requireAuth: true}}
+        options={{title: title(msg`Outlets`), requireAuth: true}}
       />
       <Stack.Screen
-        name="NewsroomArticle"
+        name="NewsArticle"
         getComponent={() =>
-          NEWS_V2_ENABLED ? NewsroomArticleScreen : NotFoundScreen
+          NEWS_V2_ENABLED ? NewsArticleScreen : NotFoundScreen
         }
         options={{title: title(msg`Article`), requireAuth: true}}
       />

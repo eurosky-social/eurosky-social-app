@@ -70,7 +70,7 @@ languages (`languagePrefs.contentLanguages`), which the settings link to
 rather than keeping a list of their own; the record's `languages` is the news
 feed's.
 
-`newsrooms/explore/interests.ts` turns an interest into reads of
+`news/explore/interests.ts` turns an interest into reads of
 `/api/threads`. The API takes several countries and outlets per read but one
 theme and one province, so an interest is one read per theme (and province),
 and the page merges them rank by rank, boosted threads first. The outlet step
@@ -85,24 +85,24 @@ configured, the settings fall back to the news feed's setup below.
 
 ## Feature flag (news v2)
 
-The news hub - this page shaped by interests, plus the newsroom explore spread,
-directory and article pages in `src/features/newsrooms/` - ships behind
-`NEWS_V2_ENABLED` (`config.ts`). It is on only when
+The news hub - this page shaped by interests, plus the news explore spread,
+outlet directory, frontpages and article pages in `src/features/news/` and
+`src/features/frontpages/` - ships behind `NEWS_V2_ENABLED` (`config.ts`). It is on only when
 `EXPO_PUBLIC_ENABLE_NEWS_V2=true` and the Dutch API URL and service DID are
 both set, so production keeps the original pages until the news API is ready.
 
 With the flag off:
 
-- `/news` and `/newsroom/:name` serve the original screens kept in
-  `legacy/` and `src/features/newsrooms/legacy/`, and the desktop right column
+- `/news` and `/frontpage/:name` serve the original screens kept in
+  `legacy/` and `src/features/frontpages/legacy/`, and the desktop right column
   shows the original news feed and newsroom rails
 - those screens read the original prefs schema, source registry, publisher
   registry and queries (also in `legacy/`), and their feeds merge through
   `src/lib/api/feed/newsLegacy.ts`, so they behave as they did before the hub
-- the profile header's Newsroom button and the newsroom chip under link
+- the profile header's Frontpage button and the frontpage chip under link
   embeds come from the publisher registry, not the news aggregator
-  (`newsrooms/useProfileNewsroomPath.ts`, `Post/Embed/index.tsx`)
-- `/news/settings`, `/newsroom/explore`, `/newsroom/article` and `/newsrooms`
+  (`frontpages/useProfileFrontpagePath.ts`, `Post/Embed/index.tsx`)
+- `/news/settings`, `/news/explore`, `/news/article` and `/outlets`
   resolve to Not Found
 - the left nav, drawer and `w` shortcut point at `/news`, labelled “News”
 

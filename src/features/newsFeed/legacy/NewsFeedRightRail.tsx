@@ -10,12 +10,12 @@ import {Newspaper2_Stroke2_Corner2_Rounded as NewsroomsIcon} from '#/components/
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
-import {ExploreLiveSportsWidget} from '#/features/liveSports/components/ExploreLiveSportsWidget'
 import {
   getPublisherName,
   NEWSROOM_PUBLISHERS,
   type NewsroomPublisher,
-} from '#/features/newsrooms/legacy/publishers'
+} from '#/features/frontpages/legacy/publishers'
+import {ExploreLiveSportsWidget} from '#/features/liveSports/components/ExploreLiveSportsWidget'
 import {type app} from '#/lexicons'
 import {useNewsFeedPrefsQuery} from './prefs'
 import {selectSources} from './sources'
