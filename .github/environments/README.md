@@ -11,6 +11,7 @@ of the same name as a file in this directory.
 | `staging`     | https://staging.mu.social | push to `eurosky/fork`      | Mu    |
 | `dev`         | https://dev.mu.social     | manual run, any branch      | Mu    |
 | `oso`         | https://oso.social        | manual run from `oso`       | Oso   |
+| `oso-dev`     | https://dev.oso.social    | manual run, any branch      | Oso   |
 
 ## What lives where
 
@@ -50,6 +51,7 @@ Creating environments needs admin on the repository.
 | `staging`     | `eurosky/fork` only         | none                |
 | `dev`         | any                         | none                |
 | `oso`         | `oso` only                  | recommended         |
+| `oso-dev`     | any                         | none                |
 
 Secrets on each environment:
 

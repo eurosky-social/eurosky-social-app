@@ -3,7 +3,7 @@
 #
 # Usage: ./scripts/web_build.sh <environment>
 #   <environment> names .github/environments/<environment>.env and the GitHub
-#   environment of the same name (production, staging, dev, oso).
+#   environment of the same name (production, staging, dev, oso, oso-dev).
 #
 # Loads .github/environments/common.env, then <environment>.env on top, and
 # runs the brand's build (scripts/bunny_build.sh for Mu, build-oso-preview.sh

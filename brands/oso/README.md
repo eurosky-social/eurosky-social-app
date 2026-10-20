@@ -39,6 +39,8 @@ zone. Before running it:
    `BUNNY_API_KEY` (see `.github/environments/README.md`). DNS/TLS and these
    credentials are not created by the workflow.
 4. Configure the assertion worker at `oauth.oso.social` (below) for this host.
+   The `oso-dev` environment (`dev.oso.social`) uses
+   `oauth-staging.oso.social` instead.
 5. Run the workflow manually **only after reviewing this build**. Check
    `/oauth-client-metadata.json` is publicly fetchable even if adding a preview
    access gate; OAuth servers must be able to read it. Verify sign-in and the
@@ -48,24 +50,40 @@ zone. Before running it:
 
 The bundle is a confidential atproto OAuth client whose client ID is
 `https://<OSO_HOST>/oauth-client-metadata.json`. Client assertions come from
-Oso's own pinned instance of `services/oauth/bunny/index.ts` at
-`https://oauth.oso.social/client-assertion`, which signs with a dedicated key
-whose public half is `brands/oso/oauth.public-jwks.json`; the build advertises
-that key instead of Mu's. On that worker set:
+Oso's own workers, mirroring Mu's prod/non-prod split
+(`services/oauth/README.md`). Both sign with one dedicated key whose public
+half is `brands/oso/oauth.public-jwks.json`; the build advertises that key
+instead of Mu's.
+
+| Worker                     | Script                            | Serves                       | Used by   |
+| -------------------------- | --------------------------------- | ---------------------------- | --------- |
+| `oauth.oso.social`         | `services/oauth/bunny/index.ts`   | `oso.social` only            | `oso`     |
+| `oauth-staging.oso.social` | `services/oauth/bunny/staging.ts` | any `*.oso.social` subdomain | `oso-dev` |
+
+On `oauth.oso.social` set:
 
 - `CLIENT_ID=https://oso.social/oauth-client-metadata.json`
 - `ALLOWED_ORIGIN=https://oso.social`
 
-Check it with `PUBLIC_JWKS=brands/oso/oauth.public-jwks.json` plus those values
-and `WORKER_URL` passed to `node services/oauth/test.mjs`.
+On `oauth-staging.oso.social` set `ALLOWED_PARENT_DOMAIN=oso.social` and the
+same `OAUTH_PRIVATE_JWK` as `oauth.oso.social`. It derives each client ID from
+the request Origin, so a new `*.oso.social` host needs no OAuth change; the
+apex is rejected, so it can never sign as `oso.social`.
+
+Check them with `PUBLIC_JWKS=brands/oso/oauth.public-jwks.json` and
+`WORKER_URL` passed to `node services/oauth/test.mjs` (plus the `CLIENT_ID` /
+`ALLOWED_ORIGIN` above) or `node services/oauth/test-staging.mjs` (plus
+`PARENT_DOMAIN=oso.social`).
 
 ### Other hosts
 
 `OSO_HOST` (default `oso.social`) sets the hostname the bundle is built for:
 share links, `og:url`, OAuth client ID and redirect. `OSO_OAUTH_ASSERTION_URL`
-(default `https://oauth.oso.social/client-assertion`) sets the worker, whose
-`CLIENT_ID` / `ALLOWED_ORIGIN` must match the host. A `*.mu.social` host can
-instead use Mu's shared staging worker, and the build then keeps Mu's key:
+(default `https://oauth.oso.social/client-assertion`) sets the worker. Any
+host other than `oso.social` needs a worker that accepts it: for a
+`*.oso.social` host that is `oauth-staging.oso.social` (as in
+`.github/environments/oso-dev.env`). A `*.mu.social` host can instead use Mu's
+shared staging worker, and the build then keeps Mu's key:
 
 ```bash
 OSO_HOST=oso.mu.social \
