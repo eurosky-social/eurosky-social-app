@@ -1,6 +1,8 @@
 {
   "name": "oso",
-  "hosts": ["oso.social"],
+  "hosts": [
+    "oso.social"
+  ],
   "socialHandle": "",
   "colors": {
     "neutral": {
@@ -18,23 +20,23 @@
       "contrast_1000": "#14141F"
     },
     "accents": {
-      "blue": {
-        "primary_25": "#F5F5FF",
-        "primary_50": "#EEEEFF",
-        "primary_100": "#DADAFF",
-        "primary_200": "#BDBDFF",
-        "primary_300": "#9999FF",
-        "primary_400": "#6060FF",
-        "primary_500": "#1D1AFF",
-        "primary_600": "#1612E8",
-        "primary_700": "#1212B8",
-        "primary_800": "#0C0C89",
-        "primary_900": "#090963",
-        "primary_950": "#060648",
-        "primary_975": "#030330"
+      "purple": {
+        "primary_25": "#F8F7FF",
+        "primary_50": "#F1F0FF",
+        "primary_100": "#E4E0FF",
+        "primary_200": "#D0C9FF",
+        "primary_300": "#B3A9FF",
+        "primary_400": "#8979FF",
+        "primary_500": "#563FFF",
+        "primary_600": "#4C37E0",
+        "primary_700": "#3E2DB8",
+        "primary_800": "#2E228A",
+        "primary_900": "#221966",
+        "primary_950": "#181247",
+        "primary_975": "#0F0B2E"
       }
     },
-    "defaultAccent": "blue"
+    "defaultAccent": "purple"
   },
   "oauth": {
     "defaultBaseUrl": "https://oso.social",

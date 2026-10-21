@@ -10,10 +10,10 @@ bash scripts/build-oso-preview.sh --prepare-only  # generate/check only
 bash scripts/build-oso-preview.sh                 # build web-build-oso/
 ```
 
-The build uses the Oso vector favicon from `https://oso.social/favicon.svg`
-(adapted to `currentColor`) and the League Spartan variable font served by
-oso.social. The palette is derived from `https://oso.social/styles.css`, with
-additional shades for UI contrast. The preview also scales only small/medium
+The build uses the Oso logo (`mark.svg`, `hero.svg`: purple lettering on a
+green pill or circle) and the app's default font. The UI accent is a purple
+ramp built around `#563FFF`; the green `#55FF80` only appears in the logo, as
+it is too light for buttons and links. The preview also scales only small/medium
 body text (13.1–15px tokens) by 1.1; headings and tiny labels keep their
 original sizes, and Mu remains unchanged. See `branding/oso-reference/README.md` in
 the workspace for source/provenance. Before public launch get approval for the
