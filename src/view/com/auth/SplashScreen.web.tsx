@@ -171,10 +171,14 @@ function Footer() {
           <InlineLinkText label={_(msg`Terms`)} to={BRAND.links.tos}>
             <Trans>Terms</Trans>
           </InlineLinkText>
-          <InlineLinkText label={_(msg`Donate`)} to={BRAND.links.donate}>
+          <InlineLinkText
+            disableMismatchWarning
+            label={_(msg`Donate`)}
+            to={BRAND.links.donate}>
             <Trans>Donate</Trans>
           </InlineLinkText>
           <InlineLinkText
+            disableMismatchWarning
             label={_(msg`Send feedback`)}
             to={BRAND.links.feedback}>
             <Trans>Feedback</Trans>

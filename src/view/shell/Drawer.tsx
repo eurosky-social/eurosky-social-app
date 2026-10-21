@@ -842,6 +842,7 @@ function ExtraLinks({hasSession}: {hasSession: boolean}) {
           <Trans>Terms</Trans>
         </InlineLinkText>
         <InlineLinkText
+          disableMismatchWarning
           style={[a.text_md]}
           to={BRAND.links.donate}
           label={_(msg`Donate`)}>
@@ -849,6 +850,7 @@ function ExtraLinks({hasSession}: {hasSession: boolean}) {
         </InlineLinkText>
         {hasSession && (
           <InlineLinkText
+            disableMismatchWarning
             style={[a.text_md]}
             to={BRAND.links.feedback}
             label={_(msg`Send feedback`)}>
