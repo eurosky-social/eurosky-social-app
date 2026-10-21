@@ -47,12 +47,6 @@ fs.copyFileSync(path.join(brandDir, 'mark.svg'), path.join(logos, 'mark.svg'))
 // The wordmark shown on hero surfaces such as the signed-out splash.
 fs.copyFileSync(path.join(brandDir, 'hero.svg'), path.join(logos, 'hero.svg'))
 
-// The site hosts this font; keep it in the isolated Oso bundle only. The
-// app's web theme typography selects LeagueSpartan via build-time env.
-fs.copyFileSync(
-  path.join(brandDir, 'LeagueSpartan-VF.woff2'),
-  path.join(root, 'web/LeagueSpartan-VF.woff2'),
-)
 const html = path.join(root, 'web/index.html')
 fs.writeFileSync(
   html,
@@ -60,11 +54,7 @@ fs.writeFileSync(
     .readFileSync(html, 'utf8')
     .replace(
       '</head>',
-      '  <meta name="robots" content="noindex,nofollow">\n' +
-        '  <style>\n' +
-        '    @font-face { font-family: LeagueSpartan; src: url(/LeagueSpartan-VF.woff2) format("woff2"); font-weight: 100 900; font-display: swap; }\n' +
-        '    body { font-family: LeagueSpartan, system-ui, sans-serif; }\n' +
-        '  </style>\n  </head>',
+      '  <meta name="robots" content="noindex,nofollow">\n  </head>',
     ),
 )
 console.log('Prepared Oso brand in isolated build directory')

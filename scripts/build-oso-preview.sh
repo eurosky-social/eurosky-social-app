@@ -45,7 +45,6 @@ export EXPO_PUBLIC_OAUTH_BASE_URL="https://$OSO_HOST"
 export EXPO_PUBLIC_ENABLE_NEWS_V2="${EXPO_PUBLIC_ENABLE_NEWS_V2:-true}"
 export EXPO_PUBLIC_DUTCH_API_URL="${EXPO_PUBLIC_DUTCH_API_URL:-https://news.eurosky.tech}"
 export EXPO_PUBLIC_DUTCH_API_SERVICE_DID="${EXPO_PUBLIC_DUTCH_API_SERVICE_DID:-did:plc:oub2sr5miponqkvdf3awv5qn}"
-export EXPO_PUBLIC_THEME_FONT_FAMILY=LeagueSpartan
 export EXPO_PUBLIC_THEME_BODY_SCALE=1.1
 export EXPO_PUBLIC_PARTNER_PREVIEW=1
 # Plausible site follows the host (oso.social by default).
@@ -79,8 +78,6 @@ fi
 # Bunny build performs its own install and writes web-build/ inside this tree.
 export ROBOTS_MODE=disallow-all
 bash scripts/bunny_build.sh
-# Expo's web/ copy is not reliable for arbitrary files; copy explicitly.
-cp web/LeagueSpartan-VF.woff2 web-build/LeagueSpartan-VF.woff2
 # Expo emits Mu's native store identifiers in the web manifest even for a
 # web-only partner preview. Do not advertise the Mu apps as related to Oso.
 node <<'NODE'
@@ -111,10 +108,8 @@ assert.deepEqual(
 )
 assert.ok(html.includes(`og:url" content="${origin}"`))
 assert.match(html, /name="robots" content="noindex,nofollow"/)
-assert.match(html, /LeagueSpartan/)
 assert.match(fs.readFileSync('web-build/robots.txt', 'utf8'), /Disallow: \/$/m)
 assert.equal(fs.readFileSync('web-build/og-image.jpg').subarray(0, 2).toString('hex'), 'ffd8')
-assert.ok(fs.statSync('web-build/LeagueSpartan-VF.woff2').size > 0)
 const manifest = require('./web-build/manifest.json')
 assert.equal(manifest.name, 'oso')
 assert.equal(manifest.related_applications, undefined)
