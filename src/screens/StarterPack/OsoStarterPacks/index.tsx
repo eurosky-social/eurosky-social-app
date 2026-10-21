@@ -6,25 +6,22 @@ import {
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
 import {cleanError} from '#/lib/strings/errors'
-import {useStarterPackQuery} from '#/state/queries/starter-packs'
 import {List} from '#/view/com/util/List'
 import {atoms as a, useTheme} from '#/alf'
 import * as Layout from '#/components/Layout'
 import {ListFooter} from '#/components/Lists'
 import {Text} from '#/components/Typography'
-import {
-  StarterPackCard,
-  StarterPackCardSkeleton,
-} from './components/StarterPackCard'
+import {type app} from '#/lexicons'
+import {StarterPackCard} from './components/StarterPackCard'
 import {OSO_STARTER_PACKS_ACTOR} from './config'
-import {useOsoStarterPackUris} from './useOsoStarterPackUris'
+import {useOsoStarterPacks} from './useOsoStarterPacks'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'OsoStarterPacks'>
 
 export function OsoStarterPacksScreen(_props: Props) {
   const t = useTheme()
   const {
-    uris,
+    starterPacks,
     isLoading,
     isRefetching,
     error,
@@ -32,10 +29,12 @@ export function OsoStarterPacksScreen(_props: Props) {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useOsoStarterPackUris()
+  } = useOsoStarterPacks()
 
   const onEndReached = () => {
-    if (hasNextPage && !isFetchingNextPage && !error) fetchNextPage()
+    if (hasNextPage && !isLoading && !isFetchingNextPage && !error) {
+      fetchNextPage()
+    }
   }
 
   return (
@@ -50,9 +49,13 @@ export function OsoStarterPacksScreen(_props: Props) {
         <Layout.Header.Slot />
       </Layout.Header.Outer>
       <List
-        data={uris}
-        keyExtractor={(uri: string) => uri}
-        renderItem={({item}: {item: string}) => <StarterPackRow uri={item} />}
+        data={starterPacks}
+        keyExtractor={(item: app.bsky.graph.defs.StarterPackView) => item.uri}
+        renderItem={({item}: {item: app.bsky.graph.defs.StarterPackView}) => (
+          <View style={[a.px_lg, a.pb_lg]}>
+            <StarterPackCard view={item} />
+          </View>
+        )}
         // The fallback list is fixed, so there is nothing to refresh.
         refreshing={isRefetching}
         onRefresh={OSO_STARTER_PACKS_ACTOR ? () => void refetch() : undefined}
@@ -78,29 +81,5 @@ export function OsoStarterPacksScreen(_props: Props) {
         sideBorders={false}
       />
     </Layout.Screen>
-  )
-}
-
-/**
- * Loads one pack by URI. A pack that fails to load (deleted, taken down) is
- * left out rather than failing the whole list.
- */
-function StarterPackRow({uri}: {uri: string}) {
-  const {data, isLoading} = useStarterPackQuery({uri})
-
-  if (isLoading) {
-    return (
-      <View style={[a.px_lg, a.pb_lg]}>
-        <StarterPackCardSkeleton />
-      </View>
-    )
-  }
-
-  if (!data) return null
-
-  return (
-    <View style={[a.px_lg, a.pb_lg]}>
-      <StarterPackCard view={data} />
-    </View>
   )
 }

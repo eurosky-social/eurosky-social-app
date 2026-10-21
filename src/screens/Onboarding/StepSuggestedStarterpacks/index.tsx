@@ -4,14 +4,14 @@ import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
-// Eurosky fork: curated packs on top of Bluesky's appview-suggested packs.
-import {useEuroskyOnboardingSuggestedStarterPacks as useOnboardingSuggestedStarterPacksQuery} from '#/screens/Onboarding/euroskySuggestedStarterPacks'
 import {
   OnboardingControls,
   OnboardingPosition,
   OnboardingTitleText,
 } from '#/screens/Onboarding/Layout'
 import {useOnboardingInternalState} from '#/screens/Onboarding/state'
+// Oso: the configured account's packs, falling back to Eurosky's curated packs.
+import {useOsoOnboardingSuggestedStarterPacks as useOnboardingSuggestedStarterPacksQuery} from '#/screens/StarterPack/OsoStarterPacks/useOsoOnboardingStarterPacks'
 import {atoms as a, useBreakpoints} from '#/alf'
 import {Admonition} from '#/components/Admonition'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
