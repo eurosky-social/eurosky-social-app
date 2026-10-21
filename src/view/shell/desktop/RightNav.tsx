@@ -191,6 +191,7 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
           <>
             <Text style={[t.atoms.text_contrast_low]}>{' ∙ '}</Text>
             <InlineLinkText
+              disableMismatchWarning
               to={BRAND.links.donate}
               style={[t.atoms.text_contrast_medium]}
               label={_(msg`Donate`)}>
@@ -200,6 +201,7 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
               <>
                 <Text style={[t.atoms.text_contrast_low]}>{' ∙ '}</Text>
                 <InlineLinkText
+                  disableMismatchWarning
                   to={BRAND.links.feedback}
                   style={[t.atoms.text_contrast_medium]}
                   label={_(msg`Send feedback`)}>
