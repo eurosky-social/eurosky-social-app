@@ -18,6 +18,8 @@ ENV CI=1
 ENV pnpm_config_pm_on_fail=download
 
 COPY bskyembed ./
+# Eurosky fork: the embed reads its brand identity and colours from here.
+COPY src/config/brand.json /app/src/config/brand.json
 COPY bskyweb /app/bskyweb
 COPY scripts/post-embed-build.js /app/scripts/post-embed-build.js
 

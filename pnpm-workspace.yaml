@@ -23,9 +23,12 @@ overrides:
   #   `zod/v4` subpath, which only exists in zod >=3.25. With the 3.24.4 default
   #   they crash ESLint (ERR_PACKAGE_PATH_NOT_EXPORTED ./v4) and block pre-commit.
   #   These are lint-only (not in the web bundle), so pin them to 3.25.x.
+  # - @eloqnt/sdk (intl:lint tooling, not bundled) requires zod 4 itself, and
+  #   its AI SDK dependencies take zod from it, so keep the version upstream uses.
   'zod': '3.24.4'
   'eslint-plugin-react-hooks>zod': '3.25.76'
   'zod-validation-error>zod': '3.25.76'
+  '@eloqnt/sdk>zod': '4.6.5'
   # Eurosky fork: OAuth client stack pins (migrated from package.json "resolutions")
   '@atproto/jwk': '0.6.0'
   '@atproto/jwk-jose': '0.1.11'
