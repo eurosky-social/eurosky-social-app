@@ -3,4 +3,4 @@
  * screen shows `FALLBACK_STARTER_PACKS` instead.
  */
 export const OSO_STARTER_PACKS_ACTOR: string | undefined =
-  process.env.EXPO_PUBLIC_OSO_STARTER_PACKS_ACTOR || undefined
+  'did:plc:4ow6dgwhodbnfgek3d6pyova'
