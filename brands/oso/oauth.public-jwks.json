@@ -2,6 +2,15 @@
   "keys": [
     {
       "kty": "EC",
+      "x": "qzXa5UyyLshUds__WGxE92zOMhDaH__qcYKDQChxQrw",
+      "y": "Cp8mDeazREw3b5kcw7uwFEY5IG0vQvPz0jnmYL787QQ",
+      "crv": "P-256",
+      "kid": "795fafbc-bf61-4a22-b382-e92bee866d9a",
+      "alg": "ES256",
+      "use": "sig"
+    },
+    {
+      "kty": "EC",
       "x": "35OrCIPJ4lNlkZHMCsy7sDvDzHhdNz_3ltJPoS9nIac",
       "y": "GhjQDrWkrXIbhyui2tKG-9l11QJhMDZeSfQPgQh-WlY",
       "crv": "P-256",
