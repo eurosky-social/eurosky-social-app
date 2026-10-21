@@ -8,6 +8,7 @@
  */
 import {type SessionApiContext} from '#/state/session/types'
 import {
+  consumePendingHandleStepUpOrder,
   getWebOAuthClient,
   OAUTH_HANDLE_STEPUP_STATE,
   OAUTH_SIGNUP_STATE,
@@ -86,7 +87,17 @@ export async function tryFinishWebOAuthSignIn(
       // The redirect lands at the site root; rewrite the path before the
       // navigator reads it so web linking resolves to account settings, where
       // the reopen flag reopens the change-handle dialog.
-      window.history.replaceState(null, '', '/settings/account')
+      const pendingOrderUrl = consumePendingHandleStepUpOrder()
+      if (pendingOrderUrl) {
+        const returnUrl = new URL(pendingOrderUrl, window.location.origin)
+        window.history.replaceState(
+          null,
+          '',
+          `${returnUrl.pathname}${returnUrl.search}`,
+        )
+      } else {
+        window.history.replaceState(null, '', '/settings/account')
+      }
     } else {
       // Drop the callback params from the URL.
       window.history.replaceState(null, '', window.location.pathname)
