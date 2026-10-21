@@ -163,12 +163,35 @@ function Footer() {
         a.flex_1,
         t.atoms.border_contrast_medium,
       ]}>
-      <InlineLinkText label={_(msg`Terms of Service`)} to={BRAND.links.tos}>
-        <Trans>Terms of Service</Trans>
-      </InlineLinkText>
-      <InlineLinkText label={_(msg`Privacy Policy`)} to={BRAND.links.privacy}>
-        <Trans>Privacy Policy</Trans>
-      </InlineLinkText>
+      {IS_PARTNER_PREVIEW ? (
+        <>
+          <InlineLinkText label={_(msg`Privacy`)} to={BRAND.links.privacy}>
+            <Trans>Privacy</Trans>
+          </InlineLinkText>
+          <InlineLinkText label={_(msg`Terms`)} to={BRAND.links.tos}>
+            <Trans>Terms</Trans>
+          </InlineLinkText>
+          <InlineLinkText label={_(msg`Donate`)} to={BRAND.links.donate}>
+            <Trans>Donate</Trans>
+          </InlineLinkText>
+          <InlineLinkText
+            label={_(msg`Send feedback`)}
+            to={BRAND.links.feedback}>
+            <Trans>Feedback</Trans>
+          </InlineLinkText>
+        </>
+      ) : (
+        <>
+          <InlineLinkText label={_(msg`Terms of Service`)} to={BRAND.links.tos}>
+            <Trans>Terms of Service</Trans>
+          </InlineLinkText>
+          <InlineLinkText
+            label={_(msg`Privacy Policy`)}
+            to={BRAND.links.privacy}>
+            <Trans>Privacy Policy</Trans>
+          </InlineLinkText>
+        </>
+      )}
 
       <View style={a.flex_1} />
 

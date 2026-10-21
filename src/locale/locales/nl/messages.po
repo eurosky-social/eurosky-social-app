@@ -9654,7 +9654,7 @@ msgstr ""
 #: src/view/shell/desktop/RightNav.tsx:118
 #: src/view/shell/desktop/RightNav.tsx:119
 msgid "Privacy"
-msgstr ""
+msgstr "Privacy"
 
 #: src/screens/Settings/Settings.tsx:185
 #: src/screens/Settings/Settings.tsx:188
@@ -16094,3 +16094,9 @@ msgstr "Doe het veilig."
 #: src/screens/Onboarding/StepFinished/ValuePropositionPager.shared.tsx
 msgid "oso’s servers are located in Europe and comply with European law—not with external, opaque interests. Your data remains yours, and your privacy is protected."
 msgstr "oso's servers staan in Europa en voldoen aan Europese wetgeving, niet aan externe, ondoorzichtige belangen. Je data blijft van jou en je privacy wordt beschermd."
+
+#: src/view/shell/desktop/RightNav.tsx
+#: src/view/shell/Drawer.tsx
+#: src/view/com/auth/SplashScreen.web.tsx
+msgid "Donate"
+msgstr "Doneer"
