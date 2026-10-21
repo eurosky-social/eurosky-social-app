@@ -75,6 +75,24 @@ Check them with `PUBLIC_JWKS=brands/oso/oauth.public-jwks.json` and
 `ALLOWED_ORIGIN` above) or `node services/oauth/test-staging.mjs` (plus
 `PARENT_DOMAIN=oso.social`).
 
+### Signing key
+
+The private JWK lives only in the password manager and in the
+`OAUTH_PRIVATE_JWK` secret of both workers; Bunny secrets cannot be read back,
+so keep the password-manager copy. `scripts/gen-oauth-keypair.js` always writes
+Mu's `src/config/oauth.public-jwks.json`, so for Oso either restore that file
+afterwards or generate the pair separately.
+
+To rotate without breaking sign-in:
+
+1. Generate a pair with a new `kid`. Put the public half **first** in
+   `brands/oso/oauth.public-jwks.json` (the worker tests check `keys[0]`) and
+   keep the old public key after it.
+2. Deploy `oso` (and `oso-dev`), so the metadata advertises both keys.
+3. Set the new private JWK as `OAUTH_PRIVATE_JWK` on both workers.
+4. Once both workers sign with the new key, remove the old public key and
+   redeploy.
+
 ### Other hosts
 
 `OSO_HOST` (default `oso.social`) sets the hostname the bundle is built for:
