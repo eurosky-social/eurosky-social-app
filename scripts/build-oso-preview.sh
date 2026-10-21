@@ -78,6 +78,8 @@ fi
 # Bunny build performs its own install and writes web-build/ inside this tree.
 export ROBOTS_MODE=disallow-all
 bash scripts/bunny_build.sh
+# Static pages (FAQ, ...) as plain HTML next to the app, so they load without it.
+node scripts/build-oso-pages.mjs web-build
 # Expo emits Mu's native store identifiers in the web manifest even for a
 # web-only partner preview. Do not advertise the Mu apps as related to Oso.
 node <<'NODE'

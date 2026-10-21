@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>{{titleEn}} – oso</title>
+    <link rel="icon" href="/favicon.ico" />
+    <script>
+      /*
+       * Pick the language before the page paints: ?lang=, then the reader's
+       * earlier choice, then the browser's languages. English otherwise.
+       */
+      ;(function () {
+        var supported = ['en', 'nl']
+        var pick = new URLSearchParams(location.search).get('lang')
+        if (supported.indexOf(pick) === -1) {
+          try {
+            pick = localStorage.getItem('osoLang')
+          } catch (e) {}
+        }
+        if (supported.indexOf(pick) === -1) {
+          pick = 'en'
+          var langs = navigator.languages || [navigator.language || '']
+          for (var i = 0; i < langs.length; i++) {
+            var base = String(langs[i]).toLowerCase().split('-')[0]
+            if (supported.indexOf(base) !== -1) {
+              pick = base
+              break
+            }
+          }
+        }
+        document.documentElement.lang = pick
+        document.documentElement.setAttribute('data-lang', pick)
+      })()
+    </script>
+    <style>
+      {{css}}
+    </style>
+  </head>
+  <body>
+    <header class="bar">
+      <div class="bar-inner">
+        <a class="logo" href="https://oso.social" aria-label="oso.social">
+          {{logo}}
+        </a>
+        <div class="spacer"></div>
+        <label class="lang-picker">
+          <span class="visually-hidden" data-lang="en">Language</span>
+          <span class="visually-hidden" data-lang="nl">Taal</span>
+          <select id="lang-select">
+            <option value="en">English</option>
+            <option value="nl">Nederlands</option>
+          </select>
+        </label>
+      </div>
+    </header>
+
+    <main>
+      <article lang="en" data-lang="en">
+        <h1>{{titleEn}}</h1>
+        <nav class="toc" aria-label="Contents">{{tocEn}}</nav>
+        <hr />
+        {{bodyEn}}
+      </article>
+      <article lang="nl" data-lang="nl">
+        <h1>{{titleNl}}</h1>
+        <nav class="toc" aria-label="Inhoud">{{tocNl}}</nav>
+        <hr />
+        {{bodyNl}}
+      </article>
+    </main>
+
+    <script>
+      ;(function () {
+        var titles = {{titlesJson}}
+        var select = document.getElementById('lang-select')
+        function apply(lang) {
+          document.documentElement.lang = lang
+          document.documentElement.setAttribute('data-lang', lang)
+          document.title = titles[lang]
+          select.value = lang
+        }
+        apply(document.documentElement.getAttribute('data-lang') || 'en')
+        select.addEventListener('change', function () {
+          var lang = select.value
+          apply(lang)
+          try {
+            localStorage.setItem('osoLang', lang)
+          } catch (e) {}
+          var url = new URL(location.href)
+          url.searchParams.set('lang', lang)
+          url.hash = ''
+          history.replaceState(null, '', url)
+        })
+      })()
+    </script>
+  </body>
+</html>
