@@ -1,4 +1,7 @@
+import {useEffect} from 'react'
+
 import {useEuroskyOnboardingSuggestedStarterPacks} from '#/screens/Onboarding/euroskySuggestedStarterPacks'
+import {IS_PARTNER_PREVIEW} from '#/env'
 import {useOsoStarterPacks} from './useOsoStarterPacks'
 
 /**
@@ -15,8 +18,20 @@ export function useOsoOnboardingSuggestedStarterPacks(props: {
   overrideInterests?: string[]
 }) {
   const oso = useOsoStarterPacks()
+  /*
+   * Oso lists every pack, like the /starter-packs screen, and shows the step's
+   * error state rather than someone else's packs when they fail to load.
+   */
   const useFallback =
-    !oso.isLoading && (!!oso.error || oso.starterPacks.length === 0)
+    !IS_PARTNER_PREVIEW &&
+    !oso.isLoading &&
+    (!!oso.error || oso.starterPacks.length === 0)
+  const {hasNextPage, isFetchingNextPage, fetchNextPage, error} = oso
+  useEffect(() => {
+    if (IS_PARTNER_PREVIEW && hasNextPage && !isFetchingNextPage && !error) {
+      fetchNextPage()
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, error])
 
   const eurosky = useEuroskyOnboardingSuggestedStarterPacks({
     ...props,
@@ -34,7 +49,7 @@ export function useOsoOnboardingSuggestedStarterPacks(props: {
   return {
     data: oso.isLoading ? undefined : {starterPacks: oso.starterPacks},
     isLoading: oso.isLoading,
-    isError: false,
+    isError: IS_PARTNER_PREVIEW && !!oso.error,
     isRefetching: oso.isRefetching,
     refetch: () => void oso.refetch(),
   }

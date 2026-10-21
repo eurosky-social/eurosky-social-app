@@ -45,5 +45,8 @@
   },
   "decorations": {
     "enabled": false
+  },
+  "links": {
+    "feedback": "https://userinput.app/s/did:plc:crzflbsprcjobktyhtjdated/3myfscso2qe2w"
   }
 }

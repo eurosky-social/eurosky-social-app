@@ -5,6 +5,7 @@ import {useLingui} from '@lingui/react'
 
 import {atoms as a, useTheme} from '#/alf'
 import {Text} from '#/components/Typography'
+import {IS_PARTNER_PREVIEW} from '#/env'
 import {PROP_1, PROP_2, PROP_3} from './images'
 import {
   Dot,
@@ -25,38 +26,46 @@ export function ValuePropositionPager({
 
   return (
     <View>
+      {/* Oso shows these pages as text only. */}
+      {!IS_PARTNER_PREVIEW && (
+        <View
+          style={[
+            a.relative,
+            a.align_center,
+            a.justify_center,
+            a.pointer_events_none,
+          ]}>
+          <Image
+            source={image}
+            style={[a.w_full, {aspectRatio: 1}]}
+            alt={alt}
+            accessibilityIgnoresInvertColors={false} // I guess we do need it to blend into the background
+          />
+          {step === 1 && (
+            <Image
+              source={avatarUri}
+              style={[
+                a.z_10,
+                a.absolute,
+                a.rounded_full,
+                {
+                  width: `${(80 / 393) * 100}%`,
+                  height: `${(80 / 393) * 100}%`,
+                },
+              ]}
+              accessibilityIgnoresInvertColors
+              alt={_(msg`Your profile picture`)}
+            />
+          )}
+        </View>
+      )}
+
       <View
         style={[
-          a.relative,
+          IS_PARTNER_PREVIEW ? a.mt_5xl : a.mt_4xl,
+          a.gap_2xl,
           a.align_center,
-          a.justify_center,
-          a.pointer_events_none,
         ]}>
-        <Image
-          source={image}
-          style={[a.w_full, {aspectRatio: 1}]}
-          alt={alt}
-          accessibilityIgnoresInvertColors={false} // I guess we do need it to blend into the background
-        />
-        {step === 1 && (
-          <Image
-            source={avatarUri}
-            style={[
-              a.z_10,
-              a.absolute,
-              a.rounded_full,
-              {
-                width: `${(80 / 393) * 100}%`,
-                height: `${(80 / 393) * 100}%`,
-              },
-            ]}
-            accessibilityIgnoresInvertColors
-            alt={_(msg`Your profile picture`)}
-          />
-        )}
-      </View>
-
-      <View style={[a.mt_4xl, a.gap_2xl, a.align_center]}>
         <View style={[a.flex_row, a.gap_sm]}>
           <Dot active={step === 0} />
           <Dot active={step === 1} />

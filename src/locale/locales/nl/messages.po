@@ -7123,7 +7123,7 @@ msgstr "Laten we je wachtwoord opnieuw instellen!"
 
 #: src/screens/Onboarding/StepFinished/index.tsx:343
 msgid "Let's go!"
-msgstr "Laten we gaan!"
+msgstr "Laten we beginnen!"
 
 #: src/components/dialogs/Embed.tsx:160
 #: src/components/dialogs/Embed.tsx:162
@@ -16057,3 +16057,40 @@ msgstr "Naar de frontpage van {0}"
 #: src/features/osoSignupGate/index.tsx:29
 msgid "Please note: it isn’t possible to create an account yet. The testing phase starts on {date}, and from then on you can sign up on this website to take part."
 msgstr "Let op: het is op dit moment nog niet mogelijk een account aan te maken. Vanaf {date} start de testfase en kun je je via deze website registreren om mee te testen."
+
+#: src/screens/Onboarding/StepProfile/index.tsx
+msgid "Who are you?"
+msgstr "Wie ben jij?"
+
+#: src/screens/Onboarding/StepProfile/index.tsx
+msgid "Make oso personal (and a little bit more fun). Select your avatar."
+msgstr "Maak oso persoonlijk (en nét iets gezelliger). Kies jouw avatar."
+
+#. Oso onboarding: starter packs whose accounts can all be followed at once
+#: src/screens/Onboarding/StepSuggestedStarterpacks/index.tsx
+msgid "Follow all accounts you want to follow in one mouse click"
+msgstr "Volg in één klik de accounts die jij wilt volgen."
+
+#: src/screens/Onboarding/StepFinished/ValuePropositionPager.shared.tsx
+msgid "Follow your friends, acquaintances, and interests."
+msgstr "Volg je vrienden, bekenden en interesses."
+
+#: src/screens/Onboarding/StepFinished/ValuePropositionPager.shared.tsx
+msgid "On oso, you can find your best friends, casual acquaintances, your favorite news outlets, events you’d like to attend, and the communities you want to be a part of."
+msgstr "Op oso vind je beste vrienden, vage kennissen, je favoriete nieuwsmedia, events waar je naartoe wilt, de communities waar je bij wilt horen."
+
+#: src/screens/Onboarding/StepFinished/ValuePropositionPager.shared.tsx
+msgid "Take control of your feed."
+msgstr "Pak de controle over je feed."
+
+#: src/screens/Onboarding/StepFinished/ValuePropositionPager.shared.tsx
+msgid "On oso, you decide what your feed looks like, who you follow, and who sees what you share. There’s no paid content here hijacking your attention without your consent."
+msgstr "Op oso bepaal je zelf hoe je feed eruit ziet, wie je volgt, en wie ziet wat jij deelt. Hier geen betaalde content die zonder jouw toestemming je aandacht kaapt."
+
+#: src/screens/Onboarding/StepFinished/ValuePropositionPager.shared.tsx
+msgid "Play it safe."
+msgstr "Doe het veilig."
+
+#: src/screens/Onboarding/StepFinished/ValuePropositionPager.shared.tsx
+msgid "oso’s servers are located in Europe and comply with European law—not with external, opaque interests. Your data remains yours, and your privacy is protected."
+msgstr "oso's servers staan in Europa en voldoen aan Europese wetgeving, niet aan externe, ondoorzichtige belangen. Je data blijft van jou en je privacy wordt beschermd."

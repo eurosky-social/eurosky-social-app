@@ -5,6 +5,7 @@ import {
   type AvatarColor,
   type Emoji,
 } from '#/screens/Onboarding/StepProfile/types'
+import {IS_PARTNER_PREVIEW} from '#/env'
 
 type OnboardingScreen =
   | 'profile'
@@ -83,8 +84,9 @@ export function createInitialOnboardingState(
 ): OnboardingState {
   const screens: OnboardingState['screens'] = {
     profile: true,
-    interests: true,
-    'suggested-accounts': true,
+    // Oso's onboarding goes straight from the profile to the starter packs.
+    interests: !IS_PARTNER_PREVIEW,
+    'suggested-accounts': !IS_PARTNER_PREVIEW,
     'suggested-starterpacks': starterPacksStepEnabled,
     'find-contacts-intro': findContactsStepEnabled,
     'find-contacts': findContactsStepEnabled,
