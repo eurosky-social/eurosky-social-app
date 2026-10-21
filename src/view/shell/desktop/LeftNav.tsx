@@ -45,10 +45,6 @@ import {
   Bookmark as BookmarkIcon,
   BookmarkFilled as BookmarkFilledIcon,
 } from '#/components/icons/Bookmark'
-import {
-  BulletList_Filled_Corner0_Rounded as ListFilledIcon,
-  BulletList_Stroke2_Corner0_Rounded as ListIcon,
-} from '#/components/icons/BulletList'
 import {CalendarDays_Stroke2_Corner0_Rounded as CalendarIcon} from '#/components/icons/CalendarDays'
 import {type Props as SVGIconProps} from '#/components/icons/common'
 import {DotGrid3x1_Stroke2_Corner0_Rounded as EllipsisIcon} from '#/components/icons/DotGrid'
@@ -753,16 +749,6 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             icons={{
               inactive: MessageIcon,
               active: MessageFilledIcon,
-            }}
-          />
-          <NavItem
-            label={l`Lists`}
-            href="/lists"
-            navItem="lists"
-            minimal={leftNavMinimal}
-            icons={{
-              inactive: ListIcon,
-              active: ListFilledIcon,
             }}
           />
           <NavItem
