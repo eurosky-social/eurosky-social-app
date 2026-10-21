@@ -11631,7 +11631,7 @@ msgstr ""
 #: src/view/shell/NavSignupCard.tsx:58
 #: src/view/shell/NavSignupCard.tsx:63
 msgid "Sign in"
-msgstr "Aanmelden"
+msgstr "Inloggen"
 
 #. placeholder {0}: account.handle
 #: src/components/AccountList.tsx:135
