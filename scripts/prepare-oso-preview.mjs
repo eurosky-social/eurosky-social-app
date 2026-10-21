@@ -34,6 +34,7 @@ const merged = {
     },
     accents: override.colors.accents,
   },
+  links: {...base.links, ...override.links},
   oauth: {...base.oauth, ...override.oauth},
   decorations: {...base.decorations, ...override.decorations},
 }

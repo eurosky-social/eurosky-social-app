@@ -17,6 +17,7 @@ import {Admonition} from '#/components/Admonition'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {ArrowRotateCounterClockwise_Stroke2_Corner0_Rounded as ArrowRotateCounterClockwiseIcon} from '#/components/icons/ArrowRotate'
 import {Loader} from '#/components/Loader'
+import {IS_PARTNER_PREVIEW} from '#/env'
 import {StarterPackCard} from './StarterPackCard'
 
 export function StepSuggestedStarterpacks() {
@@ -41,9 +42,15 @@ export function StepSuggestedStarterpacks() {
     <View style={[a.align_start, a.gap_sm]} testID="onboardingInterests">
       <OnboardingPosition />
       <OnboardingTitleText>
-        <Trans comment="Starter Packs suggested to the user for them to follow">
-          Find people to follow
-        </Trans>
+        {IS_PARTNER_PREVIEW ? (
+          <Trans comment="Oso onboarding: starter packs whose accounts can all be followed at once">
+            Follow all accounts you want to follow in one mouse click
+          </Trans>
+        ) : (
+          <Trans comment="Starter Packs suggested to the user for them to follow">
+            Find people to follow
+          </Trans>
+        )}
       </OnboardingTitleText>
 
       <View

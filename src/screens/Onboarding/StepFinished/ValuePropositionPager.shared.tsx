@@ -3,6 +3,7 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 
 import {atoms as a, useTheme} from '#/alf'
+import {IS_PARTNER_PREVIEW} from '#/env'
 
 export type ValuePropositionPagerProps = {
   step: 0 | 1 | 2
@@ -16,6 +17,33 @@ export type ValuePropositionPagerProps = {
 
 export function useValuePropText(step: 0 | 1 | 2) {
   const {_} = useLingui()
+
+  if (IS_PARTNER_PREVIEW) {
+    // Oso shows these pages as text only, so the alt texts are unused.
+    return [
+      {
+        title: _(msg`Follow your friends, acquaintances, and interests.`),
+        description: _(
+          msg`On oso, you can find your best friends, casual acquaintances, your favorite news outlets, events you’d like to attend, and the communities you want to be a part of.`,
+        ),
+        alt: '',
+      },
+      {
+        title: _(msg`Take control of your feed.`),
+        description: _(
+          msg`On oso, you decide what your feed looks like, who you follow, and who sees what you share. There’s no paid content here hijacking your attention without your consent.`,
+        ),
+        alt: '',
+      },
+      {
+        title: _(msg`Play it safe.`),
+        description: _(
+          msg`oso’s servers are located in Europe and comply with European law—not with external, opaque interests. Your data remains yours, and your privacy is protected.`,
+        ),
+        alt: '',
+      },
+    ][step]
+  }
 
   return [
     {

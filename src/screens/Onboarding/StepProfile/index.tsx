@@ -46,7 +46,7 @@ import {useSheetWrapper} from '#/components/Dialog/sheet-wrapper'
 import {CircleInfo_Stroke2_Corner0_Rounded} from '#/components/icons/CircleInfo'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
-import {IS_ANDROID, IS_NATIVE, IS_WEB} from '#/env'
+import {IS_ANDROID, IS_NATIVE, IS_PARTNER_PREVIEW, IS_WEB} from '#/env'
 import {type AvatarColor, avatarColors, type Emoji, emojiItems} from './types'
 
 export interface Avatar {
@@ -253,13 +253,24 @@ export function StepProfile() {
         <View style={[a.gap_sm]}>
           <OnboardingPosition />
           <OnboardingTitleText>
-            <Trans>Give your profile a face</Trans>
+            {IS_PARTNER_PREVIEW ? (
+              <Trans>Who are you?</Trans>
+            ) : (
+              <Trans>Give your profile a face</Trans>
+            )}
           </OnboardingTitleText>
           <OnboardingDescriptionText>
-            <Trans>
-              Help people know you're not a bot by uploading a picture or
-              creating an avatar.
-            </Trans>
+            {IS_PARTNER_PREVIEW ? (
+              <Trans>
+                Make oso personal (and a little bit more fun). Select your
+                avatar.
+              </Trans>
+            ) : (
+              <Trans>
+                Help people know you're not a bot by uploading a picture or
+                creating an avatar.
+              </Trans>
+            )}
           </OnboardingDescriptionText>
         </View>
         <View
