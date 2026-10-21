@@ -91,6 +91,9 @@ jobs:
         run: bash ./scripts/bunny_upload.sh "$BUILD_DIR"
         env:
           BUILD_DIR: ${{ steps.build.outputs.dir }}
+          # Purge until the site serves this build: replicated storage can
+          # lag the upload, and an early purge re-caches the old files.
+          BUNNY_PUBLIC_URL: ${{ steps.build.outputs.url }}
           BUNNY_STORAGE_ZONE: ${{ secrets.BUNNY_STORAGE_ZONE }}
           BUNNY_STORAGE_PASSWORD: ${{ secrets.BUNNY_STORAGE_PASSWORD }}
           BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
