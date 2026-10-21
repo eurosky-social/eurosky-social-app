@@ -16053,3 +16053,7 @@ msgstr "{unnamed, plural, one {{first}, {second} en nog # brachten dit} other {{
 #: src/screens/Profile/Header/ProfileHeaderStandard.tsx:383
 msgid "Visit the {0} frontpage"
 msgstr "Naar de frontpage van {0}"
+
+#: src/features/osoSignupGate/index.tsx:29
+msgid "Please note: it isn’t possible to create an account yet. The testing phase starts on {date}, and from then on you can sign up on this website to take part."
+msgstr "Let op: het is op dit moment nog niet mogelijk een account aan te maken. Vanaf {date} start de testfase en kun je je via deze website registreren om mee te testen."
