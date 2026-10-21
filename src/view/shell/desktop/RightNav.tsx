@@ -21,6 +21,7 @@ import {CENTER_COLUMN_OFFSET} from '#/components/Layout'
 import {InlineLinkText, Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
+import {IS_PARTNER_PREVIEW} from '#/env'
 import {EventsRightRail} from '#/features/events/components/EventsRightRail'
 import {FrontpageRightRail} from '#/features/frontpages/components/FrontpageRightRail'
 import {NewsroomRightRail as LegacyFrontpageRightRail} from '#/features/frontpages/legacy/NewsroomRightRail'
@@ -141,33 +142,36 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
         </>
       )}
 
-      <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
-        <Link
-          to={BRAND.links.donate}
-          label={_(msg`Donate`)}
-          color="secondary"
-          size="small"
-          variant="outline"
-          style={{backgroundColor: 'transparent'}}>
-          <ButtonText>
-            <Trans>Donate</Trans>
-          </ButtonText>
-        </Link>
-        {hasSession && (
+      {/* Oso shows donate and feedback as text links with the others. */}
+      {!IS_PARTNER_PREVIEW && (
+        <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
           <Link
-            to={BRAND.links.feedback}
-            label={_(msg`Send feedback`)}
+            to={BRAND.links.donate}
+            label={_(msg`Donate`)}
             color="secondary"
             size="small"
             variant="outline"
             style={{backgroundColor: 'transparent'}}>
-            <ButtonIcon icon={Message} position="left" />
             <ButtonText>
-              <Trans>Feedback</Trans>
+              <Trans>Donate</Trans>
             </ButtonText>
           </Link>
-        )}
-      </View>
+          {hasSession && (
+            <Link
+              to={BRAND.links.feedback}
+              label={_(msg`Send feedback`)}
+              color="secondary"
+              size="small"
+              variant="outline"
+              style={{backgroundColor: 'transparent'}}>
+              <ButtonIcon icon={Message} position="left" />
+              <ButtonText>
+                <Trans>Feedback</Trans>
+              </ButtonText>
+            </Link>
+          )}
+        </View>
+      )}
 
       <Text style={[a.leading_snug, t.atoms.text_contrast_low]}>
         <InlineLinkText
@@ -183,6 +187,28 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
           label={_(msg`Terms`)}>
           {_(msg`Terms`)}
         </InlineLinkText>
+        {IS_PARTNER_PREVIEW && (
+          <>
+            <Text style={[t.atoms.text_contrast_low]}>{' ∙ '}</Text>
+            <InlineLinkText
+              to={BRAND.links.donate}
+              style={[t.atoms.text_contrast_medium]}
+              label={_(msg`Donate`)}>
+              {_(msg`Donate`)}
+            </InlineLinkText>
+            {hasSession && (
+              <>
+                <Text style={[t.atoms.text_contrast_low]}>{' ∙ '}</Text>
+                <InlineLinkText
+                  to={BRAND.links.feedback}
+                  style={[t.atoms.text_contrast_medium]}
+                  label={_(msg`Send feedback`)}>
+                  {_(msg`Feedback`)}
+                </InlineLinkText>
+              </>
+            )}
+          </>
+        )}
       </Text>
 
       {!hasSession && leftNavMinimal && (

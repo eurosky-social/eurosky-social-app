@@ -47,6 +47,9 @@
     "enabled": false
   },
   "links": {
+    "privacy": "https://oso.social/privacy",
+    "tos": "https://oso.social/terms",
+    "donate": "https://doneer.waag.org/oso",
     "feedback": "https://userinput.app/s/did:plc:crzflbsprcjobktyhtjdated/3myfscso2qe2w"
   }
 }

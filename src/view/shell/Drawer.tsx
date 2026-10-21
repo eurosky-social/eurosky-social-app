@@ -68,7 +68,7 @@ import {ProfileBadges} from '#/components/ProfileBadges'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {BRAND} from '#/config/brand'
-import {IS_NATIVE, IS_WEB} from '#/env'
+import {IS_NATIVE, IS_PARTNER_PREVIEW, IS_WEB} from '#/env'
 import {InviteFriendsDialog} from '#/features/inviteFriends'
 import {useActorStatus} from '#/features/liveNow'
 import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
@@ -399,15 +399,18 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
 
         <View style={[a.px_xl]}>
           <Divider style={[a.mb_xl, a.mt_sm]} />
-          <ExtraLinks />
+          <ExtraLinks hasSession={hasSession} />
         </View>
       </ScrollView>
 
-      <DrawerFooter
-        onPressFeedback={onPressFeedback}
-        onPressDonate={onPressDonate}
-        hasSession={hasSession}
-      />
+      {/* Oso lists donate and feedback with the other links instead. */}
+      {!IS_PARTNER_PREVIEW && (
+        <DrawerFooter
+          onPressFeedback={onPressFeedback}
+          onPressDonate={onPressDonate}
+          hasSession={hasSession}
+        />
+      )}
       <InviteFriendsDialog control={inviteFriendsControl} />
     </View>
   )
@@ -820,8 +823,41 @@ function MenuItem({icon, label, count, bold, onPress}: MenuItemProps) {
   )
 }
 
-function ExtraLinks() {
+function ExtraLinks({hasSession}: {hasSession: boolean}) {
   const {_} = useLingui()
+
+  if (IS_PARTNER_PREVIEW) {
+    return (
+      <View style={[a.flex_col, a.gap_md, a.flex_wrap]}>
+        <InlineLinkText
+          style={[a.text_md]}
+          to={BRAND.links.privacy}
+          label={_(msg`Privacy`)}>
+          <Trans>Privacy</Trans>
+        </InlineLinkText>
+        <InlineLinkText
+          style={[a.text_md]}
+          to={BRAND.links.tos}
+          label={_(msg`Terms`)}>
+          <Trans>Terms</Trans>
+        </InlineLinkText>
+        <InlineLinkText
+          style={[a.text_md]}
+          to={BRAND.links.donate}
+          label={_(msg`Donate`)}>
+          <Trans>Donate</Trans>
+        </InlineLinkText>
+        {hasSession && (
+          <InlineLinkText
+            style={[a.text_md]}
+            to={BRAND.links.feedback}
+            label={_(msg`Send feedback`)}>
+            <Trans>Feedback</Trans>
+          </InlineLinkText>
+        )}
+      </View>
+    )
+  }
 
   return (
     <View style={[a.flex_col, a.gap_md, a.flex_wrap]}>
