@@ -58,10 +58,6 @@ import {
   Hashtag_Stroke2_Corner0_Rounded as HashtagIcon,
 } from '#/components/icons/Hashtag'
 import {
-  HomeOpen_Filled_Corner0_Rounded as HomeFilledIcon,
-  HomeOpen_Stoke2_Corner0_Rounded as HomeIcon,
-} from '#/components/icons/HomeOpen'
-import {
   MagnifyingGlass_Filled_Stroke2_Corner0_Rounded as MagnifyingGlassFilledIcon,
   MagnifyingGlass_Stroke2_Corner0_Rounded as MagnifyingGlassIcon,
 } from '#/components/icons/MagnifyingGlass'
@@ -684,13 +680,13 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
       {hasSession && (
         <>
           <NavItem
-            label={l`Home`}
+            label={l`Feeds`}
             href="/"
             navItem="home"
             minimal={leftNavMinimal}
             icons={{
-              inactive: HomeIcon,
-              active: HomeFilledIcon,
+              inactive: HashtagIcon,
+              active: HashtagFilledIcon,
             }}
           />
           <NavItem
@@ -757,16 +753,6 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             icons={{
               inactive: MessageIcon,
               active: MessageFilledIcon,
-            }}
-          />
-          <NavItem
-            label={l`Feeds`}
-            href="/feeds"
-            navItem="feeds"
-            minimal={leftNavMinimal}
-            icons={{
-              inactive: HashtagIcon,
-              active: HashtagFilledIcon,
             }}
           />
           <NavItem
