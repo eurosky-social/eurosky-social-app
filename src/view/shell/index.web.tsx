@@ -31,9 +31,9 @@ import {Outlet as PortalOutlet} from '#/components/Portal'
 import {WelcomeModal} from '#/components/WelcomeModal'
 import {useAgeAssurance} from '#/ageAssurance'
 import {DataUnavailableScreen} from '#/ageAssurance/components/DataUnavailableScreen'
-import {NoAccessScreen} from '#/ageAssurance/components/NoAccessScreen'
 import {RedirectOverlay} from '#/ageAssurance/components/RedirectOverlay'
 import {PassiveAnalytics} from '#/analytics/PassiveAnalytics'
+import {OsoNoAccessScreen, useOsoAgeGate} from '#/features/osoAgeGate'
 import {PetCompanion} from '#/features/petCompanion'
 import {FlatNavigator, RoutesContainer} from '#/Navigation'
 import {Composer} from './Composer'
@@ -161,6 +161,7 @@ function DrawerLayout({children}: {children: React.ReactNode}) {
 export function Shell() {
   const t = useTheme()
   const aa = useAgeAssurance()
+  const showOsoAgeGate = useOsoAgeGate()
   const {currentAccount} = useSession()
   return (
     <View style={[a.util_screen_outer, t.atoms.bg]}>
@@ -172,8 +173,8 @@ export function Shell() {
         <>
           {aa.state.error === 'account-data' ? (
             <DataUnavailableScreen />
-          ) : aa.state.access === aa.Access.None ? (
-            <NoAccessScreen />
+          ) : showOsoAgeGate ? (
+            <OsoNoAccessScreen />
           ) : (
             <RoutesContainer>
               <ShellInner />
