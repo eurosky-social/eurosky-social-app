@@ -65,6 +65,24 @@ The worker's `CLIENT_ID` / `ALLOWED_ORIGIN` must match `OSO_HOST`. Check it
 with `PUBLIC_JWKS=brands/oso/oauth.public-jwks.json` plus those values and
 `WORKER_URL` passed to `node services/oauth/test.mjs`.
 
+### Signing key
+
+The private JWK lives only in the password manager and in the
+`OAUTH_PRIVATE_JWK` secret of Oso's assertion workers; Bunny secrets cannot be
+read back, so keep the password-manager copy. `scripts/gen-oauth-keypair.js`
+always writes Mu's `src/config/oauth.public-jwks.json`, so for Oso either
+restore that file afterwards or generate the pair separately.
+
+To rotate without breaking sign-in:
+
+1. Generate a pair with a new `kid`. Put the public half **first** in
+   `brands/oso/oauth.public-jwks.json` (the worker tests check `keys[0]`) and
+   keep the old public key after it.
+2. Deploy the Oso builds, so their metadata advertises both keys.
+3. Set the new private JWK as `OAUTH_PRIVATE_JWK` on every Oso worker.
+4. Once they all sign with the new key, remove the old public key and
+   redeploy.
+
 Noindex is **not** access control: until an access gate is configured, anyone
 with the URL can see the preview. An access gate must exempt OAuth metadata and
 allow OAuth redirects/callbacks. Do not use the wildcard worker or the inherited
