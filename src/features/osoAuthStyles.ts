@@ -9,12 +9,15 @@ const OSO_GREEN_HOVER = '#3DF06C'
 /** Border of a focused field, darker so focus reads against the green. */
 const OSO_GREEN_FOCUS = '#1FCF58'
 const OSO_BLACK = '#000000'
+/** The purple of the logo's lettering. */
+const OSO_PURPLE = '#563FFF'
 
 export const osoColors = {
   green: OSO_GREEN,
   greenHover: OSO_GREEN_HOVER,
   greenFocus: OSO_GREEN_FOCUS,
   black: OSO_BLACK,
+  purple: OSO_PURPLE,
 }
 
 /**
