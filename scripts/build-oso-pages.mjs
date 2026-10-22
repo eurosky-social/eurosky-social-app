@@ -23,6 +23,8 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const PAGES_DIR = path.join(ROOT, 'brands/oso/pages')
 const CONTENT_DIR = path.join(PAGES_DIR, 'content')
 const LANGS = ['en', 'nl']
+/** Accessible name of each language's index. */
+const TOC_LABELS = {en: 'Contents', nl: 'Inhoud'}
 
 const outDir = process.argv[2]
 if (!outDir) {
@@ -157,8 +159,11 @@ function render(body, lang) {
     }
   }
 
+  // A page without sections (a placeholder, say) gets no index.
+  if (toc.length === 0) return {html: html.join('\n'), toc: ''}
+
   const tocHtml =
-    '<ol>' +
+    `<nav class="toc" aria-label="${TOC_LABELS[lang]}"><ol>` +
     toc
       .map(
         section =>
@@ -173,7 +178,7 @@ function render(body, lang) {
           '</li>',
       )
       .join('') +
-    '</ol>'
+    '</ol></nav>\n<hr />'
 
   return {html: html.join('\n'), toc: tocHtml}
 }
