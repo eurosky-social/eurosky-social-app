@@ -1,5 +1,4 @@
 import {memo, useCallback} from 'react'
-import {Platform} from 'react-native'
 import {type GestureType} from 'react-native-gesture-handler'
 import * as Clipboard from 'expo-clipboard'
 import {type ModerationOpts} from '@bsky/sdk/moderation'
@@ -8,12 +7,10 @@ import {plural} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react/macro'
 
 import {EMOJI_REACTION_LIMIT} from '#/lib/constants'
-import {useGoogleTranslate} from '#/lib/hooks/useGoogleTranslate'
 import {richTextToString} from '#/lib/strings/rich-text-helpers'
 import {formatDateTime} from '#/lib/strings/time'
 import {useMaybeProfileShadow} from '#/state/cache/profile-shadow'
 import {useConvoActive} from '#/state/messages/convo'
-import {useLanguagePrefs} from '#/state/preferences'
 import {useSession} from '#/state/session'
 import {atoms as a} from '#/alf'
 import * as ContextMenu from '#/components/ContextMenu'
@@ -23,7 +20,6 @@ import {useMessageReplies} from '#/components/dms/MessageReplies'
 import {ArrowCornerDownRight_Stroke2_Corner2_Rounded as ReplyIcon} from '#/components/icons/ArrowCornerDownRight'
 import {Clipboard_Stroke2_Corner2_Rounded as ClipboardIcon} from '#/components/icons/Clipboard'
 import {Flag_Stroke2_Corner0_Rounded as FlagIcon} from '#/components/icons/Flag'
-import {Language_Stroke2_Corner2_Rounded as LanguageIcon} from '#/components/icons/Language'
 import {Trash_Stroke2_Corner0_Rounded as TrashIcon} from '#/components/icons/Trash'
 import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
@@ -56,8 +52,6 @@ export let MessageContextMenu = ({
   const convo = useConvoActive()
   const {openDeleteMessage, openReportMessage} = useMessageDialogs()
   const {setReply} = useMessageReplies()
-  const langPrefs = useLanguagePrefs()
-  const translate = useGoogleTranslate()
 
   const onReply = useCallback(() => {
     setReply(message)
@@ -97,18 +91,6 @@ export let MessageContextMenu = ({
       type: 'success',
     })
   }, [l, message.text, message.facets])
-
-  const onPressTranslateMessage = useCallback(() => {
-    void translate(message.text, langPrefs.primaryLanguage)
-
-    ax.metric('translate', {
-      os: Platform.OS,
-      possibleSourceLanguages: [], // N/A for chats
-      expectedTargetLanguage: langPrefs.primaryLanguage,
-      textLength: message.text.length,
-      googleTranslate: true,
-    })
-  }, [ax, langPrefs.primaryLanguage, message.text, translate])
 
   const onEmojiSelect = useCallback(
     (emoji: string) => {
@@ -184,24 +166,13 @@ export let MessageContextMenu = ({
           <ContextMenu.ItemText>{l`Reply`}</ContextMenu.ItemText>
         </ContextMenu.Item>
         {message.text.length > 0 && (
-          <>
-            <ContextMenu.Item
-              testID="messageDropdownTranslateBtn"
-              label={l`Translate`}
-              onPress={onPressTranslateMessage}>
-              <ContextMenu.ItemIcon icon={LanguageIcon} position="left" />
-              <ContextMenu.ItemText>{l`Translate`}</ContextMenu.ItemText>
-            </ContextMenu.Item>
-            <ContextMenu.Item
-              testID="messageDropdownCopyBtn"
-              label={l`Copy message text`}
-              onPress={onCopyMessage}>
-              <ContextMenu.ItemIcon icon={ClipboardIcon} position="left" />
-              <ContextMenu.ItemText>
-                {l`Copy message text`}
-              </ContextMenu.ItemText>
-            </ContextMenu.Item>
-          </>
+          <ContextMenu.Item
+            testID="messageDropdownCopyBtn"
+            label={l`Copy message text`}
+            onPress={onCopyMessage}>
+            <ContextMenu.ItemIcon icon={ClipboardIcon} position="left" />
+            <ContextMenu.ItemText>{l`Copy message text`}</ContextMenu.ItemText>
+          </ContextMenu.Item>
         )}
         <ContextMenu.Item
           testID="messageDropdownDeleteBtn"
