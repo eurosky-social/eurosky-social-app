@@ -10,7 +10,10 @@ import {Circle, Path, Svg as SvgRoot} from 'react-native-svg'
 
 import {useTheme} from '#/alf'
 import {type Props, useCommonSVGProps} from '#/components/icons/common'
-import {createSinglePathSVG} from '#/components/icons/TEMPLATE'
+import {
+  createSinglePathSVG,
+  type IconWithSvgMeta,
+} from '#/components/icons/TEMPLATE'
 
 function createOsoNavIcon({
   path,
@@ -127,3 +130,58 @@ export const OsoPlusIcon = createSinglePathSVG({
   path: 'M22.3125 457.687H17.0416V456.312H22.3125V451.041H23.6875V456.312H28.9583V457.687H23.6875V462.958H22.3125V457.687Z',
   viewBox: '17.0416 451.041 11.9167 11.917',
 })
+
+/**
+ * Inactive and active ("negative") nav icons from an existing app icon, for
+ * items the design has no icon for. The glyph is drawn 11/16 of the box so a
+ * square glyph's corners stay inside the active circle and it matches the
+ * size of the design's icons.
+ */
+export function createOsoNavIconsFrom(Icon: IconWithSvgMeta) {
+  const [minX, minY, width, height] = Icon.svgViewBox.split(' ').map(Number)
+  const box = (Math.max(width, height) * 16) / 11
+  const viewBox = [
+    minX - (box - width) / 2,
+    minY - (box - height) / 2,
+    box,
+    box,
+  ].join(' ')
+
+  function create(active: boolean) {
+    return forwardRef<Svg, Props>(function OsoNavIconFrom(props, ref) {
+      const t = useTheme()
+      const {fill, size, style, gradient, ...rest} = useCommonSVGProps(props)
+      return (
+        <SvgRoot
+          fill="none"
+          {...rest}
+          ref={ref}
+          viewBox={viewBox}
+          width={size}
+          height={size}
+          style={[style]}>
+          {gradient}
+          {active && (
+            <Circle
+              cx={minX + width / 2}
+              cy={minY + height / 2}
+              r={box / 2}
+              fill={fill}
+            />
+          )}
+          {Icon.svgPaths.map(d => (
+            <Path
+              key={d}
+              fill={active ? t.atoms.bg.backgroundColor : fill}
+              fillRule="evenodd"
+              clipRule="evenodd"
+              d={d}
+            />
+          ))}
+        </SvgRoot>
+      )
+    })
+  }
+
+  return {inactive: create(false), active: create(true)}
+}
