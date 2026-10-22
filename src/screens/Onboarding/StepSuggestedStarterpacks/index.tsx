@@ -25,7 +25,7 @@ export function StepSuggestedStarterpacks() {
   const {gtMobile} = useBreakpoints()
   const moderationOpts = useModerationOpts()
 
-  const {state, dispatch} = useOnboardingInternalState()
+  const {dispatch} = useOnboardingInternalState()
 
   const {
     data: suggestedStarterPacks,
@@ -35,7 +35,6 @@ export function StepSuggestedStarterpacks() {
     refetch,
   } = useOnboardingSuggestedStarterPacksQuery({
     enabled: true,
-    overrideInterests: state.interestsStepResults.selectedInterests,
   })
 
   return (

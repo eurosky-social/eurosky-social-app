@@ -9,7 +9,6 @@ import {IS_PARTNER_PREVIEW} from '#/env'
 
 type OnboardingScreen =
   | 'profile'
-  | 'interests'
   | 'suggested-accounts'
   | 'suggested-starterpacks'
   | 'find-contacts-intro'
@@ -21,9 +20,6 @@ export type OnboardingState = {
   activeStep: OnboardingScreen
   stepTransitionDirection: 'Forward' | 'Backward'
 
-  interestsStepResults: {
-    selectedInterests: string[]
-  }
   profileStepResults: {
     isCreatedAvatar: boolean
     image?: {
@@ -56,10 +52,6 @@ export type OnboardingAction =
       type: 'finish'
     }
   | {
-      type: 'setInterestsStepResults'
-      selectedInterests: string[]
-    }
-  | {
       type: 'setProfileStepResults'
       isCreatedAvatar: boolean
       image: OnboardingState['profileStepResults']['image'] | undefined
@@ -85,7 +77,6 @@ export function createInitialOnboardingState(
   const screens: OnboardingState['screens'] = {
     profile: true,
     // Oso's onboarding goes straight from the profile to the starter packs.
-    interests: !IS_PARTNER_PREVIEW,
     'suggested-accounts': !IS_PARTNER_PREVIEW,
     'suggested-starterpacks': starterPacksStepEnabled,
     'find-contacts-intro': findContactsStepEnabled,
@@ -97,9 +88,6 @@ export function createInitialOnboardingState(
     screens,
     activeStep: 'profile',
     stepTransitionDirection: 'Forward',
-    interestsStepResults: {
-      selectedInterests: [],
-    },
     profileStepResults: {
       isCreatedAvatar: false,
       image: undefined,
@@ -156,12 +144,6 @@ export function reducer(
       })
       break
     }
-    case 'setInterestsStepResults': {
-      next.interestsStepResults = {
-        selectedInterests: a.selectedInterests,
-      }
-      break
-    }
     case 'setProfileStepResults': {
       next.profileStepResults = {
         isCreatedAvatar: a.isCreatedAvatar,
@@ -182,9 +164,6 @@ export function reducer(
   logger.debug(`onboarding`, {
     hasPrev: state.hasPrev,
     activeStep: state.activeStep,
-    interestsStepResults: {
-      selectedInterests: state.interestsStepResults.selectedInterests,
-    },
     profileStepResults: state.profileStepResults,
   })
 
@@ -198,7 +177,6 @@ export function reducer(
 function getStepOrder(s: OnboardingState): OnboardingScreen[] {
   return [
     s.screens.profile && ('profile' as const),
-    s.screens.interests && ('interests' as const),
     s.screens['suggested-accounts'] && ('suggested-accounts' as const),
     s.screens['suggested-starterpacks'] && ('suggested-starterpacks' as const),
     s.screens['find-contacts-intro'] && ('find-contacts-intro' as const),
