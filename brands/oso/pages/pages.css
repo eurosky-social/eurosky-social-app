@@ -1,0 +1,223 @@
+:root {
+  --green: #55ff80;
+  --purple: #563fff;
+  --text: #161924;
+  --muted: #5b5e6b;
+  --bg: #f1f1ef;
+  --line: #e3e3de;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-padding-top: 96px;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Without the language script, show English only. */
+html:not([data-lang='nl']) [data-lang='nl'],
+html[data-lang='nl'] [data-lang='en'] {
+  display: none !important;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Top bar */
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.bar-inner {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 14px 24px;
+}
+
+.logo {
+  display: block;
+  line-height: 0;
+}
+
+.logo svg {
+  height: 40px;
+  width: auto;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.lang-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  color: var(--text);
+}
+
+.lang-picker select {
+  appearance: none;
+  border: 0;
+  background: transparent
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23161924' fill='none' stroke-width='1.5'/%3E%3C/svg%3E")
+    no-repeat right center;
+  padding: 4px 18px 4px 0;
+  font: inherit;
+  font-size: 16px;
+  color: inherit;
+  cursor: pointer;
+}
+
+.lang-picker select:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
+
+/* Content column */
+main {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 72px 24px 120px;
+}
+
+h1 {
+  margin: 0 0 32px;
+  color: var(--text);
+  font-size: clamp(36px, 6vw, 52px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  margin: 56px 0 8px;
+  color: var(--purple);
+  font-size: 28px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  margin: 32px 0 6px;
+  font-size: 20px;
+  line-height: 1.35;
+}
+
+p,
+ul {
+  margin: 0 0 14px;
+}
+
+ul {
+  padding-left: 22px;
+}
+
+li {
+  margin-bottom: 4px;
+}
+
+a {
+  color: var(--purple);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Separates the index from the answers, with about two lines of space. */
+hr {
+  height: 3px;
+  margin: 64px 0 0;
+  border: 0;
+  background: var(--purple);
+}
+
+/* Contents */
+.toc ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.toc a {
+  color: var(--text);
+}
+
+.toc > ol > li {
+  margin-bottom: 16px;
+}
+
+.toc > ol > li > span {
+  font-weight: 700;
+}
+
+.toc ol ol {
+  margin-top: 4px;
+  padding-left: 16px;
+  font-size: 15px;
+}
+
+.toc ol ol li {
+  margin-bottom: 2px;
+}
+
+@media (max-width: 600px) {
+  body {
+    font-size: 16px;
+  }
+
+  .bar-inner {
+    gap: 12px;
+    padding: 10px 16px;
+  }
+
+  .logo svg {
+    height: 32px;
+  }
+
+  main {
+    padding: 40px 16px 80px;
+  }
+
+  h2 {
+    margin-top: 44px;
+    font-size: 24px;
+  }
+
+  h3 {
+    font-size: 18px;
+  }
+}

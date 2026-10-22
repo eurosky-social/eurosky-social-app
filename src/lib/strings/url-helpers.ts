@@ -7,6 +7,7 @@ import {isInvalidHandle} from '#/lib/strings/handles'
 import {startUriToStarterPackUri} from '#/lib/strings/starter-pack'
 import {logger} from '#/logger'
 import {BRAND} from '#/config/brand'
+import {IS_PARTNER_PREVIEW} from '#/env'
 
 export const BSKY_APP_HOST = 'https://bsky.app'
 export const BSKY_HOSTING_ENDSWITH = '.host.bsky.network'
@@ -19,6 +20,13 @@ export const BSKY_HOSTING_ENDSWITH = '.host.bsky.network'
  * BRAND.web.hosts. See isBskyAppUrl().
  */
 const APP_URL_HOSTS = ['bsky.app', ...BRAND.web.hosts]
+
+/**
+ * Oso's static pages (FAQ, terms, ...) live under this path on the app's own
+ * host but are plain files on the CDN, not app routes. See
+ * scripts/build-oso-pages.mjs.
+ */
+const OSO_STATIC_PAGES_PATH = '/about/'
 
 const BSKY_TRUSTED_HOSTS = [
   'bsky\\.app',
@@ -180,6 +188,10 @@ export function isBskyAppUrl(url: string): boolean {
   // supported and look-alike hosts (e.g. https://bsky.app.evil.com/) are not.
   try {
     const urlp = new URL(url)
+    if (IS_PARTNER_PREVIEW && urlp.pathname.startsWith(OSO_STATIC_PAGES_PATH)) {
+      // Load these from the CDN rather than routing them inside the app.
+      return false
+    }
     return urlp.protocol === 'https:' && APP_URL_HOSTS.includes(urlp.hostname)
   } catch {
     return false
