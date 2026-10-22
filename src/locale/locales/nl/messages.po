@@ -16101,6 +16101,16 @@ msgstr "oso's servers staan in Europa en voldoen aan Europese wetgeving, niet aa
 msgid "Donate"
 msgstr "Doneer"
 
+#: src/view/shell/desktop/RightNav.tsx
+#: src/view/shell/Drawer.tsx
+msgid "Guidelines"
+msgstr "Richtlijnen"
+
+#: src/view/shell/desktop/RightNav.tsx
+#: src/view/shell/Drawer.tsx
+msgid "Copyright"
+msgstr "Auteursrecht"
+
 #: src/features/osoAgeGate/index.tsx
 msgid "{0} is made for adults. Please confirm that you’re 18 or older. This is the first and only time we’ll ask your age. Your data won’t be shared with anyone."
 msgstr "{0} is gemaakt voor volwassenen. Bevestig dat je 18 jaar of ouder bent. Dit is de eerste en de laatste keer dat we je leeftijd vragen. Je data wordt met niemand gedeeld."
