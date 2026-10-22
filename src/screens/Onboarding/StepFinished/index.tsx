@@ -24,7 +24,6 @@ import {
   useSetActiveStarterPack,
 } from '#/state/shell/landing'
 import {useProgressGuideControls} from '#/state/shell/progress-guide'
-import {interestPostRefsFor} from '#/screens/Onboarding/euroskyInterestPosts'
 import {
   OnboardingControls,
   OnboardingHeaderSlot,
@@ -33,7 +32,7 @@ import {
   type OnboardingState,
   useOnboardingInternalState,
 } from '#/screens/Onboarding/state'
-import {bulkWriteFollows, bulkWriteLikes} from '#/screens/Onboarding/util'
+import {bulkWriteFollows} from '#/screens/Onboarding/util'
 import {atoms as a, useBreakpoints} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {ArrowRight_Stroke2_Corner0_Rounded as ArrowRight} from '#/components/icons/Arrow'
@@ -109,19 +108,6 @@ export function StepFinished() {
       // Wait for feed preferences even when another onboarding task fails.
       const results = await Promise.allSettled([
         bulkWriteFollows(pdsClient, appviewClient, followDids, starterPackRef),
-        /*
-         * Like the picker-account interest post for each selected interest to
-         * seed the fu feed. This is a no-op when the picker is unset/unreachable
-         * (see euroskyInterestPosts). Failures are logged without blocking
-         * onboarding or preventing the feed preferences from being saved.
-         */
-        (async () => {
-          const refs = await interestPostRefsFor(
-            appviewClient,
-            selectedInterests,
-          )
-          await bulkWriteLikes(pdsClient, refs)
-        })(),
         (async () => {
           // Interests need to get saved first, then we can write the feeds to prefs
           await pdsClient.call(setInterestsPref, {tags: selectedInterests})

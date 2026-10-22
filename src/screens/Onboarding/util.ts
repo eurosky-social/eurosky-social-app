@@ -55,40 +55,6 @@ export async function bulkWriteFollows(
   return followUris
 }
 
-/**
- * Creates `app.bsky.feed.like` records for the given post strong refs (uri + cid)
- * in the current user's repo. Used during onboarding to seed the personalized
- * feed with a like per selected interest (each interest maps to a picker-account
- * "interest post"; refs are discovered by interestPostRefsFor).
- */
-export async function bulkWriteLikes(
-  pdsClient: Client,
-  subjects: com.atproto.repo.strongRef.Main[],
-) {
-  if (subjects.length === 0) return
-
-  const did = pdsClient.assertDid
-  const likeWrites: $Typed<com.atproto.repo.applyWrites.Create>[] =
-    subjects.map(subject => ({
-      $type: 'com.atproto.repo.applyWrites#create',
-      collection: 'app.bsky.feed.like',
-      rkey: TID.nextStr(),
-      value: {
-        $type: 'app.bsky.feed.like',
-        subject,
-        createdAt: toDatetimeString(new Date()),
-      } satisfies $Typed<app.bsky.feed.like.Main>,
-    }))
-
-  const chunks = chunk(likeWrites, 50)
-  for (const chunk of chunks) {
-    await pdsClient.call(com.atproto.repo.applyWrites, {
-      repo: did,
-      writes: chunk,
-    })
-  }
-}
-
 async function whenFollowsIndexed(
   appviewClient: Client,
   actor: string,
