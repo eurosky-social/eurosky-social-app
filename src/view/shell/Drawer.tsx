@@ -831,6 +831,12 @@ function ExtraLinks({hasSession}: {hasSession: boolean}) {
       <View style={[a.flex_col, a.gap_md, a.flex_wrap]}>
         <InlineLinkText
           style={[a.text_md]}
+          to={BRAND.links.faq}
+          label={_(msg`FAQ`)}>
+          <Trans>FAQ</Trans>
+        </InlineLinkText>
+        <InlineLinkText
+          style={[a.text_md]}
           to={BRAND.links.privacy}
           label={_(msg`Privacy`)}>
           <Trans>Privacy</Trans>

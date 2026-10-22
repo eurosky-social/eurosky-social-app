@@ -174,6 +174,17 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
       )}
 
       <Text style={[a.leading_snug, t.atoms.text_contrast_low]}>
+        {IS_PARTNER_PREVIEW && (
+          <>
+            <InlineLinkText
+              to={BRAND.links.faq}
+              style={[t.atoms.text_contrast_medium]}
+              label={_(msg`FAQ`)}>
+              {_(msg`FAQ`)}
+            </InlineLinkText>
+            <Text style={[t.atoms.text_contrast_low]}>{' ∙ '}</Text>
+          </>
+        )}
         <InlineLinkText
           to={BRAND.links.privacy}
           style={[t.atoms.text_contrast_medium]}
