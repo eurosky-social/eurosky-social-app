@@ -36,7 +36,6 @@ import {
   Bell_Filled_Corner0_Rounded as BellFilled,
   Bell_Stroke2_Corner0_Rounded as Bell,
 } from '#/components/icons/Bell'
-import {Bookmark, BookmarkFilled} from '#/components/icons/Bookmark'
 import {BulletList_Stroke2_Corner0_Rounded as List} from '#/components/icons/BulletList'
 import {CalendarDays_Stroke2_Corner0_Rounded as Calendar} from '#/components/icons/CalendarDays'
 import {
@@ -194,7 +193,6 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
     isAtHome,
     isAtSearch,
     isAtFeeds,
-    isAtBookmarks,
     isAtNotifications,
     isAtMyProfile,
     isAtMessages,
@@ -302,12 +300,6 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
     setDrawerOpen(false)
   }, [navigation, setDrawerOpen, ax])
 
-  const onPressBookmarks = useCallback(() => {
-    ax.metric('nav:click', {item: 'saved', surface: 'drawer'})
-    navigation.navigate('Bookmarks')
-    setDrawerOpen(false)
-  }, [navigation, setDrawerOpen, ax])
-
   const onPressSettings = useCallback(() => {
     ax.metric('nav:click', {item: 'settings', surface: 'drawer'})
     navigation.navigate('Settings')
@@ -379,10 +371,6 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
             />
             <FeedsMenuItem isActive={isAtFeeds} onPress={onPressMyFeeds} />
             <ListsMenuItem onPress={onPressLists} />
-            <BookmarksMenuItem
-              isActive={isAtBookmarks}
-              onPress={onPressBookmarks}
-            />
             <ProfileMenuItem
               isActive={isAtMyProfile}
               onPress={onPressProfile}
@@ -686,32 +674,6 @@ let StarterPacksMenuItem = ({
   )
 }
 StarterPacksMenuItem = memo(StarterPacksMenuItem)
-
-let BookmarksMenuItem = ({
-  isActive,
-  onPress,
-}: {
-  isActive: boolean
-  onPress: () => void
-}): React.ReactNode => {
-  const {_} = useLingui()
-  const t = useTheme()
-
-  return (
-    <MenuItem
-      icon={
-        isActive ? (
-          <BookmarkFilled style={[t.atoms.text]} width={iconWidth} />
-        ) : (
-          <Bookmark style={[t.atoms.text]} width={iconWidth} />
-        )
-      }
-      label={_(msg({message: 'Saved', context: 'link to bookmarks screen'}))}
-      onPress={onPress}
-    />
-  )
-}
-BookmarksMenuItem = memo(BookmarksMenuItem)
 
 let ProfileMenuItem = ({
   isActive,

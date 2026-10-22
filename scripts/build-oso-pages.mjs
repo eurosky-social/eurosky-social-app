@@ -148,7 +148,6 @@ function render(body, lang) {
     flushParagraph()
     flushList()
   }
-
   for (const raw of body.split('\n')) {
     const line = raw.trim()
     let match

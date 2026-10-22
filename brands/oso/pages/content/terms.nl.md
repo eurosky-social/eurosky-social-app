@@ -3,6 +3,7 @@ lang: nl
 title: Voorwaarden
 ---
 
+
 ## Deel 1: Inleiding
 
 ### 1. Welkom {#art-1}

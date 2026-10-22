@@ -1,68 +1,30 @@
-import {useCallback, useMemo, useState} from 'react'
-import {View} from 'react-native'
+import {useCallback, useImperativeHandle, useMemo, useState} from 'react'
+import {useWindowDimensions, View} from 'react-native'
 import {type $Typed} from '@atproto/lex'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
-import {
-  type NavigationProp,
-  useFocusEffect,
-  useNavigation,
-} from '@react-navigation/native'
 
 import {useInitialNumToRender} from '#/lib/hooks/useInitialNumToRender'
 import {usePostViewTracking} from '#/lib/hooks/usePostViewTracking'
-import {
-  type CommonNavigatorParams,
-  type NativeStackScreenProps,
-} from '#/lib/routes/types'
 import {cleanError} from '#/lib/strings/errors'
 import {useBookmarkMutation} from '#/state/queries/bookmarks/useBookmarkMutation'
 import {useBookmarksQuery} from '#/state/queries/bookmarks/useBookmarksQuery'
 import {Post} from '#/view/com/post/Post'
 import {EmptyState} from '#/view/com/util/EmptyState'
-import {List} from '#/view/com/util/List'
+import {List, type ListRef} from '#/view/com/util/List'
 import {PostFeedLoadingPlaceholder} from '#/view/com/util/LoadingPlaceholder'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {BookmarkDeleteLarge, BookmarkFilled} from '#/components/icons/Bookmark'
 import {CircleQuestion_Stroke2_Corner2_Rounded as QuestionIcon} from '#/components/icons/CircleQuestion'
-import * as Layout from '#/components/Layout'
 import {ListFooter} from '#/components/Lists'
 import * as Skele from '#/components/Skeleton'
 import * as toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
-import {IS_IOS} from '#/env'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
-
-type Props = NativeStackScreenProps<CommonNavigatorParams, 'Bookmarks'>
-
-export function BookmarksScreen({}: Props) {
-  const ax = useAnalytics()
-
-  useFocusEffect(
-    useCallback(() => {
-      ax.metric('bookmarks:view', {})
-    }, [ax]),
-  )
-
-  return (
-    <Layout.Screen testID="bookmarksScreen">
-      <Layout.Header.Outer>
-        <Layout.Header.BackButton />
-        <Layout.Header.Content>
-          <Layout.Header.TitleText>
-            <Trans>Saved Posts</Trans>
-          </Layout.Header.TitleText>
-        </Layout.Header.Content>
-        <Layout.Header.Slot />
-      </Layout.Header.Outer>
-      <BookmarksInner />
-    </Layout.Screen>
-  )
-}
 
 type ListItem =
   | {
@@ -88,8 +50,21 @@ type ListItem =
       }
     }
 
-function BookmarksInner() {
+/**
+ * The current account's saved posts, rendered as a section of the profile
+ * pager.
+ */
+export function BookmarksList({
+  ref,
+  scrollElRef,
+  headerOffset,
+}: {
+  ref?: React.Ref<{scrollToTop: () => void}>
+  scrollElRef: ListRef
+  headerOffset: number
+}) {
   const initialNumToRender = useInitialNumToRender()
+  const {height} = useWindowDimensions()
   const [isPTRing, setIsPTRing] = useState(false)
   const trackPostView = usePostViewTracking('Bookmarks')
   const {
@@ -161,8 +136,19 @@ function BookmarksInner() {
 
   const isEmpty = items.length === 1 && items[0]?.type === 'empty'
 
+  useImperativeHandle(ref, () => ({
+    scrollToTop: () => {
+      scrollElRef.current?.scrollToOffset({
+        animated: false,
+        offset: -headerOffset,
+      })
+      void refetch()
+    },
+  }))
+
   return (
     <List
+      ref={scrollElRef}
       data={items}
       renderItem={renderItem}
       keyExtractor={keyExtractor}
@@ -170,6 +156,8 @@ function BookmarksInner() {
       onRefresh={() => void onRefresh()}
       onEndReached={() => void onEndReached()}
       onEndReachedThreshold={4}
+      headerOffset={headerOffset}
+      contentContainerStyle={{minHeight: height + headerOffset}}
       onItemSeen={(item: ListItem) => {
         if (item.type === 'bookmark') {
           trackPostView(item.bookmark.item)
@@ -185,7 +173,7 @@ function BookmarksInner() {
       }
       initialNumToRender={initialNumToRender}
       windowSize={9}
-      maxToRenderPerBatch={IS_IOS ? 5 : 1}
+      maxToRenderPerBatch={1}
       updateCellsBatchingPeriod={40}
       sideBorders={false}
     />
@@ -282,20 +270,12 @@ function BookmarkItem({
 function BookmarksEmpty() {
   const t = useTheme()
   const {_} = useLingui()
-  const navigation = useNavigation<NavigationProp<CommonNavigatorParams>>()
 
   return (
     <EmptyState
       icon={BookmarkDeleteLarge}
       message={_(msg`Nothing saved yet`)}
       textStyle={[t.atoms.text_contrast_medium, a.font_medium]}
-      button={{
-        label: _(msg`Button to go back to the home timeline`),
-        text: _(msg`Go home`),
-        onPress: () => navigation.navigate('Home' as never),
-        size: 'small',
-        color: 'secondary',
-      }}
       style={[a.pt_3xl]}
     />
   )
