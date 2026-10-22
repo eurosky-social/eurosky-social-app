@@ -1,5 +1,5 @@
 import {Pressable, View} from 'react-native'
-import {useLingui} from '@lingui/react/macro'
+import {Trans, useLingui} from '@lingui/react/macro'
 import {useNavigation, useNavigationState} from '@react-navigation/native'
 
 import {getCurrentRoute} from '#/lib/routes/helpers'
@@ -12,13 +12,16 @@ import {
 } from '#/state/queries/feed'
 import {useSelectedFeed, useSetSelectedFeed} from '#/state/shell/selected-feed'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
+import * as ModuleHeader from '#/screens/Search/components/ModuleHeader'
 import {atoms as a, useTheme, web} from '#/alf'
 import {useInteractionState} from '#/components/hooks/useInteractionState'
 import {FilterTimeline_Stroke2_Corner0_Rounded as FilterTimeline} from '#/components/icons/FilterTimeline'
+import {OsoFeedsIcon} from '#/components/icons/OsoNav'
 import {PlusSmall_Stroke2_Corner0_Rounded as Plus} from '#/components/icons/Plus'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
+import {IS_PARTNER_PREVIEW} from '#/env'
 
 export function DesktopFeeds() {
   const t = useTheme()
@@ -75,6 +78,15 @@ export function DesktopFeeds() {
           overflowY: 'auto',
         }),
       ]}>
+      {IS_PARTNER_PREVIEW && (
+        // Same heading style as the events screen's feed picker.
+        <ModuleHeader.Container style={[a.px_0, a.pt_0, a.pb_xs]}>
+          <ModuleHeader.Icon icon={OsoFeedsIcon} />
+          <ModuleHeader.TitleText>
+            <Trans>Your feeds</Trans>
+          </ModuleHeader.TitleText>
+        </ModuleHeader.Container>
+      )}
       {pinnedFeedInfos.map((feedInfo, index) => {
         const feed = feedInfo.feedDescriptor
         const current =
