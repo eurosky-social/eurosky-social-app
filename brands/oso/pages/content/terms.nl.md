@@ -442,7 +442,7 @@ U kunt binnen zes maanden na kennisgeving van het besluit bij ons beroep aanteke
 
 #### 26.3 Buitengerechtelijke geschillenbeslechting {#art-26-3}
 
-Als u zich in de EU of de EER bevindt, hebt u het recht om een geschil over onze beslissingen inzake contentmoderatie voor te leggen aan een geschillenbeslechtingsinstantie die is gecertificeerd op grond van artikel 21 van de DSA[^11].
+Als u zich in de EU of de EER bevindt, hebt u het recht om een geschil over onze beslissingen inzake contentmoderatie voor te leggen aan een geschillenbeslechtingsinstantie die is gecertificeerd op grond van artikel 21 van de DSA.
 
 U kunt gecertificeerde instanties vinden via de nationale coördinator voor digitale diensten van uw land of via de openbare lijst van de Europese Commissie met instanties die zijn gecertificeerd op grond van artikel 21 van de DSA. Wij zullen te goeder trouw samenwerken met elke gecertificeerde instantie die de zaak in behandeling neemt. De beslissing van de geschillenbeslechtingsinstantie is voor geen van beide partijen juridisch bindend, maar als wij ervoor kiezen deze niet op te volgen, zullen wij onze redenen daarvoor openbaar toelichten.
 
