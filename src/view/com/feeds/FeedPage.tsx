@@ -27,16 +27,17 @@ import {
 } from '#/state/queries/post-feed'
 import {truncateAndInvalidate} from '#/state/queries/util'
 import {useSession} from '#/state/session'
+import {ComposerPrompt} from '#/view/com/feeds/ComposerPrompt'
 import {PostFeed} from '#/view/com/posts/PostFeed'
 import {FAB} from '#/view/com/util/fab/FAB'
 import {type ListMethods} from '#/view/com/util/List'
 import {LoadLatestBtn} from '#/view/com/util/load-latest/LoadLatestBtn'
 import {MainScrollProvider} from '#/view/com/util/MainScrollProvider'
-import {useTheme} from '#/alf'
+import {useBreakpoints, useTheme} from '#/alf'
 import {useHeaderOffset} from '#/components/hooks/useHeaderOffset'
 import {EditBig_Stroke2_Corner2_Rounded as EditBigIcon} from '#/components/icons/EditBig'
 import {useAnalytics} from '#/analytics'
-import {IS_NATIVE} from '#/env'
+import {IS_NATIVE, IS_PARTNER_PREVIEW} from '#/env'
 import {app} from '#/lexicons'
 
 const POLL_FREQ = 60e3 // 60sec
@@ -70,6 +71,12 @@ export function FeedPage({
   const {openComposer} = useOpenComposer()
   const [isScrolledDown, setIsScrolledDown] = useState(false)
   const headerOffset = useHeaderOffset()
+  const {gtMobile} = useBreakpoints()
+  /*
+   * Oso: on big screens every home feed starts with the post box; phones use
+   * the floating compose button instead (see PostFeed).
+   */
+  const showComposerPrompt = IS_PARTNER_PREVIEW && gtMobile && hasSession
   const feedFeedback = useFeedFeedback(feedInfo, hasSession)
   const scrollElRef = useRef<ListMethods>(null)
   const [hasNew, setHasNew] = useState(false)
@@ -159,6 +166,9 @@ export function FeedPage({
             headerOffset={headerOffset}
             savedFeedConfig={savedFeedConfig}
             isVideoFeed={isVideoFeed}
+            ListHeaderComponent={
+              showComposerPrompt ? <ComposerPrompt /> : undefined
+            }
           />
         </FeedFeedbackProvider>
       </MainScrollProvider>
