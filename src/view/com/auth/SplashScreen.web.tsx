@@ -130,7 +130,7 @@ export const SplashScreen = ({
                           letterSpacing: -0.12,
                         },
                       ]}>
-                      <Trans>platform for{'\n'}your open socials</Trans>
+                      <Trans>Your socials,{'\n'}your rules.</Trans>
                     </Text>
                   </View>
 
