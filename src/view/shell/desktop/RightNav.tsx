@@ -138,7 +138,10 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
         <>
           {!isSearchScreen && <DesktopSearch />}
 
-          {hasSession && <DesktopFeeds />}
+          {/* Oso lists your feeds only next to the feeds (home) timeline. */}
+          {hasSession && (!IS_PARTNER_PREVIEW || routeName === 'Home') && (
+            <DesktopFeeds />
+          )}
         </>
       )}
 
