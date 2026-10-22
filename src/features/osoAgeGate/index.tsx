@@ -1,3 +1,4 @@
+import {useState} from 'react'
 import {ScrollView, View} from 'react-native'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {Trans, useLingui} from '@lingui/react/macro'
@@ -17,7 +18,6 @@ import {useAgeAssurance} from '#/ageAssurance'
 import {BRAND} from '#/config/brand'
 import {IS_WEB} from '#/env'
 import {AgeConfirmation} from '#/features/osoAgeGate/AgeConfirmation'
-import {useIsDeclaredUnder18} from '#/features/osoAgeGate/useOsoAgeGate'
 
 export {useOsoAgeGate} from '#/features/osoAgeGate/useOsoAgeGate'
 
@@ -37,7 +37,12 @@ export function OsoNoAccessScreen() {
   const deleteAccountControl = useDialogControl()
   const {logoutCurrentAccount} = useSessionApi()
   const aa = useAgeAssurance()
-  const isDeclaredUnder18 = useIsDeclaredUnder18()
+  /*
+   * Kept only while the gate is open: a reload asks the age question again,
+   * so a mis-click doesn't lock anyone out.
+   */
+  const [saidUnder18, setSaidUnder18] = useState(false)
+  const onDeclareMinor = () => setSaidUnder18(true)
 
   const onPressLogout = () => {
     if (IS_WEB) {
@@ -74,7 +79,11 @@ export function OsoNoAccessScreen() {
               <AgeAssuranceBadge labelText={<Trans>Confirm your age</Trans>} />
             </View>
 
-            {isDeclaredUnder18 || !aa.flags.hasDeclaredAge ? (
+            {saidUnder18 ? (
+              <Text style={textStyles}>
+                <Trans>You cannot use {BRAND.name} if you’re under 18.</Trans>
+              </Text>
+            ) : !aa.flags.hasDeclaredAge || aa.flags.isDeclaredUnderAdultAge ? (
               <View style={[a.gap_lg]}>
                 <Text style={textStyles}>
                   <Trans>
@@ -83,7 +92,10 @@ export function OsoNoAccessScreen() {
                     age. Your data won’t be shared with anyone.
                   </Trans>
                 </Text>
-                <AgeConfirmation showNote={false} />
+                <AgeConfirmation
+                  showNote={false}
+                  onDeclareMinor={onDeclareMinor}
+                />
                 <Admonition type="tip">
                   <Trans>
                     For organisations: confirm the age of the person responsible
@@ -99,7 +111,7 @@ export function OsoNoAccessScreen() {
                     requires verified age assurance.
                   </Trans>
                 </Text>
-                <AgeConfirmation />
+                <AgeConfirmation onDeclareMinor={onDeclareMinor} />
               </View>
             )}
 

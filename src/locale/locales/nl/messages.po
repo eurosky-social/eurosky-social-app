@@ -16120,6 +16120,10 @@ msgid "{0} isn’t available in your region, which legally requires verified age
 msgstr "{0} is niet beschikbaar in jouw regio, omdat de wet daar een geverifieerde leeftijdscontrole vereist."
 
 #: src/features/osoAgeGate/index.tsx
+msgid "You cannot use {0} if you’re under 18."
+msgstr "Je kunt {0} niet gebruiken als je jonger bent dan 18."
+
+#: src/features/osoAgeGate/index.tsx
 msgid "For organisations: confirm the age of the person responsible for the account."
 msgstr "Voor organisaties: bevestig de leeftijd van degene die verantwoordelijk is voor het account."
 

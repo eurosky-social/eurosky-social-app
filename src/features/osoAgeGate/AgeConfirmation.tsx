@@ -12,27 +12,30 @@ import {Text} from '#/components/Typography'
 import {usePatchAgeAssuranceOtherRequiredData} from '#/ageAssurance'
 import {setBirthdateForDid} from '#/ageAssurance/data'
 import {birthdateFromFlags, setMuAgeStatus} from '#/ageAssurance/muAgeService'
-import {useDeclaredUnder18} from '#/features/osoAgeGate/useOsoAgeGate'
 
 /**
  * Oso age confirmation, shown inline on the gate. "18 or older" is saved to the
- * mu age service. "Under 18" is only stored locally (see `useDeclaredUnder18`)
- * and keeps the user behind the gate.
+ * mu age service. "Under 18" is not saved anywhere; the gate shows the under-18
+ * message until the page is reloaded.
  */
 export function AgeConfirmation({
   showNote = true,
+  onDeclareMinor,
 }: {
   /**
    * Show the privacy note. Off when the surrounding text already explains it.
    */
   showNote?: boolean
+  /**
+   * Called when the user answers "I am under 18".
+   */
+  onDeclareMinor: () => void
 }) {
   const {t: l} = useLingui()
   const t = useTheme()
   const pdsClient = usePdsClient()
   const {currentAccount} = useSession()
   const patch = usePatchAgeAssuranceOtherRequiredData()
-  const [, setDeclaredUnder18] = useDeclaredUnder18()
   const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState('')
 
@@ -43,7 +46,6 @@ export function AgeConfirmation({
       const flags = {over13: true, over16: true, over18: true}
       await setMuAgeStatus(pdsClient, flags)
       const birthdate = birthdateFromFlags(flags)
-      setDeclaredUnder18(false)
       if (currentAccount?.did) {
         setBirthdateForDid({did: currentAccount.did, birthdate})
       }
@@ -57,11 +59,6 @@ export function AgeConfirmation({
       // The gate may stay up (e.g. a blocked region), so don't leave it spinning.
       setIsPending(false)
     }
-  }
-
-  const onDeclareMinor = () => {
-    setError('')
-    setDeclaredUnder18(true)
   }
 
   return (
