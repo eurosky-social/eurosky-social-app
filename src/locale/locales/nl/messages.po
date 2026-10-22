@@ -16101,6 +16101,18 @@ msgstr "oso's servers staan in Europa en voldoen aan Europese wetgeving, niet aa
 msgid "Donate"
 msgstr "Doneer"
 
+#: src/screens/Profile/Header/EditProfileDialog.tsx
+msgid "Pronouns"
+msgstr "Voornaamwoorden"
+
+#: src/screens/Profile/Header/EditProfileDialog.tsx
+msgid "e.g. she/her"
+msgstr "bijv. zij/haar"
+
+#: src/screens/Profile/Header/EditProfileDialog.tsx
+msgid "{MAX_PRONOUNS, plural, other {Pronouns are too long. The maximum number of characters is #.}}"
+msgstr "{MAX_PRONOUNS, plural, other {Voornaamwoorden zijn te lang. Het maximale aantal tekens is #.}}"
+
 #: src/view/screens/Profile.tsx
 msgctxt "profile tab for bookmarks"
 msgid "Saved"
