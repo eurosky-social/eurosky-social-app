@@ -1,15 +1,16 @@
 import {useCallback, useState} from 'react'
 import {View} from 'react-native'
+import {TID} from '@atproto/common-web'
 import {type Un$Typed} from '@atproto/lex'
 import {type AtUriString, toDatetimeString} from '@atproto/syntax'
-import {setInterestsPref, upsertProfile} from '@bsky/sdk'
+import {overwriteSavedFeeds, upsertProfile} from '@bsky/sdk'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
 
 import {uploadBlob} from '#/lib/api'
-import {BSKY_APP_ACCOUNT_DID} from '#/lib/constants'
+import {BSKY_APP_ACCOUNT_DID, TIMELINE_SAVED_FEED} from '#/lib/constants'
 import {useRequestNotificationsPermission} from '#/lib/notifications/notifications'
 import {logger} from '#/logger'
 import {useSetHasCheckedForStarterPack} from '#/state/preferences/used-starter-packs'
@@ -23,7 +24,6 @@ import {
   useSetActiveStarterPack,
 } from '#/state/shell/landing'
 import {useProgressGuideControls} from '#/state/shell/progress-guide'
-import {interestPostRefsFor} from '#/screens/Onboarding/euroskyInterestPosts'
 import {
   OnboardingControls,
   OnboardingHeaderSlot,
@@ -32,14 +32,13 @@ import {
   type OnboardingState,
   useOnboardingInternalState,
 } from '#/screens/Onboarding/state'
-import {bulkWriteFollows, bulkWriteLikes} from '#/screens/Onboarding/util'
+import {bulkWriteFollows} from '#/screens/Onboarding/util'
 import {atoms as a, useBreakpoints} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {ArrowRight_Stroke2_Corner0_Rounded as ArrowRight} from '#/components/icons/Arrow'
 import {Loader} from '#/components/Loader'
 import {useAnalytics} from '#/analytics'
 import {IS_WEB} from '#/env'
-import {saveOnboardingFeeds} from '#/features/muForYouFeed/preferences'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {ValuePropositionPager} from './ValuePropositionPager'
@@ -103,31 +102,14 @@ export function StepFinished() {
       : undefined
 
     try {
-      const {interestsStepResults, profileStepResults} = state
-      const {selectedInterests} = interestsStepResults
+      const {profileStepResults} = state
 
       // Wait for feed preferences even when another onboarding task fails.
       const results = await Promise.allSettled([
         bulkWriteFollows(pdsClient, appviewClient, followDids, starterPackRef),
-        /*
-         * Like the picker-account interest post for each selected interest to
-         * seed the fu feed. This is a no-op when the picker is unset/unreachable
-         * (see euroskyInterestPosts). Failures are logged without blocking
-         * onboarding or preventing the feed preferences from being saved.
-         */
-        (async () => {
-          const refs = await interestPostRefsFor(
-            appviewClient,
-            selectedInterests,
-          )
-          await bulkWriteLikes(pdsClient, refs)
-        })(),
-        (async () => {
-          // Interests need to get saved first, then we can write the feeds to prefs
-          await pdsClient.call(setInterestsPref, {tags: selectedInterests})
-
-          await saveOnboardingFeeds(pdsClient, starterPack?.feeds)
-        })(),
+        pdsClient.call(overwriteSavedFeeds, [
+          {...TIMELINE_SAVED_FEED, id: TID.nextStr()},
+        ]),
         (async () => {
           const {imageUri, imageMime} = profileStepResults
           const blobPromise =

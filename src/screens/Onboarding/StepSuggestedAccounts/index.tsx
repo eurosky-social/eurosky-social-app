@@ -48,7 +48,7 @@ export function StepSuggestedAccounts() {
   const {currentAccount} = useSession()
   const queryClient = useQueryClient()
 
-  const {state, dispatch} = useOnboardingInternalState()
+  const {dispatch} = useOnboardingInternalState()
 
   const [selectedInterest, setSelectedInterest] = useState<string | null>(null)
   // keeping track of who was followed via the follow all button
@@ -64,9 +64,9 @@ export function StepSuggestedAccounts() {
     return bcp47Match.basicFilter('en', contentLanguages).length > 0
   }, [contentLanguages])
   const interestsDisplayNames = useInterestsDisplayNames()
-  const interests = Object.keys(interestsDisplayNames)
-    .sort(boostInterests(popularInterests))
-    .sort(boostInterests(state.interestsStepResults.selectedInterests))
+  const interests = Object.keys(interestsDisplayNames).sort(
+    boostInterests(popularInterests),
+  )
 
   const {
     data: suggestedUsers,
@@ -77,7 +77,6 @@ export function StepSuggestedAccounts() {
   } = useSuggestedOnboardingUsers({
     category: selectedInterest || (useFullExperience ? null : interests[0]),
     search: !useFullExperience,
-    overrideInterests: state.interestsStepResults.selectedInterests,
   })
 
   const isError = !!error
@@ -208,7 +207,6 @@ export function StepSuggestedAccounts() {
               comment: 'the default tab in the interests tab bar',
             }),
           )}
-          selectedInterests={state.interestsStepResults.selectedInterests}
         />
 
         {isLoading || !moderationOpts ? (
@@ -320,22 +318,20 @@ export function StepSuggestedAccounts() {
 function TabBar({
   selectedInterest,
   onSelectInterest,
-  selectedInterests,
   hideDefaultTab,
   defaultTabLabel,
 }: {
   selectedInterest: string | null
   onSelectInterest: (interest: string | null) => void
-  selectedInterests: string[]
   hideDefaultTab?: boolean
   defaultTabLabel?: string
 }) {
   const {_} = useLingui()
   const ax = useAnalytics()
   const interestsDisplayNames = useInterestsDisplayNames()
-  const interests = Object.keys(interestsDisplayNames)
-    .sort(boostInterests(popularInterests))
-    .sort(boostInterests(selectedInterests))
+  const interests = Object.keys(interestsDisplayNames).sort(
+    boostInterests(popularInterests),
+  )
 
   return (
     <InterestTabs
