@@ -246,7 +246,17 @@ export const Button = forwardRef<React.ComponentRef<typeof View>, ButtonProps>(
        * just to make this handling easier to understand.
        */
       if (variant === 'solid') {
-        if (color === 'primary') {
+        if (color === 'primary' && IS_PARTNER_PREVIEW) {
+          // Oso: primary actions are the logo green with black text.
+          baseStyles.push({
+            backgroundColor: disabled
+              ? osoColors.greenDisabled
+              : osoColors.green,
+          })
+          if (!disabled) {
+            hoverStyles.push({backgroundColor: osoColors.greenHover})
+          }
+        } else if (color === 'primary') {
           if (!disabled) {
             baseStyles.push({
               backgroundColor: t.palette.primary_500,
@@ -628,7 +638,13 @@ export function useSharedButtonTextStyles() {
      * just to make this handling easier to understand.
      */
     if (variant === 'solid') {
-      if (color === 'primary') {
+      if (color === 'primary' && IS_PARTNER_PREVIEW) {
+        baseStyles.push(
+          disabled
+            ? {color: osoColors.black, opacity: 0.5}
+            : {color: osoColors.black},
+        )
+      } else if (color === 'primary') {
         if (!disabled) {
           baseStyles.push({color: t.palette.white})
         } else {
