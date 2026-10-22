@@ -1,4 +1,5 @@
 import {useCallback, useMemo} from 'react'
+import {View} from 'react-native'
 import {useLingui} from '@lingui/react/macro'
 import {useNavigation} from '@react-navigation/native'
 
@@ -8,6 +9,9 @@ import {getLocalizedFeedName} from '#/lib/strings/feed-names'
 import {type FeedSourceInfo} from '#/state/queries/feed'
 import {useSession} from '#/state/session'
 import {type RenderTabBarFnProps} from '#/view/com/pager/Pager'
+import {atoms as a, useLayoutBreakpoints} from '#/alf'
+import {IS_PARTNER_PREVIEW, IS_WEB} from '#/env'
+import {EventFeedTabs} from '#/features/events/components/EventFeedTabs'
 import {TabBar} from '../pager/TabBar'
 import {HomeHeaderLayout} from './HomeHeaderLayout'
 
@@ -22,6 +26,7 @@ export function HomeHeader(
   const {hasSession} = useSession()
   const {t: l, i18n} = useLingui()
   const navigation = useNavigation<NavigationProp>()
+  const {rightNavVisible} = useLayoutBreakpoints()
 
   const hasPinnedCustom = useMemo<boolean>(() => {
     if (!hasSession) return false
@@ -53,6 +58,36 @@ export function HomeHeader(
     },
     [items.length, onPressFeedsLink, onSelectProp, hasPinnedCustom],
   )
+
+  /*
+   * Oso picks feeds like the events screen does: on wide screens the right
+   * column's feed list shows and switches the active feed, so there are no
+   * tabs; on smaller screens the feeds are scrollable pills.
+   */
+  if (IS_PARTNER_PREVIEW) {
+    const showPills = !(IS_WEB && rightNavVisible)
+    return (
+      <HomeHeaderLayout tabBarAnchor={props.tabBarAnchor}>
+        {showPills && (
+          // Full width, as the tablet header centres its children.
+          <View style={[a.w_full]}>
+            <EventFeedTabs
+              items={items.map((label, index) => ({id: String(index), label}))}
+              selectedId={String(props.selectedPage)}
+              onSelect={id => {
+                const index = Number(id)
+                if (index === props.selectedPage) {
+                  props.onPressSelected()
+                } else {
+                  onSelect(index)
+                }
+              }}
+            />
+          </View>
+        )}
+      </HomeHeaderLayout>
+    )
+  }
 
   return (
     <HomeHeaderLayout tabBarAnchor={props.tabBarAnchor}>
