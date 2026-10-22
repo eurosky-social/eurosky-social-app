@@ -16152,3 +16152,7 @@ msgstr "Ik ben 18 jaar of ouder"
 #: src/view/com/auth/SplashScreen.web.tsx
 msgid "FAQ"
 msgstr "FAQ"
+
+#: src/view/com/auth/SplashScreen.web.tsx
+msgid "platform for\nyour open socials"
+msgstr "platform voor\njouw open socials"
