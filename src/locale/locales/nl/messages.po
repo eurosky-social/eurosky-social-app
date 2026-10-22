@@ -16158,5 +16158,5 @@ msgid "FAQ"
 msgstr "FAQ"
 
 #: src/view/com/auth/SplashScreen.web.tsx
-msgid "Your socials,\nyour rules."
-msgstr "Jouw socials,\njouw regels."
+msgid "your socials, your rules"
+msgstr "jouw socials, jouw regels"

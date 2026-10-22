@@ -126,12 +126,14 @@ export const SplashScreen = ({
                         a.font_semi_bold,
                         a.text_center,
                         {
-                          fontSize: 24,
-                          lineHeight: 24 * 0.9,
+                          // Small enough for the Dutch line to fit the 245px
+                          // mobile card on one line.
+                          fontSize: 19,
+                          lineHeight: 19 * 1.1,
                           letterSpacing: -0.12,
                         },
                       ]}>
-                      <Trans>Your socials,{'\n'}your rules.</Trans>
+                      <Trans>your socials, your rules</Trans>
                     </Text>
                   </View>
 
