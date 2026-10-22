@@ -54,7 +54,6 @@ import {
   OsoNewsActiveIcon,
   OsoNewsIcon,
   OsoPlusIcon,
-  OsoSettingsActiveIcon,
   OsoSettingsIcon,
 } from '#/components/icons/OsoNav'
 import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/Plus'
@@ -233,9 +232,17 @@ function SwitchMenuItems({
   const {setShowLoggedOut} = useLoggedOutViewControls()
   const closeEverything = useCloseAllActiveElements()
 
+  const navigation = useNavigation<NavigationProp>()
+  const ax = useAnalytics()
+
   const onAddAnotherAccount = () => {
     setShowLoggedOut(true)
     closeEverything()
+  }
+
+  const onPressSettings = () => {
+    ax.metric('nav:click', {item: 'settings', surface: 'leftNav'})
+    navigation.navigate('Settings')
   }
 
   return (
@@ -258,6 +265,12 @@ function SwitchMenuItems({
         </>
       )}
       <SwitcherMenuProfileLink />
+      <Menu.Item label={l`Settings`} onPress={onPressSettings}>
+        <Menu.ItemIcon icon={OsoSettingsIcon} />
+        <Menu.ItemText>
+          <Trans>Settings</Trans>
+        </Menu.ItemText>
+      </Menu.Item>
       <Menu.Item label={l`Add another account`} onPress={onAddAnotherAccount}>
         <Menu.ItemIcon icon={PlusIcon} />
         <Menu.ItemText>
@@ -743,16 +756,6 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             icons={{
               inactive: OsoChatIcon,
               active: OsoChatActiveIcon,
-            }}
-          />
-          <NavItem
-            label={l`Settings`}
-            href="/settings"
-            navItem="settings"
-            minimal={leftNavMinimal}
-            icons={{
-              inactive: OsoSettingsIcon,
-              active: OsoSettingsActiveIcon,
             }}
           />
 
