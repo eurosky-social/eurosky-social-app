@@ -1,4 +1,4 @@
-import {useCallback, useMemo, useRef, useState} from 'react'
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {type ViewabilityConfig} from '@react-native/virtualized-lists'
@@ -16,7 +16,6 @@ import {
   useFeedPreviews,
 } from '#/state/queries/explore-feed-previews'
 import {useGetPopularFeedsQuery} from '#/state/queries/feed'
-import {Nux, useNux} from '#/state/queries/nuxs'
 import {usePreferencesQuery} from '#/state/queries/preferences'
 import {
   createGetSuggestedFeedsQueryKey,
@@ -27,23 +26,17 @@ import {
   useGetSuggestedUsersForExploreQuery,
 } from '#/state/queries/trending/useGetSuggestedUsersForExploreQuery'
 import {createGetTrendsQueryKey} from '#/state/queries/trending/useGetTrendsQuery'
-import {
-  createSuggestedStarterPacksQueryKey,
-  useSuggestedStarterPacksQuery,
-} from '#/state/queries/useSuggestedStarterPacksQuery'
 import {isThreadChildAt, isThreadParentAt} from '#/view/com/posts/PostFeed'
 import {PostFeedItem} from '#/view/com/posts/PostFeedItem'
 import {ViewFullThread} from '#/view/com/posts/ViewFullThread'
 import {List} from '#/view/com/util/List'
 import {FeedFeedLoadingPlaceholder} from '#/view/com/util/LoadingPlaceholder'
 import {LoadMoreRetryBtn} from '#/view/com/util/LoadMoreRetryBtn'
-import {
-  StarterPackCard,
-  StarterPackCardSkeleton,
-} from '#/screens/Search/components/StarterPackCard'
-import {ExploreInterestsCard} from '#/screens/Search/modules/ExploreInterestsCard'
+import {StarterPackCardSkeleton} from '#/screens/Search/components/StarterPackCard'
 import {ExploreTrendingTopics} from '#/screens/Search/modules/ExploreTrendingTopics'
 import {ExploreTrendingVideos} from '#/screens/Search/modules/ExploreTrendingVideos'
+import {StarterPackCard as OsoStarterPackCard} from '#/screens/StarterPack/OsoStarterPacks/components/StarterPackCard'
+import {useOsoStarterPacks} from '#/screens/StarterPack/OsoStarterPacks/useOsoStarterPacks'
 import {atoms as a, native, platform, useTheme} from '#/alf'
 import {Admonition} from '#/components/Admonition'
 import {Button} from '#/components/Button'
@@ -55,7 +48,6 @@ import {
   type Props as SVGIconProps,
 } from '#/components/icons/common'
 import {ListSparkle_Stroke2_Corner0_Rounded as ListSparkle} from '#/components/icons/ListSparkle'
-import {Tote as StarterPackIcon} from '#/components/icons/Tote'
 import {UserCircle_Stroke2_Corner0_Rounded as Person} from '#/components/icons/UserCircle'
 import {boostInterests} from '#/components/InterestTabs'
 import {Loader} from '#/components/Loader'
@@ -120,7 +112,8 @@ type ExploreScreenItems =
       type: 'header'
       key: string
       title: string
-      icon: React.ComponentType<SVGIconProps>
+      /** Optional: a heading may be just text. */
+      icon?: React.ComponentType<SVGIconProps>
       iconSize?: IcoProps['size']
       bottomBorder?: boolean
       searchButton?: {
@@ -197,8 +190,9 @@ type ExploreScreenItems =
     }
   | FeedPreviewItem
   | {
-      type: 'interests-card'
-      key: 'interests-card'
+      type: 'osoStarterPack'
+      key: string
+      view: app.bsky.graph.defs.StarterPackView
     }
   | {
       type: 'liveEventFeedsBanner'
@@ -253,16 +247,25 @@ export function Explore({
     error: feedsError,
     fetchNextPage: fetchNextFeedsPage,
   } = useGetPopularFeedsQuery({limit: 10, enabled: useFullExperience})
-  const interestsNux = useNux(Nux.ExploreInterestsCard)
-  const showInterestsNux =
-    interestsNux.status === 'ready' && !interestsNux.nux?.completed
-
+  /*
+   * Oso: the starter packs of welkom.oso.social, as on the Starter Packs
+   * screen, lead Explore for everyone. There are only a few, so every page
+   * is loaded.
+   */
   const {
-    data: suggestedSPs,
-    isLoading: isLoadingSuggestedSPs,
-    error: suggestedSPsError,
-    isRefetching: isRefetchingSuggestedSPs,
-  } = useSuggestedStarterPacksQuery({enabled: useFullExperience})
+    starterPacks: osoStarterPacks,
+    isLoading: isLoadingOsoSPs,
+    error: osoSPsError,
+    refetch: refetchOsoSPs,
+    fetchNextPage: fetchNextOsoSPs,
+    hasNextPage: hasNextOsoSPs,
+    isFetchingNextPage: isFetchingNextOsoSPs,
+  } = useOsoStarterPacks()
+  useEffect(() => {
+    if (hasNextOsoSPs && !isFetchingNextOsoSPs && !osoSPsError) {
+      fetchNextOsoSPs()
+    }
+  }, [hasNextOsoSPs, isFetchingNextOsoSPs, osoSPsError, fetchNextOsoSPs])
 
   const isLoadingMoreFeeds = isFetchingNextFeedsPage && !isLoadingFeeds
   const [hasPressedLoadMoreFeeds, setHasPressedLoadMoreFeeds] = useState(false)
@@ -309,9 +312,7 @@ export function Explore({
       qc.resetQueries({
         queryKey: createGetTrendsQueryKey(),
       }),
-      qc.resetQueries({
-        queryKey: createSuggestedStarterPacksQueryKey(),
-      }),
+      refetchOsoSPs(),
       qc.resetQueries({
         queryKey: [getSuggestedUsersForExploreQueryKeyRoot],
       }),
@@ -323,7 +324,7 @@ export function Explore({
       }),
     ])
     setIsPTR(false)
-  }, [qc, setIsPTR])
+  }, [qc, setIsPTR, refetchOsoSPs])
 
   const onLoadMoreFeedPreviews = useCallback(async () => {
     if (
@@ -655,43 +656,40 @@ export function Explore({
     feeds,
   ])
 
-  const suggestedStarterPacksModule = useMemo(() => {
+  const osoStarterPacksModule = useMemo(() => {
     const i: ExploreScreenItems[] = []
     i.push({
       type: 'header',
-      key: 'suggested-starterPacks-header',
-      title: l`Starter Packs`,
-      icon: StarterPackIcon,
-      iconSize: 'md',
+      key: 'oso-starterPacks-header',
+      // Same text as Oso's onboarding step, so it shares its translation.
+      title: l({
+        message: 'Follow all accounts you want to follow in one mouse click',
+        comment:
+          'Oso onboarding: starter packs whose accounts can all be followed at once',
+      }),
     })
 
-    if (isLoadingSuggestedSPs || isRefetchingSuggestedSPs) {
+    if (isLoadingOsoSPs && osoStarterPacks.length === 0) {
       Array.from({length: 3}).forEach((__, index) =>
         i.push({
           type: 'starterPackSkeleton',
           key: `starterPackSkeleton-${index}`,
         }),
       )
-    } else if (suggestedSPsError || !suggestedSPs) {
+    } else if (osoSPsError || osoStarterPacks.length === 0) {
       // just get rid of the section
       i.pop()
     } else {
-      suggestedSPs.starterPacks.map(s => {
+      osoStarterPacks.forEach(view => {
         i.push({
-          type: 'starterPack',
-          key: s.uri,
-          view: s,
+          type: 'osoStarterPack',
+          key: view.uri,
+          view,
         })
       })
     }
     return i
-  }, [
-    suggestedSPs,
-    l,
-    isLoadingSuggestedSPs,
-    suggestedSPsError,
-    isRefetchingSuggestedSPs,
-  ])
+  }, [osoStarterPacks, l, isLoadingOsoSPs, osoSPsError])
   const feedPreviewsModule = useMemo(() => {
     const i: ExploreScreenItems[] = []
     i.push(...feedPreviewSlices)
@@ -704,46 +702,39 @@ export function Explore({
     return i
   }, [feedPreviewSlices, isFetchingNextPageFeedPreviews])
 
-  const interestsNuxModule = useMemo<ExploreScreenItems[]>(() => {
-    if (!showInterestsNux) return []
-    return [
-      {
-        type: 'interests-card',
-        key: 'interests-card',
-      },
-    ]
-  }, [showInterestsNux])
-
   const items = useMemo<ExploreScreenItems[]>(() => {
     const i: ExploreScreenItems[] = []
 
     // Dynamic module ordering
 
     i.push(topBorder)
-    i.push(...interestsNuxModule)
+    i.push(...osoStarterPacksModule)
 
-    i.push({type: 'liveEventFeedsBanner', key: 'liveEventFeedsBanner'})
-    i.push({type: 'liveSportsWidget', key: 'liveSportsWidget'})
-
-    if (useFullExperience) {
-      i.push(trendingTopicsModule)
-      i.push(...suggestedFeedsModule)
-      i.push(...suggestedFollowsModule)
-      i.push(...suggestedStarterPacksModule)
-      i.push(...feedPreviewsModule)
-    } else {
-      i.push(...suggestedFollowsModule)
-    }
+    /*
+     * Oso: Explore shows only the starter packs for now. The modules below are
+     * kept, not deleted, so they can come back by uncommenting them.
+     *
+     * i.push({type: 'liveEventFeedsBanner', key: 'liveEventFeedsBanner'})
+     * i.push({type: 'liveSportsWidget', key: 'liveSportsWidget'})
+     *
+     * if (useFullExperience) {
+     *   i.push(trendingTopicsModule)
+     *   i.push(...suggestedFeedsModule)
+     *   i.push(...suggestedFollowsModule)
+     *   i.push(...feedPreviewsModule)
+     * } else {
+     *   i.push(...suggestedFollowsModule)
+     * }
+     */
 
     return i
   }, [
     topBorder,
     suggestedFollowsModule,
-    suggestedStarterPacksModule,
+    osoStarterPacksModule,
     suggestedFeedsModule,
     trendingTopicsModule,
     feedPreviewsModule,
-    interestsNuxModule,
     useFullExperience,
   ])
 
@@ -760,7 +751,9 @@ export function Explore({
         case 'header': {
           return (
             <ModuleHeader.Container bottomBorder={item.bottomBorder}>
-              <ModuleHeader.Icon icon={item.icon} size={item.iconSize} />
+              {item.icon && (
+                <ModuleHeader.Icon icon={item.icon} size={item.iconSize} />
+              )}
               <ModuleHeader.TitleText>{item.title}</ModuleHeader.TitleText>
               {item.searchButton && (
                 <ModuleHeader.SearchButton
@@ -850,10 +843,10 @@ export function Explore({
             </View>
           )
         }
-        case 'starterPack': {
+        case 'osoStarterPack': {
           return (
             <View style={[a.px_lg, a.pb_lg]}>
-              <StarterPackCard view={item.view} />
+              <OsoStarterPackCard view={item.view} />
             </View>
           )
         }
@@ -1020,9 +1013,6 @@ export function Explore({
               onPress={handleOnPressRetry}
             />
           )
-        }
-        case 'interests-card': {
-          return <ExploreInterestsCard />
         }
         case 'liveEventFeedsBanner': {
           return <ExploreScreenLiveEventFeedsBanner />
