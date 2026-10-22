@@ -21,6 +21,12 @@ export function isSignupClosed() {
  * Tells visitors when signups open, shown in place of "Create account".
  */
 export function SignupClosedNotice() {
+  /*
+   * The i18n object stays the same when the language changes, so React
+   * Compiler would keep the date in the language it first rendered in (often
+   * English, before the reader's language loads).
+   */
+  'use no memo'
   const {i18n} = useLingui()
   const date = i18n.date(SIGNUP_OPENS_AT, {day: 'numeric', month: 'long'})
 
