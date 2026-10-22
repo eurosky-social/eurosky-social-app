@@ -36,16 +36,11 @@ import {
   Bell_Filled_Corner0_Rounded as BellFilled,
   Bell_Stroke2_Corner0_Rounded as Bell,
 } from '#/components/icons/Bell'
-import {BulletList_Stroke2_Corner0_Rounded as List} from '#/components/icons/BulletList'
 import {CalendarDays_Stroke2_Corner0_Rounded as Calendar} from '#/components/icons/CalendarDays'
 import {
   Hashtag_Filled_Corner0_Rounded as HashtagFilled,
   Hashtag_Stroke2_Corner0_Rounded as Hashtag,
 } from '#/components/icons/Hashtag'
-import {
-  HomeOpen_Filled_Corner0_Rounded as HomeFilled,
-  HomeOpen_Stoke2_Corner0_Rounded as Home,
-} from '#/components/icons/HomeOpen'
 import {
   MagnifyingGlass_Filled_Stroke2_Corner0_Rounded as MagnifyingGlassFilled,
   MagnifyingGlass_Stroke2_Corner0_Rounded as MagnifyingGlass,
@@ -189,14 +184,8 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
   const setDrawerOpen = useSetDrawerOpen()
   const navigation = useNavigation<NavigationProp>()
   const ax = useAnalytics()
-  const {
-    isAtHome,
-    isAtSearch,
-    isAtFeeds,
-    isAtNotifications,
-    isAtMyProfile,
-    isAtMessages,
-  } = useNavigationTabState()
+  const {isAtHome, isAtSearch, isAtNotifications, isAtMyProfile, isAtMessages} =
+    useNavigationTabState()
   const {hasSession, currentAccount} = useSession()
   const inviteFriendsControl = useDialogControl()
 
@@ -269,18 +258,6 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
   const onPressDrawerHeaderProfile = useCallback(() => {
     onPressTab('MyProfile', 'drawerHeader')
   }, [onPressTab])
-
-  const onPressMyFeeds = useCallback(() => {
-    ax.metric('nav:click', {item: 'feeds', surface: 'drawer'})
-    navigation.navigate('Feeds')
-    setDrawerOpen(false)
-  }, [navigation, setDrawerOpen, ax])
-
-  const onPressLists = useCallback(() => {
-    ax.metric('nav:click', {item: 'lists', surface: 'drawer'})
-    navigation.navigate('Lists')
-    setDrawerOpen(false)
-  }, [navigation, setDrawerOpen, ax])
 
   const onPressNews = useCallback(() => {
     ax.metric('nav:click', {item: 'news', surface: 'drawer'})
@@ -359,18 +336,16 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
 
         {hasSession ? (
           <>
-            <SearchMenuItem isActive={isAtSearch} onPress={onPressSearch} />
-            <HomeMenuItem isActive={isAtHome} onPress={onPressHome} />
+            <FeedsMenuItem isActive={isAtHome} onPress={onPressHome} />
             <NewsMenuItem onPress={onPressNews} />
             <EventsMenuItem onPress={onPressEvents} />
             <StarterPacksMenuItem onPress={onPressStarterPacks} />
-            <ChatMenuItem isActive={isAtMessages} onPress={onPressMessages} />
+            <SearchMenuItem isActive={isAtSearch} onPress={onPressSearch} />
             <NotificationsMenuItem
               isActive={isAtNotifications}
               onPress={onPressNotifications}
             />
-            <FeedsMenuItem isActive={isAtFeeds} onPress={onPressMyFeeds} />
-            <ListsMenuItem onPress={onPressLists} />
+            <ChatMenuItem isActive={isAtMessages} onPress={onPressMessages} />
             <ProfileMenuItem
               isActive={isAtMyProfile}
               onPress={onPressProfile}
@@ -379,8 +354,7 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
           </>
         ) : (
           <>
-            <HomeMenuItem isActive={isAtHome} onPress={onPressHome} />
-            <FeedsMenuItem isActive={isAtFeeds} onPress={onPressMyFeeds} />
+            <FeedsMenuItem isActive={isAtHome} onPress={onPressHome} />
             <SearchMenuItem isActive={isAtSearch} onPress={onPressSearch} />
           </>
         )}
@@ -499,32 +473,6 @@ let SearchMenuItem = ({
 }
 SearchMenuItem = memo(SearchMenuItem)
 
-let HomeMenuItem = ({
-  isActive,
-  onPress,
-}: {
-  isActive: boolean
-  onPress: () => void
-}): React.ReactNode => {
-  const {_} = useLingui()
-  const t = useTheme()
-  return (
-    <MenuItem
-      icon={
-        isActive ? (
-          <HomeFilled style={[t.atoms.text]} width={iconWidth} />
-        ) : (
-          <Home style={[t.atoms.text]} width={iconWidth} />
-        )
-      }
-      label={_(msg`Home`)}
-      bold={isActive}
-      onPress={onPress}
-    />
-  )
-}
-HomeMenuItem = memo(HomeMenuItem)
-
 let ChatMenuItem = ({
   isActive,
   onPress,
@@ -614,20 +562,6 @@ let FeedsMenuItem = ({
   )
 }
 FeedsMenuItem = memo(FeedsMenuItem)
-
-let ListsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
-  const {_} = useLingui()
-  const t = useTheme()
-
-  return (
-    <MenuItem
-      icon={<List style={[t.atoms.text]} width={iconWidth} />}
-      label={_(msg`Lists`)}
-      onPress={onPress}
-    />
-  )
-}
-ListsMenuItem = memo(ListsMenuItem)
 
 let NewsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
   const {_} = useLingui()
