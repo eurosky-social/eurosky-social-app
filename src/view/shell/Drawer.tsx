@@ -49,7 +49,6 @@ import {
   OsoNewsIcon,
   OsoSettingsIcon,
 } from '#/components/icons/OsoNav'
-import {Tote} from '#/components/icons/Tote'
 import {InlineLinkText} from '#/components/Link'
 import {OTAChannelNotice} from '#/components/OTAChannelNotice'
 import {ProfileBadges} from '#/components/ProfileBadges'
@@ -261,12 +260,6 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
     setDrawerOpen(false)
   }, [navigation, setDrawerOpen, ax])
 
-  const onPressStarterPacks = useCallback(() => {
-    ax.metric('nav:click', {item: 'starterPacks', surface: 'drawer'})
-    navigation.navigate('OsoStarterPacks')
-    setDrawerOpen(false)
-  }, [navigation, setDrawerOpen, ax])
-
   const onPressSettings = useCallback(() => {
     ax.metric('nav:click', {item: 'settings', surface: 'drawer'})
     navigation.navigate('Settings')
@@ -329,7 +322,6 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
             <FeedsMenuItem isActive={isAtHome} onPress={onPressHome} />
             <NewsMenuItem onPress={onPressNews} />
             <EventsMenuItem onPress={onPressEvents} />
-            <StarterPacksMenuItem onPress={onPressStarterPacks} />
             <SearchMenuItem isActive={isAtSearch} onPress={onPressSearch} />
             <NotificationsMenuItem
               isActive={isAtNotifications}
@@ -579,24 +571,6 @@ let EventsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
   )
 }
 EventsMenuItem = memo(EventsMenuItem)
-
-let StarterPacksMenuItem = ({
-  onPress,
-}: {
-  onPress: () => void
-}): React.ReactNode => {
-  const {_} = useLingui()
-  const t = useTheme()
-
-  return (
-    <MenuItem
-      icon={<Tote style={[t.atoms.text]} width={iconWidth} />}
-      label={_(msg`Starter Packs`)}
-      onPress={onPress}
-    />
-  )
-}
-StarterPacksMenuItem = memo(StarterPacksMenuItem)
 
 let SettingsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
   const {_} = useLingui()

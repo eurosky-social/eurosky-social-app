@@ -58,7 +58,6 @@ import {
   OsoSettingsIcon,
 } from '#/components/icons/OsoNav'
 import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/Plus'
-import {Tote as ToteIcon} from '#/components/icons/Tote'
 import {UserCircle_Stroke2_Corner0_Rounded as UserCircleIcon} from '#/components/icons/UserCircle'
 import {CENTER_COLUMN_OFFSET, CENTER_COLUMN_WIDTH} from '#/components/Layout'
 import * as Menu from '#/components/Menu'
@@ -715,16 +714,6 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             icons={{
               inactive: OsoEventsIcons.inactive,
               active: OsoEventsIcons.active,
-            }}
-          />
-          <NavItem
-            label={l`Starter Packs`}
-            href="/starter-packs"
-            navItem="starterPacks"
-            minimal={leftNavMinimal}
-            icons={{
-              inactive: ToteIcon,
-              active: ToteIcon,
             }}
           />
           <NavItem
