@@ -225,6 +225,13 @@ const css = fs.readFileSync(path.join(PAGES_DIR, 'pages.css'), 'utf8')
 const logo = fs
   .readFileSync(path.join(ROOT, 'assets/brand/mark.svg'), 'utf8')
   .replace(/<svg /, '<svg aria-hidden="true" focusable="false" ')
+/*
+ * The round logo fills the whole square, so it stays readable as a tab icon;
+ * the app's PNG favicons are cut down from the padded app icon and blur.
+ */
+const favicon =
+  'data:image/svg+xml;base64,' +
+  fs.readFileSync(path.join(ROOT, 'assets/brand/hero.svg')).toString('base64')
 
 const pages = [
   ...new Set(
@@ -236,7 +243,7 @@ const pages = [
 ]
 
 for (const page of pages) {
-  const values = {css, logo}
+  const values = {css, logo, favicon}
   const titles = {}
   for (const lang of LANGS) {
     const file = path.join(CONTENT_DIR, `${page}.${lang}.md`)
