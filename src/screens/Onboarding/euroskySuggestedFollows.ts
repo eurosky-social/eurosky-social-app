@@ -94,7 +94,6 @@ async function fetchPackMembers(client: Client, packUris: string[]) {
 export function useEuroskySuggestedOnboardingUsers(props: {
   category?: string | null
   search?: boolean
-  overrideInterests: string[]
 }) {
   const appviewClient = useAppviewClient()
   const {category = null} = props
@@ -138,7 +137,10 @@ export function useEuroskySuggestedOnboardingUsers(props: {
   })
 
   // Bluesky's appview suggestions for the same inputs (untouched upstream hook).
-  const bluesky = useBlueskySuggestedOnboardingUsers(props)
+  const bluesky = useBlueskySuggestedOnboardingUsers({
+    ...props,
+    overrideInterests: [],
+  })
 
   return useMemo(() => {
     const ourActors = hasOursSource ? (ours.data ?? []) : []

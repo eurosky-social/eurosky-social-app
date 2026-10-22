@@ -3,7 +3,7 @@ import {View} from 'react-native'
 import {TID} from '@atproto/common-web'
 import {type Un$Typed} from '@atproto/lex'
 import {type AtUriString, toDatetimeString} from '@atproto/syntax'
-import {overwriteSavedFeeds, setInterestsPref, upsertProfile} from '@bsky/sdk'
+import {overwriteSavedFeeds, upsertProfile} from '@bsky/sdk'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
@@ -102,20 +102,14 @@ export function StepFinished() {
       : undefined
 
     try {
-      const {interestsStepResults, profileStepResults} = state
-      const {selectedInterests} = interestsStepResults
+      const {profileStepResults} = state
 
       // Wait for feed preferences even when another onboarding task fails.
       const results = await Promise.allSettled([
         bulkWriteFollows(pdsClient, appviewClient, followDids, starterPackRef),
-        (async () => {
-          // Interests need to get saved first, then we can write the feeds to prefs
-          await pdsClient.call(setInterestsPref, {tags: selectedInterests})
-
-          await pdsClient.call(overwriteSavedFeeds, [
-            {...TIMELINE_SAVED_FEED, id: TID.nextStr()},
-          ])
-        })(),
+        pdsClient.call(overwriteSavedFeeds, [
+          {...TIMELINE_SAVED_FEED, id: TID.nextStr()},
+        ]),
         (async () => {
           const {imageUri, imageMime} = profileStepResults
           const blobPromise =
