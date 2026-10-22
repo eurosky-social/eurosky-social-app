@@ -66,7 +66,7 @@ import {TrendingVideos as TrendingVideosInterstitial} from '#/components/interst
 import {isStandardSiteEmbed} from '#/components/Post/Embed/StandardSiteEmbed/utils'
 import {RichText} from '#/components/RichText'
 import {useAnalytics} from '#/analytics'
-import {IS_IOS, IS_NATIVE, IS_WEB} from '#/env'
+import {IS_IOS, IS_NATIVE, IS_PARTNER_PREVIEW, IS_WEB} from '#/env'
 import {DiscoverFeedLiveEventFeedsAndTrendingBanner} from '#/features/liveEvents/components/DiscoverFeedLiveEventFeedsAndTrendingBanner'
 import {
   isStatusStillActive,
@@ -559,8 +559,10 @@ let PostFeed = ({
                       key: 'liveEventFeedsAndTrendingBanner-' + sliceIndex,
                     })
                     // Show composer prompt for Discover and Following feeds
+                    // (Oso puts it above every home feed, see FeedPage)
                     if (
                       hasSession &&
+                      !IS_PARTNER_PREVIEW &&
                       (feedUriOrActorDid === DISCOVER_FEED_URI ||
                         feed === 'following')
                     ) {
@@ -591,7 +593,7 @@ let PostFeed = ({
                 } else if (feedKind === 'following') {
                   if (sliceIndex === 0) {
                     // Show composer prompt for Following feed
-                    if (hasSession) {
+                    if (hasSession && !IS_PARTNER_PREVIEW) {
                       arr.push({
                         type: 'composerPrompt',
                         key: 'composerPrompt-' + sliceIndex,
