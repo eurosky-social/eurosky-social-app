@@ -10,8 +10,9 @@
  *
  *   node scripts/build-oso-pages.mjs web-build
  *
- * The Markdown supports only what the pages use: `##` sections, `###`
- * questions, paragraphs, `- ` lists, `[text](url)` links and `**bold**`.
+ * The Markdown supports only what the pages use: `##` sections and `###`
+ * entries (both in the index), `####` subheadings, paragraphs, `- `, `1. `
+ * and `a. ` lists, `[text](url)` links, `**bold**` and `*italic*`.
  * A heading can set its own anchor with `{#id}` at the end, and
  * `[text](#id)` links to it within the same language. The build fails on a
  * link to an anchor that does not exist.
@@ -77,6 +78,15 @@ function inline(text, lang, anchors) {
       return `<a href="${safeUrl(url)}">${label}</a>`
     })
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*\w])\*([^*\s][^*]*?)\*(?=[^*\w]|$)/g, '$1<em>$2</em>')
+}
+
+/** List markers: `- ` bullets, `1. ` numbers and `a. ` letters. */
+const LIST_ITEM = /^(?:(-)|(\d+)\.|([a-z])\.) (.+)/
+const LIST_TAGS = {
+  bullet: ['<ul>', '</ul>'],
+  number: ['<ol>', '</ol>'],
+  letter: ['<ol type="a">', '</ol>'],
 }
 
 /** Split `Heading text {#id}` into its text and the anchor it asks for. */
@@ -110,18 +120,33 @@ function render(body, lang) {
   const toc = []
   let paragraph = []
   let list = []
+  let listKind = 'bullet'
+  /** Number of a numbered list's first item, for a list that resumes. */
+  let listStart = 1
 
-  const flush = () => {
+  const flushParagraph = () => {
     if (paragraph.length) {
       html.push(`<p>${inline(paragraph.join(' '), lang, anchors)}</p>`)
       paragraph = []
     }
+  }
+  const flushList = () => {
     if (list.length) {
+      let [open, close] = LIST_TAGS[listKind]
+      if (listKind === 'number' && listStart !== 1) {
+        open = `<ol start="${listStart}">`
+      }
       html.push(
-        `<ul>${list.map(item => `<li>${inline(item, lang, anchors)}</li>`).join('')}</ul>`,
+        open +
+          list.map(item => `<li>${inline(item, lang, anchors)}</li>`).join('') +
+          close,
       )
       list = []
     }
+  }
+  const flush = () => {
+    flushParagraph()
+    flushList()
   }
 
   for (const raw of body.split('\n')) {
@@ -139,12 +164,18 @@ function render(body, lang) {
       const {text, id} = heading(match[1], lang, used)
       html.push(`<h3 id="${id}">${inline(text)}</h3>`)
       toc.at(-1)?.questions.push({id, text})
-    } else if ((match = line.match(/^- (.+)/))) {
-      if (paragraph.length) {
-        html.push(`<p>${inline(paragraph.join(' '), lang, anchors)}</p>`)
-        paragraph = []
-      }
-      list.push(match[1])
+    } else if ((match = line.match(/^#### (.+)/))) {
+      flush()
+      const {text, id} = heading(match[1], lang, used)
+      html.push(`<h4 id="${id}">${inline(text)}</h4>`)
+    } else if ((match = line.match(LIST_ITEM))) {
+      flushParagraph()
+      const kind = match[1] ? 'bullet' : match[2] ? 'number' : 'letter'
+      // A new kind of marker starts a new list.
+      if (list.length && kind !== listKind) flushList()
+      if (!list.length) listStart = Number(match[2] ?? 1)
+      listKind = kind
+      list.push(match[4])
     } else {
       if (list.length) flush()
       paragraph.push(line)

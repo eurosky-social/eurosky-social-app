@@ -134,13 +134,26 @@ h3 {
   line-height: 1.35;
 }
 
+h4 {
+  margin: 24px 0 6px;
+  font-size: 17px;
+  line-height: 1.4;
+}
+
 p,
-ul {
+ul,
+ol {
   margin: 0 0 14px;
 }
 
-ul {
+ul,
+ol {
   padding-left: 22px;
+}
+
+/* Lettered lists sit under an item of the numbered list above them. */
+ol[type='a'] {
+  padding-left: 44px;
 }
 
 li {
