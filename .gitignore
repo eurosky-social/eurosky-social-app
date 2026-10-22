@@ -151,6 +151,3 @@ docs/superpowers/
 
 # pnpm
 .pnpm-store/
-
-# Source material for Oso's static pages (Word files, design references).
-brands/oso/pages/reference/
