@@ -7,7 +7,7 @@ import {Text} from '#/components/Typography'
 import {EVENT_POSTS_SHOWN} from '../config'
 import {useEventPostsQuery, usePrecacheEvent} from '../queries'
 import {type EventProfile, type EventRecord} from '../types'
-import {getEventShareUrls, hideEventLinks, makeEventLink} from '../util'
+import {makeEventLink} from '../util'
 import {EventFeedItemPost} from './EventFeedItemPost'
 
 /**
@@ -30,7 +30,6 @@ export function EventFeedItemPosts({
     pageSize: EVENT_POSTS_SHOWN,
   })
   const posts = data?.pages[0]?.posts ?? []
-  const eventUrls = getEventShareUrls(event, profile)
 
   if (!posts.length) return null
 
@@ -50,7 +49,7 @@ export function EventFeedItemPosts({
       {posts.map((post, i) => (
         <EventFeedItemPost
           key={post.uri}
-          post={hideEventLinks(post, eventUrls)}
+          post={post}
           hideTopBorder={i === 0}
           style={[a.border_l, t.atoms.bg, t.atoms.border_contrast_low]}
         />
