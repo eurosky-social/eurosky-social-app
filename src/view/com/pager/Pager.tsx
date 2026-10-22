@@ -26,6 +26,7 @@ import {scheduleOnRN} from 'react-native-worklets'
 import {updateActiveVideoViewAsync} from '@bsky.app/video'
 import {useFocusEffect} from '@react-navigation/native'
 
+import {usePagerFade} from '#/lib/hooks/usePagerFade'
 import {useSetDrawerSwipeDisabled} from '#/state/shell'
 import {atoms as a, native} from '#/alf'
 
@@ -111,6 +112,7 @@ export function Pager({
   const dragState = useSharedValue<'idle' | 'settling' | 'dragging'>('idle')
   const dragProgress = useSharedValue(selectedPage)
   const didInit = useSharedValue(false)
+  const pagerFade = usePagerFade(dragProgress)
   const handlePageScroll = usePagerHandlers({
     onPageScroll(e: PagerViewOnPageScrollEventData) {
       'worklet'
@@ -143,6 +145,9 @@ export function Pager({
     },
     onPageSelected(e: PagerViewOnPageSelectedEventData) {
       'worklet'
+      if (!didInit.get()) {
+        dragProgress.set(e.position)
+      }
       didInit.set(true)
       scheduleOnRN(onPageSelectedJSThread, e.position)
     },
@@ -159,8 +164,9 @@ export function Pager({
       <DrawerGestureRequireFail>
         <MemoizedAnimatedPagerView
           ref={pagerView}
-          style={a.flex_1}
+          style={[a.flex_1, pagerFade.style]}
           initialPage={initialPage}
+          onLayout={pagerFade.onLayout}
           onPageScroll={handlePageScroll}>
           {children}
         </MemoizedAnimatedPagerView>

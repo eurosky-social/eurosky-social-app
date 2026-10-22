@@ -83,7 +83,7 @@ module.exports = function (_config) {
       userInterfaceStyle: 'automatic',
       primaryColor: BRAND_ACCENT.primary_500,
       ios: {
-        supportsTablet: false,
+        supportsTablet: true,
         bundleIdentifier: 'social.mu.app',
         buildNumber: process.env.BSKY_IOS_BUILD_NUMBER ?? '1',
         appleTeamId: APPLE_TEAM_ID,
@@ -92,6 +92,13 @@ module.exports = function (_config) {
         },
         icon: IOS_ICON_FILE,
         infoPlist: {
+          UISupportedInterfaceOrientations: ['UIInterfaceOrientationPortrait'],
+          'UISupportedInterfaceOrientations~ipad': [
+            'UIInterfaceOrientationPortrait',
+            'UIInterfaceOrientationPortraitUpsideDown',
+            'UIInterfaceOrientationLandscapeLeft',
+            'UIInterfaceOrientationLandscapeRight',
+          ],
           CADisableMinimumFrameDurationOnPhone: true,
           UIBackgroundModes: ['remote-notification'],
           NSUserActivityTypes: ['INSendMessageIntent'],
@@ -357,6 +364,7 @@ module.exports = function (_config) {
         './plugins/withAndroidManifestLargeHeapPlugin.js',
         './plugins/withAndroidManifestFCMIconPlugin.js',
         './plugins/withAndroidManifestIntentQueriesPlugin.js',
+        './plugins/withAndroidManifestOptionalCameraPlugin.js',
         './plugins/withAndroidStylesAccentColorPlugin.js',
         './plugins/withAndroidNoJitpackPlugin.js',
         './plugins/withAndroidPreparedTextLayoutPlugin.js',
@@ -439,7 +447,7 @@ module.exports = function (_config) {
             },
           },
         ],
-        ['expo-screen-orientation', {initialOrientation: 'PORTRAIT_UP'}],
+        ['expo-screen-orientation'],
         ['expo-location'],
         [
           'expo-contacts',

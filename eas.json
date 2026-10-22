@@ -6,7 +6,7 @@
   },
   "build": {
     "base": {
-      "node": "24.19.0",
+      "node": "24.22.1",
       "env": {
         "EXPO_PUBLIC_APPVIEW_URL": "https://api.bsky.app",
         "EXPO_PUBLIC_APPVIEW_DID": "did:web:api.bsky.app",

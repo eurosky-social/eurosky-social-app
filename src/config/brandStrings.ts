@@ -81,6 +81,8 @@ const APP_BRAND_MSGIDS = new Set<string>([
   'SEDOhX', // Opens 0 outside Bluesky (profile links)
   'WqbUOH', // A screenshot of the post composer... "Bluesky has drafts now!!!"
   'dKRV7a', // Post it to Bluesky or share anywhere. (group chats announcement)
+  '6oSz7c', // Bluesky now makes full use of your iPad's screen... (iPad announcement)
+  'SdoOAM', // Bluesky adapts to your iPad's screen... (beta feature settings)
   'pYv2lK', // ...let them scan the code to join you on Bluesky. (invite friends announcement)
   'BZUP5P', // Bluesky needs camera access to scan QR codes from other profiles. (invite scanner)
   'CFvtZB', // Please use the Bluesky mobile app to scan a QR code. (invite scanner, web)
