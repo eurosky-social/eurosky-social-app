@@ -39,6 +39,7 @@ import {
 import {CalendarDays_Stroke2_Corner0_Rounded as Calendar} from '#/components/icons/CalendarDays'
 import {Message_Stroke2_Corner0_Rounded as Message} from '#/components/icons/Message'
 import {
+  createOsoNavIconsFrom,
   OsoChatActiveIcon,
   OsoChatIcon,
   OsoExploreActiveIcon,
@@ -432,6 +433,9 @@ interface MenuItemProps extends ComponentProps<typeof PressableScale> {
   bold?: boolean
 }
 
+/** Events has no icon in Oso's design, so it is built from the calendar. */
+const OsoEventsIcon = createOsoNavIconsFrom(Calendar).inactive
+
 let SearchMenuItem = ({
   isActive,
   onPress,
@@ -568,7 +572,7 @@ let EventsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
 
   return (
     <MenuItem
-      icon={<Calendar style={[t.atoms.text]} width={iconWidth} />}
+      icon={<OsoEventsIcon style={[t.atoms.text]} width={iconWidth} />}
       label={_(msg`Events`)}
       onPress={onPress}
     />

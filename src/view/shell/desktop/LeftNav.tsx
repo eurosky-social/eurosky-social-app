@@ -45,6 +45,7 @@ import {CalendarDays_Stroke2_Corner0_Rounded as CalendarIcon} from '#/components
 import {type Props as SVGIconProps} from '#/components/icons/common'
 import {DotGrid3x1_Stroke2_Corner0_Rounded as EllipsisIcon} from '#/components/icons/DotGrid'
 import {
+  createOsoNavIconsFrom,
   OsoChatActiveIcon,
   OsoChatIcon,
   OsoExploreActiveIcon,
@@ -74,6 +75,9 @@ import {router} from '#/routes'
 import {PlatformInfo} from '../../../../modules/expo-bluesky-swiss-army'
 
 const LARGE_ELEMENT_SIZE = 48
+/** Events has no icon in Oso's design, so it is built from the calendar. */
+const OsoEventsIcons = createOsoNavIconsFrom(CalendarIcon)
+
 const NAV_ICON_WIDTH = 28
 
 export const LEFT_NAV_STANDARD_WIDTH = 240
@@ -709,8 +713,8 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             navItem="events"
             minimal={leftNavMinimal}
             icons={{
-              inactive: CalendarIcon,
-              active: CalendarIcon,
+              inactive: OsoEventsIcons.inactive,
+              active: OsoEventsIcons.active,
             }}
           />
           <NavItem
