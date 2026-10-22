@@ -114,7 +114,7 @@ main {
 
 h1 {
   margin: 0 0 32px;
-  color: var(--purple);
+  color: var(--text);
   font-size: clamp(36px, 6vw, 52px);
   line-height: 1.1;
   letter-spacing: -0.02em;
@@ -149,20 +149,20 @@ li {
 
 a {
   color: var(--purple);
-  text-decoration-color: var(--green);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 3px;
+  text-decoration: none;
 }
 
 a:hover {
-  text-decoration-color: var(--purple);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
+/* Separates the index from the answers, with about two lines of space. */
 hr {
   height: 3px;
-  margin: 40px 0 0;
+  margin: 64px 0 0;
   border: 0;
-  background: var(--green);
+  background: var(--purple);
 }
 
 /* Contents */
@@ -173,19 +173,14 @@ hr {
 }
 
 .toc a {
-  text-decoration: none;
-}
-
-.toc a:hover {
-  text-decoration: underline;
-  text-decoration-color: var(--green);
+  color: var(--text);
 }
 
 .toc > ol > li {
   margin-bottom: 16px;
 }
 
-.toc > ol > li > a {
+.toc > ol > li > span {
   font-weight: 700;
 }
 

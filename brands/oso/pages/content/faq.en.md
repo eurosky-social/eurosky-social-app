@@ -1,6 +1,6 @@
 ---
 lang: en
-title: Frequently asked questions
+title: FAQ
 ---
 
 ## About oso.social

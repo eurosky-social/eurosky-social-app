@@ -162,7 +162,7 @@ function render(body, lang) {
     toc
       .map(
         section =>
-          `<li><a href="#${section.id}">${inline(section.text)}</a>` +
+          `<li><span>${inline(section.text)}</span>` +
           (section.questions.length
             ? '<ol>' +
               section.questions
