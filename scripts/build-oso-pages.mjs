@@ -217,7 +217,7 @@ function render(body, lang) {
 const template = fs.readFileSync(path.join(PAGES_DIR, 'template.html'), 'utf8')
 const css = fs.readFileSync(path.join(PAGES_DIR, 'pages.css'), 'utf8')
 const logo = fs
-  .readFileSync(path.join(ROOT, 'brands/oso/mark.svg'), 'utf8')
+  .readFileSync(path.join(ROOT, 'assets/brand/mark.svg'), 'utf8')
   .replace(/<svg /, '<svg aria-hidden="true" focusable="false" ')
 
 const pages = [

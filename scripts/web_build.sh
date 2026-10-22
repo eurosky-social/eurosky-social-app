@@ -6,8 +6,8 @@
 #   environment of the same name (production, staging, dev, oso, oso-dev).
 #
 # Loads .github/environments/common.env, then <environment>.env on top, and
-# runs the brand's build (scripts/bunny_build.sh for Mu, build-oso-preview.sh
-# for Oso). The same command reproduces a CI build locally. Uploading is a
+# runs the brand's build (scripts/bunny_build.sh for Mu, build-oso.sh for
+# Oso). The same command reproduces a CI build locally. Uploading is a
 # separate step (scripts/bunny_upload.sh) so a local build never deploys.
 #
 # Under GitHub Actions, writes `dir`, `url` and `edge_setup` to $GITHUB_OUTPUT.
@@ -37,8 +37,8 @@ case "$DEPLOY_BRAND" in
     DIR=web-build
     ;;
   oso)
-    bash scripts/build-oso-preview.sh
-    DIR=web-build-oso
+    bash scripts/build-oso.sh
+    DIR=web-build
     ;;
   *)
     echo "unknown DEPLOY_BRAND '$DEPLOY_BRAND'" >&2

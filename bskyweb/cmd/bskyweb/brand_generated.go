@@ -2,8 +2,8 @@
 
 package main
 
-const brandName = "mu"
-const brandHost = "mu.social"
-const brandHomeURL = "https://mu.social"
-const brandSocialCardURL = "https://mu.social/static/social-card-default-gradient.png"
+const brandName = "oso"
+const brandHost = "oso.social"
+const brandHomeURL = "https://oso.social"
+const brandSocialCardURL = "https://oso.social/static/social-card-default-gradient.png"
 const brandEmbedService = "https://embed.bsky.app"
