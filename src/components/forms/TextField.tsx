@@ -27,7 +27,8 @@ import {
 import {useInteractionState} from '#/components/hooks/useInteractionState'
 import {type Props as SVGIconProps} from '#/components/icons/common'
 import {Text} from '#/components/Typography'
-import {IS_WEB} from '#/env'
+import {IS_PARTNER_PREVIEW, IS_WEB} from '#/env'
+import {osoColors, osoField} from '#/features/osoAuthStyles'
 
 const Context = createContext<{
   inputRef: React.RefObject<React.ComponentRef<typeof TextInput> | null> | null
@@ -119,17 +120,25 @@ export function Root({children, isInvalid = false, style}: RootProps) {
 export function useSharedInputStyles() {
   const t = useTheme()
   return useMemo(() => {
-    const hover: ViewStyle[] = [
-      {
-        borderColor: t.palette.contrast_100,
-      },
-    ]
-    const focus: ViewStyle[] = [
-      {
-        backgroundColor: t.palette.primary_25,
-        borderColor: t.palette.primary_500,
-      },
-    ]
+    /*
+     * Oso's fields are white with a green border (see osoField); hover keeps
+     * it and focus darkens it, at the same width so the field doesn't shift.
+     */
+    const hover: ViewStyle[] = IS_PARTNER_PREVIEW
+      ? [{...osoField.chrome, borderColor: osoColors.greenHover}]
+      : [
+          {
+            borderColor: t.palette.contrast_100,
+          },
+        ]
+    const focus: ViewStyle[] = IS_PARTNER_PREVIEW
+      ? [{...osoField.chrome, borderColor: osoColors.greenFocus}]
+      : [
+          {
+            backgroundColor: t.palette.primary_25,
+            borderColor: t.palette.primary_500,
+          },
+        ]
     const error: ViewStyle[] = [
       {
         backgroundColor: t.palette.negative_25,
@@ -228,6 +237,8 @@ export function createInput(Component: typeof TextInput) {
         a.flex_1,
         a.text_input,
         t.atoms.text,
+        // Oso's fields stay white, so their text is black in dark mode too.
+        IS_PARTNER_PREVIEW && osoField.text,
         a.px_xs,
         {
           // paddingVertical doesn't work w/multiline - esb
@@ -301,6 +312,7 @@ export function createInput(Component: typeof TextInput) {
             {borderRadius: 10},
             t.atoms.bg_contrast_50,
             {borderColor: 'transparent', borderWidth: 1},
+            IS_PARTNER_PREVIEW && osoField.chrome,
             ctx.hovered ? chromeHover : {},
             ctx.focused ? chromeFocus : {},
             chromeStyle,
@@ -361,7 +373,7 @@ export function Icon({
     ]
     const focus: TextStyle[] = [
       {
-        color: t.palette.primary_500,
+        color: IS_PARTNER_PREVIEW ? osoColors.black : t.palette.primary_500,
       },
     ]
     const errorHover: TextStyle[] = [

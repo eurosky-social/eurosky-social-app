@@ -1,12 +1,21 @@
 import {type TextStyle, type ViewStyle} from 'react-native'
 
 /**
- * Oso's logo green and the text colour on these buttons. The green is too
- * light for the app's accent ramp, so the sign-in buttons set it here.
+ * Oso's logo green and the text colour on it. The green is too light for the
+ * app's accent ramp, so Oso's buttons and fields set it directly.
  */
 const OSO_GREEN = '#55FF80'
 const OSO_GREEN_HOVER = '#3DF06C'
+/** Border of a focused field, darker so focus reads against the green. */
+const OSO_GREEN_FOCUS = '#1FCF58'
 const OSO_BLACK = '#000000'
+
+export const osoColors = {
+  green: OSO_GREEN,
+  greenHover: OSO_GREEN_HOVER,
+  greenFocus: OSO_GREEN_FOCUS,
+  black: OSO_BLACK,
+}
 
 /**
  * Styles for the signed-out screens' buttons. Pass `style` and `hoverStyle` to

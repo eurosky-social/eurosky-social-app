@@ -24,6 +24,8 @@ import {
 import {atoms as a, flatten, select, useTheme} from '#/alf'
 import {type Props as SVGIconProps} from '#/components/icons/common'
 import {Text} from '#/components/Typography'
+import {IS_PARTNER_PREVIEW} from '#/env'
+import {osoColors} from '#/features/osoAuthStyles'
 
 /**
  * The `Button` component, and some extensions of it like `Link` are intended
@@ -343,7 +345,10 @@ export const Button = forwardRef<React.ComponentRef<typeof View>, ButtonProps>(
             if (!disabled) {
               baseStyles.push(t.atoms.bg)
               hoverStyles.push({
-                backgroundColor: t.palette.primary_100,
+                // Oso's text buttons (Save, Cancel, ...) turn logo green.
+                backgroundColor: IS_PARTNER_PREVIEW
+                  ? osoColors.green
+                  : t.palette.primary_100,
               })
             }
           }
@@ -692,10 +697,14 @@ export function useSharedButtonTextStyles() {
             baseStyles.push({color: t.palette.primary_600, opacity: 0.5})
           }
         } else if (variant === 'ghost') {
+          // Oso's text buttons use the text colour instead of the accent.
+          const ghostColor = IS_PARTNER_PREVIEW
+            ? t.atoms.text.color
+            : t.palette.primary_600
           if (!disabled) {
-            baseStyles.push({color: t.palette.primary_600})
+            baseStyles.push({color: ghostColor})
           } else {
-            baseStyles.push({color: t.palette.primary_600, opacity: 0.5})
+            baseStyles.push({color: ghostColor, opacity: 0.5})
           }
         }
       } else if (color === 'secondary') {
