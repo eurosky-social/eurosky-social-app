@@ -11,6 +11,7 @@ import {findAllPostsInQueryData as findAllPostsInFeedQueryData} from '#/state/qu
 import {findAllPostsInQueryData as findAllPostsInQuoteQueryData} from '#/state/queries/post-quotes'
 import {findAllPostsInQueryData as findAllPostsInSearchQueryData} from '#/state/queries/search-posts-v2'
 import {findAllPostsInQueryData as findAllPostsInThreadV2QueryData} from '#/state/queries/usePostThread/queryCache'
+import {findAllPostsInQueryData as findAllPostsInEventPostsQueryData} from '#/features/events/queries'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {castAsShadow, type Shadow} from './types'
@@ -207,6 +208,9 @@ function* findPostsInCache(
     yield post
   }
   for (let post of findAllPostsInBookmarksQueryData(queryClient, uri)) {
+    yield post
+  }
+  for (let post of findAllPostsInEventPostsQueryData(queryClient, uri)) {
     yield post
   }
 }

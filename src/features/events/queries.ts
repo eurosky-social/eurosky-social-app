@@ -21,7 +21,12 @@ import {uploadBlob} from '#/lib/api'
 import {BLUESKY_APPVIEW_SERVICE} from '#/lib/constants'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {STALE} from '#/state/queries'
-import {createQueryKey} from '#/state/queries/util'
+import {
+  createQueryKey,
+  didOrHandleUriMatches,
+  embedViewRecordToPostView,
+  getEmbeddedPost,
+} from '#/state/queries/util'
 import {useAppviewClient, usePdsClient, useSession} from '#/state/session'
 import * as Toast from '#/components/Toast'
 import {app, com} from '#/lexicons'
@@ -50,7 +55,7 @@ import {
   type ViewerRsvp,
   type ViewerRsvps,
 } from './types'
-import {applyRsvpChange, getEventShareUrls} from './util'
+import {applyRsvpChange, getEventShareUrls, hideEventLinks} from './util'
 
 const eventFeedQueryKeyRoot = 'eventFeed'
 const eventQueryKeyRoot = 'event'
@@ -187,18 +192,28 @@ export function useEventPostsQuery({
     queryKey: createEventPostsQueryKey({uri: event.uri, pageSize}),
     // Bluesky's post search requires authentication.
     enabled: hasSession && !!moderationOpts,
-    queryFn: ({pageParam}) =>
-      client.call(
+    queryFn: async ({pageParam}) => {
+      const urls = getEventShareUrls(event, profile)
+      const page = await client.call(
         app.bsky.feed.searchPostsV2,
         {
-          urls: getEventShareUrls(event, profile) as UriString[],
+          urls: urls as UriString[],
           limit: pageSize,
           cursor: pageParam,
           // Without this, search only covers recent posts.
           allTime: true,
         },
         {service: BLUESKY_APPVIEW_SERVICE},
-      ),
+      )
+      /*
+       * Links are hidden before caching, not at render, so the cached posts are
+       * the ones rendered and post shadows (likes, reposts) attach to them.
+       */
+      return {
+        ...page,
+        posts: page.posts.map(post => hideEventLinks(post, urls)),
+      }
+    },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: page => page.cursor,
     select: data => ({
@@ -214,6 +229,30 @@ export function useEventPostsQuery({
     }),
     staleTime: STALE.MINUTES.FIVE,
   })
+}
+
+/**
+ * Every cached copy of the post at `uri` in the event posts lists, including
+ * quoted posts, so post shadows (e.g. likes) apply to them.
+ */
+export function* findAllPostsInQueryData(
+  queryClient: QueryClient,
+  uri: string,
+): Generator<app.bsky.feed.defs.PostView, void> {
+  const atUri = new AtUri(uri)
+  for (const [_key, data] of queryClient.getQueriesData<
+    InfiniteData<app.bsky.feed.searchPostsV2.$OutputBody>
+  >({queryKey: [eventPostsQueryKeyRoot]})) {
+    for (const page of data?.pages ?? []) {
+      for (const post of page.posts) {
+        if (didOrHandleUriMatches(atUri, post)) yield post
+        const quotedPost = getEmbeddedPost(post.embed)
+        if (quotedPost && didOrHandleUriMatches(atUri, quotedPost)) {
+          yield embedViewRecordToPostView(quotedPost)
+        }
+      }
+    }
+  }
 }
 
 /**
