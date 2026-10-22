@@ -44,33 +44,22 @@ import {
 import {CalendarDays_Stroke2_Corner0_Rounded as CalendarIcon} from '#/components/icons/CalendarDays'
 import {type Props as SVGIconProps} from '#/components/icons/common'
 import {DotGrid3x1_Stroke2_Corner0_Rounded as EllipsisIcon} from '#/components/icons/DotGrid'
-import {EditBig_Stroke2_Corner2_Rounded as EditBigIcon} from '#/components/icons/EditBig'
 import {
-  Hashtag_Filled_Corner0_Rounded as HashtagFilledIcon,
-  Hashtag_Stroke2_Corner0_Rounded as HashtagIcon,
-} from '#/components/icons/Hashtag'
-import {
-  MagnifyingGlass_Filled_Stroke2_Corner0_Rounded as MagnifyingGlassFilledIcon,
-  MagnifyingGlass_Stroke2_Corner0_Rounded as MagnifyingGlassIcon,
-} from '#/components/icons/MagnifyingGlass'
-import {
-  Message_Stroke2_Corner0_Rounded as MessageIcon,
-  Message_Stroke2_Corner0_Rounded_Filled as MessageFilledIcon,
-} from '#/components/icons/Message'
-import {
-  Newspaper_Filled_Corner2_Rounded as NewspaperFilledIcon,
-  Newspaper_Stroke2_Corner2_Rounded as NewspaperIcon,
-} from '#/components/icons/Newspaper'
+  OsoChatActiveIcon,
+  OsoChatIcon,
+  OsoExploreActiveIcon,
+  OsoExploreIcon,
+  OsoFeedsActiveIcon,
+  OsoFeedsIcon,
+  OsoNewsActiveIcon,
+  OsoNewsIcon,
+  OsoPlusIcon,
+  OsoSettingsActiveIcon,
+  OsoSettingsIcon,
+} from '#/components/icons/OsoNav'
 import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/Plus'
-import {
-  SettingsGear2_Filled_Corner0_Rounded as SettingsFilledIcon,
-  SettingsGear2_Stroke2_Corner0_Rounded as SettingsIcon,
-} from '#/components/icons/SettingsGear2'
 import {Tote as ToteIcon} from '#/components/icons/Tote'
-import {
-  UserCircle_Filled_Corner0_Rounded as UserCircleFilledIcon,
-  UserCircle_Stroke2_Corner0_Rounded as UserCircleIcon,
-} from '#/components/icons/UserCircle'
+import {UserCircle_Stroke2_Corner0_Rounded as UserCircleIcon} from '#/components/icons/UserCircle'
 import {CENTER_COLUMN_OFFSET, CENTER_COLUMN_WIDTH} from '#/components/Layout'
 import * as Menu from '#/components/Menu'
 import * as Prompt from '#/components/Prompt'
@@ -80,6 +69,7 @@ import {useAnalytics} from '#/analytics'
 import {type Events} from '#/analytics/metrics/types'
 import {useActorStatus} from '#/features/liveNow'
 import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
+import {osoButton} from '#/features/osoAuthStyles'
 import {type app} from '#/lexicons'
 import {router} from '#/routes'
 import {PlatformInfo} from '../../../../modules/expo-bluesky-swiss-army'
@@ -545,6 +535,11 @@ function NavItem({
   )
 }
 
+/** The design's "+" in the green button's text colour. */
+function BlackPlusIcon(props: SVGIconProps) {
+  return <OsoPlusIcon {...props} fill={osoButton.greenFilled.text.color} />
+}
+
 function ComposeBtn({minimal}: {minimal: boolean}) {
   const {currentAccount} = useSession()
   const {getState} = useNavigation()
@@ -598,11 +593,14 @@ function ComposeBtn({minimal}: {minimal: boolean}) {
         color="primary"
         style={[
           a.rounded_full,
+          osoButton.greenFilled.style,
           minimal && {width: LARGE_ELEMENT_SIZE, height: LARGE_ELEMENT_SIZE},
-        ]}>
-        <ButtonIcon icon={EditBigIcon} size={minimal ? 'lg' : 'sm'} />
+        ]}
+        hoverStyle={osoButton.greenFilled.hoverStyle}>
+        {/* xs is the cap height of the button text, so + and N line up */}
+        <ButtonIcon icon={BlackPlusIcon} size={minimal ? 'sm' : 'xs'} />
         {!minimal && (
-          <ButtonText>
+          <ButtonText style={osoButton.greenFilled.text}>
             <Trans context="action">New post</Trans>
           </ButtonText>
         )}
@@ -612,7 +610,7 @@ function ComposeBtn({minimal}: {minimal: boolean}) {
 }
 
 export function DesktopLeftNav({routeName}: {routeName: string}) {
-  const {hasSession, currentAccount} = useSession()
+  const {hasSession} = useSession()
   const {t: l} = useLingui()
   const {gtMobile} = useBreakpoints()
 
@@ -677,8 +675,8 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             navItem="home"
             minimal={leftNavMinimal}
             icons={{
-              inactive: HashtagIcon,
-              active: HashtagFilledIcon,
+              inactive: OsoFeedsIcon,
+              active: OsoFeedsActiveIcon,
             }}
           />
           <NavItem
@@ -688,8 +686,8 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             relatedRoutes={NEWS_V2_ENABLED ? NEWS_HUB_ROUTES : undefined}
             minimal={leftNavMinimal}
             icons={{
-              inactive: NewspaperIcon,
-              active: NewspaperFilledIcon,
+              inactive: OsoNewsIcon,
+              active: OsoNewsActiveIcon,
             }}
           />
           <NavItem
@@ -718,8 +716,8 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             navItem="search"
             minimal={leftNavMinimal}
             icons={{
-              inactive: MagnifyingGlassIcon,
-              active: MagnifyingGlassFilledIcon,
+              inactive: OsoExploreIcon,
+              active: OsoExploreActiveIcon,
             }}
           />
           <NavItem
@@ -743,18 +741,8 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             }
             hasNew={!aa.flags.chatDisabled && numUnreadMessages.hasNew}
             icons={{
-              inactive: MessageIcon,
-              active: MessageFilledIcon,
-            }}
-          />
-          <NavItem
-            label={l`Profile`}
-            href={makeProfileLink(currentAccount!)}
-            navItem="profile"
-            minimal={leftNavMinimal}
-            icons={{
-              inactive: UserCircleIcon,
-              active: UserCircleFilledIcon,
+              inactive: OsoChatIcon,
+              active: OsoChatActiveIcon,
             }}
           />
           <NavItem
@@ -763,8 +751,8 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             navItem="settings"
             minimal={leftNavMinimal}
             icons={{
-              inactive: SettingsIcon,
-              active: SettingsFilledIcon,
+              inactive: OsoSettingsIcon,
+              active: OsoSettingsActiveIcon,
             }}
           />
 
