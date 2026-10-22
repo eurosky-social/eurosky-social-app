@@ -16101,6 +16101,11 @@ msgstr "oso's servers staan in Europa en voldoen aan Europese wetgeving, niet aa
 msgid "Donate"
 msgstr "Doneer"
 
+#: src/view/screens/Profile.tsx
+msgctxt "profile tab for bookmarks"
+msgid "Saved"
+msgstr "Opgeslagen"
+
 #: src/view/shell/desktop/RightNav.tsx
 #: src/view/shell/Drawer.tsx
 msgid "Guidelines"
