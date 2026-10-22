@@ -19,10 +19,15 @@ export enum Features {
   PostFeedKnownLikersEnable = 'post_feed:known_likers:enable',
   PostThreadKnownLikersEnable = 'post_thread:known_likers:enable',
   FollowSortEnable = 'follow_sort:enable',
+  FollowingV2Enable = 'following_v2:enable',
   OnboardingInterestsRequiredEnable = 'onboarding:interests:required:enable',
   ModerationInboxEnable = 'moderation_inbox:enable',
+  AtmosphereExploreEnable = 'atmosphere_explore:enable',
+  NotificationsV2Enable = 'notifications_v2:enable',
+  ProfileLinksEnable = 'profile_links:enable',
 
   // values
+  StarterPacksConfig = 'starter_packs:config',
   TrendingDiscoverValues = 'trending_discover:values',
   TrendingExploreTopicsCountValue = 'trending_explore_topics_count:value',
 

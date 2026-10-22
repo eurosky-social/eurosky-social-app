@@ -70,8 +70,8 @@ fi
 # Bunny build performs its own install and writes web-build/ inside this tree.
 export ROBOTS_MODE=disallow-all
 bash scripts/bunny_build.sh
-# Expo's web/ copy is not reliable for arbitrary files; copy explicitly.
-cp web/LeagueSpartan-VF.woff2 web-build/LeagueSpartan-VF.woff2
+# Keep the partner font present in the deploy artifact.
+cp public/LeagueSpartan-VF.woff2 web-build/LeagueSpartan-VF.woff2
 # Expo emits Mu's native store identifiers in the web manifest even for a
 # web-only partner preview. Do not advertise the Mu apps as related to Oso.
 node <<'NODE'

@@ -1,5 +1,6 @@
 import {useCallback, useMemo, useState} from 'react'
 import {StyleSheet, View} from 'react-native'
+import {PlatformInfo} from '@bsky.app/expo-bluesky-swiss-army'
 import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {useNavigation, useNavigationState} from '@react-navigation/native'
@@ -15,6 +16,7 @@ import {
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {isInvalidHandle, sanitizeHandle} from '#/lib/strings/handles'
 import {emitSoftReset} from '#/state/events'
+import {useHomeBadge} from '#/state/home-badge'
 import {useFetchHandle} from '#/state/queries/handle'
 import {useUnreadMessageCount} from '#/state/queries/messages/list-conversations'
 import {useUnreadNotifications} from '#/state/queries/notifications/unread'
@@ -36,14 +38,14 @@ import {
 } from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {type DialogControlProps} from '#/components/Dialog'
-import {ArrowBoxLeft_Stroke2_Corner0_Rounded as LeaveIcon} from '#/components/icons/ArrowBoxLeft'
+import {ArrowBoxLeft_Stroke2_Corner0_Rounded as LeaveIcon} from '#/components/icons/Arrow'
 import {
   Bell_Filled_Corner0_Rounded as BellFilledIcon,
   Bell_Stroke2_Corner0_Rounded as BellIcon,
 } from '#/components/icons/Bell'
 import {
-  Bookmark as BookmarkIcon,
-  BookmarkFilled as BookmarkFilledIcon,
+  Bookmark_Filled_Corner0_Rounded as BookmarkFilledIcon,
+  Bookmark_Stroke2_Corner0_Rounded as BookmarkIcon,
 } from '#/components/icons/Bookmark'
 import {
   BulletList_Filled_Corner0_Rounded as ListFilledIcon,
@@ -51,6 +53,7 @@ import {
 } from '#/components/icons/BulletList'
 import {type Props as SVGIconProps} from '#/components/icons/common'
 import {DotGrid3x1_Stroke2_Corner0_Rounded as EllipsisIcon} from '#/components/icons/DotGrid'
+import {Earth_Stroke2_Corner0_Rounded as EarthIcon} from '#/components/icons/Earth'
 import {EditBig_Stroke2_Corner2_Rounded as EditBigIcon} from '#/components/icons/EditBig'
 import {
   Hashtag_Filled_Corner0_Rounded as HashtagFilledIcon,
@@ -58,8 +61,8 @@ import {
 } from '#/components/icons/Hashtag'
 import {
   HomeOpen_Filled_Corner0_Rounded as HomeFilledIcon,
-  HomeOpen_Stoke2_Corner0_Rounded as HomeIcon,
-} from '#/components/icons/HomeOpen'
+  HomeOpen_Stroke2_Corner0_Rounded as HomeIcon,
+} from '#/components/icons/Home'
 import {
   MagnifyingGlass_Filled_Stroke2_Corner0_Rounded as MagnifyingGlassFilledIcon,
   MagnifyingGlass_Stroke2_Corner0_Rounded as MagnifyingGlassIcon,
@@ -76,7 +79,7 @@ import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/
 import {
   SettingsGear2_Filled_Corner0_Rounded as SettingsFilledIcon,
   SettingsGear2_Stroke2_Corner0_Rounded as SettingsIcon,
-} from '#/components/icons/SettingsGear2'
+} from '#/components/icons/Settings'
 import {
   UserCircle_Filled_Corner0_Rounded as UserCircleFilledIcon,
   UserCircle_Stroke2_Corner0_Rounded as UserCircleIcon,
@@ -88,11 +91,11 @@ import {Text} from '#/components/Typography'
 import {useAgeAssurance} from '#/ageAssurance'
 import {useAnalytics} from '#/analytics'
 import {type Events} from '#/analytics/metrics/types'
+import {isFollowingV2HomeDotEnabled} from '#/features/followingV2/eligibility'
 import {useActorStatus} from '#/features/liveNow'
 import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
 import {type app} from '#/lexicons'
 import {router} from '#/routes'
-import {PlatformInfo} from '../../../../modules/expo-bluesky-swiss-army'
 
 const LARGE_ELEMENT_SIZE = 48
 const NAV_ICON_WIDTH = 28
@@ -624,6 +627,7 @@ function ComposeBtn({minimal}: {minimal: boolean}) {
 export function DesktopLeftNav({routeName}: {routeName: string}) {
   const {hasSession, currentAccount} = useSession()
   const {t: l} = useLingui()
+  const ax = useAnalytics()
   const {gtMobile} = useBreakpoints()
 
   const aa = useAgeAssurance()
@@ -635,6 +639,10 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
     useLayoutBreakpoints()
   const numUnreadNotifications = useUnreadNotifications()
   const numUnreadMessages = useUnreadMessageCount()
+  const hasHomeBadge = useHomeBadge()
+  const isAtmosphereExploreEnabled = ax.features.enabled(
+    ax.features.AtmosphereExploreEnable,
+  )
 
   const leftNavMinimal = isMessagesRelatedScreen || leftNavMinimalBreakpoint
 
@@ -686,6 +694,7 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
             href="/"
             navItem="home"
             minimal={leftNavMinimal}
+            hasNew={hasHomeBadge && isFollowingV2HomeDotEnabled(ax)}
             icons={{
               inactive: HomeIcon,
               active: HomeFilledIcon,
@@ -723,6 +732,18 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
               active: BellFilledIcon,
             }}
           />
+          {isAtmosphereExploreEnabled && (
+            <NavItem
+              label={l`Atmosphere`}
+              href="/atmosphere"
+              navItem="atmosphere"
+              minimal={leftNavMinimal}
+              icons={{
+                inactive: EarthIcon,
+                active: EarthIcon,
+              }}
+            />
+          )}
           <NavItem
             label={l`Chat`}
             href="/messages"

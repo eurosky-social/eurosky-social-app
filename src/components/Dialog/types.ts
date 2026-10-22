@@ -5,10 +5,10 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native'
+import {type BottomSheetViewProps} from '@bsky.app/bottom-sheet'
+import {type BottomSheetSnapPoint} from '@bsky.app/bottom-sheet/src/BottomSheet.types'
 
 import {type ViewStyleProp} from '#/alf'
-import {type BottomSheetViewProps} from '../../../modules/bottom-sheet'
-import {type BottomSheetSnapPoint} from '../../../modules/bottom-sheet/src/BottomSheet.types'
 
 type A11yProps = Required<AccessibilityProps>
 
@@ -73,6 +73,11 @@ export type DialogOuterProps = {
 type DialogInnerPropsBase<T> = React.PropsWithChildren<ViewStyleProp> &
   T & {
     testID?: string
+    /**
+     * Native only. Lets content like drag-to-reorder lists pause scrolling
+     * while a gesture is active.
+     */
+    scrollEnabled?: ScrollViewProps['scrollEnabled']
   }
 export type DialogInnerProps =
   | DialogInnerPropsBase<{

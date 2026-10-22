@@ -62,7 +62,7 @@ export function ThreadComposePromptPill({onPress}: {onPress: () => void}) {
   const {gtMobile} = useBreakpoints()
   const {currentAccount} = useSession()
   const {data: profile} = useProfileQuery({did: currentAccount?.did})
-  const playHaptic = useHaptics()
+  const haptics = useHaptics()
   const {
     state: hovered,
     onIn: onHoverIn,
@@ -76,11 +76,11 @@ export function ThreadComposePromptPill({onPress}: {onPress: () => void}) {
       accessibilityHint={l`Opens composer`}
       onPress={() => {
         onPress()
-        playHaptic('Light')
+        haptics.tap()
       }}
       onLongPress={ios(() => {
         onPress()
-        playHaptic('Heavy')
+        haptics.longPress()
       })}
       onHoverIn={onHoverIn}
       onHoverOut={onHoverOut}
