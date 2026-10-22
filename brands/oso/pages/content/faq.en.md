@@ -105,7 +105,7 @@ Everyone should feel welcome on oso.social. That’s why the following rules app
 - No activities that are illegal under Dutch law
 - Registration with a temporary email address is not allowed
 
-Read the full terms of service here. >> [oso.social/terms](https://oso.social/terms)
+Read the full terms of service here. >> [oso.social/about/terms.html](https://oso.social/about/terms.html)
 
 ### Who moderates the content on the platform?
 

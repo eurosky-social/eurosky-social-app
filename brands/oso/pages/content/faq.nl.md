@@ -105,7 +105,7 @@ Op oso.social moet iedereen zich welkom voelen. Daarom gelden de volgende regels
 - Geen activiteiten die volgens de Nederlandse wet illegaal zijn
 - Registratie met een tijdelijk e-mailadres is niet toegestaan
 
-Lees hier de volledige gebruiksvoorwaarden. >> [oso.social/terms](https://oso.social/terms)
+Lees hier de volledige gebruiksvoorwaarden. >> [oso.social/about/terms.html](https://oso.social/about/terms.html)
 
 ### Wie modereert de content op het platform?
 

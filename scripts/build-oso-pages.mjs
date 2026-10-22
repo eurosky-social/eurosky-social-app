@@ -4,8 +4,9 @@
  * Each page is a pair of Markdown files in brands/oso/pages/content/
  * (`<page>.en.md`, `<page>.nl.md`), rendered into one HTML file that holds
  * both languages and shows the reader's. The output goes to
- * `<outDir>/<page>/index.html`, next to the app's build, so the CDN serves it
- * before falling back to the app's index.html.
+ * `<outDir>/about/<page>.html`, next to the app's build. As real files they
+ * are served by the CDN directly, without the app; the app in turn opens
+ * links under /about/ as web pages (see isBskyAppUrl).
  *
  *   node scripts/build-oso-pages.mjs web-build
  *
@@ -219,7 +220,7 @@ for (const page of pages) {
     if (!(key in values)) throw new Error(`Unknown placeholder ${whole}`)
     return values[key]
   })
-  const target = path.join(outDir, page, 'index.html')
+  const target = path.join(outDir, 'about', `${page}.html`)
   fs.mkdirSync(path.dirname(target), {recursive: true})
   fs.writeFileSync(target, output)
   console.log(`wrote ${path.relative(process.cwd(), target)}`)
