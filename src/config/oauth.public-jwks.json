@@ -2,10 +2,19 @@
   "keys": [
     {
       "kty": "EC",
-      "x": "xAubYI-P58_tZhtWS4DNuIuDZNVAbkziQ9D823Xkbnk",
-      "y": "MDhmfbe_DxywjJ-HQ9zxGg2tcyWNIQNmvfgkUU32F3U",
+      "x": "qzXa5UyyLshUds__WGxE92zOMhDaH__qcYKDQChxQrw",
+      "y": "Cp8mDeazREw3b5kcw7uwFEY5IG0vQvPz0jnmYL787QQ",
       "crv": "P-256",
-      "kid": "ab49e1d5-a737-450f-9e7c-1fd77b66e5c4",
+      "kid": "795fafbc-bf61-4a22-b382-e92bee866d9a",
+      "alg": "ES256",
+      "use": "sig"
+    },
+    {
+      "kty": "EC",
+      "x": "35OrCIPJ4lNlkZHMCsy7sDvDzHhdNz_3ltJPoS9nIac",
+      "y": "GhjQDrWkrXIbhyui2tKG-9l11QJhMDZeSfQPgQh-WlY",
+      "crv": "P-256",
+      "kid": "84842aec-23b5-4bf1-9e7d-25715fd7c72c",
       "alg": "ES256",
       "use": "sig"
     }

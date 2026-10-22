@@ -237,7 +237,7 @@ export const ENABLE_APP_CONFIG =
 export const ENABLE_METRICS = process.env.EXPO_PUBLIC_ENABLE_METRICS !== 'false'
 
 /**
- * Set by scripts/build-oso-preview.sh for partner (Oso) builds. Signed-out
+ * Set by .github/environments/oso*.env for partner (Oso) builds. Signed-out
  * visitors to the home page get the sign-in/create-account splash instead of
  * the public feed.
  */
