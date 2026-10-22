@@ -1,6 +1,7 @@
 import {createContext, useContext, useMemo, useRef} from 'react'
 import {
   type AccessibilityProps,
+  type StyleProp,
   StyleSheet,
   TextInput,
   type TextInputProps,
@@ -175,6 +176,10 @@ export type InputProps = Omit<
    * behaviour, but for now just pass `null` if you want no placeholder -sfn
    */
   placeholder?: string | null | undefined
+  /**
+   * Overrides the field's background and border, in every state but invalid.
+   */
+  chromeStyle?: StyleProp<ViewStyle>
 }
 
 export function createInput(Component: typeof TextInput) {
@@ -188,6 +193,7 @@ export function createInput(Component: typeof TextInput) {
     isInvalid,
     inputRef,
     style,
+    chromeStyle,
     ...rest
   }: InputProps) {
     const t = useTheme()
@@ -297,6 +303,7 @@ export function createInput(Component: typeof TextInput) {
             {borderColor: 'transparent', borderWidth: 1},
             ctx.hovered ? chromeHover : {},
             ctx.focused ? chromeFocus : {},
+            chromeStyle,
             ctx.isInvalid || isInvalid ? chromeError : {},
             (ctx.isInvalid || isInvalid) && (ctx.hovered || ctx.focused)
               ? chromeErrorHover
@@ -313,18 +320,37 @@ export const Input = createInput(TextInput)
 export function LabelText({
   nativeID,
   children,
-}: React.PropsWithChildren<{nativeID?: string}>) {
+  style,
+}: React.PropsWithChildren<{
+  nativeID?: string
+  style?: StyleProp<TextStyle>
+}>) {
   const t = useTheme()
   return (
     <Text
       nativeID={nativeID}
-      style={[a.text_sm, a.font_medium, t.atoms.text_contrast_medium, a.mb_sm]}>
+      style={[
+        a.text_sm,
+        a.font_medium,
+        t.atoms.text_contrast_medium,
+        a.mb_sm,
+        style,
+      ]}>
       {children}
     </Text>
   )
 }
 
-export function Icon({icon: Comp}: {icon: React.ComponentType<SVGIconProps>}) {
+export function Icon({
+  icon: Comp,
+  color,
+}: {
+  icon: React.ComponentType<SVGIconProps>
+  /**
+   * Fixed icon colour in every state but invalid.
+   */
+  color?: string
+}) {
   const t = useTheme()
   const ctx = useContext(Context)
   const {hover, focus, errorHover, errorFocus} = useMemo(() => {
@@ -365,6 +391,7 @@ export function Icon({icon: Comp}: {icon: React.ComponentType<SVGIconProps>}) {
           {color: t.palette.contrast_500, pointerEvents: 'none', flexShrink: 0},
           ctx.hovered ? hover : {},
           ctx.focused ? focus : {},
+          color ? {color} : {},
           ctx.isInvalid && ctx.hovered ? errorHover : {},
           ctx.isInvalid && ctx.focused ? errorFocus : {},
         ]}

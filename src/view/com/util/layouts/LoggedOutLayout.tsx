@@ -13,11 +13,16 @@ export const LoggedOutLayout = ({
   description,
   children,
   scrollable,
+  plainTitle = false,
 }: React.PropsWithChildren<{
   leadin: string
   title: string
   description: string
   scrollable?: boolean
+  /**
+   * Show the side title in the text colour instead of the link colour.
+   */
+  plainTitle?: boolean
 }>) => {
   const {isMobile, isTabletOrMobile} = useWebMediaQueries()
   const pal = usePalette('default')
@@ -56,7 +61,7 @@ export const LoggedOutLayout = ({
         </Text>
         <Text
           style={[
-            pal.link,
+            plainTitle ? pal.text : pal.link,
             styles.titleText,
             isTabletOrMobile && styles.titleTextSmall,
           ]}>

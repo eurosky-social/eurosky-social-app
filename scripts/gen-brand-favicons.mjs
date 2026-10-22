@@ -12,6 +12,12 @@
  * jimp-compact) rather than `sharp`, so it needs no extra install and runs
  * cross-platform. It prints a "consider installing sharp" notice - harmless.
  *
+ * Browser tab icons can come from their own square SVG instead: when
+ * `assets/brand/favicon.svg` exists, it is rendered (resvg) and used for every
+ * rounded target. A favicon is drawn at 16-48px, so a mark that fills the
+ * square stays readable where the padded app-icon tile blurs. apple-touch-icon
+ * always uses MASTER.
+ *
  * Rounded corners: browsers render a favicon's PNG literally (no auto-rounding,
  * unlike iOS home-screen icons), so the rounded-tile look has to be baked into
  * the browser favicons here. apple-touch-icon is the exception - iOS applies its
@@ -31,6 +37,8 @@ import {createRequire} from 'node:module'
 import {dirname, join, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
+import {Resvg} from '@resvg/resvg-js'
+
 const require = createRequire(import.meta.url)
 const {generateImageAsync} = require('@expo/image-utils')
 const Jimp = require('jimp-compact')
@@ -41,6 +49,9 @@ const drift = []
 
 /** The one master image. Replace this file (or repoint) to rebrand favicons. */
 const MASTER = join(root, 'assets/app-icons/ios_icon_default_next.png')
+
+/** Optional square SVG for the browser tab icons (see the header). */
+const FAVICON_SVG = join(root, 'assets/brand/favicon.svg')
 
 /** Corner radius as a fraction of icon size (0 = square, 0.5 = circle). */
 const CORNER_RADIUS_RATIO = 0.35
@@ -105,18 +116,31 @@ function syncFile(rel, next) {
 }
 
 async function main() {
+  const faviconSvg = existsSync(FAVICON_SVG) ? readFileSync(FAVICON_SVG) : null
+
   for (const [rel, size, round] of PNG_TARGETS) {
-    const {source} = await generateImageAsync(
-      {},
-      {
-        src: MASTER,
-        name: rel.split('/').pop(),
-        width: size,
-        height: size,
-        // master is a full-bleed square tile -> straight square downscale
-        resizeMode: 'cover',
-      },
-    )
+    /** @type {Buffer} */
+    let source
+    if (round && faviconSvg) {
+      // Drawn straight at the target size, so no downscaling blur.
+      source = Buffer.from(
+        new Resvg(faviconSvg, {fitTo: {mode: 'width', value: size}})
+          .render()
+          .asPng(),
+      )
+    } else {
+      ;({source} = await generateImageAsync(
+        {},
+        {
+          src: MASTER,
+          name: rel.split('/').pop(),
+          width: size,
+          height: size,
+          // master is a full-bleed square tile -> straight square downscale
+          resizeMode: 'cover',
+        },
+      ))
+    }
     const out = round ? await roundCorners(source, size) : source
     syncFile(rel, out)
     if (!check) {
@@ -135,6 +159,9 @@ async function main() {
   if (!check) {
     console.log(`  ${safariPath}  (monochrome wordmark mask)`)
     console.log(`\nDone. Master: ${MASTER.replace(root + '/', '')}`)
+    if (faviconSvg) {
+      console.log(`Tab icons: ${FAVICON_SVG.replace(root + '/', '')}`)
+    }
   }
 
   if (check && drift.length) {

@@ -25,6 +25,7 @@ import {Ticket_Stroke2_Corner0_Rounded as Ticket} from '#/components/icons/Ticke
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
 import {IS_IOS, IS_WEB} from '#/env'
+import {osoButton, osoField} from '#/features/osoAuthStyles'
 import {type com} from '#/lexicons'
 import {FormContainer} from './FormContainer'
 
@@ -182,14 +183,16 @@ export const PasswordSignin = ({
       testID="passwordSigninForm"
       titleText={<Trans>Sign in</Trans>}>
       <View>
-        <TextField.LabelText>
+        <TextField.LabelText style={t.atoms.text}>
           <Trans>Account</Trans>
         </TextField.LabelText>
         <View style={[a.gap_sm]}>
           <TextField.Root isInvalid={errorField === 'identifier'}>
-            <TextField.Icon icon={At} />
+            <TextField.Icon icon={At} color={osoField.iconColor} />
             <TextField.Input
+              chromeStyle={osoField.chrome}
               testID="loginUsernameInput"
+              style={osoField.text}
               inputRef={identifierRef}
               label={_(msg`Handle`)}
               autoCapitalize="none"
@@ -215,9 +218,11 @@ export const PasswordSignin = ({
           </TextField.Root>
 
           <TextField.Root isInvalid={errorField === 'password'}>
-            <TextField.Icon icon={Lock} />
+            <TextField.Icon icon={Lock} color={osoField.iconColor} />
             <TextField.Input
+              chromeStyle={osoField.chrome}
               testID="loginPasswordInput"
+              style={osoField.text}
               inputRef={passwordRef}
               label={_(msg`Password`)}
               autoCapitalize="none"
@@ -267,12 +272,13 @@ export const PasswordSignin = ({
 
       {isAuthFactorTokenNeeded && (
         <View>
-          <TextField.LabelText>
+          <TextField.LabelText style={t.atoms.text}>
             <Trans>2FA Confirmation</Trans>
           </TextField.LabelText>
           <TextField.Root isInvalid={errorField === '2fa'}>
-            <TextField.Icon icon={Ticket} />
+            <TextField.Icon icon={Ticket} color={osoField.iconColor} />
             <TextField.Input
+              chromeStyle={osoField.chrome}
               testID="loginAuthFactorTokenInput"
               label={_(msg`Confirmation code`)}
               autoCapitalize="none"
@@ -291,9 +297,12 @@ export const PasswordSignin = ({
               accessibilityHint={_(
                 msg`Input the code which has been emailed to you`,
               )}
-              style={{
-                textTransform: authFactorToken === '' ? 'none' : 'uppercase',
-              }}
+              style={[
+                osoField.text,
+                {
+                  textTransform: authFactorToken === '' ? 'none' : 'uppercase',
+                },
+              ]}
             />
           </TextField.Root>
           <Text style={[a.text_sm, t.atoms.text_contrast_medium, a.mt_sm]}>
@@ -310,10 +319,13 @@ export const PasswordSignin = ({
         {IS_WEB && (
           <Button
             label={_(msg`Back`)}
-            color="secondary"
+            variant="outline"
+            color="primary"
             size="large"
+            style={osoButton.greenOutline.style}
+            hoverStyle={osoButton.greenOutline.hoverStyle}
             onPress={onPressBack}>
-            <ButtonText>
+            <ButtonText style={osoButton.greenOutline.text}>
               <Trans>Back</Trans>
             </ButtonText>
           </Button>
@@ -324,8 +336,10 @@ export const PasswordSignin = ({
           accessibilityHint={_(msg`Signs in with your password`)}
           color="primary"
           size="large"
+          style={osoButton.greenFilled.style}
+          hoverStyle={osoButton.greenFilled.hoverStyle}
           onPress={() => void onPressNext()}>
-          <ButtonText>
+          <ButtonText style={osoButton.greenFilled.text}>
             <Trans>Sign in</Trans>
           </ButtonText>
           {isProcessing && <ButtonIcon icon={Loader} />}

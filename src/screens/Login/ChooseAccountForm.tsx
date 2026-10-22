@@ -12,6 +12,7 @@ import * as TextField from '#/components/forms/TextField'
 import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
 import {IS_WEB} from '#/env'
+import {osoButton} from '#/features/osoAuthStyles'
 import {FormContainer} from './FormContainer'
 
 export const ChooseAccountForm = ({
@@ -93,10 +94,14 @@ export const ChooseAccountForm = ({
         <View style={[a.flex_row]}>
           <Button
             label={l`Back`}
-            color="secondary"
+            variant="outline"
+            color="primary"
             size="large"
+            style={osoButton.greenOutline.style}
+            hoverStyle={osoButton.greenOutline.hoverStyle}
             onPress={onPressBack}>
-            <ButtonText>{l`Back`}</ButtonText>
+            <ButtonText
+              style={osoButton.greenOutline.text}>{l`Back`}</ButtonText>
           </Button>
           <View style={[a.flex_1]} />
         </View>
