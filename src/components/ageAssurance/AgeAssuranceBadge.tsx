@@ -5,7 +5,14 @@ import {atoms as a, select, useTheme} from '#/alf'
 import {ShieldCheck_Stroke2_Corner0_Rounded as Shield} from '#/components/icons/Shield'
 import {Text} from '#/components/Typography'
 
-export function AgeAssuranceBadge() {
+export function AgeAssuranceBadge({
+  labelText,
+}: {
+  /**
+   * Replaces the default "Age Assurance" text.
+   */
+  labelText?: React.ReactNode
+}) {
   const t = useTheme()
 
   return (
@@ -39,7 +46,7 @@ export function AgeAssuranceBadge() {
             }),
           },
         ]}>
-        <Trans>Age Assurance</Trans>
+        {labelText ?? <Trans>Age Assurance</Trans>}
       </Text>
     </View>
   )

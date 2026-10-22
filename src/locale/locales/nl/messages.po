@@ -1423,7 +1423,7 @@ msgstr "Geavanceerd"
 
 #: src/components/ageAssurance/AgeAssuranceBadge.tsx:42
 msgid "Age Assurance"
-msgstr ""
+msgstr "Bevestig je leeftijd"
 
 #: src/components/ageAssurance/AgeAssuranceAppealDialog.tsx:74
 msgid "Age assurance inquiry failed to send, please try again."
@@ -2981,11 +2981,11 @@ msgstr ""
 
 #: src/ageAssurance/components/NoAccessScreen.tsx:329
 msgid "Click here to delete your account"
-msgstr ""
+msgstr "Klik hier om je account te verwijderen"
 
 #: src/ageAssurance/components/NoAccessScreen.tsx:320
 msgid "Click here to log out"
-msgstr ""
+msgstr "Klik hier om uit te loggen"
 
 #: src/screens/Settings/components/DeleteAccountDialog.tsx:269
 #: src/screens/Settings/components/DeleteAccountDialog.tsx:278
@@ -13136,7 +13136,7 @@ msgstr ""
 
 #: src/ageAssurance/components/NoAccessScreen.tsx:317
 msgid "To log out, <0>click here</0>. Or if you’d prefer, you can <1>delete your account</1>."
-msgstr ""
+msgstr "Om uit te loggen, <0>klik hier</0>. Of als je dat liever wilt, kun je <1>je account verwijderen</1>."
 
 #: src/components/dms/DateDivider.tsx:27
 msgid "Today"
@@ -16100,6 +16100,18 @@ msgstr "oso's servers staan in Europa en voldoen aan Europese wetgeving, niet aa
 #: src/view/com/auth/SplashScreen.web.tsx
 msgid "Donate"
 msgstr "Doneer"
+
+#: src/features/osoAgeGate/index.tsx
+msgid "{0} is made for adults. Please confirm that you’re 18 or older. This is the first and only time we’ll ask your age. Your data won’t be shared with anyone."
+msgstr "{0} is gemaakt voor volwassenen. Bevestig dat je 18 jaar of ouder bent. Dit is de eerste en de laatste keer dat we je leeftijd vragen. Je data wordt met niemand gedeeld."
+
+#: src/features/osoAgeGate/index.tsx
+msgid "{0} isn’t available in your region, which legally requires verified age assurance."
+msgstr "{0} is niet beschikbaar in jouw regio, omdat de wet daar een geverifieerde leeftijdscontrole vereist."
+
+#: src/features/osoAgeGate/index.tsx
+msgid "For organisations: confirm the age of the person responsible for the account."
+msgstr "Voor organisaties: bevestig de leeftijd van degene die verantwoordelijk is voor het account."
 
 #: src/features/osoAgeGate/OsoAgeConfirmationDialog.tsx
 msgid "I am under 18"

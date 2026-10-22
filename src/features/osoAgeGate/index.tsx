@@ -6,10 +6,9 @@ import {useSessionApi} from '#/state/session'
 import {DeactivateAccountDialog} from '#/screens/Settings/components/DeactivateAccountDialog'
 import {DeleteAccountDialog} from '#/screens/Settings/components/DeleteAccountDialog'
 import {atoms as a, useBreakpoints, useTheme, web} from '#/alf'
+import {Admonition} from '#/components/Admonition'
 import {AgeAssuranceBadge} from '#/components/ageAssurance/AgeAssuranceBadge'
-import {Button, ButtonText} from '#/components/Button'
 import {useDialogControl} from '#/components/Dialog'
-import {Full as Logo} from '#/components/icons/Logo'
 import {createStaticClick, SimpleInlineLinkText} from '#/components/Link'
 import {Outlet as PortalOutlet} from '#/components/Portal'
 import {Text} from '#/components/Typography'
@@ -17,7 +16,7 @@ import {BottomSheetOutlet} from '#/../modules/bottom-sheet'
 import {useAgeAssurance} from '#/ageAssurance'
 import {BRAND} from '#/config/brand'
 import {IS_WEB} from '#/env'
-import {OsoAgeConfirmationDialog} from '#/features/osoAgeGate/OsoAgeConfirmationDialog'
+import {AgeConfirmation} from '#/features/osoAgeGate/AgeConfirmation'
 import {useIsDeclaredUnder18} from '#/features/osoAgeGate/useOsoAgeGate'
 
 export {useOsoAgeGate} from '#/features/osoAgeGate/useOsoAgeGate'
@@ -34,7 +33,6 @@ export function OsoNoAccessScreen() {
   const {t: l} = useLingui()
   const {gtPhone} = useBreakpoints()
   const insets = useSafeAreaInsets()
-  const ageControl = useDialogControl()
   const deactivateAccountControl = useDialogControl()
   const deleteAccountControl = useDialogControl()
   const {logoutCurrentAccount} = useSessionApi()
@@ -48,23 +46,6 @@ export function OsoNoAccessScreen() {
     }
     logoutCurrentAccount('AgeAssuranceNoAccessScreen')
   }
-
-  const updateAge = (
-    <Text style={textStyles}>
-      <Trans>
-        If this is wrong, you can{' '}
-        <SimpleInlineLinkText
-          label={l`Update your age`}
-          style={textStyles}
-          {...createStaticClick(() => {
-            ageControl.open()
-          })}>
-          update it here
-        </SimpleInlineLinkText>
-        .
-      </Trans>
-    </Text>
-  )
 
   return (
     <>
@@ -90,38 +71,25 @@ export function OsoNoAccessScreen() {
               {gap: 32},
             ]}>
             <View style={[a.align_start]}>
-              <AgeAssuranceBadge />
+              <AgeAssuranceBadge labelText={<Trans>Confirm your age</Trans>} />
             </View>
 
-            {isDeclaredUnder18 ? (
+            {isDeclaredUnder18 || !aa.flags.hasDeclaredAge ? (
               <View style={[a.gap_lg]}>
-                <Text style={textStyles}>
-                  <Trans>You must be 18 or older to use {BRAND.name}.</Trans>
-                </Text>
-                {updateAge}
-              </View>
-            ) : !aa.flags.hasDeclaredAge ? (
-              <View style={[a.gap_lg]}>
-                <Text style={textStyles}>
-                  <Trans>Hi there!</Trans>
-                </Text>
                 <Text style={textStyles}>
                   <Trans>
-                    {BRAND.name} is only available to people aged 18 or older.
-                    Please confirm your age to continue. This is a one-time
-                    thing, and your data stays private.
+                    {BRAND.name} is made for adults. Please confirm that you’re
+                    18 or older. This is the first and only time we’ll ask your
+                    age. Your data won’t be shared with anyone.
                   </Trans>
                 </Text>
-                <Button
-                  color="primary"
-                  size="large"
-                  label={l`Confirm your age`}
-                  onPress={() => ageControl.open()}
-                  testID="osoAgeGateConfirmButton">
-                  <ButtonText>
-                    <Trans>Confirm your age</Trans>
-                  </ButtonText>
-                </Button>
+                <AgeConfirmation showNote={false} />
+                <Admonition type="tip">
+                  <Trans>
+                    For organisations: confirm the age of the person responsible
+                    for the account.
+                  </Trans>
+                </Admonition>
               </View>
             ) : (
               <View style={[a.gap_lg]}>
@@ -131,12 +99,11 @@ export function OsoNoAccessScreen() {
                     requires verified age assurance.
                   </Trans>
                 </Text>
-                {updateAge}
+                <AgeConfirmation />
               </View>
             )}
 
             <View style={[a.pt_lg, a.gap_xl, {maxWidth: 280}]}>
-              <Logo width={120} textFill={t.atoms.text.color} />
               <Text
                 style={[
                   a.text_sm,
@@ -171,7 +138,6 @@ export function OsoNoAccessScreen() {
         </ScrollView>
       </View>
 
-      <OsoAgeConfirmationDialog control={ageControl} />
       <DeactivateAccountDialog control={deactivateAccountControl} />
       <DeleteAccountDialog
         control={deleteAccountControl}
