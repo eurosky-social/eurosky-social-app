@@ -20,6 +20,7 @@ import * as Layout from '#/components/Layout'
 import {InlineLinkText} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
+import {osoButton} from '#/features/osoAuthStyles'
 import {isSignupClosed, SignupClosedNotice} from '#/features/osoSignupGate'
 
 const BACKGROUND_VIDEO: string = require('../../../../assets/brand/oso-landing-page-background.mp4')
@@ -169,8 +170,10 @@ export const SplashScreen = ({
                       )}
                       size="large"
                       variant="outline"
-                      color="primary">
-                      <ButtonText>
+                      color="primary"
+                      style={osoButton.greenOutline.style}
+                      hoverStyle={osoButton.greenOutline.hoverStyle}>
+                      <ButtonText style={osoButton.greenOutline.text}>
                         <Trans>Sign in</Trans>
                       </ButtonText>
                     </Button>

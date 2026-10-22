@@ -248,7 +248,8 @@ export const Login = ({
             leadin=""
             title={title}
             description={description}
-            scrollable>
+            scrollable
+            plainTitle>
             <LayoutAnimationConfig skipEntering>
               <ScreenTransition
                 key={currentForm}

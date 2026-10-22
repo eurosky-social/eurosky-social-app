@@ -7,7 +7,7 @@ import {Trans} from '@lingui/react/macro'
 import {cleanError} from '#/lib/strings/errors'
 import {logger} from '#/logger'
 import {oauthCreateAccount, oauthSignIn} from '#/state/session/oauth-web-client'
-import {atoms as a} from '#/alf'
+import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {FormError} from '#/components/forms/FormError'
 import * as TextField from '#/components/forms/TextField'
@@ -15,6 +15,7 @@ import {At_Stroke2_Corner0_Rounded as At} from '#/components/icons/At'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
+import {osoButton, osoField} from '#/features/osoAuthStyles'
 import {isSignupClosed} from '#/features/osoSignupGate'
 import {type com} from '#/lexicons'
 import {FormContainer} from './FormContainer'
@@ -48,7 +49,12 @@ export function OAuthSignin(props: Props) {
   const {error, initialHandle, setError, onPressBack} = props
   const [mode, setMode] = useState<'oauth' | 'password'>('oauth')
   const [isProcessing, setIsProcessing] = useState(false)
+  const t = useTheme()
   const [handle, setHandle] = useState(initialHandle)
+  // Sign in turns solid green once there is a handle to sign in with.
+  const signInLook = handle.trim()
+    ? osoButton.greenFilled
+    : osoButton.greenOutline
 
   if (mode === 'password') {
     // Carry whatever handle was typed here over to the password form, and
@@ -96,12 +102,14 @@ export function OAuthSignin(props: Props) {
   return (
     <FormContainer testID="oauthSigninForm" titleText={<Trans>Sign in</Trans>}>
       <View>
-        <TextField.LabelText>
+        <TextField.LabelText style={t.atoms.text}>
           <Trans>Account handle</Trans>
         </TextField.LabelText>
         <TextField.Root>
-          <TextField.Icon icon={At} />
+          <TextField.Icon icon={At} color={osoField.iconColor} />
           <TextField.Input
+            chromeStyle={osoField.chrome}
+            style={osoField.text}
             testID="loginHandleInput"
             label={_(msg`Account handle`)}
             autoCapitalize="none"
@@ -138,9 +146,11 @@ export function OAuthSignin(props: Props) {
           variant="solid"
           color="primary"
           size="large"
+          style={signInLook.style}
+          hoverStyle={signInLook.hoverStyle}
           onPress={() => void onPressSignIn()}
           disabled={isProcessing}>
-          <ButtonText>
+          <ButtonText style={signInLook.text}>
             <Trans>Sign in</Trans>
           </ButtonText>
           {isProcessing && <ButtonIcon icon={Loader} />}
@@ -150,8 +160,8 @@ export function OAuthSignin(props: Props) {
             testID="loginCreateAccountButton"
             label={_(msg`Create a new account`)}
             accessibilityHint={_(msg`Create a new ${BRAND.name} account`)}
-            variant="solid"
-            color="secondary"
+            variant="outline"
+            color="primary"
             size="large"
             onPress={() => void onPressCreateAccount()}
             disabled={isProcessing}>
@@ -166,24 +176,28 @@ export function OAuthSignin(props: Props) {
           accessibilityHint={_(
             msg`Sign in with a username and password instead`,
           )}
-          variant="ghost"
-          color="secondary"
+          variant="outline"
+          color="primary"
           size="large"
+          style={osoButton.greenOutline.style}
+          hoverStyle={osoButton.greenOutline.hoverStyle}
           onPress={() => setMode('password')}
           disabled={isProcessing}>
-          <ButtonText>
+          <ButtonText style={osoButton.greenOutline.text}>
             <Trans>Sign in with password</Trans>
           </ButtonText>
         </Button>
         <Button
           testID="loginBackButton"
           label={_(msg`Back`)}
-          variant="ghost"
-          color="secondary"
+          variant="outline"
+          color="primary"
           size="large"
+          style={osoButton.greenOutline.style}
+          hoverStyle={osoButton.greenOutline.hoverStyle}
           onPress={onPressBack}
           disabled={isProcessing}>
-          <ButtonText>
+          <ButtonText style={osoButton.greenOutline.text}>
             <Trans>Back</Trans>
           </ButtonText>
         </Button>
