@@ -63,10 +63,6 @@ import {
 } from '#/components/feeds/PostFeedVideoGridRow'
 import {FeedTrendingTopicsInterstitial} from '#/components/interstitials/FeedTrendingTopics'
 import {TrendingVideos as TrendingVideosInterstitial} from '#/components/interstitials/TrendingVideos'
-import {
-  PolicyUpdateBanner,
-  usePolicyUpdateBannerState,
-} from '#/components/PolicyUpdateBanner'
 import {isStandardSiteEmbed} from '#/components/Post/Embed/StandardSiteEmbed/utils'
 import {RichText} from '#/components/RichText'
 import {useAnalytics} from '#/analytics'
@@ -164,10 +160,6 @@ type FeedRow =
     }
   | {
       type: 'ageAssuranceBanner'
-      key: string
-    }
-  | {
-      type: 'policyUpdateBanner'
       key: string
     }
   | {
@@ -415,7 +407,6 @@ let PostFeed = ({
   const {trendingVideoDisabled} = useTrendingSettings()
 
   const ageAssuranceBannerState = useAgeAssuranceBannerState()
-  const policyUpdateBannerState = usePolicyUpdateBannerState()
   const selectedFeed = useSelectedFeed()
   /**
    * Cached value of whether the current feed was selected at startup. We don't
@@ -542,21 +533,6 @@ let PostFeed = ({
               if (hasSession) {
                 if (feedKind === 'discover') {
                   if (sliceIndex === 0) {
-                    /*
-                     * Inserted before the progress guide branch, not inside
-                     * its `else` like the age assurance banner. That banner is
-                     * suppressed whenever the progress guide is showing; a
-                     * policy notice shouldn't be.
-                     */
-                    if (
-                      isCurrentFeedAtStartupSelected &&
-                      policyUpdateBannerState.visible
-                    ) {
-                      arr.push({
-                        type: 'policyUpdateBanner',
-                        key: 'policyUpdateBanner-' + sliceIndex,
-                      })
-                    }
                     if (showProgressInterstitial) {
                       arr.push({
                         type: 'interstitialProgressGuide',
@@ -614,15 +590,6 @@ let PostFeed = ({
                   }
                 } else if (feedKind === 'following') {
                   if (sliceIndex === 0) {
-                    if (
-                      isCurrentFeedAtStartupSelected &&
-                      policyUpdateBannerState.visible
-                    ) {
-                      arr.push({
-                        type: 'policyUpdateBanner',
-                        key: 'policyUpdateBanner-' + sliceIndex,
-                      })
-                    }
                     // Show composer prompt for Following feed
                     if (hasSession) {
                       arr.push({
@@ -644,12 +611,6 @@ let PostFeed = ({
                    * startup and the banner is eligible to be shown.
                    */
                   if (sliceIndex === 0 && isCurrentFeedAtStartupSelected) {
-                    if (policyUpdateBannerState.visible) {
-                      arr.push({
-                        type: 'policyUpdateBanner',
-                        key: 'policyUpdateBanner-' + sliceIndex,
-                      })
-                    }
                     arr.push({
                       type: 'ageAssuranceBanner',
                       key: 'ageAssuranceBanner-' + sliceIndex,
@@ -772,7 +733,6 @@ let PostFeed = ({
     areVideoFeedsEnabled,
     hasPressedShowLessUris,
     ageAssuranceBannerState,
-    policyUpdateBannerState.visible,
     isCurrentFeedAtStartupSelected,
     blockedOrMutedAuthors,
     trendingIndices,
@@ -888,8 +848,6 @@ let PostFeed = ({
         return <ProgressGuide />
       } else if (row.type === 'ageAssuranceBanner') {
         return <AgeAssuranceDismissibleFeedBanner />
-      } else if (row.type === 'policyUpdateBanner') {
-        return <PolicyUpdateBanner />
       } else if (row.type === 'interstitialFeedTrendingTopics') {
         return (
           <FeedTrendingTopicsInterstitial feedSliceIndex={row.feedSliceIndex} />
