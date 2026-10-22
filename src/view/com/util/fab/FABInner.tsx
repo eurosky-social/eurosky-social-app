@@ -1,4 +1,4 @@
-import {type ComponentProps, type JSX} from 'react'
+import {cloneElement, type ComponentProps, type JSX} from 'react'
 import {
   type GestureResponderEvent,
   type Pressable,
@@ -14,7 +14,8 @@ import {useHaptics} from '#/lib/haptics'
 import {useMinimalShellFabTransform} from '#/lib/hooks/useMinimalShellTransform'
 import {clamp} from '#/lib/numbers'
 import {atoms as a, ios, useBreakpoints, useTheme} from '#/alf'
-import {IS_WEB} from '#/env'
+import {IS_PARTNER_PREVIEW, IS_WEB} from '#/env'
+import {osoColors} from '#/features/osoAuthStyles'
 
 export interface FABProps extends ComponentProps<typeof Pressable> {
   testID?: string
@@ -58,13 +59,20 @@ export function FABInner({testID, icon, onPress, style, ...props}: FABProps) {
         style={[
           a.rounded_full,
           size,
-          {backgroundColor: t.palette.primary_500},
+          {
+            backgroundColor: IS_PARTNER_PREVIEW
+              ? osoColors.green
+              : t.palette.primary_500,
+          },
           a.align_center,
           a.justify_center,
           style,
         ]}
         {...props}>
-        {icon}
+        {/* Oso: purple icon on the green button, like the logo */}
+        {IS_PARTNER_PREVIEW
+          ? cloneElement<{fill?: string}>(icon, {fill: osoColors.purple})
+          : icon}
       </PressableScale>
     </Animated.View>
   )
