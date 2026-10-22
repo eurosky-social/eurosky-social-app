@@ -12,7 +12,8 @@
  *
  * The Markdown supports only what the pages use: `##` sections and `###`
  * entries (both in the index), `####` subheadings, paragraphs, `- `, `1. `
- * and `a. ` lists, `[text](url)` links, `**bold**` and `*italic*`.
+ * and `a. ` lists, `[text](url)` links, `**bold**` and `*italic*`, with
+ * `\*` for a literal asterisk (as in `app.bsky.\*`).
  * A heading can set its own anchor with `{#id}` at the end, and
  * `[text](#id)` links to it within the same language. The build fails on a
  * link to an anchor that does not exist.
@@ -69,7 +70,11 @@ function safeUrl(url) {
  * in `anchors`, when given, to be checked once the page is rendered.
  */
 function inline(text, lang, anchors) {
-  return escapeHtml(text)
+  /*
+   * A `\*` is held back as a control character so the bold and italic rules
+   * skip it, then put back as a plain asterisk.
+   */
+  return escapeHtml(text.replace(/\\\*/g, '\u0001'))
     .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, url) => {
       if (url.startsWith('#') && lang) {
         url = `#${lang}-${url.slice(1)}`
@@ -79,6 +84,7 @@ function inline(text, lang, anchors) {
     })
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/(^|[^*\w])\*([^*\s][^*]*?)\*(?=[^*\w]|$)/g, '$1<em>$2</em>')
+    .replace(/\u0001/g, '*')
 }
 
 /** List markers: `- ` bullets, `1. ` numbers and `a. ` letters. */

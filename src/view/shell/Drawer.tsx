@@ -744,6 +744,18 @@ function ExtraLinks({hasSession}: {hasSession: boolean}) {
           <Trans>Terms</Trans>
         </InlineLinkText>
         <InlineLinkText
+          style={[a.text_md]}
+          to={BRAND.links.community}
+          label={_(msg`Guidelines`)}>
+          <Trans>Guidelines</Trans>
+        </InlineLinkText>
+        <InlineLinkText
+          style={[a.text_md]}
+          to={BRAND.links.copyright}
+          label={_(msg`Copyright`)}>
+          <Trans>Copyright</Trans>
+        </InlineLinkText>
+        <InlineLinkText
           disableMismatchWarning
           style={[a.text_md]}
           to={BRAND.links.donate}

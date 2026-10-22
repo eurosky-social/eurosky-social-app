@@ -202,6 +202,20 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
           <>
             <Text style={[t.atoms.text_contrast_low]}>{' ∙ '}</Text>
             <InlineLinkText
+              to={BRAND.links.community}
+              style={[t.atoms.text_contrast_medium]}
+              label={_(msg`Guidelines`)}>
+              {_(msg`Guidelines`)}
+            </InlineLinkText>
+            <Text style={[t.atoms.text_contrast_low]}>{' ∙ '}</Text>
+            <InlineLinkText
+              to={BRAND.links.copyright}
+              style={[t.atoms.text_contrast_medium]}
+              label={_(msg`Copyright`)}>
+              {_(msg`Copyright`)}
+            </InlineLinkText>
+            <Text style={[t.atoms.text_contrast_low]}>{' ∙ '}</Text>
+            <InlineLinkText
               disableMismatchWarning
               to={BRAND.links.donate}
               style={[t.atoms.text_contrast_medium]}
