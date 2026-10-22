@@ -1,15 +1,16 @@
 import {useCallback, useState} from 'react'
 import {View} from 'react-native'
+import {TID} from '@atproto/common-web'
 import {type Un$Typed} from '@atproto/lex'
 import {type AtUriString, toDatetimeString} from '@atproto/syntax'
-import {setInterestsPref, upsertProfile} from '@bsky/sdk'
+import {overwriteSavedFeeds, setInterestsPref, upsertProfile} from '@bsky/sdk'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
 
 import {uploadBlob} from '#/lib/api'
-import {BSKY_APP_ACCOUNT_DID} from '#/lib/constants'
+import {BSKY_APP_ACCOUNT_DID, TIMELINE_SAVED_FEED} from '#/lib/constants'
 import {useRequestNotificationsPermission} from '#/lib/notifications/notifications'
 import {logger} from '#/logger'
 import {useSetHasCheckedForStarterPack} from '#/state/preferences/used-starter-packs'
@@ -39,7 +40,6 @@ import {ArrowRight_Stroke2_Corner0_Rounded as ArrowRight} from '#/components/ico
 import {Loader} from '#/components/Loader'
 import {useAnalytics} from '#/analytics'
 import {IS_WEB} from '#/env'
-import {saveOnboardingFeeds} from '#/features/muForYouFeed/preferences'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {ValuePropositionPager} from './ValuePropositionPager'
@@ -126,7 +126,9 @@ export function StepFinished() {
           // Interests need to get saved first, then we can write the feeds to prefs
           await pdsClient.call(setInterestsPref, {tags: selectedInterests})
 
-          await saveOnboardingFeeds(pdsClient, starterPack?.feeds)
+          await pdsClient.call(overwriteSavedFeeds, [
+            {...TIMELINE_SAVED_FEED, id: TID.nextStr()},
+          ])
         })(),
         (async () => {
           const {imageUri, imageMime} = profileStepResults

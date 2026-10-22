@@ -15,20 +15,6 @@ function runNode(script: string) {
 }
 
 describe('release catalog verification', () => {
-  it('checks the production IDs from the actual announcement, including the screenshot IDs', () => {
-    const ids = JSON.parse(
-      runNode(`
-        const {announcementMessageIds} = require('./scripts/check-release-i18n.cjs')
-        console.log(JSON.stringify([...announcementMessageIds()]))
-      `),
-    )
-    expect(ids).toEqual(
-      expect.arrayContaining(['3cV6IT', 'HdT3r4', 'hmIfWE', 'omHhYx']),
-    )
-    // Includes the error message and the previously existing dismiss button.
-    expect(ids).toHaveLength(6)
-  })
-
   it('rejects stale, empty, uncompiled and ID-only catalogs', () => {
     expect(
       runNode(`
@@ -49,7 +35,7 @@ describe('release catalog verification', () => {
       runNode(`
         const {assertMessages} = require('./scripts/check-release-i18n.cjs')
         const messages = {
-          title: ['Try Mu’s For You feed'],
+          title: ['Einstellungen'],
           dismiss: ['Nein danke'],
           greeting: ['Hello ', ['name']],
         }
