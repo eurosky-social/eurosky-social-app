@@ -5,21 +5,14 @@ import {Trans} from '@lingui/react/macro'
 
 import {useSession} from '#/state/session'
 import {DesktopFeeds} from '#/view/shell/desktop/Feeds'
+import {DesktopLegalLinks} from '#/view/shell/desktop/LegalLinks'
 import {DesktopSearch} from '#/view/shell/desktop/Search'
-import {
-  atoms as a,
-  tokens,
-  useGutters,
-  useLayoutBreakpoints,
-  useTheme,
-  web,
-} from '#/alf'
+import {atoms as a, tokens, useGutters, useLayoutBreakpoints, web} from '#/alf'
 import {AppLanguageDropdown} from '#/components/AppLanguageDropdown'
 import {ButtonIcon, ButtonText} from '#/components/Button'
 import {Message_Stroke2_Corner0_Rounded as Message} from '#/components/icons/Message'
 import {CENTER_COLUMN_OFFSET} from '#/components/Layout'
-import {InlineLinkText, Link} from '#/components/Link'
-import {Text} from '#/components/Typography'
+import {Link} from '#/components/Link'
 import {BRAND} from '#/config/brand'
 import {IS_PARTNER_PREVIEW} from '#/env'
 import {EventsRightRail} from '#/features/events/components/EventsRightRail'
@@ -30,7 +23,6 @@ import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
 import {NewsFeedRightRail as LegacyNewsFeedRightRail} from '#/features/newsFeed/legacy/NewsFeedRightRail'
 
 export function DesktopRightNav({routeName}: {routeName: string}) {
-  const t = useTheme()
   const {_} = useLingui()
   const {hasSession} = useSession()
   const gutters = useGutters(['base', 0, 'base', 'wide'])
@@ -176,70 +168,8 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
         </View>
       )}
 
-      <Text style={[a.leading_snug, t.atoms.text_contrast_low]}>
-        {IS_PARTNER_PREVIEW && (
-          <>
-            <InlineLinkText
-              to={BRAND.links.faq}
-              style={[t.atoms.text_contrast_medium]}
-              label={_(msg`FAQ`)}>
-              {_(msg`FAQ`)}
-            </InlineLinkText>
-            <Text style={[t.atoms.text_contrast_low]}>{' ∙ '}</Text>
-          </>
-        )}
-        <InlineLinkText
-          to={BRAND.links.privacy}
-          style={[t.atoms.text_contrast_medium]}
-          label={_(msg`Privacy`)}>
-          {_(msg`Privacy`)}
-        </InlineLinkText>
-        <Text style={[t.atoms.text_contrast_low]}>{' ∙ '}</Text>
-        <InlineLinkText
-          to={BRAND.links.tos}
-          style={[t.atoms.text_contrast_medium]}
-          label={_(msg`Terms`)}>
-          {_(msg`Terms`)}
-        </InlineLinkText>
-        {IS_PARTNER_PREVIEW && (
-          <>
-            <Text style={[t.atoms.text_contrast_low]}>{' ∙ '}</Text>
-            <InlineLinkText
-              to={BRAND.links.community}
-              style={[t.atoms.text_contrast_medium]}
-              label={_(msg`Guidelines`)}>
-              {_(msg`Guidelines`)}
-            </InlineLinkText>
-            <Text style={[t.atoms.text_contrast_low]}>{' ∙ '}</Text>
-            <InlineLinkText
-              to={BRAND.links.copyright}
-              style={[t.atoms.text_contrast_medium]}
-              label={_(msg`Copyright`)}>
-              {_(msg`Copyright`)}
-            </InlineLinkText>
-            <Text style={[t.atoms.text_contrast_low]}>{' ∙ '}</Text>
-            <InlineLinkText
-              disableMismatchWarning
-              to={BRAND.links.donate}
-              style={[t.atoms.text_contrast_medium]}
-              label={_(msg`Donate`)}>
-              {_(msg`Donate`)}
-            </InlineLinkText>
-            {hasSession && (
-              <>
-                <Text style={[t.atoms.text_contrast_low]}>{' ∙ '}</Text>
-                <InlineLinkText
-                  disableMismatchWarning
-                  to={BRAND.links.feedback}
-                  style={[t.atoms.text_contrast_medium]}
-                  label={_(msg`Send feedback`)}>
-                  {_(msg`Feedback`)}
-                </InlineLinkText>
-              </>
-            )}
-          </>
-        )}
-      </Text>
+      {/* Oso shows these at the bottom of the left side bar instead. */}
+      {!IS_PARTNER_PREVIEW && <DesktopLegalLinks />}
 
       {!hasSession && leftNavMinimal && (
         <View style={[a.w_full, {height: 32}]}>

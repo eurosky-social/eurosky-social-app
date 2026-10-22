@@ -25,6 +25,7 @@ import {useCloseAllActiveElements} from '#/state/util'
 import {LoadingPlaceholder} from '#/view/com/util/LoadingPlaceholder'
 import {PressableWithHover} from '#/view/com/util/PressableWithHover'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
+import {DesktopLegalLinks} from '#/view/shell/desktop/LegalLinks'
 import {NavSignupCard} from '#/view/shell/NavSignupCard'
 import {
   atoms as a,
@@ -66,6 +67,7 @@ import {Text} from '#/components/Typography'
 import {useAgeAssurance} from '#/ageAssurance'
 import {useAnalytics} from '#/analytics'
 import {type Events} from '#/analytics/metrics/types'
+import {IS_PARTNER_PREVIEW} from '#/env'
 import {useActorStatus} from '#/features/liveNow'
 import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
 import {osoButton} from '#/features/osoAuthStyles'
@@ -641,6 +643,11 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
   const numUnreadMessages = useUnreadMessageCount()
 
   const leftNavMinimal = isMessagesRelatedScreen || leftNavMinimalBreakpoint
+  /*
+   * Oso lists FAQ, legal and other links at the bottom of this column on every
+   * page, instead of in the right column. The icon-only column has no room.
+   */
+  const showLegalLinks = IS_PARTNER_PREVIEW && !leftNavMinimal
 
   if (!hasSession && !gtMobile) {
     return null
@@ -655,6 +662,8 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
         a.p_lg,
         styles.leftNav,
         !hasSession && !leftNavMinimal && {width: LEFT_NAV_PWI_WIDTH},
+        // Full height, so the links can sit at the bottom.
+        showLegalLinks && {height: '100vh'},
         leftNavMinimal && [
           {width: LEFT_NAV_MINIMAL_WIDTH},
           a.h_full,
@@ -753,6 +762,15 @@ export function DesktopLeftNav({routeName}: {routeName: string}) {
           />
 
           <ComposeBtn minimal={leftNavMinimal} />
+        </>
+      )}
+      {showLegalLinks && (
+        <>
+          {/* Pushes the links to the bottom of the screen */}
+          <View style={[a.flex_1, {minHeight: 24}]} />
+          <View style={[a.px_md, a.pb_sm]}>
+            <DesktopLegalLinks />
+          </View>
         </>
       )}
     </View>
