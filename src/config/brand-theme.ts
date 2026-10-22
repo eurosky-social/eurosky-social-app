@@ -80,8 +80,10 @@ type PrimaryRamp = Pick<
 >
 
 /**
- * NEUTRAL (contrast_ ramp). contrast_0 stays pure white; contrast_25 is the mu
- * base off-white; contrast_950 = ink.
+ * NEUTRAL (contrast_ ramp). For Oso, contrast_0 is the "oso background"
+ * (#F1F1EF, from Oso's design), the light page background everywhere;
+ * contrast_25-100 are slightly darker warm greys so hover states, fields and
+ * borders still read against it. contrast_950 = ink.
  *
  * !! SYNC: ALF derives the page background from this ramp (light = contrast_0,
  * dark = contrast_1000, dim = subdued contrast_1000). The static <style> blocks

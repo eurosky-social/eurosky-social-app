@@ -6,10 +6,10 @@
   "socialHandle": "",
   "colors": {
     "neutral": {
-      "contrast_0": "#FFFFFF",
-      "contrast_25": "#F8F8FF",
-      "contrast_50": "#F0F0FF",
-      "contrast_100": "#E2E2F0",
+      "contrast_0": "#F1F1EF",
+      "contrast_25": "#EAEAE7",
+      "contrast_50": "#E3E3DF",
+      "contrast_100": "#D9D9D4",
       "contrast_200": "#C5C4BF",
       "contrast_300": "#ABAAA6",
       "contrast_400": "#92918E",
