@@ -6,6 +6,8 @@ import {type TextStyle, type ViewStyle} from 'react-native'
  */
 const OSO_GREEN = '#55FF80'
 const OSO_GREEN_HOVER = '#3DF06C'
+/** A disabled green button. */
+const OSO_GREEN_DISABLED = '#BFFFD0'
 /** Border of a focused field, darker so focus reads against the green. */
 const OSO_GREEN_FOCUS = '#1FCF58'
 const OSO_BLACK = '#000000'
@@ -15,6 +17,7 @@ const OSO_PURPLE = '#563FFF'
 export const osoColors = {
   green: OSO_GREEN,
   greenHover: OSO_GREEN_HOVER,
+  greenDisabled: OSO_GREEN_DISABLED,
   greenFocus: OSO_GREEN_FOCUS,
   black: OSO_BLACK,
   purple: OSO_PURPLE,
