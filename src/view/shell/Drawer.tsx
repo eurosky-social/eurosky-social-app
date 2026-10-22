@@ -37,25 +37,18 @@ import {
   Bell_Stroke2_Corner0_Rounded as Bell,
 } from '#/components/icons/Bell'
 import {CalendarDays_Stroke2_Corner0_Rounded as Calendar} from '#/components/icons/CalendarDays'
+import {Message_Stroke2_Corner0_Rounded as Message} from '#/components/icons/Message'
 import {
-  Hashtag_Filled_Corner0_Rounded as HashtagFilled,
-  Hashtag_Stroke2_Corner0_Rounded as Hashtag,
-} from '#/components/icons/Hashtag'
-import {
-  MagnifyingGlass_Filled_Stroke2_Corner0_Rounded as MagnifyingGlassFilled,
-  MagnifyingGlass_Stroke2_Corner0_Rounded as MagnifyingGlass,
-} from '#/components/icons/MagnifyingGlass'
-import {
-  Message_Stroke2_Corner0_Rounded as Message,
-  Message_Stroke2_Corner0_Rounded_Filled as MessageFilled,
-} from '#/components/icons/Message'
-import {Newspaper_Stroke2_Corner2_Rounded as Newspaper} from '#/components/icons/Newspaper'
-import {SettingsGear2_Stroke2_Corner0_Rounded as Settings} from '#/components/icons/SettingsGear2'
+  OsoChatActiveIcon,
+  OsoChatIcon,
+  OsoExploreActiveIcon,
+  OsoExploreIcon,
+  OsoFeedsActiveIcon,
+  OsoFeedsIcon,
+  OsoNewsIcon,
+  OsoSettingsIcon,
+} from '#/components/icons/OsoNav'
 import {Tote} from '#/components/icons/Tote'
-import {
-  UserCircle_Filled_Corner0_Rounded as UserCircleFilled,
-  UserCircle_Stroke2_Corner0_Rounded as UserCircle,
-} from '#/components/icons/UserCircle'
 import {InlineLinkText} from '#/components/Link'
 import {OTAChannelNotice} from '#/components/OTAChannelNotice'
 import {ProfileBadges} from '#/components/ProfileBadges'
@@ -184,7 +177,7 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
   const setDrawerOpen = useSetDrawerOpen()
   const navigation = useNavigation<NavigationProp>()
   const ax = useAnalytics()
-  const {isAtHome, isAtSearch, isAtNotifications, isAtMyProfile, isAtMessages} =
+  const {isAtHome, isAtSearch, isAtNotifications, isAtMessages} =
     useNavigationTabState()
   const {hasSession, currentAccount} = useSession()
   const inviteFriendsControl = useDialogControl()
@@ -250,10 +243,6 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
     () => onPressTab('Notifications'),
     [onPressTab],
   )
-
-  const onPressProfile = useCallback(() => {
-    onPressTab('MyProfile')
-  }, [onPressTab])
 
   const onPressDrawerHeaderProfile = useCallback(() => {
     onPressTab('MyProfile', 'drawerHeader')
@@ -346,10 +335,6 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
               onPress={onPressNotifications}
             />
             <ChatMenuItem isActive={isAtMessages} onPress={onPressMessages} />
-            <ProfileMenuItem
-              isActive={isAtMyProfile}
-              onPress={onPressProfile}
-            />
             <SettingsMenuItem onPress={onPressSettings} />
           </>
         ) : (
@@ -460,9 +445,9 @@ let SearchMenuItem = ({
     <MenuItem
       icon={
         isActive ? (
-          <MagnifyingGlassFilled style={[t.atoms.text]} width={iconWidth} />
+          <OsoExploreActiveIcon style={[t.atoms.text]} width={iconWidth} />
         ) : (
-          <MagnifyingGlass style={[t.atoms.text]} width={iconWidth} />
+          <OsoExploreIcon style={[t.atoms.text]} width={iconWidth} />
         )
       }
       label={_(msg`Explore`)}
@@ -486,9 +471,9 @@ let ChatMenuItem = ({
     <MenuItem
       icon={
         isActive ? (
-          <MessageFilled style={[t.atoms.text]} width={iconWidth} />
+          <OsoChatActiveIcon style={[t.atoms.text]} width={iconWidth} />
         ) : (
-          <Message style={[t.atoms.text]} width={iconWidth} />
+          <OsoChatIcon style={[t.atoms.text]} width={iconWidth} />
         )
       }
       label={_(msg`Chat`)}
@@ -550,9 +535,9 @@ let FeedsMenuItem = ({
     <MenuItem
       icon={
         isActive ? (
-          <HashtagFilled width={iconWidth} style={[t.atoms.text]} />
+          <OsoFeedsActiveIcon width={iconWidth} style={[t.atoms.text]} />
         ) : (
-          <Hashtag width={iconWidth} style={[t.atoms.text]} />
+          <OsoFeedsIcon width={iconWidth} style={[t.atoms.text]} />
         )
       }
       label={_(msg`Feeds`)}
@@ -569,7 +554,7 @@ let NewsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
 
   return (
     <MenuItem
-      icon={<Newspaper style={[t.atoms.text]} width={iconWidth} />}
+      icon={<OsoNewsIcon style={[t.atoms.text]} width={iconWidth} />}
       label={_(msg`News`)}
       onPress={onPress}
     />
@@ -609,37 +594,12 @@ let StarterPacksMenuItem = ({
 }
 StarterPacksMenuItem = memo(StarterPacksMenuItem)
 
-let ProfileMenuItem = ({
-  isActive,
-  onPress,
-}: {
-  isActive: boolean
-  onPress: () => void
-}): React.ReactNode => {
-  const {_} = useLingui()
-  const t = useTheme()
-  return (
-    <MenuItem
-      icon={
-        isActive ? (
-          <UserCircleFilled style={[t.atoms.text]} width={iconWidth} />
-        ) : (
-          <UserCircle style={[t.atoms.text]} width={iconWidth} />
-        )
-      }
-      label={_(msg`Profile`)}
-      onPress={onPress}
-    />
-  )
-}
-ProfileMenuItem = memo(ProfileMenuItem)
-
 let SettingsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
   const {_} = useLingui()
   const t = useTheme()
   return (
     <MenuItem
-      icon={<Settings style={[t.atoms.text]} width={iconWidth} />}
+      icon={<OsoSettingsIcon style={[t.atoms.text]} width={iconWidth} />}
       label={_(msg`Settings`)}
       onPress={onPress}
     />
