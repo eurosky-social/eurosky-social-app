@@ -14523,7 +14523,7 @@ msgstr ""
 #: src/view/com/composer/Composer.tsx:1626
 #: src/view/com/feeds/ComposerPrompt.tsx:206
 msgid "What's up?"
-msgstr "Hoe gaat het?"
+msgstr "Wat speelt er?"
 
 #: src/components/dialogs/nuxs/InitialVerificationAnnouncement.tsx:151
 msgid "When you tap on a check, you’ll see which organizations have granted verification."
@@ -16100,6 +16100,10 @@ msgstr "oso's servers staan in Europa en voldoen aan Europese wetgeving, niet aa
 #: src/view/com/auth/SplashScreen.web.tsx
 msgid "Donate"
 msgstr "Doneer"
+
+#: src/view/shell/desktop/Feeds.tsx
+msgid "Your feeds"
+msgstr "Jouw feeds"
 
 #: src/screens/Profile/Header/EditProfileDialog.tsx
 msgid "Pronouns"
