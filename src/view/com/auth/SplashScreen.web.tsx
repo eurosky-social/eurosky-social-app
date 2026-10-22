@@ -165,6 +165,9 @@ function Footer() {
       ]}>
       {IS_PARTNER_PREVIEW ? (
         <>
+          <InlineLinkText label={_(msg`FAQ`)} to={BRAND.links.faq}>
+            <Trans>FAQ</Trans>
+          </InlineLinkText>
           <InlineLinkText label={_(msg`Privacy`)} to={BRAND.links.privacy}>
             <Trans>Privacy</Trans>
           </InlineLinkText>

@@ -11871,7 +11871,7 @@ msgstr ""
 
 #: src/components/moderation/ReportDialog/index.tsx:309
 msgid "Something went wrong. Please try again."
-msgstr ""
+msgstr "Er ging iets mis. Probeer het opnieuw."
 
 #: src/screens/CustomFeed/components/CustomFeedHeader.tsx:600
 msgid "Something wrong? Let us know."
@@ -16100,3 +16100,33 @@ msgstr "oso's servers staan in Europa en voldoen aan Europese wetgeving, niet aa
 #: src/view/com/auth/SplashScreen.web.tsx
 msgid "Donate"
 msgstr "Doneer"
+
+#: src/features/osoAgeGate/OsoAgeConfirmationDialog.tsx
+msgid "I am under 18"
+msgstr "Ik ben jonger dan 18"
+
+#: src/features/osoAgeGate/OsoAgeConfirmationDialog.tsx
+msgid "Confirm that you are 18 or older"
+msgstr "Bevestig dat je 18 jaar of ouder bent"
+
+#: src/features/osoAgeGate/OsoAgeConfirmationDialog.tsx
+msgid "Confirm that you are under 18"
+msgstr "Bevestig dat je jonger bent dan 18"
+
+#: src/features/osoAgeGate/OsoAgeConfirmationDialog.tsx
+msgid "Confirm your age"
+msgstr "Bevestig je leeftijd"
+
+#: src/features/osoAgeGate/OsoAgeConfirmationDialog.tsx
+msgid "This is a one-time thing. It’s private and not shared with other users."
+msgstr "We vragen je leeftijd maar één keer. Je data wordt met niemand gedeeld."
+
+#: src/features/osoAgeGate/OsoAgeConfirmationDialog.tsx
+msgid "I am 18 or older"
+msgstr "Ik ben 18 jaar of ouder"
+
+#: src/view/shell/desktop/RightNav.tsx
+#: src/view/shell/Drawer.tsx
+#: src/view/com/auth/SplashScreen.web.tsx
+msgid "FAQ"
+msgstr "FAQ"

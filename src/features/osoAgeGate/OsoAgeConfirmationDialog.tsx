@@ -96,7 +96,8 @@ function Inner({control}: {control: Dialog.DialogControlProps}) {
         <Button
           label={l`Confirm that you are 18 or older`}
           size="large"
-          color="primary"
+          // Both answers look the same, so neither is suggested.
+          color="secondary"
           onPress={() => void onConfirmAdult()}
           disabled={isPending}
           testID="osoAgeConfirmAdultButton">
