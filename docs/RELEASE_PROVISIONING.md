@@ -179,8 +179,10 @@ Android build can still compile, but remote Android push will not work.
 1. Create a Firebase project for Eurosky, add an Android app with package
    `social.mu.app`.
 2. Download the real `google-services.json` to the repo root. Its
-   `package_name` must be `social.mu.app`; do not use the upstream
-   `google-services.json.example` unchanged.
+   `package_name` must be `social.mu.app`. (The checked-in
+   `google-services.json.example` carries that package name so a copy of it
+   compiles for local builds, but it points at a fake Firebase project and
+   delivers no push.)
 3. Upload the FCM/APNs keys to your push backend as needed (the app sends
    `appId: 'social.mu.app'` to the notification service —
    `src/lib/notifications/notifications.ts`; the backend must accept that topic).
