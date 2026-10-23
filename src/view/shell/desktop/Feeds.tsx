@@ -1,4 +1,4 @@
-import {Pressable, View} from 'react-native'
+import {Pressable, type StyleProp, View, type ViewStyle} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {useNavigation, useNavigationState} from '@react-navigation/native'
 
@@ -25,7 +25,6 @@ import {IS_PARTNER_PREVIEW} from '#/env'
 
 export function DesktopFeeds() {
   const t = useTheme()
-  const {t: l} = useLingui()
   const ax = useAnalytics()
   const {data: pinnedFeedInfos, error, isLoading} = usePinnedFeedsInfos()
   const selectedFeed = useSelectedFeed()
@@ -112,44 +111,70 @@ export function DesktopFeeds() {
           />
         )
       })}
-      <Link
-        to="/feeds"
-        label={l`More feeds`}
-        style={[
-          a.flex_row,
-          a.align_center,
-          a.gap_sm,
-          a.self_start,
-          a.rounded_sm,
-          {paddingVertical: 6, paddingHorizontal: 8},
-          route.name === 'Feeds' && {backgroundColor: t.palette.primary_50},
-        ]}>
-        {({hovered}) => {
-          const isActive = route.name === 'Feeds'
-          return (
-            <>
-              <View
-                style={[
-                  a.align_center,
-                  a.justify_center,
-                  a.rounded_xs,
-                  isActive
-                    ? {backgroundColor: t.palette.primary_100}
-                    : t.atoms.bg_contrast_50,
-                  {
-                    width: 20,
-                    height: 20,
-                  },
-                ]}>
-                <Plus
-                  style={{width: 16, height: 16}}
-                  fill={
-                    isActive || hovered
-                      ? t.atoms.text.color
-                      : t.atoms.text_contrast_medium.color
-                  }
-                />
-              </View>
+      <MoreFeedsLink />
+    </View>
+  )
+}
+
+/**
+ * "+ More feeds", the link to the feeds page under the desktop feed list.
+ * Oso's phone home header uses it too.
+ */
+export function MoreFeedsLink({
+  compact = false,
+  style,
+}: {
+  /** Just a larger "+" without the text, for Oso's phone header. */
+  compact?: boolean
+  style?: StyleProp<ViewStyle>
+}) {
+  const t = useTheme()
+  const {t: l} = useLingui()
+  const routeName = useNavigationState(state =>
+    state ? getCurrentRoute(state).name : 'Home',
+  )
+  const route = {name: routeName}
+
+  return (
+    <Link
+      to="/feeds"
+      label={l`More feeds`}
+      style={[
+        a.flex_row,
+        a.align_center,
+        a.gap_sm,
+        a.self_start,
+        a.rounded_sm,
+        compact ? {padding: 4} : {paddingVertical: 6, paddingHorizontal: 8},
+        route.name === 'Feeds' && {backgroundColor: t.palette.primary_50},
+        style,
+      ]}>
+      {({hovered}) => {
+        const isActive = route.name === 'Feeds'
+        return (
+          <>
+            <View
+              style={[
+                a.align_center,
+                a.justify_center,
+                a.rounded_xs,
+                isActive
+                  ? {backgroundColor: t.palette.primary_100}
+                  : t.atoms.bg_contrast_50,
+                compact ? {width: 30, height: 30} : {width: 20, height: 20},
+              ]}>
+              <Plus
+                style={
+                  compact ? {width: 24, height: 24} : {width: 16, height: 16}
+                }
+                fill={
+                  isActive || hovered
+                    ? t.atoms.text.color
+                    : t.atoms.text_contrast_medium.color
+                }
+              />
+            </View>
+            {!compact && (
               <Text
                 style={[
                   a.text_md,
@@ -163,11 +188,11 @@ export function DesktopFeeds() {
                 numberOfLines={1}>
                 {l`More feeds`}
               </Text>
-            </>
-          )
-        }}
-      </Link>
-    </View>
+            )}
+          </>
+        )
+      }}
+    </Link>
   )
 }
 
