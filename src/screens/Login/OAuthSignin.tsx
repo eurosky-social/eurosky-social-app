@@ -15,6 +15,7 @@ import {At_Stroke2_Corner0_Rounded as At} from '#/components/icons/At'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
+import {IS_PARTNER_PREVIEW} from '#/env'
 import {osoButton, osoField} from '#/features/osoAuthStyles'
 import {type com} from '#/lexicons'
 import {FormContainer} from './FormContainer'
@@ -154,36 +155,44 @@ export function OAuthSignin(props: Props) {
           </ButtonText>
           {isProcessing && <ButtonIcon icon={Loader} />}
         </Button>
-        <Button
-          testID="loginCreateAccountButton"
-          label={_(msg`Create a new account`)}
-          accessibilityHint={_(msg`Create a new ${BRAND.name} account`)}
-          variant="outline"
-          color="primary"
-          size="large"
-          onPress={() => void onPressCreateAccount()}
-          disabled={isProcessing}>
-          <ButtonText>
-            <Trans>Create a new account</Trans>
-          </ButtonText>
-        </Button>
-        <Button
-          testID="loginWithPasswordButton"
-          label={_(msg`Sign in with password`)}
-          accessibilityHint={_(
-            msg`Sign in with a username and password instead`,
-          )}
-          variant="outline"
-          color="primary"
-          size="large"
-          style={osoButton.greenOutline.style}
-          hoverStyle={osoButton.greenOutline.hoverStyle}
-          onPress={() => setMode('password')}
-          disabled={isProcessing}>
-          <ButtonText style={osoButton.greenOutline.text}>
-            <Trans>Sign in with password</Trans>
-          </ButtonText>
-        </Button>
+        {/*
+         * Oso keeps this screen to signing in with a handle: no "create a new
+         * account" (that lives on the landing page) or password sign-in.
+         */}
+        {!IS_PARTNER_PREVIEW && (
+          <>
+            <Button
+              testID="loginCreateAccountButton"
+              label={_(msg`Create a new account`)}
+              accessibilityHint={_(msg`Create a new ${BRAND.name} account`)}
+              variant="outline"
+              color="primary"
+              size="large"
+              onPress={() => void onPressCreateAccount()}
+              disabled={isProcessing}>
+              <ButtonText>
+                <Trans>Create a new account</Trans>
+              </ButtonText>
+            </Button>
+            <Button
+              testID="loginWithPasswordButton"
+              label={_(msg`Sign in with password`)}
+              accessibilityHint={_(
+                msg`Sign in with a username and password instead`,
+              )}
+              variant="outline"
+              color="primary"
+              size="large"
+              style={osoButton.greenOutline.style}
+              hoverStyle={osoButton.greenOutline.hoverStyle}
+              onPress={() => setMode('password')}
+              disabled={isProcessing}>
+              <ButtonText style={osoButton.greenOutline.text}>
+                <Trans>Sign in with password</Trans>
+              </ButtonText>
+            </Button>
+          </>
+        )}
         <Button
           testID="loginBackButton"
           label={_(msg`Back`)}
