@@ -73,6 +73,7 @@ let PostControls = ({
   const {t: l} = useLingui()
   const likePresentation = useLikePresentation({
     uri: post.uri,
+    record,
     isLiked: Boolean(post.viewer?.like),
     likeCount: post.likeCount ?? 0,
   })

@@ -109,7 +109,8 @@ function Inner({
   const ax = useAnalytics()
   const geolocation = useGeolocation()
   const {nuxs} = useNuxs()
-  const {shouldPrompt: halloweenInvitationPending} = useHalloween()
+  const {shouldPrompt, shouldPromptCostume} = useHalloween()
+  const halloweenInvitationPending = shouldPrompt || shouldPromptCostume
   const [halloweenInvitationOpen, setHalloweenInvitationOpen] = useState(false)
   const [snoozed, setSnoozed] = useState(() => {
     return isSnoozed()
@@ -210,6 +211,15 @@ function Inner({
   return (
     <Context.Provider value={ctx}>
       <HalloweenInvitation
+        canOpen={!activeNux}
+        onOpen={() => setHalloweenInvitationOpen(true)}
+        onClose={() => {
+          setHalloweenInvitationOpen(false)
+          snoozeNuxDialog()
+        }}
+      />
+      <HalloweenInvitation
+        kind="costume"
         canOpen={!activeNux}
         onOpen={() => setHalloweenInvitationOpen(true)}
         onClose={() => {

@@ -210,7 +210,6 @@ export function BottomBarWeb() {
                           ],
                         ]}>
                         <UserAvatar
-                          did={profile?.did}
                           avatar={profile?.avatar}
                           size={iconWidth - 3}
                           type={

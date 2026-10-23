@@ -3,20 +3,19 @@ import {I18nProvider} from '@lingui/react'
 import {fireEvent, render} from '@testing-library/react-native'
 
 import {CostumeButton} from './Editor'
-import {type Costume, createCostume} from './model'
 
 const mockNavigate = jest.fn()
 let mockActive = true
 let mockDid = 'did:plc:alice'
-let mockCostumes: Record<string, Costume> = {}
+let mockCostume: {costumeNumber: number} | undefined
+jest.mock('@tanstack/react-query', () => ({
+  useQuery: () => ({data: mockCostume}),
+}))
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({navigate: mockNavigate}),
 }))
 jest.mock('#/features/halloween/context', () => ({
-  useHalloween: () => ({isActive: mockActive}),
-}))
-jest.mock('#/features/halloween/costumes/state', () => ({
-  useCostumes: () => ({costumes: mockCostumes}),
+  useHalloween: () => ({isHalloween: mockActive, isActive: false}),
 }))
 jest.mock('#/state/session', () => ({
   useSession: () => ({currentAccount: {did: mockDid}}),
@@ -39,10 +38,10 @@ beforeEach(() => {
   jest.clearAllMocks()
   mockActive = true
   mockDid = profile.did
-  mockCostumes = {}
+  mockCostume = undefined
 })
 
-it('opens a dedicated drawing screen, not a popup', () => {
+it('opens a dedicated drawing screen even with the theme disabled', () => {
   const screen = renderEntry()
   fireEvent.press(screen.getByTestId('drawCostumeButton'))
   expect(mockNavigate).toHaveBeenCalledWith('CostumeEditor')
@@ -50,7 +49,7 @@ it('opens a dedicated drawing screen, not a popup', () => {
 })
 
 it('offers editing for a saved costume only on your own profile during Halloween', () => {
-  mockCostumes = {[profile.did]: createCostume()}
+  mockCostume = {costumeNumber: 1}
   const screen = renderEntry()
   expect(screen.getByText('Edit costume')).toBeTruthy()
   mockActive = false

@@ -62,19 +62,7 @@ function Inner({state}: {state: ComposerOpts}) {
               {animationFillMode: 'backwards'},
             ],
           ]}>
-          <ComposePost
-            cancelRef={ref}
-            replyTo={state.replyTo}
-            quote={state.quote}
-            onPost={state.onPost}
-            onPostSuccess={state.onPostSuccess}
-            mention={state.mention}
-            text={state.text}
-            externalUri={state.externalUri}
-            imageUris={state.imageUris}
-            openGallery={state.openGallery}
-            editPost={state.editPost}
-          />
+          <ComposePost {...state} cancelRef={ref} />
         </View>
       </DismissableLayer.DismissableLayer>
     </FocusScope.FocusScope>

@@ -124,12 +124,7 @@ export function TangledStringEmbed({
           <View style={[a.flex_1, a.flex_row, a.align_center, a.gap_xs]}>
             {author ? (
               <>
-                <UserAvatar
-                  did={author.did}
-                  type="user"
-                  size={20}
-                  avatar={author.avatar}
-                />
+                <UserAvatar type="user" size={20} avatar={author.avatar} />
                 <Text
                   numberOfLines={1}
                   style={[a.text_sm, t.atoms.text_contrast_medium, a.flex_1]}>

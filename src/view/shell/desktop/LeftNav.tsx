@@ -161,7 +161,6 @@ function ProfileCard({minimal}: {minimal: boolean}) {
                       },
                     ]}>
                     <UserAvatar
-                      did={profile.did}
                       avatar={profile.avatar}
                       size={LARGE_ELEMENT_SIZE}
                       type={profile?.associated?.labeler ? 'labeler' : 'user'}
@@ -374,7 +373,6 @@ function SwitchMenuItem({
       onPress={() => void onPressSwitchAccount(account, 'SwitchAccount')}>
       <View>
         <UserAvatar
-          did={account.did}
           avatar={profile?.avatar}
           size={20}
           type={profile?.associated?.labeler ? 'labeler' : 'user'}

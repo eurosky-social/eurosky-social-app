@@ -22,12 +22,14 @@ function readDate() {
 type HalloweenContext = ReturnType<typeof resolveHalloween> & {
   setEnabled: (enabled: boolean) => void
   dismissInvitation: () => void
+  dismissCostumeInvitation: () => void
 }
 
 const Context = createContext<HalloweenContext>({
   ...resolveHalloween(DEFAULT, {year: 0, isHalloween: false}),
   setEnabled: () => {},
   dismissInvitation: () => {},
+  dismissCostumeInvitation: () => {},
 })
 Context.displayName = 'HalloweenContext'
 
@@ -90,19 +92,27 @@ export function HalloweenProvider({children}: React.PropsWithChildren<{}>) {
     })
   }
 
+  const dismissCostumeInvitation = () => {
+    update({
+      ...(persisted.readLatest('halloween') ?? DEFAULT),
+      costumePromptedYear: readDate().year,
+    })
+  }
+
   return (
     <Context.Provider
       value={{
         ...resolveHalloween(preference, date),
         setEnabled,
         dismissInvitation,
+        dismissCostumeInvitation,
       }}>
       <CostumesProvider>{children}</CostumesProvider>
     </Context.Provider>
   )
 }
 
-/** Use isActive, not enabled, to gate every seasonal visual or interaction. */
+/** isActive gates the opt-in theme; isHalloween gates independent costume and candy UI. */
 export function useHalloween() {
   return useContext(Context)
 }

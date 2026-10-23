@@ -120,12 +120,7 @@ export function ArticleHeader({
             to={frontpagePath(frontpage)}
             label={l`Open the ${name} frontpage`}
             style={[a.flex_row, a.align_center, a.gap_xs]}>
-            <UserAvatar
-              did={profile?.did}
-              type="user"
-              size={28}
-              avatar={profile?.avatar}
-            />
+            <UserAvatar type="user" size={28} avatar={profile?.avatar} />
             <Text emoji style={[a.text_md, a.font_bold, t.atoms.text]}>
               {name}
             </Text>

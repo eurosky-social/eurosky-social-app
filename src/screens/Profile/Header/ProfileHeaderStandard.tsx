@@ -45,6 +45,7 @@ import {useAnalytics} from '#/analytics'
 import {IS_IOS, IS_NATIVE} from '#/env'
 import {useProfileFrontpagePath} from '#/features/frontpages/useProfileFrontpagePath'
 import {CostumeButton} from '#/features/halloween/costumes/Editor'
+import {GiveCandyButton} from '#/features/halloween/GiveCandyButton'
 import {InviteFriendsDialog} from '#/features/inviteFriends'
 import {useActorStatus} from '#/features/liveNow'
 import {type app} from '#/lexicons'
@@ -135,6 +136,11 @@ let ProfileHeaderStandard = ({
               a.flex_wrap,
             ]}
             pointerEvents={IS_IOS ? 'auto' : 'box-none'}>
+            {!isPlaceholderProfile &&
+              !isBlockedUser &&
+              !moderation.ui('profileView').blur && (
+                <GiveCandyButton did={profile.did} />
+              )}
             <HeaderStandardButtons
               profile={profile}
               moderation={moderation}

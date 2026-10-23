@@ -71,6 +71,7 @@ const schema = z.object({
     .object({
       enabled: z.boolean(),
       promptedYear: z.number().int().optional(),
+      costumePromptedYear: z.number().int().optional(),
     })
     .optional(),
   /** Local per-DID costumes; corrupt art must never discard account sessions. */

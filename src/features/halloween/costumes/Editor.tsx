@@ -1,11 +1,12 @@
 import {Trans, useLingui} from '@lingui/react/macro'
 import {useNavigation} from '@react-navigation/native'
+import {useQuery} from '@tanstack/react-query'
 
 import {type NavigationProp} from '#/lib/routes/types'
 import {useSession} from '#/state/session'
 import {Button, ButtonText} from '#/components/Button'
 import {useHalloween} from '#/features/halloween/context'
-import {useCostumes} from '#/features/halloween/costumes/state'
+import {fetchCostumeRecord} from '#/features/halloween/costumes/records'
 
 /** The editor is a normal route, not a dialog; drafts live only on that screen. */
 export function CostumeButton({
@@ -15,23 +16,24 @@ export function CostumeButton({
 }) {
   const {t: l} = useLingui()
   const navigation = useNavigation<NavigationProp>()
-  const {isActive} = useHalloween()
+  const {isHalloween} = useHalloween()
   const {currentAccount} = useSession()
-  const {costumes} = useCostumes()
-  if (!isActive || currentAccount?.did !== profile.did) return null
+  const {data: costume} = useQuery({
+    queryKey: ['halloweenCostume', profile.did],
+    queryFn: () => fetchCostumeRecord(profile.did),
+    enabled: isHalloween && currentAccount?.did === profile.did,
+    staleTime: 30_000,
+  })
+  if (!isHalloween || currentAccount?.did !== profile.did) return null
   return (
     <Button
       testID="drawCostumeButton"
       size="small"
       color="secondary"
-      label={costumes[profile.did] ? l`Edit costume` : l`Draw costume`}
+      label={costume ? l`Edit costume` : l`Draw costume`}
       onPress={() => navigation.navigate('CostumeEditor')}>
       <ButtonText>
-        {costumes[profile.did] ? (
-          <Trans>Edit costume</Trans>
-        ) : (
-          <Trans>Draw costume</Trans>
-        )}
+        {costume ? <Trans>Edit costume</Trans> : <Trans>Draw costume</Trans>}
       </ButtonText>
     </Button>
   )

@@ -107,19 +107,22 @@ it('activates at local midnight on October 28 without a reload', () => {
   expect(result.current.isActive).toBe(true)
 })
 
-it.each([28, 29, 30])('stays active across midnight after October %s', day => {
-  stored = {enabled: true}
-  jest.setSystemTime(new Date(2026, 9, day, 23, 59, 59))
-  const {result} = renderHalloween()
-  act(() => jest.advanceTimersByTime(1000))
-  expect(result.current.isActive).toBe(true)
-  expect(result.current.shouldPrompt).toBe(false)
-  expect(persisted.write).not.toHaveBeenCalled()
-})
+it.each([28, 29, 30, 31])(
+  'stays active across midnight after October %s',
+  day => {
+    stored = {enabled: true, promptedYear: 2026}
+    jest.setSystemTime(new Date(2026, 9, day, 23, 59, 59))
+    const {result} = renderHalloween()
+    act(() => jest.advanceTimersByTime(1000))
+    expect(result.current.isActive).toBe(true)
+    expect(result.current.shouldPrompt).toBe(false)
+    expect(persisted.write).not.toHaveBeenCalled()
+  },
+)
 
-it('ends at local midnight on November 1 without overwriting consent', () => {
+it('ends at local midnight on November 4 without overwriting consent', () => {
   stored = {enabled: true}
-  jest.setSystemTime(new Date(2026, 9, 31, 23, 59, 59))
+  jest.setSystemTime(new Date(2026, 10, 3, 23, 59, 59))
   const {result} = renderHalloween()
   expect(result.current.isActive).toBe(true)
   act(() => jest.advanceTimersByTime(1000))
@@ -131,7 +134,7 @@ it('ends at local midnight on November 1 without overwriting consent', () => {
 it('rechecks immediately after native resume or web visibility changes', () => {
   stored = {enabled: true}
   const {result} = renderHalloween()
-  jest.setSystemTime(new Date(2026, 10, 1, 9))
+  jest.setSystemTime(new Date(2026, 10, 4, 9))
   act(() => resume('active'))
   expect(result.current.isActive).toBe(false)
 })
@@ -139,7 +142,7 @@ it('rechecks immediately after native resume or web visibility changes', () => {
 it('picks up wall-clock or timezone changes while foregrounded', () => {
   stored = {enabled: true}
   const {result} = renderHalloween()
-  jest.setSystemTime(new Date(2026, 10, 1, 9))
+  jest.setSystemTime(new Date(2026, 10, 4, 9))
   act(() => jest.advanceTimersByTime(60_000))
   expect(result.current.isActive).toBe(false)
 })
@@ -166,6 +169,39 @@ it('can save an opt-in before October 28 without activating early', () => {
   expect(result.current.enabled).toBe(true)
   expect(result.current.isActive).toBe(false)
   expect(result.current.shouldPrompt).toBe(false)
+})
+
+it.each([1, 2, 3])('offers both independent choices on November %s', day => {
+  jest.setSystemTime(new Date(2026, 10, day, 12))
+  const {result} = renderHalloween()
+  expect(result.current.isHalloween).toBe(true)
+  expect(result.current.shouldPrompt).toBe(true)
+  expect(result.current.shouldPromptCostume).toBe(true)
+})
+
+it('remembers the costume choice separately without enabling the theme', () => {
+  const first = renderHalloween()
+  act(() => first.result.current.setEnabled(false))
+  expect(first.result.current.shouldPromptCostume).toBe(true)
+  act(() => first.result.current.dismissCostumeInvitation())
+  expect(first.result.current.isActive).toBe(false)
+  expect(stored).toEqual({
+    enabled: false,
+    promptedYear: 2026,
+    costumePromptedYear: 2026,
+  })
+  first.unmount()
+  const {result} = renderHalloween()
+  expect(result.current.shouldPrompt).toBe(false)
+  expect(result.current.shouldPromptCostume).toBe(false)
+})
+
+it('preserves a separate costume dismissal when the theme setting changes across tabs', () => {
+  const {result} = renderHalloween()
+  stored = {enabled: false, costumePromptedYear: 2026}
+  act(() => result.current.setEnabled(true))
+  expect(result.current.shouldPromptCostume).toBe(false)
+  expect(stored?.costumePromptedYear).toBe(2026)
 })
 
 it('cleans up timers and listeners on unmount', () => {

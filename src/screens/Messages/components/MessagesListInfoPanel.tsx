@@ -48,7 +48,6 @@ export function MessagesListInfoPanel({
   return (
     <View style={[a.align_center, a.justify_center]}>
       <UserAvatar
-        did={profile.did}
         type={profile.associated?.labeler ? 'labeler' : 'user'}
         size={88}
         avatar={profile?.avatar}

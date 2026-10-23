@@ -8,7 +8,10 @@ import {GRID_SIZE} from '#/features/halloween/costumes/model'
 import {type PhotoPixels} from '#/features/halloween/costumes/photoPixels/types'
 
 /** Decode only a tiny, locally resized PNG; never retain the original photo bytes. */
-export async function loadPhotoPixels(uri: string): Promise<PhotoPixels> {
+export async function loadPhotoPixels(
+  uri: string,
+  size = GRID_SIZE,
+): Promise<PhotoPixels> {
   const image = await Image.loadAsync(uri)
   let context: ReturnType<typeof ImageManipulator.manipulate> | undefined
   let savedUri: string | undefined
@@ -24,7 +27,7 @@ export async function loadPhotoPixels(uri: string): Promise<PhotoPixels> {
         width: side,
         height: side,
       })
-      .resize({width: GRID_SIZE, height: GRID_SIZE})
+      .resize({width: size, height: size})
     const rendered = await context.renderAsync()
     try {
       const saved = await rendered.saveAsync({
@@ -34,11 +37,11 @@ export async function loadPhotoPixels(uri: string): Promise<PhotoPixels> {
       savedUri = saved.uri
       if (!saved.base64) throw new Error('Photo pixels are unavailable')
       const png = decode(Uint8Array.from(fromBase64(saved.base64)).buffer)
-      if (png.width !== GRID_SIZE || png.height !== GRID_SIZE)
+      if (png.width !== size || png.height !== size)
         throw new Error('Unexpected photo dimensions')
       return {
-        width: GRID_SIZE,
-        height: GRID_SIZE,
+        width: size,
+        height: size,
         data: new Uint8Array(toRGBA8(png)[0]),
       }
     } finally {

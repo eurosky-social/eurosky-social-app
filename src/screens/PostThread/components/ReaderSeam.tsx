@@ -128,6 +128,7 @@ function ReaderSeamInner({
   const shadow = postShadow
   const likePresentation = useLikePresentation({
     uri: shadow.uri,
+    record: post.value.post.record,
     isLiked: Boolean(shadow.viewer?.like),
     likeCount: shadow.likeCount ?? 0,
   })

@@ -26,7 +26,6 @@ import {type app} from '#/lexicons'
 import type * as bsky from '#/types/bsky'
 
 function WizardListCard({
-  profile,
   type,
   btnType,
   displayName,
@@ -40,7 +39,7 @@ function WizardListCard({
 }: {
   type: 'user' | 'algo'
   btnType: 'checkbox' | 'remove'
-  profile?: bsky.profile.AnyProfileView
+  profile?: app.bsky.actor.defs.ProfileViewBasic
   feed?: app.bsky.feed.defs.GeneratorView
   displayName: string
   subtitle: string
@@ -75,7 +74,6 @@ function WizardListCard({
         t.atoms.border_contrast_low,
       ]}>
       <UserAvatar
-        did={profile?.did}
         size={45}
         avatar={avatar}
         moderation={moderationUi}
@@ -173,7 +171,6 @@ export function WizardProfileCard({
   return (
     <WizardListCard
       type="user"
-      profile={profile}
       btnType={btnType}
       displayName={displayName}
       subtitle={`@${sanitizeHandle(profile.handle)}`}

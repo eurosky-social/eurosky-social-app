@@ -159,7 +159,6 @@ function SourceCard({
         type="user"
         shape="square"
         size={44}
-        did={profile?.did}
         avatar={profile?.avatar}
       />
       <View style={[a.gap_2xs]}>

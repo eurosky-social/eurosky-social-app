@@ -11,7 +11,10 @@ describe('Halloween calendar window', () => {
     [new Date(year, 9, 30, 23, 59, 59, 999), true],
     [new Date(year, 9, 31), true],
     [new Date(year, 9, 31, 23, 59, 59, 999), true],
-    [new Date(year, 10, 1), false],
+    [new Date(year, 10, 1), true],
+    [new Date(year, 10, 2), true],
+    [new Date(year, 10, 3, 23, 59, 59, 999), true],
+    [new Date(year, 10, 4), false],
     [new Date(year, 10, 28), false],
     [new Date(year + 1, 9, 28), true],
     [new Date(year + 1, 9, 31), true],
@@ -45,6 +48,27 @@ describe('Halloween calendar window', () => {
 })
 
 describe('Halloween consent', () => {
+  it('keeps the costume invitation independent of theme acceptance or rejection', () => {
+    for (const enabled of [true, false]) {
+      expect(
+        resolveHalloween(
+          {enabled, promptedYear: year},
+          {year, isHalloween: true},
+        ),
+      ).toMatchObject({
+        isActive: enabled,
+        shouldPrompt: false,
+        shouldPromptCostume: true,
+      })
+      expect(
+        resolveHalloween(
+          {enabled, promptedYear: year, costumePromptedYear: year},
+          {year, isHalloween: true},
+        ).shouldPromptCostume,
+      ).toBe(false)
+    }
+  })
+
   const halloween = {year, isHalloween: true}
 
   it('is off until explicitly enabled', () => {
@@ -55,13 +79,14 @@ describe('Halloween consent', () => {
     })
   })
 
-  it('never activates or invites outside October 28-31', () => {
+  it('never activates or invites outside October 28-November 3', () => {
     for (const enabled of [true, false]) {
       expect(
         resolveHalloween({enabled}, {year, isHalloween: false}),
       ).toMatchObject({
         isActive: false,
         shouldPrompt: false,
+        shouldPromptCostume: false,
       })
     }
   })
@@ -77,12 +102,13 @@ describe('Halloween consent', () => {
     ).toBe(true)
   })
 
-  it('remembers opt-in for future Halloweens without another invitation', () => {
+  it('remembers the theme setting but asks both independent questions each year', () => {
     expect(
       resolveHalloween({enabled: true, promptedYear: year - 1}, halloween),
     ).toMatchObject({
       isActive: true,
-      shouldPrompt: false,
+      shouldPrompt: true,
+      shouldPromptCostume: true,
     })
   })
 })

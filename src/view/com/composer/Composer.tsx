@@ -259,6 +259,7 @@ export const ComposePost = ({
   quote: initQuote,
   mention: initMention,
   text: initText,
+  halloweenCostumeNumber,
   externalUri: initExternalUri,
   imageUris: initImageUris,
   videoUri: initVideoUri,
@@ -369,6 +370,7 @@ export const ComposePost = ({
       initImageUris,
       initQuoteUri: initQuote?.uri,
       initText,
+      halloweenCostumeNumber,
       initExternalUri,
       initMention,
       initInteractionSettings: preferences?.postInteractionSettings,
@@ -1743,7 +1745,6 @@ let ComposerPost = memo(function ComposerPost({
       ]}>
       <View style={[a.flex_row, IS_NATIVE && a.flex_1]}>
         <UserAvatar
-          did={currentProfile?.did}
           avatar={currentProfile?.avatar}
           size={42}
           type={currentProfile?.associated?.labeler ? 'labeler' : 'user'}

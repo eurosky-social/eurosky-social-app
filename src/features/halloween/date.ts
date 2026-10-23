@@ -1,9 +1,10 @@
-/** Local calendar window, shared by the theme, invitation, and future effects. */
+/** Local October 28 through November 3, shared by independent theme and costume features. */
 export function getHalloweenDate(date: Date) {
   return {
     year: date.getFullYear(),
     isHalloween:
-      date.getMonth() === 9 && date.getDate() >= 28 && date.getDate() <= 31,
+      (date.getMonth() === 9 && date.getDate() >= 28) ||
+      (date.getMonth() === 10 && date.getDate() <= 3),
   }
 }
 
@@ -20,9 +21,10 @@ export function getNextDateCheckDelay(date: Date) {
 export type HalloweenPreference = {
   enabled: boolean
   promptedYear?: number
+  costumePromptedYear?: number
 }
 
-/** Consent is remembered, but seasonal visuals stay within October 28-31. */
+/** Theme consent never gates costumes; both invitations are acknowledged independently each year. */
 export function resolveHalloween(
   preference: HalloweenPreference,
   date: ReturnType<typeof getHalloweenDate>,
@@ -31,9 +33,8 @@ export function resolveHalloween(
     ...date,
     enabled: preference.enabled,
     isActive: date.isHalloween && preference.enabled,
-    shouldPrompt:
-      date.isHalloween &&
-      !preference.enabled &&
-      preference.promptedYear !== date.year,
+    shouldPrompt: date.isHalloween && preference.promptedYear !== date.year,
+    shouldPromptCostume:
+      date.isHalloween && preference.costumePromptedYear !== date.year,
   }
 }

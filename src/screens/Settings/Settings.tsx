@@ -370,7 +370,6 @@ function ProfilePreview({
     <>
       <UserAvatar
         size={80}
-        did={shadow.did}
         avatar={shadow.avatar}
         moderation={moderation.ui('avatar')}
         type={shadow.associated?.labeler ? 'labeler' : 'user'}
@@ -666,7 +665,6 @@ function AccountRow({
         label={l`Switch account`}>
         {moderationOpts && profile ? (
           <UserAvatar
-            did={profile.did}
             size={28}
             avatar={profile.avatar}
             moderation={moderateProfile(profile, moderationOpts).ui('avatar')}

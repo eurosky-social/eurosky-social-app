@@ -152,7 +152,6 @@ export function NewsroomScreen({route, navigation}: Props) {
                     <UserAvatar
                       type="user"
                       size={20}
-                      did={p.did}
                       avatar={profileByDid.get(p.did)?.avatar}
                     />
                     <Menu.ItemText>

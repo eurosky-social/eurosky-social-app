@@ -19,17 +19,17 @@ export function HalloweenAppearanceSettings() {
       <SettingsList.Group contentContainerStyle={[a.gap_sm]} iconInset={false}>
         <SettingsList.ItemIcon icon={SparkleIcon} />
         <SettingsList.ItemText>
-          <Trans>Halloween</Trans>
+          <Trans>Halloween theme</Trans>
         </SettingsList.ItemText>
         <Toggle.Item
           testID="halloweenModeToggle"
           name="halloween_mode"
-          label={l`Halloween mode`}
+          label={l`Halloween theme`}
           value={enabled}
           onChange={setEnabled}
           style={[a.w_full]}>
           <Toggle.LabelText style={[a.flex_1]}>
-            <Trans>Halloween mode</Trans>
+            <Trans>Halloween theme</Trans>
           </Toggle.LabelText>
           <Toggle.Platform />
         </Toggle.Item>
@@ -37,17 +37,17 @@ export function HalloweenAppearanceSettings() {
           <Text
             style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
             <Trans>
-              Use dark mode with orange accents each October 28–31, in your
-              local time. Your regular appearance returns on November 1. This
-              setting applies to this device.
+              Use dark mode with orange accents each October 28–November 3, in
+              your local time. Your regular appearance returns on November 4.
+              This device-only setting does not affect costumes or candy.
             </Trans>
           </Text>
           {isActive && (
             <Text
               style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
               <Trans>
-                Halloween mode is active. Turn it off to use your saved color
-                mode and accent color.
+                The Halloween theme is active. Turn it off to use your saved
+                color mode and accent color.
               </Trans>
             </Text>
           )}

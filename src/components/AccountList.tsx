@@ -145,7 +145,6 @@ function AccountItem({
             (hovered || pressed || isPendingAccount) && t.atoms.bg_contrast_25,
           ]}>
           <UserAvatar
-            did={account.did}
             avatar={profile?.avatar}
             size={48}
             type={profile?.associated?.labeler ? 'labeler' : 'user'}

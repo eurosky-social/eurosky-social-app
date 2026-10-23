@@ -4,11 +4,63 @@ import {I18nProvider} from '@lingui/react'
 import {type NavigationAction} from '@react-navigation/native'
 import {act, fireEvent, render} from '@testing-library/react-native'
 
+import {logger} from '#/logger'
+import * as Toast from '#/components/Toast'
 import {type Costume} from '#/features/halloween/costumes/model'
+import {
+  CostumeConflictError,
+  originalAvatarUrl,
+} from '#/features/halloween/costumes/records'
 import {type useDrawing} from '#/features/halloween/costumes/useDrawing'
 import {CostumeEditorScreen} from './index'
 
-const mockSave = jest.fn<Promise<void>, [string, Costume | null]>()
+const mockRender = jest.fn()
+const mockPublish = jest.fn()
+jest.mock('#/logger', () => ({logger: {error: jest.fn()}}))
+const mockUpload = jest.fn()
+const mockDispose = jest.fn()
+const mockOpenComposer = jest.fn()
+const mockInvalidate = jest.fn()
+const mockClient = {}
+let mockSeason = true
+jest.mock('#/features/halloween/context', () => ({
+  useHalloween: () => ({isHalloween: mockSeason, isActive: false}),
+}))
+jest.mock('#/components/Typography', () => ({
+  Text: jest.requireActual<typeof import('react-native')>('react-native').Text,
+}))
+jest.mock('#/lib/api', () => ({
+  uploadBlob: (...args: unknown[]) => mockUpload(...args),
+}))
+jest.mock('#/lib/hooks/useOpenComposer', () => ({
+  useOpenComposer: () => ({openComposer: mockOpenComposer}),
+}))
+jest.mock('#/state/queries/profile', () => ({
+  RQKEY: (did: string) => ['profile', did],
+  profilesQueryKeyRoot: 'profiles',
+}))
+jest.mock('@tanstack/react-query', () => ({
+  useQuery: () => ({data: {head: 'head'}}),
+  useQueryClient: () => ({
+    invalidateQueries: mockInvalidate,
+    setQueryData: jest.fn(),
+  }),
+}))
+jest.mock('#/features/halloween/costumes/records', () => ({
+  loadCostumeSource: jest.fn(),
+  CostumeConflictError: class extends Error {},
+  waitForCostumeAvatar: () => Promise.resolve(),
+  originalAvatarUrl: jest.fn(() => 'https://original/avatar.png'),
+  publishCostume: (...args: unknown[]) => mockPublish(...args),
+}))
+jest.mock('#/features/halloween/costumes/render', () => ({
+  COSTUME_IMAGE_SIZE: 512,
+  renderCostume: (...args: unknown[]) => mockRender(...args),
+}))
+jest.mock('#/features/halloween/costumes/imageFile', () => ({
+  createCostumeImageFile: () =>
+    Promise.resolve({uri: 'file:///costume.png', dispose: mockDispose}),
+}))
 const mockNavigation = {
   canGoBack: () => true,
   goBack: jest.fn(),
@@ -22,7 +74,15 @@ let mockPrevented = false
 let mockPreventCallback: (event: {data: {action: NavigationAction}}) => void
 
 jest.mock('#/state/session', () => ({
-  useSession: () => ({currentAccount: {did: mockDid}}),
+  useSession: () => ({
+    currentAccount: {
+      did: mockDid,
+      pdsUrl: 'https://actual-pds.example',
+      service: 'https://entryway.example',
+    },
+  }),
+  usePdsClient: () => mockClient,
+  useAppviewClient: () => mockClient,
 }))
 jest.mock('#/state/queries/useCurrentAccountProfile', () => ({
   useCurrentAccountProfile: () => ({did: mockDid}),
@@ -31,7 +91,7 @@ jest.mock('#/state/shell', () => ({
   useSetDrawerSwipeDisabled: () => mockDrawer,
 }))
 jest.mock('#/features/halloween/costumes/state', () => ({
-  useCostumes: () => ({costumes: mockCostumes, saveCostume: mockSave}),
+  useCostumes: () => ({costumes: mockCostumes}),
 }))
 jest.mock('#/alf', () => ({
   atoms: {},
@@ -86,9 +146,50 @@ jest.mock('@react-navigation/native', () => {
   }
 })
 jest.mock('#/components/Prompt', () => {
-  const {Pressable, Text} = require('react-native')
+  const {Pressable, Text, View} = require('react-native')
+  const React = require('react') as typeof import('react')
   return {
-    usePromptControl: () => ({open: jest.fn()}),
+    usePromptControl: () =>
+      React.useMemo(() => {
+        const control = {
+          open: jest.fn(),
+          onClose: () => {},
+          close: (callback?: () => void) => {
+            control.onClose()
+            callback?.()
+          },
+        }
+        return control
+      }, []),
+    Outer: ({
+      children,
+      control,
+      onClose,
+    }: React.PropsWithChildren<{
+      control: {onClose: () => void}
+      onClose: () => void
+    }>) => {
+      control.onClose = onClose
+      return (
+        <View>
+          {children}
+          <Pressable
+            accessibilityRole="button"
+            testID="dismissCollect"
+            onPress={onClose}
+          />
+        </View>
+      )
+    },
+    TitleText: Text,
+    DescriptionText: Text,
+    Actions: View,
+    Action: ({cta, onPress}: {cta: string; onPress: () => void}) => (
+      <Pressable accessibilityRole="button" testID={cta} onPress={onPress}>
+        <Text>{cta}</Text>
+      </Pressable>
+    ),
+    Cancel: () => null,
     Basic: ({title, onConfirm}: {title: string; onConfirm: () => void}) => (
       <Pressable accessibilityRole="button" testID={title} onPress={onConfirm}>
         <Text>{title}</Text>
@@ -130,9 +231,12 @@ beforeEach(() => {
   jest.clearAllMocks()
   jest.spyOn(Keyboard, 'addListener').mockReturnValue({remove: jest.fn()})
   mockDid = 'did:plc:alice'
+  mockSeason = true
   mockCostumes = {}
   mockPrevented = false
-  mockSave.mockResolvedValue()
+  mockPublish.mockResolvedValue({costumeNumber: 1})
+  mockRender.mockResolvedValue(new Uint8Array([1]))
+  mockUpload.mockResolvedValue({blob: {}})
 })
 
 function element() {
@@ -150,22 +254,69 @@ function element() {
   )
 }
 
-it('keeps drafts local, guards unsaved changes, and saves the current DID before leaving', async () => {
+it('passes the actual PDS host to the original photo URL rather than the login entryway', () => {
+  render(element())
+  expect(originalAvatarUrl).toHaveBeenCalledWith(
+    'did:plc:alice',
+    {head: 'head'},
+    'https://actual-pds.example',
+  )
+})
+
+it('does not publish costumes outside the shared window even from an already open editor', async () => {
+  const screen = render(element())
+  fireEvent.press(screen.getByTestId('paint'))
+  mockSeason = false
+  screen.rerender(element())
+  expect(screen.getByTestId('costumeSave')).toBeDisabled()
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('Update your public profile picture?'))
+    await Promise.resolve()
+  })
+  expect(mockUpload).not.toHaveBeenCalled()
+  expect(mockPublish).not.toHaveBeenCalled()
+})
+
+it('requires confirmation, publishes the avatar, then offers a seeded costume post', async () => {
   const screen = render(element())
   expect(mockDrawer).toHaveBeenCalledWith(true)
   expect(mockPrevented).toBe(false)
   fireEvent.press(screen.getByTestId('paint'))
   expect(mockPrevented).toBe(true)
-  expect(mockSave).not.toHaveBeenCalled()
+  fireEvent.press(screen.getByTestId('costumeSave'))
+  expect(mockPublish).not.toHaveBeenCalled()
   await act(async () => {
-    fireEvent.press(screen.getByTestId('costumeSave'))
+    fireEvent.press(screen.getByTestId('Update your public profile picture?'))
     await Promise.resolve()
   })
-  expect(mockSave).toHaveBeenCalledWith(
-    'did:plc:alice',
+  expect(mockUpload).toHaveBeenCalledWith(
+    mockClient,
+    'file:///costume.png',
+    'image/png',
+  )
+  expect(mockPublish).toHaveBeenCalledWith(
+    mockClient,
+    {head: 'head'},
     expect.objectContaining({version: 2, gridSize: 64}),
+    {},
   )
   expect(mockPrevented).toBe(false)
+  expect(mockNavigation.goBack).not.toHaveBeenCalled()
+  fireEvent.press(screen.getByTestId('Create post'))
+  expect(mockOpenComposer).toHaveBeenCalledWith(
+    expect.objectContaining({
+      halloweenCostumeNumber: 1,
+      text: expect.stringContaining('Trick or treat!'),
+      imageUris: [
+        {
+          uri: 'file:///costume.png',
+          width: 512,
+          height: 512,
+          altText: 'My Halloween costume',
+        },
+      ],
+    }),
+  )
   expect(mockNavigation.goBack).toHaveBeenCalledTimes(1)
   screen.unmount()
   expect(mockDrawer).toHaveBeenLastCalledWith(false)
@@ -179,7 +330,7 @@ it('resumes a blocked navigation only after discard is confirmed', () => {
   expect(mockNavigation.dispatch).not.toHaveBeenCalled()
   fireEvent.press(screen.getByTestId('Discard your costume changes?'))
   expect(mockNavigation.dispatch).toHaveBeenCalledWith(action)
-  expect(mockSave).not.toHaveBeenCalled()
+  expect(mockPublish).not.toHaveBeenCalled()
 })
 
 it('does not resume a canceled destination when saving later', async () => {
@@ -187,21 +338,74 @@ it('does not resume a canceled destination when saving later', async () => {
   fireEvent.press(screen.getByTestId('paint'))
   act(() => mockPreventCallback({data: {action: {type: 'NAVIGATE'}}}))
   await act(async () => {
-    fireEvent.press(screen.getByTestId('costumeSave'))
+    fireEvent.press(screen.getByTestId('Update your public profile picture?'))
     await Promise.resolve()
   })
+  fireEvent.press(screen.getByTestId('dismissCollect'))
   expect(mockNavigation.dispatch).not.toHaveBeenCalled()
   expect(mockNavigation.goBack).toHaveBeenCalledTimes(1)
 })
 
-it('keeps a failed save editable and never carries a draft into a switched account', async () => {
-  mockSave.mockRejectedValueOnce(new Error('Storage failed'))
+it('reports image preparation failures instead of falsely blaming the profile', async () => {
+  const error = new Error('The photo could not be read from canvas')
+  mockRender.mockRejectedValueOnce(error)
   const screen = render(element())
   fireEvent.press(screen.getByTestId('paint'))
   await act(async () => {
-    fireEvent.press(screen.getByTestId('costumeSave'))
+    fireEvent.press(screen.getByTestId('Update your public profile picture?'))
     await Promise.resolve()
   })
+  expect(mockUpload).not.toHaveBeenCalled()
+  expect(Toast.show).toHaveBeenCalledWith(
+    'Could not prepare your costume image. The photo could not be read from canvas',
+    {type: 'error'},
+  )
+  expect(logger.error).toHaveBeenCalledWith('Costume publication failed', {
+    stage: 'image',
+    safeMessage: error,
+  })
+})
+
+it('reports upload errors and cleans up without attempting a profile write', async () => {
+  mockUpload.mockRejectedValueOnce(new Error('Image upload rejected'))
+  const screen = render(element())
+  fireEvent.press(screen.getByTestId('paint'))
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('Update your public profile picture?'))
+    await Promise.resolve()
+  })
+  expect(mockPublish).not.toHaveBeenCalled()
+  expect(mockDispose).toHaveBeenCalled()
+  expect(Toast.show).toHaveBeenCalledWith(
+    'Could not upload your costume image. Image upload rejected',
+    {type: 'error'},
+  )
+})
+
+it('only asks to reopen the editor for an actual avatar or costume conflict', async () => {
+  mockPublish.mockRejectedValueOnce(new CostumeConflictError())
+  const screen = render(element())
+  fireEvent.press(screen.getByTestId('paint'))
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('Update your public profile picture?'))
+    await Promise.resolve()
+  })
+  expect(Toast.show).toHaveBeenCalledWith(
+    'Your profile picture or costume changed in another window. Reopen the studio before publishing this drawing.',
+    {type: 'error'},
+  )
+  expect(logger.error).not.toHaveBeenCalled()
+})
+
+it('keeps a failed save editable and never carries a draft into a switched account', async () => {
+  mockPublish.mockRejectedValueOnce(new Error('InvalidSwap'))
+  const screen = render(element())
+  fireEvent.press(screen.getByTestId('paint'))
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('Update your public profile picture?'))
+    await Promise.resolve()
+  })
+  expect(mockDispose).toHaveBeenCalled()
   expect(mockNavigation.goBack).not.toHaveBeenCalled()
   expect(mockPrevented).toBe(true)
   mockDid = 'did:plc:bob'

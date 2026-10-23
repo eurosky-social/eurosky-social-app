@@ -5,22 +5,26 @@ import {useTheme} from '#/alf'
 import {getCandyColor} from '#/features/halloween/candy'
 import {candyIcons} from '#/features/halloween/CandyIcon'
 import {useHalloween} from '#/features/halloween/context'
+import {isCostumePost} from '#/features/halloween/costumes/records'
 
 /** Cosmetic only: candy uses the same likes, counts, and mutations as hearts. */
 export function useLikePresentation({
   uri,
   isLiked,
   likeCount,
+  record,
 }: {
   uri: string
   isLiked: boolean
   likeCount: number
+  record?: unknown
 }) {
   const {t: l} = useLingui()
   const t = useTheme()
-  const {isActive} = useHalloween()
-  const color = isActive ? getCandyColor(uri) : t.palette.pink
-  const label = isActive
+  const {isHalloween} = useHalloween()
+  const isCandy = isHalloween && isCostumePost(record)
+  const color = isCandy ? getCandyColor(uri) : t.palette.pink
+  const label = isCandy
     ? isLiked
       ? l({
           message: `Take back candy (${plural(likeCount, {
@@ -59,7 +63,7 @@ export function useLikePresentation({
     label,
     activeColor: color,
     iconProps: {
-      icons: isActive ? candyIcons : undefined,
+      icons: isCandy ? candyIcons : undefined,
       color,
     },
   }

@@ -63,13 +63,7 @@ export function FrontpageMasthead({frontpage}: {frontpage: Frontpage}) {
   )
 
   const avatar = frontpage.did ? (
-    <UserAvatar
-      did={frontpage.did}
-      type="user"
-      shape="square"
-      size={56}
-      avatar={profile?.avatar}
-    />
+    <UserAvatar type="user" shape="square" size={56} avatar={profile?.avatar} />
   ) : (
     <OutletIcon
       outlet={{id: frontpage.slug, name: frontpage.name, site, categories: []}}

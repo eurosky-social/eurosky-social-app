@@ -4,13 +4,19 @@ import {act, fireEvent, render} from '@testing-library/react-native'
 
 import {HalloweenInvitation} from './Invitation'
 
+const mockNavigate = jest.fn()
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({navigate: mockNavigate}),
+}))
 const mockOpen = jest.fn()
 const mockClose = jest.fn<void, [(() => void)?]>()
 const mockControl = {open: mockOpen, close: mockClose}
 const mockHalloween = {
   shouldPrompt: true,
+  shouldPromptCostume: true,
   setEnabled: jest.fn(),
   dismissInvitation: jest.fn(),
+  dismissCostumeInvitation: jest.fn(),
 }
 const mockOpenDialogs = {current: new Set<string>()}
 let mockCanOpen = true
@@ -60,12 +66,13 @@ jest.mock('#/components/Dialog', () => {
 
 const i18n = setupI18n({locale: 'en', messages: {en: {}}})
 
-function renderInvitation() {
+function renderInvitation(kind: 'theme' | 'costume' = 'theme') {
   const onOpen = jest.fn()
   const onClose = jest.fn()
   const element = () => (
     <I18nProvider i18n={i18n}>
       <HalloweenInvitation
+        kind={kind}
         canOpen={mockCanOpen}
         onOpen={onOpen}
         onClose={onClose}
@@ -80,6 +87,7 @@ beforeEach(() => {
   jest.useFakeTimers()
   jest.clearAllMocks()
   mockHalloween.shouldPrompt = true
+  mockHalloween.shouldPromptCostume = true
   mockCanOpen = true
   mockOpenDialogs.current.clear()
   mockPolicyCompleted = true
@@ -151,11 +159,13 @@ it('declines without enabling and acknowledges all dismissal paths on close', ()
   const screen = renderInvitation()
   act(() => jest.advanceTimersByTime(500))
   fireEvent.press(screen.getByTestId('dismissHalloweenMode'))
-  expect(mockClose).toHaveBeenCalledWith()
+  expect(mockClose).toHaveBeenCalledWith(expect.any(Function))
   act(() => mockDialogOnClose())
+  act(() => mockClose.mock.calls[0][0]?.())
   expect(mockHalloween.dismissInvitation).toHaveBeenCalledTimes(1)
   expect(screen.onClose).toHaveBeenCalledTimes(1)
-  expect(mockHalloween.setEnabled).not.toHaveBeenCalled()
+  expect(mockHalloween.setEnabled).toHaveBeenCalledWith(false)
+  expect(mockHalloween.dismissCostumeInvitation).not.toHaveBeenCalled()
 })
 
 it('closes an open invitation when the date expires or another tab decides', () => {
@@ -164,6 +174,36 @@ it('closes an open invitation when the date expires or another tab decides', () 
   mockHalloween.shouldPrompt = false
   screen.refresh()
   expect(mockClose).toHaveBeenCalledWith()
+})
+
+it('offers costumes after the theme decision, and only navigates after closing', () => {
+  const screen = renderInvitation('costume')
+  act(() => jest.advanceTimersByTime(1000))
+  expect(mockOpen).not.toHaveBeenCalled()
+  mockHalloween.shouldPrompt = false
+  screen.refresh()
+  act(() => jest.advanceTimersByTime(500))
+  expect(mockOpen).toHaveBeenCalledTimes(1)
+  fireEvent.press(screen.getByTestId('createHalloweenCostume'))
+  expect(mockNavigate).not.toHaveBeenCalled()
+  act(() => mockDialogOnClose())
+  expect(mockHalloween.dismissCostumeInvitation).toHaveBeenCalledTimes(1)
+  expect(mockHalloween.dismissInvitation).not.toHaveBeenCalled()
+  act(() => mockClose.mock.calls[0][0]?.())
+  expect(mockNavigate).toHaveBeenCalledWith('CostumeEditor')
+  expect(mockHalloween.setEnabled).not.toHaveBeenCalled()
+})
+
+it('dismisses the costume offer without changing theme consent or navigating', () => {
+  mockHalloween.shouldPrompt = false
+  const screen = renderInvitation('costume')
+  act(() => jest.advanceTimersByTime(500))
+  fireEvent.press(screen.getByTestId('dismissHalloweenCostume'))
+  act(() => mockDialogOnClose())
+  act(() => mockClose.mock.calls[0][0]?.())
+  expect(mockHalloween.dismissCostumeInvitation).toHaveBeenCalledTimes(1)
+  expect(mockHalloween.setEnabled).not.toHaveBeenCalled()
+  expect(mockNavigate).not.toHaveBeenCalled()
 })
 
 it('does not open outside the invitation window and cancels pending work', () => {

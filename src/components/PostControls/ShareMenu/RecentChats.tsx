@@ -152,7 +152,6 @@ function RecentChatItem({
         <AvatarBubbles profiles={convo.members} size={WIDTH - 8} />
       ) : (
         <UserAvatar
-          did={primaryProfile.did}
           avatar={primaryProfile.avatar}
           size={WIDTH - 8}
           type={primaryProfile.associated?.labeler ? 'labeler' : 'user'}

@@ -157,7 +157,6 @@ function AvatarBubble({
       ]}>
       {profile && moderationOpts ? (
         <UserAvatar
-          did={profile.did}
           avatar={profile.avatar}
           size={size}
           type="user"

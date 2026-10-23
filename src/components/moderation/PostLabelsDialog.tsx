@@ -185,12 +185,7 @@ function CauseRow({
             {isBlueskyLabel || !isLabeler ? (
               <desc.icon width={20} fill={t.atoms.text_contrast_medium.color} />
             ) : (
-              <UserAvatar
-                did={desc.sourceDid}
-                avatar={desc.sourceAvi}
-                type="user"
-                size={20}
-              />
+              <UserAvatar avatar={desc.sourceAvi} type="user" size={20} />
             )}
           </View>
 

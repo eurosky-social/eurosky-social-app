@@ -2,7 +2,10 @@ import {GRID_SIZE} from '#/features/halloween/costumes/model'
 import {type PhotoPixels} from '#/features/halloween/costumes/photoPixels/types'
 
 /** CORS failure is non-fatal: painted colors remain available to the eyedropper. */
-export async function loadPhotoPixels(uri: string): Promise<PhotoPixels> {
+export async function loadPhotoPixels(
+  uri: string,
+  size = GRID_SIZE,
+): Promise<PhotoPixels> {
   const image = new Image()
   image.crossOrigin = 'anonymous'
   await new Promise<void>((resolve, reject) => {
@@ -12,7 +15,7 @@ export async function loadPhotoPixels(uri: string): Promise<PhotoPixels> {
     image.src = uri
   })
   const canvas = document.createElement('canvas')
-  canvas.width = canvas.height = GRID_SIZE
+  canvas.width = canvas.height = size
   const context = canvas.getContext('2d', {willReadFrequently: true})
   if (!context) throw new Error('Canvas pixels are unavailable')
   const side = Math.min(image.naturalWidth, image.naturalHeight)
@@ -24,12 +27,12 @@ export async function loadPhotoPixels(uri: string): Promise<PhotoPixels> {
     side,
     0,
     0,
-    GRID_SIZE,
-    GRID_SIZE,
+    size,
+    size,
   )
   return {
-    width: GRID_SIZE,
-    height: GRID_SIZE,
-    data: context.getImageData(0, 0, GRID_SIZE, GRID_SIZE).data,
+    width: size,
+    height: size,
+    data: context.getImageData(0, 0, size, size).data,
   }
 }

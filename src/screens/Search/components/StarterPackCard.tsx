@@ -197,7 +197,6 @@ export function AvatarStack({
               {size && item.profile ? (
                 <UserAvatar
                   size={size}
-                  did={item.profile.did}
                   avatar={item.profile.avatar}
                   type={item.profile.associated?.labeler ? 'labeler' : 'user'}
                   moderation={item.moderation.ui('avatar')}

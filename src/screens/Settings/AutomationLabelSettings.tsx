@@ -124,7 +124,6 @@ export function AutomationLabelSettingsScreen({}: Props) {
                 },
               ]}>
               <UserAvatar
-                did={profile.did}
                 size={42}
                 avatar={profile.avatar}
                 type={profile.associated?.labeler ? 'labeler' : 'user'}

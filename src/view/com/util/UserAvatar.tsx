@@ -60,7 +60,6 @@ import {
   type DecorationFrame,
   useAvatarDecoration,
 } from '#/features/avatarDecorations'
-import {AvatarCostume} from '#/features/halloween/costumes/AvatarCostume'
 import {useActorStatus} from '#/features/liveNow'
 import {LiveIndicator} from '#/features/liveNow/components/LiveIndicator'
 import {LiveStatusDialog} from '#/features/liveNow/components/LiveStatusDialog'
@@ -78,8 +77,6 @@ interface BaseUserAvatarProps {
 }
 
 interface UserAvatarProps extends BaseUserAvatarProps {
-  /** Identity for local costumes, including when there is no avatar image. */
-  did?: string
   type: UserAvatarType
   moderation?: ModerationUI
   usePlainRNImage?: boolean
@@ -238,7 +235,6 @@ let UserAvatar = ({
   noBorder,
   extraAviStyle,
   decoration,
-  did,
 }: UserAvatarProps): React.ReactNode => {
   const t = useTheme()
   const finalShape = overrideShape ?? (type === 'user' ? 'circle' : 'square')
@@ -317,15 +313,6 @@ let UserAvatar = ({
     ]
   }, [size, style])
 
-  const costume =
-    type === 'user' && !moderation?.blur && !moderation?.filter ? (
-      <AvatarCostume
-        did={did}
-        size={size}
-        borderRadius={aviStyle.borderRadius}
-      />
-    ) : null
-
   return avatar &&
     !(moderation?.blur && IS_ANDROID /* android crashes with blur */) ? (
     <View style={containerStyle}>
@@ -354,7 +341,6 @@ let UserAvatar = ({
           useAppleWebpCodec
         />
       )}
-      {costume}
       {!noBorder && <MediaInsetBorder style={borderStyle} />}
       {decoration && type === 'user' && !live && !moderation?.blur && (
         <AvatarDecorationRing frame={decoration} size={size} />
@@ -367,7 +353,6 @@ let UserAvatar = ({
   ) : (
     <View style={containerStyle}>
       <DefaultAvatar type={type} shape={finalShape} size={size} />
-      {costume}
       {!noBorder && <MediaInsetBorder style={borderStyle} />}
       {decoration && type === 'user' && !live && !moderation?.blur && (
         <AvatarDecorationRing frame={decoration} size={size} />
@@ -604,7 +589,6 @@ let PreviewableUserAvatar = ({
 
   const avatarEl = (
     <UserAvatar
-      did={profile.did}
       avatar={profile.avatar}
       moderation={moderation}
       type={profile.associated?.labeler ? 'labeler' : 'user'}
