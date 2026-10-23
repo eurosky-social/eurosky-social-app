@@ -15,6 +15,7 @@ import {Loader} from '#/components/Loader'
 import * as Prompt from '#/components/Prompt'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
+import {BRAND} from '#/config/brand'
 import {IS_WEB} from '#/env'
 import {com} from '#/lexicons'
 import {useEventSaveMutation} from '../../queries'
@@ -236,7 +237,10 @@ function DialogInner({
               defaultValue={values.name}
               onChangeText={text => setValue('name', text)}
               label={l`Name`}
-              placeholder={l`e.g. Bluesky meetup`}
+              placeholder={l({
+                message: `e.g. ${BRAND.name} meetup`,
+                comment: 'Example event title; {0} is the app name, e.g. oso.',
+              })}
               testID="eventNameInput"
             />
           </TextField.Root>

@@ -16097,6 +16097,15 @@ msgstr "oso's servers staan in Europa en voldoen aan Europese wetgeving, niet aa
 msgid "Donate"
 msgstr "Doneer"
 
+#: src/features/events/components/CreateOrEditEventDialog/index.tsx
+msgid "What’s happening, and who is it for?"
+msgstr "Wat gebeurt er, en voor wie is het?"
+
+#. Example event title; {0} is the app name, e.g. oso.
+#: src/features/events/components/CreateOrEditEventDialog/index.tsx
+msgid "e.g. {0} meetup"
+msgstr "bijv. {0}-meetup"
+
 #: src/view/shell/desktop/Feeds.tsx
 msgid "Your feeds"
 msgstr "Jouw feeds"
