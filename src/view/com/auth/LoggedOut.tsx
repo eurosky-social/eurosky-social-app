@@ -27,7 +27,6 @@ import {TimesLarge_Stroke2_Corner0_Rounded as XIcon} from '#/components/icons/Ti
 import {Loader} from '#/components/Loader'
 import {useAnalytics} from '#/analytics'
 import {IS_WEB} from '#/env'
-import {isSignupClosed} from '#/features/osoSignupGate'
 import {app} from '#/lexicons'
 import {SplashScreen} from './SplashScreen'
 
@@ -40,20 +39,10 @@ enum ScreenState {
 }
 export {ScreenState as LoggedOutScreenState}
 
-/**
- * While signups are closed, every "create account" entry point lands on the
- * splash instead, which explains when signups open.
- */
-function gateScreenState(screenState: ScreenState): ScreenState {
-  return screenState === ScreenState.S_CreateAccount && isSignupClosed()
-    ? ScreenState.S_LoginOrCreateAccount
-    : screenState
-}
-
 function getInitialScreenState(requestedAccountSwitchTo?: string): ScreenState {
   switch (requestedAccountSwitchTo) {
     case 'new':
-      return gateScreenState(ScreenState.S_CreateAccount)
+      return ScreenState.S_CreateAccount
     case 'starterpack':
       return ScreenState.S_StarterPack
     case 'groupchat':
@@ -74,10 +63,8 @@ export function LoggedOut({onDismiss}: {onDismiss?: () => void}) {
   useEnableMinimalShellMode()
   const {requestedAccountSwitchTo} = useLoggedOutView()
   const initialScreenState = getInitialScreenState(requestedAccountSwitchTo)
-  const [screenState, setUngatedScreenState] =
+  const [screenState, setScreenState] =
     useState<ScreenState>(initialScreenState)
-  const setScreenState = (state: ScreenState) =>
-    setUngatedScreenState(gateScreenState(state))
   const {clearRequestedAccount} = useLoggedOutViewControls()
   const setActiveLanding = useSetActiveLanding()
 
@@ -140,7 +127,7 @@ export function LoggedOut({onDismiss}: {onDismiss?: () => void}) {
     } else {
       setScreenState(initialScreenState)
     }
-  }, [initialScreenState, onDismiss, onPressDismiss, setScreenState])
+  }, [initialScreenState, onDismiss, onPressDismiss])
 
   return (
     <View

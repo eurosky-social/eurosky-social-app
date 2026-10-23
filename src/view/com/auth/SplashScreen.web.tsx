@@ -21,7 +21,6 @@ import {InlineLinkText} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
 import {osoButton} from '#/features/osoAuthStyles'
-import {isSignupClosed, SignupClosedNotice} from '#/features/osoSignupGate'
 
 const BACKGROUND_VIDEO: string = require('../../../../assets/brand/oso-landing-page-background.mp4')
 
@@ -145,24 +144,20 @@ export const SplashScreen = ({
                       a.gap_md,
                       {maxWidth: 320},
                     ]}>
-                    {isSignupClosed() ? (
-                      <SignupClosedNotice />
-                    ) : (
-                      <Button
-                        testID="createAccountButton"
-                        onPress={onPressCreateAccount}
-                        label={_(msg`Create new account`)}
-                        accessibilityHint={_(
-                          msg`Opens flow to create a new Bluesky account`,
-                        )}
-                        size="large"
-                        variant="solid"
-                        color="primary">
-                        <ButtonText>
-                          <Trans>Create account</Trans>
-                        </ButtonText>
-                      </Button>
-                    )}
+                    <Button
+                      testID="createAccountButton"
+                      onPress={onPressCreateAccount}
+                      label={_(msg`Create new account`)}
+                      accessibilityHint={_(
+                        msg`Opens flow to create a new Bluesky account`,
+                      )}
+                      size="large"
+                      variant="solid"
+                      color="primary">
+                      <ButtonText>
+                        <Trans>Create account</Trans>
+                      </ButtonText>
+                    </Button>
                     <Button
                       testID="signInButton"
                       onPress={onPressSignin}
