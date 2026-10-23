@@ -112,7 +112,6 @@ export const Content = memo(function Content({
   const {footerHeight} = useShellLayout()
   const {isWithinSplitView} = useIsWithinSplitView()
   const {gtMobile} = useBreakpoints()
-  const {centerColumnOffset} = useLayoutBreakpoints()
   const {isWithinDialog} = useDialogContext()
   const {isWithinOffsetView} = useContext(ScrollbarOffsetContext)
   const centerOnTablet = shouldCenterNativeTabletContent({
@@ -167,14 +166,6 @@ export const Content = memo(function Content({
           width: '100%',
           maxWidth: CENTER_COLUMN_WIDTH,
           alignSelf: 'center',
-          transform: [
-            {
-              translateX:
-                centerColumnOffset && !ignoreTabletLayoutOffset
-                  ? CENTER_COLUMN_OFFSET
-                  : 0,
-            },
-          ],
         },
         /* UIKit centering would also add horizontal insets to the column. */
         centerOnTablet && centerContent && [a.flex_grow, a.justify_center],
@@ -279,7 +270,6 @@ const WebCenterBorders = memo(function LayoutWebCenterBorders() {
 
 const NativeCenterBorders = memo(function LayoutNativeCenterBorders() {
   const t = useTheme()
-  const {centerColumnOffset} = useLayoutBreakpoints()
   return (
     <View
       pointerEvents="none"
@@ -293,9 +283,6 @@ const NativeCenterBorders = memo(function LayoutNativeCenterBorders() {
         {
           alignSelf: 'center',
           width: CENTER_COLUMN_WIDTH + 2,
-          transform: [
-            {translateX: centerColumnOffset ? CENTER_COLUMN_OFFSET : 0},
-          ],
           zIndex: 1,
         },
       ]}

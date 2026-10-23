@@ -108,7 +108,7 @@ describe('lossless migration plan', () => {
   it.each([
     'http://portfolio.example/',
     'https://bit.ly/example',
-    'https://onlyfans.com/example',
+    'https://videy.at/v/example',
     'invalid',
   ])('preserves an incompatible website: %s', website => {
     const original = snapshot(website)
@@ -116,6 +116,17 @@ describe('lossless migration plan', () => {
     expect(plan.website).toBe(website)
     expect(plan.links).toEqual([])
   })
+
+  it.each(['onlyfans.com', 'fansly.com'])(
+    'migrates %s under the same URL policy as native links',
+    domain => {
+      const website = `https://${domain}/example`
+      const original = snapshot(website)
+      const plan = planProfileLinksSave(original, original.links)
+      expect(plan.website).toBeUndefined()
+      expect(plan.links).toEqual([{url: website, legacyWebsite: undefined}])
+    },
+  )
 
   it('retains an eleventh legacy entry until a slot becomes available', () => {
     const original = snapshot(
