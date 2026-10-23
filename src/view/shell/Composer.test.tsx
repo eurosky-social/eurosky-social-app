@@ -19,12 +19,16 @@ jest.mock('react-native/Libraries/Modal/Modal', () => ({
 jest.mock('#/state/a11y', () => ({
   useA11y: () => ({reduceMotionEnabled: true}),
 }))
-jest.mock('#/alf', () => ({
-  atoms: {},
-  flatten: () => ({}),
-  useTheme: () => ({name: 'dark', atoms: {}}),
-  useBreakpoints: () => ({gtMobile: true}),
-}))
+jest.mock('#/alf', () => {
+  const {createContext} = jest.requireActual<typeof import('react')>('react')
+  return {
+    atoms: {},
+    BreakpointWidthContext: createContext<number | undefined>(undefined),
+    flatten: () => ({}),
+    useTheme: () => ({name: 'dark', atoms: {}}),
+    useBreakpoints: () => ({gtMobile: true}),
+  }
+})
 jest.mock('#/env', () => ({IS_LIQUID_GLASS: true}))
 jest.mock('#/components/Tooltip', () => ({
   SheetCompatProvider:
@@ -46,15 +50,15 @@ jest.mock('react-native-reanimated', () => {
   }
 })
 jest.mock('react-remove-scroll-bar', () => ({RemoveScrollBar: () => null}))
-jest.mock('radix-ui/internal', () => {
-  const {View} =
-    jest.requireActual<typeof import('react-native')>('react-native')
-  return {
-    FocusGuards: {useFocusGuards: () => {}},
-    FocusScope: {FocusScope: View},
-    DismissableLayer: {DismissableLayer: View},
-  }
-})
+jest.mock('@radix-ui/react-focus-guards', () => ({useFocusGuards: () => {}}))
+jest.mock('@radix-ui/react-focus-scope', () => ({
+  FocusScope:
+    jest.requireActual<typeof import('react-native')>('react-native').View,
+}))
+jest.mock('@radix-ui/react-dismissable-layer', () => ({
+  DismissableLayer:
+    jest.requireActual<typeof import('react-native')>('react-native').View,
+}))
 const AndroidComposer =
   jest.requireActual<typeof import('./Composer')>('./Composer.tsx').Composer
 

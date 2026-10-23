@@ -25,6 +25,10 @@ import {
   enabled as isInviteFriendsAnnouncementEnabled,
   InviteFriendsAnnouncement,
 } from '#/components/dialogs/nuxs/InviteFriendsAnnouncement'
+import {
+  enabled as isIPadBetaAnnouncementEnabled,
+  IPadBetaAnnouncement,
+} from '#/components/dialogs/nuxs/IPadBetaAnnouncement'
 import {isSnoozed, snooze, unsnooze} from '#/components/dialogs/nuxs/snoozing'
 import {type EnabledCheckProps} from '#/components/dialogs/nuxs/utils'
 import {useAnalytics} from '#/analytics'
@@ -49,6 +53,10 @@ const queuedNuxs: {
   {
     id: Nux.MuForYouFeedAnnouncement,
     enabled: isMuForYouFeedAnnouncementEnabled,
+  },
+  {
+    id: Nux.IPadBetaAnnouncement,
+    enabled: isIPadBetaAnnouncementEnabled,
   },
   {
     id: Nux.GroupChatsAnnouncement,
@@ -231,6 +239,7 @@ function Inner({
       {activeNux === Nux.MuForYouFeedAnnouncement && (
         <MuForYouFeedAnnouncement />
       )}
+      {activeNux === Nux.IPadBetaAnnouncement && <IPadBetaAnnouncement />}
       {activeNux === Nux.GroupChatsAnnouncement && <GroupChatsAnnouncement />}
       {/*
         Mounted unconditionally: it gates the announcement on `activeNux`

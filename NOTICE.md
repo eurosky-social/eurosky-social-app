@@ -8,7 +8,8 @@ If you distribute this software or a fork of it, these notices need to travel wi
 
 ## Phosphor Icons
 
-**Paths:** generated components under `src/components/icons/` and
+**Paths:** Phosphor SVGs in `assets/icons/ui/` and `assets/icons/brands/`, their generated
+components under `src/components/icons/`, derived glyphs in `assets/nano-icons/`, and
 `bskyembed/src/icons/Phosphor.tsx`
 **Source:** `@phosphor-icons/core` 2.1.1
 **License:** MIT — full text at [`licenses/PHOSPHOR-MIT.txt`](./licenses/PHOSPHOR-MIT.txt)

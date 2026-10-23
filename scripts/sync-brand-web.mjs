@@ -43,7 +43,7 @@ if (!A) {
   )
 }
 
-const PREBOOT_TARGETS = ['web/index.html', 'bskyweb/templates/base.html']
+const PREBOOT_TARGETS = ['public/index.html', 'bskyweb/templates/base.html']
 const EMBED_HTML_TARGETS = ['bskyembed/index.html', 'bskyembed/post.html']
 const GENERATED_GO = 'bskyweb/cmd/bskyweb/brand_generated.go'
 const GENERATED_EMBED_SNIPPET = 'bskyembed/snippet/brand.generated.ts'
@@ -133,7 +133,7 @@ function splashSvg(i) {
 }
 
 /**
- * og:/twitter: share-card block (web/index.html). Name + host come from
+ * og:/twitter: share-card block (public/index.html). Name + host come from
  * brand.json; type / image dimensions / card kind stay static. The
  * og-image.jpg file ships at the brand host root.
  * @param {string} i
@@ -244,10 +244,13 @@ function renderPrebootFile(content) {
   out = regenRegion(out, 'splash', 'html', splashSvg)
 
   // Brand text identity (brand.json). The og/twitter block lives only in
-  // web/index.html; the twitter:site tag only in base.html - both optional so
+  // public/index.html; the twitter:site tag only in base.html - both optional so
   // the other file passes through untouched.
   out = regenRegion(out, 'meta', 'html', metaBlock, true)
   out = regenRegion(out, 'twitter-site', 'html', twitterSite, true)
+
+  // Static SPA title; leave the SSR template's title block intact.
+  out = out.replace(/<title>[^<{]*<\/title>/, `<title>${BRAND_NAME}</title>`)
 
   // base.html scattered brand text (no-ops on files that lack each pattern).
   out = out.replace(

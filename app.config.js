@@ -83,7 +83,7 @@ module.exports = function (_config) {
       userInterfaceStyle: 'automatic',
       primaryColor: BRAND_ACCENT.primary_500,
       ios: {
-        supportsTablet: false,
+        supportsTablet: true,
         bundleIdentifier: 'social.mu.app',
         buildNumber: process.env.BSKY_IOS_BUILD_NUMBER ?? '1',
         appleTeamId: APPLE_TEAM_ID,
@@ -92,6 +92,13 @@ module.exports = function (_config) {
         },
         icon: IOS_ICON_FILE,
         infoPlist: {
+          UISupportedInterfaceOrientations: ['UIInterfaceOrientationPortrait'],
+          'UISupportedInterfaceOrientations~ipad': [
+            'UIInterfaceOrientationPortrait',
+            'UIInterfaceOrientationPortraitUpsideDown',
+            'UIInterfaceOrientationLandscapeLeft',
+            'UIInterfaceOrientationLandscapeRight',
+          ],
           CADisableMinimumFrameDurationOnPhone: true,
           UIBackgroundModes: ['remote-notification'],
           NSUserActivityTypes: ['INSendMessageIntent'],
@@ -208,9 +215,6 @@ module.exports = function (_config) {
           ],
         },
       },
-      androidStatusBar: {
-        barStyle: 'light-content',
-      },
       android: {
         icon: './assets/app-icons/android_icon_default_next.png',
         adaptiveIcon: {
@@ -235,14 +239,8 @@ module.exports = function (_config) {
         ],
       },
       web: {
-        // Eurosky fork: web-only display name -> drives the static
-        // %WEB_TITLE% pre-boot tab title (@expo/webpack-config uses
-        // web.name ?? name). Native app name stays a later pass.
         name: brandMeta.name,
-        // mu favicon: the brand pink app-icon tile (rounded square, "mu"
-        // wordmark) from the brand kit. The pink fill reads on both light and
-        // dark browser themes. Standard Expo mechanism, same as upstream, so
-        // no custom <link> wiring and minimal merge surface.
+        bundler: 'metro',
         favicon: './assets/favicon.png',
         // Brand default-accent primary_500 (from src/config/brand.json).
         // Drives the PWA manifest theme_color and the <meta name="theme-color">,
@@ -279,12 +277,49 @@ module.exports = function (_config) {
               : {}),
           },
         ],
+        'expo-asset',
+        'expo-sharing',
         'expo-video',
-        'expo-localization',
+        [
+          'expo-localization',
+          {
+            /*
+             * React Native 0.88 fixed Android RTL detection, which until then
+             * always reported LTR. Opt out so Android keeps rendering LTR like
+             * iOS, until RTL layouts get a proper QA pass.
+             */
+            supportsRTL: false,
+          },
+        ],
         'expo-web-browser',
+        [
+          'react-native-nano-icons',
+          {
+            /*
+             * One font per codegen directory under `assets/icons/`, see
+             * `scripts/icons/README.md`.
+             */
+            iconSets: ['ui', 'brands', 'community'].map(lane => ({
+              inputDir: `./assets/icons/${lane}`,
+              outputDir: './assets/nano-icons/nanoicons',
+              fontFamily: `icons-${lane}`,
+            })),
+          },
+        ],
         [
           'react-native-edge-to-edge',
           {android: {enforceNavigationBarContrast: false}},
+        ],
+        /*
+         * Expo runs Gradle mods in reverse registration order. Keep Bitdrift
+         * before Sentry so its plugins block is prepended after Sentry's apply
+         * statement and remains at the top, as required by Gradle.
+         */
+        [
+          '@bitdrift/react-native',
+          {
+            networkInstrumentation: true,
+          },
         ],
         ...(USE_SENTRY
           ? [
@@ -294,6 +329,9 @@ module.exports = function (_config) {
                   organization: 'eurosky',
                   project: 'app',
                   url: 'https://sentry.io',
+                  experimental_android: {
+                    enableAndroidGradlePlugin: true,
+                  },
                 },
               ]),
             ]
@@ -315,10 +353,11 @@ module.exports = function (_config) {
               ],
             },
             android: {
-              compileSdkVersion: 36,
+              compileSdkVersion: 37,
               targetSdkVersion: 36,
-              buildToolsVersion: '36.0.0',
-              buildReactNativeFromSource: IS_PRODUCTION,
+              buildToolsVersion: '37.0.0',
+              buildReactNativeFromSource: true,
+              enableMinifyInReleaseBuilds: true,
             },
           },
         ],
@@ -330,36 +369,46 @@ module.exports = function (_config) {
             sounds: PLATFORM === 'ios' ? ['assets/dm.aiff'] : ['assets/dm.mp3'],
           },
         ],
-        [
-          '@bitdrift/react-native',
-          {
-            networkInstrumentation: true,
-          },
-        ],
         './plugins/withGradleJVMHeapSizeIncrease.js',
         './plugins/withAndroidManifestLargeHeapPlugin.js',
         './plugins/withAndroidManifestFCMIconPlugin.js',
         './plugins/withAndroidManifestIntentQueriesPlugin.js',
+        './plugins/withAndroidManifestOptionalCameraPlugin.js',
         './plugins/withAndroidStylesAccentColorPlugin.js',
         './plugins/withAndroidNoJitpackPlugin.js',
+        './plugins/withAndroidPreparedTextLayoutPlugin.js',
+        './plugins/withAndroidComposeVersion.js',
         './plugins/shareExtension/withShareExtensions.js',
         './plugins/notificationsExtension/withNotificationsExtension.js',
         [
           'expo-font',
           {
-            fonts: [
-              './assets/fonts/inter/InterVariable.woff2',
-              './assets/fonts/inter/InterVariable-Italic.woff2',
-              // Android only
-              './assets/fonts/inter/Inter-Regular.otf',
-              './assets/fonts/inter/Inter-Italic.otf',
-              './assets/fonts/inter/Inter-Medium.otf',
-              './assets/fonts/inter/Inter-MediumItalic.otf',
-              './assets/fonts/inter/Inter-SemiBold.otf',
-              './assets/fonts/inter/Inter-SemiBoldItalic.otf',
-              './assets/fonts/inter/Inter-Bold.otf',
-              './assets/fonts/inter/Inter-BoldItalic.otf',
-            ],
+            ios: {
+              /*
+               * Uncompressed TTF rather than WOFF2: iOS decompresses WOFF2
+               * fonts on every launch, which took ~200 ms of the startup
+               * critical path. These are the same Inter 4.001 fonts as the
+               * WOFF2 files used on web.
+               */
+              fonts: [
+                './assets/fonts/inter/InterVariable.ttf',
+                './assets/fonts/inter/InterVariable-Italic.ttf',
+              ],
+            },
+            android: {
+              fonts: [
+                './assets/fonts/inter/InterVariable.woff2',
+                './assets/fonts/inter/InterVariable-Italic.woff2',
+                './assets/fonts/inter/Inter-Regular.otf',
+                './assets/fonts/inter/Inter-Italic.otf',
+                './assets/fonts/inter/Inter-Medium.otf',
+                './assets/fonts/inter/Inter-MediumItalic.otf',
+                './assets/fonts/inter/Inter-SemiBold.otf',
+                './assets/fonts/inter/Inter-SemiBoldItalic.otf',
+                './assets/fonts/inter/Inter-Bold.otf',
+                './assets/fonts/inter/Inter-BoldItalic.otf',
+              ],
+            },
           },
         ],
         [
@@ -407,7 +456,7 @@ module.exports = function (_config) {
             },
           },
         ],
-        ['expo-screen-orientation', {initialOrientation: 'PORTRAIT_UP'}],
+        ['expo-screen-orientation'],
         ['expo-location'],
         [
           'expo-contacts',
@@ -449,6 +498,11 @@ module.exports = function (_config) {
           // Eurosky EAS project). Builds will fail until this is a real id.
           projectId: '52e14cdd-ab10-4b16-a0f4-fc918a9fa323',
         },
+      },
+      experiments: {
+        // Mu serves Metro's export at the origin root, not through bskyweb.
+        baseUrl: '',
+        buildCacheProvider: 'eas',
       },
     },
   }

@@ -4,6 +4,7 @@ import * as Notifications from 'expo-notifications'
 import {getBadgeCountAsync, setBadgeCountAsync} from 'expo-notifications'
 import {type Client} from '@atproto/lex'
 import {type DidString} from '@atproto/syntax'
+import BackgroundNotificationHandler from '@bsky.app/expo-background-notification-handler'
 import debounce from 'lodash.debounce'
 
 import {
@@ -14,7 +15,6 @@ import {
 import {logger as notyLogger} from '#/lib/notifications/util'
 import {isNetworkError} from '#/lib/strings/errors'
 import {type SessionAccount, usePdsClient, useSession} from '#/state/session'
-import BackgroundNotificationHandler from '#/../modules/expo-background-notification-handler'
 import {useAgeAssurance} from '#/ageAssurance'
 import {useAnalytics} from '#/analytics'
 import {IS_DEV, IS_NATIVE} from '#/env'

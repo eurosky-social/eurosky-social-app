@@ -1,4 +1,4 @@
-/** @jest-environment jsdom */
+import {JSDOM} from 'jsdom'
 
 import {themes} from '#/alf/themes'
 import {syncDocumentTheme} from '#/alf/util/useColorModeTheme'
@@ -7,6 +7,29 @@ import {halloweenThemes} from './themes'
 jest.mock('#/env', () => ({IS_WEB: true}))
 jest.mock('#/features/halloween/context', () => ({useHalloween: jest.fn()}))
 jest.mock('#/state/shell', () => ({useThemePrefs: jest.fn()}))
+
+/** Install the DOM after Expo's native Jest setup has initialized window. */
+const dom = new JSDOM('<!doctype html>', {url: 'https://mu.social'})
+const domGlobals = {
+  window: dom.window,
+  document: dom.window.document,
+  localStorage: dom.window.localStorage,
+}
+const originalGlobals = Object.keys(domGlobals).map(
+  key => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const,
+)
+beforeAll(() => {
+  for (const [key, value] of Object.entries(domGlobals)) {
+    Object.defineProperty(globalThis, key, {value, configurable: true})
+  }
+})
+afterAll(() => {
+  for (const [key, descriptor] of originalGlobals) {
+    if (descriptor) Object.defineProperty(globalThis, key, descriptor)
+    else Reflect.deleteProperty(globalThis, key)
+  }
+  dom.window.close()
+})
 
 beforeEach(() => {
   document.head.innerHTML = '<meta name="theme-color" content="initial">'

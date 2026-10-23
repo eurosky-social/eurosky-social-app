@@ -12,6 +12,7 @@ packageExtensions:
         optional: true
 trustPolicy: 'no-downgrade' # default: off
 trustPolicyIgnoreAfter: 10080 # 7 days, default: undefined
+pmOnFail: download # run the pnpm version pinned in devEngines; package.json keeps onFail: warn because npm/npx read it too
 overrides:
   # Eurosky fork: zod is split across two majors on purpose.
   # - Default 3.24.4 (last pre-3.25): zod 3.25 restructured its internals ("Zod 4
@@ -23,56 +24,58 @@ overrides:
   #   `zod/v4` subpath, which only exists in zod >=3.25. With the 3.24.4 default
   #   they crash ESLint (ERR_PACKAGE_PATH_NOT_EXPORTED ./v4) and block pre-commit.
   #   These are lint-only (not in the web bundle), so pin them to 3.25.x.
+  # - @eloqnt/sdk (intl:lint tooling, not bundled) requires zod 4 itself, and
+  #   its AI SDK dependencies take zod from it, so keep the version upstream uses.
   'zod': '3.24.4'
   'eslint-plugin-react-hooks>zod': '3.25.76'
   'zod-validation-error>zod': '3.25.76'
+  '@eloqnt/sdk>zod': '4.6.5'
   # Eurosky fork: OAuth client stack pins (migrated from package.json "resolutions")
   '@atproto/jwk': '0.6.0'
   '@atproto/jwk-jose': '0.1.11'
   '@atproto/jwk-webcrypto': '0.2.0'
   '@atproto/oauth-client': '0.5.14'
   '@atproto/oauth-client-browser': '0.3.40'
-  '@react-native/babel-preset': '0.86.0'
-  '@react-native/normalize-colors': '0.86.0'
-  '@expo/image-utils': '0.8.12'
+  '@react-native/babel-preset': '0.88.0'
+  '@react-native/normalize-colors': '0.88.0'
+  '@expo/image-utils': '0.12.5'
   '@types/estree': '1.0.6'
-  'react-native-reanimated': '4.6.0'
-  'react-native-worklets': '0.12.2'
+  'react-native-reanimated': '4.7.1'
+  'react-native-worklets': '0.13.0'
   'psl': '1.9.0'
   '@types/psl': '1.1.1'
-  'react-native-screens': '4.26.2'
+  'react-native-screens': '4.30.0'
 allowBuilds:
   '@sentry/cli': true
-  'core-js-pure': true
-  'esbuild': true
-  # Eurosky fork: explicitly DENY these two build scripts (false) so pnpm does
-  # not re-prompt / rewrite this file.
-  # - unrs-resolver: its postinstall verifier is not required at runtime and has
-  #   previously failed under pnpm due to a non-executable linked binary.
-  # - core-js: its postinstall only prints a donation message; nothing to build.
-  'unrs-resolver': false
+  '@swc/core': false
   'core-js': false
+  'core-js-pure': true
+  'dtrace-provider': false
+  'esbuild': true
+  '@parcel/watcher': false
+  'protobufjs': false
+  'unrs-resolver': false
 patchedDependencies:
+  '@expo/cli@58.1.14': patches/@expo__cli@58.1.14.patch
   '@formatjs/bigdecimal@0.2.5': patches/@formatjs__bigdecimal@0.2.5.patch
-  '@sentry/expo-upload-sourcemaps@8.18.0': patches/@sentry__expo-upload-sourcemaps@8.18.0.patch
-  'expo-age-range@57.0.2': patches/expo-age-range@57.0.2.patch
-  'expo-haptics@57.0.1': patches/expo-haptics@57.0.1.patch
-  'expo-media-library@57.0.3': patches/expo-media-library@57.0.3.patch
-  'expo-modules-core@57.0.8': patches/expo-modules-core@57.0.8.patch
-  'expo-notifications@57.0.7': patches/expo-notifications@57.0.7.patch
-  'expo-updates@57.0.10': patches/expo-updates@57.0.10.patch
-  expo@57.0.8: patches/expo@57.0.8.patch
-  'react-native-date-picker@5.0.13': patches/react-native-date-picker@5.0.13.patch
-  'react-native-dotenv@3.4.11': patches/react-native-dotenv@3.4.11.patch
-  'react-native-drawer-layout@4.2.3': patches/react-native-drawer-layout@4.2.3.patch
-  'react-native-keyboard-controller@1.21.9': patches/react-native-keyboard-controller@1.21.9.patch
-  'react-native-pager-view@6.8.0': patches/react-native-pager-view@6.8.0.patch
-  'react-native-screens@4.26.2': patches/react-native-screens@4.26.2.patch
-  'react-native-svg@15.15.4': patches/react-native-svg@15.15.4.patch
-  'react-native@0.86.0': patches/react-native@0.86.0.patch
+  '@sentry/expo-upload-sourcemaps@8.26.0': patches/@sentry__expo-upload-sourcemaps@8.26.0.patch
+  'expo-image@58.0.15': patches/expo-image@58.0.15.patch
+  'expo-media-library@58.0.10': patches/expo-media-library@58.0.10.patch
+  'expo-modules-core@58.0.22': patches/expo-modules-core@58.0.22.patch
+  expo-notifications@58.1.5: patches/expo-notifications@58.1.5.patch
+  expo-updates@58.0.17: patches/expo-updates@58.0.17.patch
+  expo@58.0.14: patches/expo@58.0.14.patch
+  'metro-runtime@0.87.1': patches/metro-runtime@0.87.1.patch
+  'metro@0.87.1': patches/metro@0.87.1.patch
+  react-native-pager-view@9.0.9: patches/react-native-pager-view@9.0.9.patch
+  react-native-reanimated@4.7.1: patches/react-native-reanimated@4.7.1.patch
+  react-native-safe-area-context@5.10.1: patches/react-native-safe-area-context@5.10.1.patch
+  react-native-screens@4.30.0: patches/react-native-screens@4.30.0.patch
+  'react-native-svg@15.16.0': patches/react-native-svg@15.16.0.patch
+  react-native@0.88.0: patches/react-native@0.88.0.patch
 minimumReleaseAgeExclude:
   - '@atproto/*'
   - '@atproto-labs/*'
   - '@bsky.app/*'
   - '@bsky/*'
-  - react-native-worklets@0.12.2
+  - react-native-nano-icons@1.0.1

@@ -1,5 +1,5 @@
-/** @jest-environment jsdom */
 import {act} from 'react'
+import {JSDOM} from 'jsdom'
 import {createRoot} from 'react-dom/client'
 
 import {DrawingSurface} from './index.web'
@@ -10,6 +10,31 @@ const end = jest.fn()
 let container: HTMLDivElement
 let canvas: HTMLDivElement
 let root: ReturnType<typeof createRoot>
+
+/** Install the DOM after Expo's native Jest setup has initialized window. */
+const dom = new JSDOM('<!doctype html>')
+const domGlobals = {
+  window: dom.window,
+  document: dom.window.document,
+  Event: dom.window.Event,
+  KeyboardEvent: dom.window.KeyboardEvent,
+  WheelEvent: dom.window.WheelEvent,
+}
+const originalGlobals = Object.keys(domGlobals).map(
+  key => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const,
+)
+beforeAll(() => {
+  for (const [key, value] of Object.entries(domGlobals)) {
+    Object.defineProperty(globalThis, key, {value, configurable: true})
+  }
+})
+afterAll(() => {
+  for (const [key, descriptor] of originalGlobals) {
+    if (descriptor) Object.defineProperty(globalThis, key, descriptor)
+    else Reflect.deleteProperty(globalThis, key)
+  }
+  dom.window.close()
+})
 
 beforeEach(() => {
   jest.clearAllMocks()
