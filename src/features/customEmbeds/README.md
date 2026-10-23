@@ -29,7 +29,9 @@ clearly-marked block minimizes merge conflicts when syncing with upstream.
 Renders [atmo.rsvp](https://atmo.rsvp) calendar events
 (`community.lexicon.calendar.event`) with in-app RSVP.
 
-- **Detect**: `https://atmo.rsvp/p/{handle}/e/{rkey}` (`detect.ts`).
+- **Detect**: `https://atmo.rsvp/p/{handle}/e/{rkey}`, and our own event pages
+  at `https://{brand host}/events/{handle}/{rkey}` (any of `BRAND.web.hosts`),
+  which posts written from an event link to (`detect.ts`).
 - **Read**: atmo's public XRPC for event details + aggregate counts + attendee
   faces (`rsvp.atmo.event.getRecord`). Images are built as `cdn.bsky.app` URLs,
   matching how atmo serves them. The viewer's own RSVP status comes from atmo's

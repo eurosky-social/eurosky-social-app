@@ -2,6 +2,7 @@ import {RichText as RichTextAPI, UnicodeString} from '@bsky/sdk/richtext'
 import {type I18n} from '@lingui/core'
 
 import {CDN_SERVICE} from '#/lib/constants'
+import {BRAND} from '#/config/brand'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {
@@ -119,19 +120,28 @@ function parseDate(value: string | {} | undefined): Date | undefined {
 const ATMO_HOSTS = ['https://atmo.rsvp', 'https://events.atmosphere.tickets']
 
 /**
- * The event's page on atmo.rsvp, which we link to from new posts about it.
+ * The event's page on the brand's own site, e.g.
+ * `https://oso.social/events/<actor>/<rkey>`.
+ */
+function getBrandEventUrl(event: EventRecord, actor: string): string {
+  return `https://${BRAND.web.hosts[0]}/events/${actor}/${event.rkey}`
+}
+
+/**
+ * The event's page on our own site, which we link to from new posts about it.
  * Uses the organiser's handle when known, for a readable URL.
  */
 export function getEventPostUrl(
   event: EventRecord,
   profile?: EventProfile,
 ): string {
-  return `${ATMO_HOSTS[0]}/p/${profile?.handle ?? event.did}/e/${event.rkey}`
+  return getBrandEventUrl(event, profile?.handle ?? event.did)
 }
 
 /**
- * The public web pages of other apps that render the event, as people link to
- * them in posts. Mirrors `eventShareUrls` in 40verse-atproto.
+ * The public web pages that render the event, as people link to them in
+ * posts: our own site, plus those of other apps (mirrors `eventShareUrls` in
+ * 40verse-atproto).
  *
  * Each host mints the link with the organiser's handle or DID, and post search
  * matches the exact URL, so both forms of every host are listed.
@@ -142,6 +152,7 @@ export function getEventShareUrls(
 ): string[] {
   const actors = profile?.handle ? [event.did, profile.handle] : [event.did]
   return actors.flatMap(actor => [
+    getBrandEventUrl(event, actor),
     `https://smokesignal.events/${actor}/${event.rkey}`,
     ...ATMO_HOSTS.map(host => `${host}/p/${actor}/e/${event.rkey}`),
   ])

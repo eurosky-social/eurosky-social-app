@@ -1,5 +1,6 @@
 import {CDN_SERVICE} from '#/lib/constants'
 import {RSVP_STATUS} from '#/features/customEmbeds/atmoRsvp/lexicon'
+import {type EventMedia} from '#/features/events/types'
 
 const ATMO_HOST = 'https://atmo.rsvp'
 
@@ -18,6 +19,7 @@ export type AtmoEventValue = {
   /** `community.lexicon.calendar.event#status` token */
   status?: string
   locations?: AtmoLocation[]
+  media?: EventMedia[]
 }
 
 export type AtmoLocation = {

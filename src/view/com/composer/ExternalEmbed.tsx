@@ -18,6 +18,7 @@ import {StandardSiteEmbed} from '#/components/Post/Embed/StandardSiteEmbed'
 import {isStandardSiteEmbed} from '#/components/Post/Embed/StandardSiteEmbed/utils'
 import {Embed as StarterPackEmbed} from '#/components/StarterPack/StarterPackCard'
 import {Text} from '#/components/Typography'
+import {matchCustomEmbed} from '#/features/customEmbeds/registry'
 import {type Gif} from '#/features/gifPicker/types'
 
 export const ExternalEmbedGif = ({
@@ -88,6 +89,21 @@ export const ExternalEmbedLink = ({
   const t = useTheme()
   const {data, error} = useResolveLinkQuery(uri)
   const linkComponent = useMemo(() => {
+    // EUROSKY: preview client-side custom embeds (e.g. events) as they will
+    // render in feeds. They fetch their own data, so match on the URL alone.
+    const customView = {
+      uri,
+      title: data?.type === 'external' ? data.title : '',
+      description: data?.type === 'external' ? data.description : '',
+      thumb:
+        data?.type === 'external'
+          ? (data.thumb?.source.path as UriString | undefined)
+          : undefined,
+    }
+    const customEmbed = matchCustomEmbed(customView)
+    if (customEmbed) {
+      return <customEmbed.Component view={customView} />
+    }
     if (data) {
       if (data.type === 'external') {
         if (data.view && isStandardSiteEmbed(data.view.external)) {

@@ -19,7 +19,13 @@ import {Link} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
 import {type CustomEmbedComponentProps} from '#/features/customEmbeds/types'
-import {type AtmoEventValue, getGoingAttendees} from './api'
+import {getEventImageIndex} from '#/features/events/util'
+import {
+  type AtmoEventResponse,
+  type AtmoEventValue,
+  bskyCdnImage,
+  getGoingAttendees,
+} from './api'
 import {parseAtmoRsvpEvent} from './detect'
 import {EVENT_MODE, EVENT_STATUS_CANCELLED, type RsvpStatus} from './lexicon'
 import {useAtmoEventQuery, useRsvpMutation, useViewerRsvpQuery} from './queries'
@@ -61,6 +67,14 @@ export function AtmoRsvpEmbed({
   // URL (no OG title). Fall back to the view, then the URL, while loading.
   const title = value?.name || view.title || view.uri
   const description = value?.description || view.description
+  /*
+   * atmo.rsvp pages unfurl to a per-event image, so those links keep using
+   * the link card's thumb. Our own pages don't, so take the image from the
+   * event record instead.
+   */
+  const thumb = ref?.isBrandLink
+    ? (getRecordImage(event) ?? view.thumb)
+    : view.thumb
   const isCancelled = value?.status === EVENT_STATUS_CANCELLED
   const whenText = formatWhen(i18n, value)
   const where = getLocationInfo(value)
@@ -101,10 +115,10 @@ export function AtmoRsvpEmbed({
         shouldProxy
         onPress={onPressCard}>
         <View style={[a.w_full]}>
-          {view.thumb ? (
+          {thumb ? (
             <Image
               style={[a.aspect_card]}
-              source={{uri: view.thumb}}
+              source={{uri: thumb}}
               accessibilityIgnoresInvertColors
               loading="lazy"
             />
@@ -318,4 +332,12 @@ function getLocationInfo(value?: AtmoEventValue): LocationInfo | null {
     }
   }
   return null
+}
+
+/** The event's banner, falling back to its thumbnail or first image. */
+function getRecordImage(event?: AtmoEventResponse): string | undefined {
+  if (!event) return undefined
+  const media = event.value.media
+  const image = media?.[getEventImageIndex(media)]
+  return bskyCdnImage('feed_thumbnail', event.did, image?.content?.ref?.$link)
 }
