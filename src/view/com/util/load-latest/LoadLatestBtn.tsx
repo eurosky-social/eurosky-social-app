@@ -14,6 +14,7 @@ import {useInteractionState} from '#/components/hooks/useInteractionState'
 import {ArrowTop_Stroke2_Corner0_Rounded as ArrowIcon} from '#/components/icons/Arrow'
 import {CENTER_COLUMN_OFFSET} from '#/components/Layout'
 import {SubtleHover} from '#/components/SubtleHover'
+import {IS_PARTNER_PREVIEW} from '#/env'
 
 export function LoadLatestBtn({
   onPress,
@@ -46,6 +47,11 @@ export function LoadLatestBtn({
   const bottomPosition = isTablet
     ? {bottom: 50}
     : {bottom: clamp(insets.bottom, 15, 60) + 15}
+
+  // Oso keeps the back-to-top button on phones only.
+  if (IS_PARTNER_PREVIEW && !isMobile) {
+    return null
+  }
 
   return (
     <Animated.View
