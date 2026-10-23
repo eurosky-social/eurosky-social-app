@@ -11,13 +11,13 @@ import {useLingui} from '@lingui/react/macro'
 import {useFocusEffect} from '@react-navigation/native'
 
 import {useHaptics} from '#/lib/haptics'
-import {useOpenLink} from '#/lib/hooks/useOpenLink'
 import {isNetworkError} from '#/lib/strings/errors'
 import {logger} from '#/logger'
 import {useSession} from '#/state/session'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
 import {useDialogControl} from '#/components/Dialog'
+import {useLink} from '#/components/Link'
 import {
   ReportDialog,
   useReportDialogControl,
@@ -57,7 +57,7 @@ const EASE_OUT = Easing.out(Easing.cubic)
  * whenever moderation hides the bio.
  *
  * Visitors open a link with a tap and see where it goes on hover or long
- * press. The owner taps a link to edit it.
+ * press. The owner taps an editable link to edit it.
  */
 export function ProfileHeaderLinks({
   profile,
@@ -128,14 +128,13 @@ function ProfileLinksRow({
   links: ProfileLink[]
   germButton?: React.ReactElement
   isOwnProfile: boolean
-  /** The owner taps a link to edit it, instead of opening it. */
+  /** The owner taps an editable link to edit it, instead of opening it. */
   canEdit: boolean
   snapshot?: OwnProfileLinks
 }) {
   const {t: l} = useLingui()
   const ax = useAnalytics()
   const {tap: playTapHaptic, longPress: playLongPressHaptic} = useHaptics()
-  const openLink = useOpenLink()
   const previewControl = useDialogControl()
   const reportControl = useReportDialogControl()
   const formControl = useDialogControl()
@@ -146,6 +145,12 @@ function ProfileLinksRow({
   const [editingSnapshot, setEditingSnapshot] = useState<OwnProfileLinks>()
   const editingLinks = editingSnapshot?.links ?? links
   const [expanded, setExpanded] = useState(false)
+  // the same handling as tapping the pill, e.g. bsky.app links open in-app
+  const {onPress: followActiveLink} = useLink({
+    to: activeLink?.url ?? '',
+    displayText: '',
+    shouldProxy: true,
+  })
 
   // the profile screen stays mounted elsewhere in the app, so fold back up on leave
   useFocusEffect(
@@ -154,14 +159,12 @@ function ProfileLinksRow({
     }, []),
   )
 
-  const open = (link: ProfileLink) => {
+  const logClick = (link: ProfileLink) => {
     ax.metric('profile:links:click', {
       domain: getLinkHost(link.url),
       supportProvider: getSupportProvider(link.url)?.name,
       isOwnProfile,
     })
-    // through the redirect service, so Safelink rules apply
-    openLink(link.url, undefined, true)
   }
 
   const showPreview = (link: ProfileLink) => {
@@ -205,30 +208,26 @@ function ProfileLinksRow({
     }
     const {link} = item
     const index = profileHeaderLinkIndex(link, snapshot)
-    const editable = index >= 0 && (canEdit || link.legacyWebsite !== undefined)
+    const editable =
+      isOwnProfile &&
+      index >= 0 &&
+      (canEdit || link.legacyWebsite !== undefined)
     return {
       key: websiteKey(link.url),
-      node: isOwnProfile ? (
+      node: editable ? (
         <ProfileLinkPill
           link={link}
           did={profile.did}
-          label={editable ? l`Edit link` : undefined}
+          label={l`Edit link`}
           onPress={
             isSaving
               ? undefined
               : () => {
                   playTapHaptic()
-                  if (editable) {
-                    setEditingIndex(index)
-                    setEditingSnapshot(snapshot)
-                    formControl.open()
-                  } else {
-                    open(link)
-                  }
+                  setEditingIndex(index)
+                  setEditingSnapshot(snapshot)
+                  formControl.open()
                 }
-          }
-          onLongPress={
-            !editable && IS_NATIVE ? () => showPreview(link) : undefined
           }
         />
       ) : (
@@ -236,11 +235,12 @@ function ProfileLinksRow({
           <ProfileLinkPill
             link={link}
             did={profile.did}
-            arrow
+            arrow={!isOwnProfile}
+            opensLink
             hint={l`Opens ${getLinkHost(link.url)} outside Bluesky`}
             onPress={() => {
               playTapHaptic()
-              open(link)
+              logClick(link)
             }}
             onLongPress={
               IS_NATIVE
@@ -298,7 +298,10 @@ function ProfileLinksRow({
       <LinkPreviewSheet
         control={previewControl}
         link={activeLink}
-        onOpen={open}
+        onOpen={(link, e) => {
+          logClick(link)
+          followActiveLink(e)
+        }}
         onReport={
           // nothing to report on your own profile
           !isOwnProfile && activeLink?.uri && activeLink.cid
@@ -376,6 +379,8 @@ function CappedPillRow({
   let revealIndex = 0
   return (
     <Animated.View
+      // on Android, swipes between the pills must fall through to scroll the profile
+      pointerEvents="box-none"
       layout={LinearTransition.duration(300).easing(EASE_OUT)}
       onLayout={e => setWidth(e.nativeEvent.layout.width)}
       style={[

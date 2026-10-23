@@ -154,7 +154,6 @@ function LinkFormInner({
       removeOnly ||
       !targetUrl ||
       provider ||
-      validation.isBlocked ||
       validation.isShortener ||
       validation.isInsecure
     ) {
@@ -180,7 +179,6 @@ function LinkFormInner({
     removeOnly,
     targetUrl,
     provider,
-    validation.isBlocked,
     validation.isShortener,
     validation.isInsecure,
   ])
@@ -199,14 +197,6 @@ function LinkFormInner({
     if (!canSave) return
     if (!targetUrl) {
       setError('invalid')
-      return
-    }
-    if (validation.isBlocked) {
-      setError('blocked')
-      ax.metric('profile:links:rejected', {
-        reason: 'blocked',
-        domain: getLinkHost(targetUrl),
-      })
       return
     }
     if (validation.isShortener) {

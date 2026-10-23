@@ -72,7 +72,6 @@ export function planProfileLinksSave(
     if (
       !canMigrate ||
       !validation.url ||
-      validation.isBlocked ||
       validation.isShortener ||
       validation.isInsecure ||
       nativeLinks.length + preservedRefs.length >= MAX_PROFILE_LINKS
