@@ -16101,6 +16101,11 @@ msgstr "oso's servers staan in Europa en voldoen aan Europese wetgeving, niet aa
 msgid "Donate"
 msgstr "Doneer"
 
+#: src/view/com/home/HomeHeaderLayout.web.tsx
+#: src/view/com/home/HomeHeaderLayoutMobile.tsx
+msgid "Manage feeds"
+msgstr "Beheer feeds"
+
 #: src/view/shell/desktop/Feeds.tsx
 msgid "Your feeds"
 msgstr "Jouw feeds"
