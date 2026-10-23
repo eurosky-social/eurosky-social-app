@@ -1,6 +1,6 @@
 ---
 lang: nl
-title: Voorwaarden
+title: Gebruiksvoorwaarden
 ---
 
 

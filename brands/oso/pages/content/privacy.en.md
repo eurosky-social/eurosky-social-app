@@ -1,6 +1,6 @@
 ---
 lang: en
-title: Privacy
+title: Privacy policy
 ---
 
 

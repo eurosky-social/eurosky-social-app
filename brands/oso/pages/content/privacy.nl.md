@@ -1,6 +1,6 @@
 ---
 lang: nl
-title: Privacy
+title: Privacybeleid
 ---
 
 *Versie 1.0 d.d. 23 oktober 2026*
