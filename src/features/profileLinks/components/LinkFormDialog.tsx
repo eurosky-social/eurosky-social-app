@@ -53,6 +53,7 @@ export function LinkFormDialog({
   control,
   link,
   existingUrls,
+  removeOnly = false,
   onSave,
   onRemove,
 }: {
@@ -60,6 +61,8 @@ export function LinkFormDialog({
   link: ProfileLink | null
   /** Other links on the profile, to catch duplicates. */
   existingUrls: string[]
+  /** Restricted accounts may still remove their legacy website. */
+  removeOnly?: boolean
   /** Runs after the sheet closes. */
   onSave: (link: ProfileLink) => void
   /** Runs after the sheet closes. */
@@ -79,6 +82,7 @@ export function LinkFormDialog({
       <LinkFormInner
         link={link}
         existingUrls={existingUrls}
+        removeOnly={removeOnly}
         onSave={onSave}
         onRemove={onRemove}
       />
@@ -89,11 +93,13 @@ export function LinkFormDialog({
 function LinkFormInner({
   link,
   existingUrls,
+  removeOnly,
   onSave,
   onRemove,
 }: {
   link: ProfileLink | null
   existingUrls: string[]
+  removeOnly: boolean
   onSave: (link: ProfileLink) => void
   onRemove?: () => void
 }) {
@@ -106,7 +112,11 @@ function LinkFormInner({
   const supportedSitesControl = Dialog.useDialogControl()
 
   const isEditing = !!link
-  const startingInput = link ? formatLinkUrl(link.url) : ''
+  const startingInput = link
+    ? link.legacyWebsite !== undefined
+      ? link.url
+      : formatLinkUrl(link.url)
+    : ''
   const [input, setInput] = useState(startingInput)
   const [touched, setTouched] = useState(false)
   const [title, setTitle] = useState(link?.title ?? '')
@@ -141,6 +151,7 @@ function LinkFormInner({
   const autoTitle = useRef('')
   useEffect(() => {
     if (
+      removeOnly ||
       !targetUrl ||
       provider ||
       validation.isBlocked ||
@@ -166,6 +177,7 @@ function LinkFormInner({
       cancelled = true
     }
   }, [
+    removeOnly,
     targetUrl,
     provider,
     validation.isBlocked,
@@ -177,6 +189,7 @@ function LinkFormInner({
   const isUnchanged =
     isEditing && targetUrl === link.url && nextTitle === link.title
   const canSave =
+    !removeOnly &&
     !validation.isEmpty &&
     !validation.isInsecure &&
     !isUnchanged &&
@@ -212,7 +225,8 @@ function LinkFormInner({
       setError('duplicate')
       return
     }
-    const isNewDestination = targetUrl !== link?.url
+    const isNewDestination =
+      targetUrl !== link?.url || link?.legacyWebsite !== undefined
     // a saved link has proven itself; only check new destinations
     const needsCheck = isNewDestination && reachability === 'unchecked'
     /*
@@ -313,6 +327,14 @@ function LinkFormInner({
           </Text>
         </View>
 
+        {removeOnly && (
+          <Text>
+            <Trans>
+              You can remove this existing link, but adding or editing links
+              isn’t available for this account.
+            </Trans>
+          </Text>
+        )}
         <View style={[a.gap_lg]}>
           <View>
             <TextField.LabelText>
@@ -325,6 +347,7 @@ function LinkFormInner({
                 label={l`Link`}
                 placeholder="yoursite.com"
                 value={input}
+                editable={!removeOnly}
                 onChangeText={value => {
                   setInput(value)
                   setTouched(true)
@@ -381,6 +404,7 @@ function LinkFormInner({
                   provider ? l`Support on ${provider.name}` : l`e.g. Portfolio`
                 }
                 value={title}
+                editable={!removeOnly}
                 onChangeText={setTitle}
                 maxLength={MAX_TITLE_LENGTH}
                 autoCapitalize="words"

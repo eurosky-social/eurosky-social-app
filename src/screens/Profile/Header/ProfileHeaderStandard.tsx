@@ -12,7 +12,6 @@ import {Trans} from '@lingui/react/macro'
 
 import {useHaptics} from '#/lib/haptics'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
-import {sanitizeWebsiteUrl, toShortUrl} from '#/lib/strings/url-helpers'
 import {logger} from '#/logger'
 import {type Shadow, useProfileShadow} from '#/state/cache/profile-shadow'
 import {
@@ -21,15 +20,13 @@ import {
 } from '#/state/queries/profile'
 import {useRequireAuth, useSession} from '#/state/session'
 import {ProfileMenu} from '#/view/com/profile/ProfileMenu'
-import {atoms as a, platform, useTheme} from '#/alf'
+import {atoms as a, platform} from '#/alf'
 import {SubscribeProfileButton} from '#/components/activity-notifications/SubscribeProfileButton'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {DebugFieldDisplay} from '#/components/DebugFieldDisplay'
 import {useDialogControl} from '#/components/Dialog'
 import {MessageProfileButton} from '#/components/dms/MessageProfileButton'
-import {ArrowTopRight_Stroke2_Corner0_Rounded as ArrowTopRightIcon} from '#/components/icons/Arrow'
 import {ArrowShareRight_Stroke2_Corner2_Rounded as ArrowShareRight} from '#/components/icons/ArrowShareRight'
-import {Globe_Stroke2_Corner0_Rounded as Globe} from '#/components/icons/Globe'
 import {Newspaper2_Stroke2_Corner2_Rounded as FrontpageIcon} from '#/components/icons/Newspaper2'
 import {PlusLarge_Stroke2_Corner0_Rounded as Plus} from '#/components/icons/Plus'
 import {
@@ -40,7 +37,6 @@ import {Link} from '#/components/Link'
 import * as Prompt from '#/components/Prompt'
 import {RichText} from '#/components/RichText'
 import * as Toast from '#/components/Toast'
-import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {IS_IOS, IS_NATIVE} from '#/env'
 import {useProfileFrontpagePath} from '#/features/frontpages/useProfileFrontpagePath'
@@ -75,7 +71,6 @@ let ProfileHeaderStandard = ({
     useProfileShadow<app.bsky.actor.defs.ProfileViewDetailed>(profileUnshadowed)
   const {currentAccount} = useSession()
   const {_} = useLingui()
-  const t = useTheme()
   const moderation = useMemo(
     () => moderateProfile(profile, moderationOpts),
     [profile, moderationOpts],
@@ -89,8 +84,6 @@ let ProfileHeaderStandard = ({
     profile.viewer?.blocking ||
     profile.viewer?.blockedBy ||
     profile.viewer?.blockingByList
-  const website = sanitizeWebsiteUrl(profile.website)
-  const showWebsite = !!website && !moderation.ui('profileView').blur
 
   const unblockAccount = async () => {
     try {
@@ -166,43 +159,6 @@ let ProfileHeaderStandard = ({
                     authorHandle={profile.handle}
                     shouldProxyLinks={true}
                   />
-                </View>
-              ) : undefined}
-
-              {showWebsite ? (
-                <View
-                  style={[a.flex_row, a.align_center, a.gap_sm, a.flex_wrap]}
-                  pointerEvents="auto">
-                  {showWebsite && (
-                    <Link
-                      testID="profileHeaderWebsite"
-                      to={website}
-                      label={_(msg`Open website ${toShortUrl(website)}`)}
-                      style={[
-                        t.atoms.bg_contrast_50,
-                        a.rounded_full,
-                        a.flex_shrink,
-                        a.align_center,
-                        {padding: 6, maxWidth: '100%'},
-                      ]}>
-                      <Globe size="sm" style={t.atoms.text_contrast_medium} />
-                      <Text
-                        style={[
-                          a.text_sm,
-                          a.font_medium,
-                          a.ml_xs,
-                          a.flex_shrink,
-                          {minWidth: 0},
-                        ]}
-                        numberOfLines={1}>
-                        {toShortUrl(website)}
-                      </Text>
-                      <ArrowTopRightIcon
-                        style={[t.atoms.text_contrast_medium, a.mx_2xs]}
-                        width={14}
-                      />
-                    </Link>
-                  )}
                 </View>
               ) : undefined}
 
