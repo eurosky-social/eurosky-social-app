@@ -58,6 +58,10 @@ export function FEEDBACK_FORM_URL({
   email?: string
   handle?: string
 }): string {
+  // A help desk that is an email address (Oso) has no form to prefill.
+  if (HELP_DESK_URL.startsWith('mailto:')) {
+    return HELP_DESK_URL
+  }
   let str = BASE_FEEDBACK_FORM_URL
   if (email) {
     str += `?tf_anonymous_requester_email=${encodeURIComponent(email)}`
