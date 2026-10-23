@@ -16,7 +16,6 @@ import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
 import {osoButton, osoField} from '#/features/osoAuthStyles'
-import {isSignupClosed} from '#/features/osoSignupGate'
 import {type com} from '#/lexicons'
 import {FormContainer} from './FormContainer'
 import {PasswordSignin} from './PasswordSignin'
@@ -155,21 +154,19 @@ export function OAuthSignin(props: Props) {
           </ButtonText>
           {isProcessing && <ButtonIcon icon={Loader} />}
         </Button>
-        {!isSignupClosed() && (
-          <Button
-            testID="loginCreateAccountButton"
-            label={_(msg`Create a new account`)}
-            accessibilityHint={_(msg`Create a new ${BRAND.name} account`)}
-            variant="outline"
-            color="primary"
-            size="large"
-            onPress={() => void onPressCreateAccount()}
-            disabled={isProcessing}>
-            <ButtonText>
-              <Trans>Create a new account</Trans>
-            </ButtonText>
-          </Button>
-        )}
+        <Button
+          testID="loginCreateAccountButton"
+          label={_(msg`Create a new account`)}
+          accessibilityHint={_(msg`Create a new ${BRAND.name} account`)}
+          variant="outline"
+          color="primary"
+          size="large"
+          onPress={() => void onPressCreateAccount()}
+          disabled={isProcessing}>
+          <ButtonText>
+            <Trans>Create a new account</Trans>
+          </ButtonText>
+        </Button>
         <Button
           testID="loginWithPasswordButton"
           label={_(msg`Sign in with password`)}
