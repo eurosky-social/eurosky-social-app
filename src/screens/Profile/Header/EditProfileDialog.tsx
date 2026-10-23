@@ -1,6 +1,5 @@
 import {useCallback, useEffect, useRef, useState} from 'react'
 import {View} from 'react-native'
-import {type UriString} from '@atproto/lex'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Plural, Trans} from '@lingui/react/macro'
@@ -12,9 +11,8 @@ import {
   urls,
 } from '#/lib/constants'
 import {useCallOnce} from '#/lib/once'
-import {cleanError} from '#/lib/strings/errors'
+import {cleanError, isNetworkError} from '#/lib/strings/errors'
 import {isOverMaxGraphemeCount} from '#/lib/strings/helpers'
-import {sanitizeWebsiteUrl} from '#/lib/strings/url-helpers'
 import {logger} from '#/logger'
 import {type ImageMeta} from '#/state/gallery'
 import {useProfileUpdateMutation} from '#/state/queries/profile'
@@ -35,13 +33,15 @@ import {useSimpleVerificationState} from '#/components/verification'
 import {useAnalytics} from '#/analytics'
 import {
   logProfileLinkChanges,
+  type OwnProfileLinks,
+  prepareProfileSave,
   type ProfileLink,
+  ProfileLinksChangedError,
   ProfileLinksEditor,
   sameProfileLinks,
   useCanEditProfileLinks,
   useOwnProfileLinksQuery,
-  useSetOwnProfileLinksCache,
-  useWriteProfileLinks,
+  usePrepareProfileLinksSave,
 } from '#/features/profileLinks'
 import {type app} from '#/lexicons'
 
@@ -137,8 +137,6 @@ function DialogInner({
   const [description, setDescription] = useState(initialDescription)
   const initialPronouns = profile.pronouns || ''
   const [pronouns, setPronouns] = useState(initialPronouns)
-  const initialWebsite = profile.website || ''
-  const [website, setWebsite] = useState(initialWebsite)
   const [userBanner, setUserBanner] = useState<string | undefined | null>(
     profile.banner,
   )
@@ -152,28 +150,54 @@ function DialogInner({
     ImageMeta | undefined | null
   >()
 
-  const linksEnabled = useCanEditProfileLinks()
-  const {data: storedLinks} = useOwnProfileLinksQuery(profile.did, {
-    enabled: linksEnabled,
-  })
-  const writeProfileLinks = useWriteProfileLinks()
-  const setOwnProfileLinksCache = useSetOwnProfileLinksCache()
-  /*
-   * Unset until the owner edits their links, so edits always start from the
-   * loaded records and a save can't overwrite links that hadn't loaded yet.
-   */
-  const [editedLinks, setEditedLinks] = useState<ProfileLink[]>()
+  const canEditLinks = useCanEditProfileLinks()
+  const {
+    data: queriedLinkSnapshot,
+    isError: linksError,
+    isFetching: isFetchingLinks,
+    refetch: retryLinks,
+  } = useOwnProfileLinksQuery(profile.did)
+  const [linkEdits, setLinkEdits] = useState<{
+    snapshot: OwnProfileLinks
+    links: ProfileLink[]
+  }>()
+  /* Freeze on interaction, not in an effect, before a form or drag can rebase. */
+  const linkSnapshot = linkEdits?.snapshot ?? queriedLinkSnapshot
+  const storedLinks = linkSnapshot?.links
+  const editedLinks = linkEdits?.links
+  const prepareLinksSave = usePrepareProfileLinksSave()
+  const [isSaving, setIsSaving] = useState(false)
+  const [linksConflict, setLinksConflict] = useState(false)
   const links = editedLinks ?? storedLinks
+  const freezeLinks = () => {
+    if (linkSnapshot) {
+      setLinkEdits(
+        previous =>
+          previous ?? {snapshot: linkSnapshot, links: linkSnapshot.links},
+      )
+    }
+  }
+  const reloadLinks = async () => {
+    const result = await retryLinks()
+    if (result.isSuccess && result.data) {
+      setLinkEdits({snapshot: result.data, links: result.data.links})
+      setLinksConflict(false)
+    } else {
+      Toast.show(_(msg`Couldn’t load your links. Please try again.`), {
+        type: 'error',
+      })
+    }
+  }
   const linksLoaded = !!storedLinks
 
   useEffect(() => {
-    if (!linksEnabled || !storedLinks) return
+    if (!storedLinks) return
     ax.metric('profile:links:editorOpen', {
       linkCount: storedLinks.length,
     })
     // Once, when the links first load.
     // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [linksEnabled, linksLoaded])
+  }, [linksLoaded])
   const [isDraggingLinks, setIsDraggingLinks] = useState(false)
   // on Android the sheet turns its own drag off while scrolled, so put that back after
   const sheetDragWasDisabled = useRef(false)
@@ -182,7 +206,6 @@ function DialogInner({
     displayName !== initialDisplayName ||
     description !== initialDescription ||
     pronouns !== initialPronouns ||
-    website !== initialWebsite ||
     userAvatar !== profile.avatar ||
     userBanner !== profile.banner
   const linksDirty =
@@ -231,58 +254,65 @@ function DialogInner({
     [setNewUserBanner, setUserBanner, setImageError],
   )
 
-  const onPressSave = useCallback(async () => {
+  const onPressSave = async () => {
+    if (isSaving) return
+    setIsSaving(true)
     setImageError('')
     try {
-      const nextLinks = linksDirty ? editedLinks : undefined
-      // the profile can only point at link records that already exist
-      const written = nextLinks
-        ? await writeProfileLinks(profile.did, nextLinks, storedLinks ?? [])
-        : undefined
-      await updateProfileMutation({
-        profile,
-        updates: {
+      let prepared: Awaited<ReturnType<typeof prepareLinksSave>> | undefined
+      if (
+        linkSnapshot &&
+        links &&
+        (linksDirty || (canEditLinks && linkSnapshot.website))
+      ) {
+        try {
+          prepared = await prepareLinksSave(profile.did, links, linkSnapshot)
+        } catch (e) {
+          /* Optional migration must not prevent an unrelated profile edit. */
+          if (linksDirty) throw e
+        }
+      }
+      const save = prepareProfileSave({
+        fields: {
           displayName: displayName.trimEnd(),
           description: description.trimEnd(),
           pronouns: pronouns.trim(),
-          website: sanitizeWebsiteUrl(website) as UriString,
-          ...(written && {
-            links: written.refs.length ? written.refs : undefined,
-          }),
         },
+        links: prepared,
+        linksDirty,
+      })
+      await updateProfileMutation({
+        profile,
+        updates: save.updates,
+        /* Wait for ordinary profile edits, not refs a filtered AppView may omit. */
+        commitFields: save.fields,
         newUserAvatar,
         newUserBanner,
       })
-      if (nextLinks && written) {
-        logProfileLinkChanges(ax, storedLinks ?? [], nextLinks)
-        setOwnProfileLinksCache(profile.did, nextLinks, written.refs)
-        await written.deleteRemoved()
+      await save.onSuccess()
+      if (prepared && linksDirty) {
+        logProfileLinkChanges(ax, storedLinks ?? [], links ?? [])
       }
       control.close(() => onUpdate?.())
       Toast.show(_(msg({message: 'Profile updated', context: 'toast'})))
-    } catch (e: any) {
-      logger.error('Failed to update user profile', {message: String(e)})
+    } catch (e: unknown) {
+      if (e instanceof ProfileLinksChangedError) setLinksConflict(true)
+      void retryLinks()
+      if (!isNetworkError(e) && !(e instanceof ProfileLinksChangedError)) {
+        logger.error('Failed to update user profile', {safeMessage: e})
+      }
+      Toast.show(
+        e instanceof ProfileLinksChangedError
+          ? _(
+              msg`Your links changed in another app. Reload your links to continue.`,
+            )
+          : _(msg`Couldn’t save your profile. Please try again.`),
+        {type: 'error'},
+      )
+    } finally {
+      setIsSaving(false)
     }
-  }, [
-    updateProfileMutation,
-    profile,
-    onUpdate,
-    control,
-    displayName,
-    description,
-    pronouns,
-    website,
-    newUserAvatar,
-    newUserBanner,
-    setImageError,
-    _,
-    editedLinks,
-    linksDirty,
-    storedLinks,
-    ax,
-    writeProfileLinks,
-    setOwnProfileLinksCache,
-  ])
+  }
 
   const displayNameTooLong = isOverMaxGraphemeCount({
     text: displayName,
@@ -296,9 +326,6 @@ function DialogInner({
     text: pronouns,
     maxCount: MAX_PRONOUNS,
   })
-  const websiteInvalid =
-    website.trim() !== '' && sanitizeWebsiteUrl(website) === ''
-
   const cancelButton = useCallback(
     () => (
       <Button
@@ -317,41 +344,28 @@ function DialogInner({
     [onPressCancel, _],
   )
 
-  const saveButton = useCallback(
-    () => (
-      <Button
-        label={_(msg`Save`)}
-        onPress={onPressSave}
-        disabled={
-          !dirty ||
-          isUpdatingProfile ||
-          displayNameTooLong ||
-          descriptionTooLong ||
-          pronounsTooLong ||
-          websiteInvalid
-        }
-        size="small"
-        color="primary"
-        variant="ghost"
-        style={[a.rounded_full]}
-        testID="editProfileSaveBtn">
-        <ButtonText style={[a.text_md, !dirty && t.atoms.text_contrast_low]}>
-          <Trans>Save</Trans>
-        </ButtonText>
-        {isUpdatingProfile && <ButtonIcon icon={Loader} />}
-      </Button>
-    ),
-    [
-      _,
-      t,
-      dirty,
-      onPressSave,
-      isUpdatingProfile,
-      displayNameTooLong,
-      descriptionTooLong,
-      pronounsTooLong,
-      websiteInvalid,
-    ],
+  const saveButton = () => (
+    <Button
+      label={_(msg`Save`)}
+      onPress={onPressSave}
+      disabled={
+        !dirty ||
+        isSaving ||
+        isUpdatingProfile ||
+        displayNameTooLong ||
+        descriptionTooLong ||
+        pronounsTooLong
+      }
+      size="small"
+      color="primary"
+      variant="ghost"
+      style={[a.rounded_full]}
+      testID="editProfileSaveBtn">
+      <ButtonText style={[a.text_md, !dirty && t.atoms.text_contrast_low]}>
+        <Trans>Save</Trans>
+      </ButtonText>
+      {(isSaving || isUpdatingProfile) && <ButtonIcon icon={Loader} />}
+    </Button>
   )
 
   return (
@@ -509,41 +523,51 @@ function DialogInner({
           )}
         </View>
 
-        <View>
-          <TextField.LabelText>
-            <Trans>Website</Trans>
-          </TextField.LabelText>
-          <TextField.Root isInvalid={websiteInvalid}>
-            <Dialog.Input
-              defaultValue={website}
-              onChangeText={setWebsite}
-              label={_(msg`Website`)}
-              placeholder={_(msg`e.g. example.com`)}
-              keyboardType="url"
-              autoCapitalize="none"
-              autoCorrect={false}
-              testID="editProfileWebsiteInput"
-            />
-          </TextField.Root>
-          {websiteInvalid && (
-            <Text
-              style={[
-                a.text_sm,
-                a.mt_xs,
-                a.font_semi_bold,
-                {color: t.palette.negative_400},
-              ]}>
-              <Trans>That does not look like a valid website.</Trans>
+        {!links && (
+          <View style={a.gap_sm}>
+            <TextField.LabelText>
+              <Trans>Links</Trans>
+            </TextField.LabelText>
+            {linksError ? (
+              <Button
+                label={_(msg`Retry loading links`)}
+                onPress={() => void retryLinks()}>
+                <ButtonText>
+                  <Trans>Couldn’t load your links. Retry</Trans>
+                </ButtonText>
+              </Button>
+            ) : (
+              <Loader />
+            )}
+          </View>
+        )}
+        {linksConflict && (
+          <View style={a.gap_sm}>
+            <Text>
+              <Trans>Your other profile changes will be kept.</Trans>
             </Text>
-          )}
-        </View>
-
-        {linksEnabled && links && (
+            <Button
+              label={_(msg`Reload links and discard link changes`)}
+              onPress={() => void reloadLinks()}
+              disabled={isSaving || isFetchingLinks}>
+              <ButtonText>
+                <Trans>Reload links and discard link changes</Trans>
+              </ButtonText>
+            </Button>
+          </View>
+        )}
+        {links && linkSnapshot && (
           <ProfileLinksEditor
             did={profile.did}
             links={links}
-            onChange={setEditedLinks}
+            snapshot={linkSnapshot}
+            canEdit={canEditLinks}
+            onEditStart={freezeLinks}
+            onChange={next =>
+              setLinkEdits({snapshot: linkSnapshot, links: next})
+            }
             onDragStateChange={dragging => {
+              if (dragging) freezeLinks()
               setIsDraggingLinks(dragging)
               if (dragging) {
                 sheetDragWasDisabled.current = control.disableDrag

@@ -757,7 +757,7 @@
   },
   "src/screens/Profile/Header/EditProfileDialog.tsx": {
     "typescript/no-explicit-any": {
-      "count": 3
+      "count": 2
     }
   },
   "src/screens/Profile/Header/ProfileHeaderLabeler.tsx": {

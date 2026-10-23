@@ -17,6 +17,21 @@ export type ProfileLink = {
   /** The `app.bsky.actor.link` record, once the link has been saved. */
   uri?: string
   cid?: string
+  /** The original profile.website value, until this compatibility entry is saved. */
+  legacyWebsite?: string
+}
+
+export type ProfileLinkRef = {uri: string; cid: string}
+
+/** A repo snapshot, including refs omitted from the visible editor. */
+export type OwnProfileLinks = {
+  links: ProfileLink[]
+  refs: ProfileLinkRef[]
+  website?: string
+  /** All resolved destinations, including links hidden by client validation. */
+  urls: string[]
+  /** An explicit save may update header order; a background editor load may not. */
+  locallySaved?: boolean
 }
 
 export const MAX_PROFILE_LINKS = 10

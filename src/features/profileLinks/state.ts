@@ -1,10 +1,6 @@
-import {type BlobRef, getBlobCidString, type l} from '@atproto/lex'
-import {
-  AtUri,
-  type DidString,
-  toDatetimeString,
-  type UriString,
-} from '@atproto/syntax'
+import {useRef} from 'react'
+import {type BlobRef, type l, type Un$Typed} from '@atproto/lex'
+import {AtUri, type DidString, type UriString} from '@atproto/syntax'
 import {useQuery, useQueryClient} from '@tanstack/react-query'
 
 import {uploadBlob} from '#/lib/api'
@@ -19,22 +15,26 @@ import {useProfileUpdateMutation} from '#/state/queries/profile'
 import {createQueryKey} from '#/state/queries/util'
 import {usePdsClient} from '#/state/session'
 import {useAgeAssurance} from '#/ageAssurance'
-import {useAnalytics} from '#/analytics'
 import {app} from '#/lexicons'
+import {keepSavedHeaderOrder} from './header'
+import {
+  assertProfileLinksUnchanged,
+  mergeLegacyWebsite,
+  mergeSavedLinkRefs,
+  planProfileLinksSave,
+} from './legacy'
+import {legacyWebsiteCheckOptions} from './legacyState'
 import {
   filterModeratedLinkViews,
   linksFromProfileView,
   linksFromRecords,
 } from './record'
-import {type ProfileLink} from './types'
+import {type OwnProfileLinks, type ProfileLink} from './types'
+import {createProfileLinkWriteState, writeProfileLinks} from './write'
 
-/**
- * Profile links roll out behind a GrowthBook flag. Always on in local
- * development.
- */
+/** Links replace the fork's Website UI, so they must be available to everyone. */
 export function useProfileLinksEnabled() {
-  const ax = useAnalytics()
-  return __DEV__ || ax.features.enabled(ax.features.ProfileLinksEnable)
+  return true
 }
 
 /**
@@ -47,8 +47,12 @@ export function useProfileViewLinks(
 ): ProfileLink[] {
   const moderationOpts = useModerationOpts()
   if (!moderationOpts) return []
-  return linksFromProfileView(
-    filterModeratedLinkViews(profile.links, moderationOpts),
+  return mergeLegacyWebsite(
+    linksFromProfileView(
+      filterModeratedLinkViews(profile.links, moderationOpts),
+    ),
+    profile.website,
+    (profile.links ?? []).map(link => link.url),
   )
 }
 
@@ -74,17 +78,22 @@ const ownProfileLinksQueryKey = (did: string) =>
  */
 export function useOwnProfileLinksQuery(did: DidString, {enabled = true} = {}) {
   const pdsClient = usePdsClient()
+  const queryClient = useQueryClient()
   return useQuery({
     queryKey: ownProfileLinksQueryKey(did),
     enabled,
     staleTime: STALE.MINUTES.ONE,
-    queryFn: async (): Promise<ProfileLink[]> => {
+    queryFn: async (): Promise<OwnProfileLinks> => {
       let refs: StrongRef[] | undefined
+      let website: string | undefined
       try {
         const res = await pdsClient.get(app.bsky.actor.profile, {repo: did})
         refs = res.value.links
+        website = res.value.website
       } catch (e) {
-        if (isRecordNotFoundError(e)) return []
+        if (isRecordNotFoundError(e)) {
+          return {links: [], refs: [], urls: []}
+        }
         throw e
       }
       const records = await Promise.all(
@@ -102,91 +111,34 @@ export function useOwnProfileLinksQuery(did: DidString, {enabled = true} = {}) {
           }
         }),
       )
-      return linksFromRecords(
-        refs,
-        records.filter(record => record !== undefined),
+      const resolved = records.filter(record => record !== undefined)
+      const urls = resolved.map(record => record.value.url)
+      const keepSavedOrder = keepSavedHeaderOrder(
+        queryClient.getQueryData<OwnProfileLinks>(ownProfileLinksQueryKey(did)),
+        {refs: refs ?? [], website},
       )
+      return {
+        ...(keepSavedOrder && {locallySaved: true}),
+        links: mergeLegacyWebsite(
+          linksFromRecords(refs, resolved),
+          website,
+          urls,
+          true,
+        ),
+        refs: refs ?? [],
+        website,
+        urls,
+      }
     },
   })
 }
 
-function sameIcon(a: BlobRef | undefined, b: BlobRef | undefined) {
-  return (a && getBlobCidString(a)) === (b && getBlobCidString(b))
-}
-
-/**
- * Writes link records so they match `links`: unchanged links keep their
- * record, edited ones are rewritten in place, and new ones are created.
- * Resolves to refs for the profile's `links` field, plus a cleanup that
- * deletes the records of removed links. Run the cleanup after the profile
- * stops pointing at them.
- */
+/** Keep a retry journal for confirmed writes across failed saves in this editor. */
 export function useWriteProfileLinks() {
   const pdsClient = usePdsClient()
-  return async (
-    did: DidString,
-    links: ProfileLink[],
-    existing: ProfileLink[],
-  ): Promise<{refs: StrongRef[]; deleteRemoved: () => Promise<void>}> => {
-    const existingByUri = new Map(
-      existing.flatMap(link => (link.uri ? [[link.uri, link]] : [])),
-    )
-    const refs = await Promise.all(
-      links.map(async (link): Promise<StrongRef> => {
-        const before = link.uri ? existingByUri.get(link.uri) : undefined
-        if (
-          before?.uri &&
-          before.cid &&
-          before.url === link.url &&
-          before.title === link.title &&
-          sameIcon(before.icon, link.icon)
-        ) {
-          return {
-            uri: before.uri as l.AtUriString,
-            cid: before.cid,
-          }
-        }
-        const record = {
-          url: link.url as UriString,
-          title: link.title,
-          icon: link.icon,
-          createdAt: toDatetimeString(new Date()),
-        }
-        const res = before?.uri
-          ? await pdsClient.put(app.bsky.actor.link, record, {
-              repo: did,
-              rkey: new AtUri(before.uri).rkey,
-            })
-          : await pdsClient.create(app.bsky.actor.link, record, {repo: did})
-        return {uri: res.uri, cid: res.cid}
-      }),
-    )
-    const kept = new Set(refs.map(ref => ref.uri as string))
-    const removed = existing.filter(link => link.uri && !kept.has(link.uri))
-    /*
-     * A record left behind isn't shown, since the profile no longer points at
-     * it, so a failed delete doesn't fail the save.
-     */
-    const deleteRemoved = async () => {
-      try {
-        await Promise.all(
-          removed.map(link =>
-            pdsClient.delete(app.bsky.actor.link, {
-              repo: did,
-              rkey: new AtUri(link.uri!).rkey,
-            }),
-          ),
-        )
-      } catch (e) {
-        if (!isNetworkError(e)) {
-          logger.error('Failed to delete profile link records', {
-            safeMessage: e,
-          })
-        }
-      }
-    }
-    return {refs, deleteRemoved}
-  }
+  const retryState = useRef(createProfileLinkWriteState())
+  return (did: DidString, links: ProfileLink[], existing: ProfileLink[]) =>
+    writeProfileLinks(pdsClient, did, links, existing, retryState.current)
 }
 
 /**
@@ -195,11 +147,98 @@ export function useWriteProfileLinks() {
  */
 export function useSetOwnProfileLinksCache() {
   const queryClient = useQueryClient()
-  return (did: string, links: ProfileLink[], refs: StrongRef[]) => {
-    queryClient.setQueryData<ProfileLink[]>(
-      ownProfileLinksQueryKey(did),
-      links.map((link, i) => ({...link, uri: refs[i].uri, cid: refs[i].cid})),
+  return (did: string, snapshot: OwnProfileLinks) => {
+    queryClient.setQueryData(ownProfileLinksQueryKey(did), snapshot)
+  }
+}
+
+/**
+ * Shared by Edit Profile and inline link edits. Keep the legacy field until its
+ * replacement is referenced by the same successful profile update.
+ */
+export function usePrepareProfileLinksSave() {
+  const writeProfileLinks = useWriteProfileLinks()
+  const setCache = useSetOwnProfileLinksCache()
+  const canMigrate = useCanEditProfileLinks()
+  const pdsClient = usePdsClient()
+  const queryClient = useQueryClient()
+  return async (
+    did: DidString,
+    links: ProfileLink[],
+    snapshot: OwnProfileLinks,
+  ) => {
+    const assertUnchanged = (record: {
+      links?: {uri: string; cid: string}[]
+      website?: string
+    }) => {
+      try {
+        assertProfileLinksUnchanged(snapshot, record)
+      } catch (e) {
+        void queryClient.invalidateQueries({
+          queryKey: ownProfileLinksQueryKey(did),
+        })
+        throw e
+      }
+    }
+    const migrating = links.find(link => link.legacyWebsite !== undefined)
+    let plan = planProfileLinksSave(snapshot, links, canMigrate)
+    if (
+      migrating &&
+      !plan.website &&
+      (await queryClient.fetchQuery(
+        legacyWebsiteCheckOptions(migrating.url),
+      )) === 'block'
+    ) {
+      plan = planProfileLinksSave(snapshot, links, false)
+    }
+    /* Check before writing records as well as inside the profile's CAS update. */
+    let current: {links?: {uri: string; cid: string}[]; website?: string} = {}
+    try {
+      current = (await pdsClient.get(app.bsky.actor.profile, {repo: did})).value
+    } catch (e) {
+      if (!isRecordNotFoundError(e)) throw e
+    }
+    assertUnchanged(current)
+    const written = await writeProfileLinks(
+      did,
+      plan.links,
+      snapshot.links.filter(link => link.uri),
     )
+    const refs = mergeSavedLinkRefs(snapshot, written.refs) as StrongRef[]
+    return {
+      updates: (record: Un$Typed<app.bsky.actor.profile.Main>) => {
+        assertUnchanged(record)
+        return {
+          ...record,
+          links: refs.length ? refs : undefined,
+          website: plan.website as UriString | undefined,
+        }
+      },
+      /* A filtered AppView isn't authoritative for link refs or legacy cleanup. */
+      checkCommitted: () => true,
+      onSuccess: async () => {
+        written.clearDraftKeys()
+        const saved = plan.links.map((link, i) => ({
+          ...link,
+          uri: written.refs[i].uri,
+          cid: written.refs[i].cid,
+        }))
+        const urls = [
+          ...saved.map(link => link.url),
+          ...snapshot.urls.filter(
+            url => !snapshot.links.some(link => link.uri && link.url === url),
+          ),
+        ]
+        setCache(did, {
+          links: mergeLegacyWebsite(saved, plan.website, urls, true),
+          refs,
+          website: plan.website,
+          urls,
+          locallySaved: true,
+        })
+        await written.deleteRemoved()
+      },
+    }
   }
 }
 
@@ -209,27 +248,27 @@ export function useSetOwnProfileLinksCache() {
  */
 export function useSaveProfileLinksMutation() {
   const {mutateAsync: updateProfile, isPending} = useProfileUpdateMutation()
-  const writeProfileLinks = useWriteProfileLinks()
-  const setOwnProfileLinksCache = useSetOwnProfileLinksCache()
+  const prepare = usePrepareProfileLinksSave()
+  const queryClient = useQueryClient()
   const save = async (
     profile: app.bsky.actor.defs.ProfileViewDetailed,
     links: ProfileLink[],
-    existing: ProfileLink[],
+    snapshot: OwnProfileLinks,
   ) => {
-    const {refs, deleteRemoved} = await writeProfileLinks(
-      profile.did,
-      links,
-      existing,
-    )
-    await updateProfile({
-      profile,
-      updates: record => ({...record, links: refs.length ? refs : undefined}),
-      checkCommitted: fresh =>
-        (fresh?.links ?? []).map(link => link.cid).join() ===
-        refs.map(ref => ref.cid).join(),
-    })
-    setOwnProfileLinksCache(profile.did, links, refs)
-    await deleteRemoved()
+    try {
+      const prepared = await prepare(profile.did, links, snapshot)
+      await updateProfile({
+        profile,
+        updates: prepared.updates,
+        checkCommitted: prepared.checkCommitted,
+      })
+      await prepared.onSuccess()
+    } catch (e) {
+      void queryClient.invalidateQueries({
+        queryKey: ownProfileLinksQueryKey(profile.did),
+      })
+      throw e
+    }
   }
   return {save, isPending}
 }

@@ -26,6 +26,8 @@ import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
 import {IS_NATIVE} from '#/env'
 import {type app} from '#/lexicons'
+import {profileHeaderLinkIndex, profileHeaderLinks} from '../header'
+import {ProfileLinksChangedError, websiteKey} from '../legacy'
 import {logProfileLinkChanges} from '../metrics'
 import {PILL_LEFT, PILL_RIGHT_TEXT, PILL_VERTICAL} from '../pillSize'
 import {getLinkHost, getSupportProvider} from '../providers'
@@ -37,7 +39,7 @@ import {
   useProfileViewLinks,
   useSaveProfileLinksMutation,
 } from '../state'
-import {type ProfileLink} from '../types'
+import {type OwnProfileLinks, type ProfileLink} from '../types'
 import {LinkFormDialog} from './LinkFormDialog'
 import {LinkHoverPreview} from './LinkHoverPreview'
 import {ProfileLinkPill} from './LinkPill'
@@ -72,16 +74,17 @@ export function ProfileHeaderLinks({
   const enabled = useProfileLinksEnabled()
   const canEdit = useCanEditProfileLinks()
   const isOwnProfile = currentAccount?.did === profile.did
-  /*
-   * The owner's row comes from their repo: it reflects a save before the
-   * AppView catches up, and editing needs the stored icon blobs.
-   */
+  /* Repo data enables editing, but must not shuffle the row on arrival. */
   const viewLinks = useProfileViewLinks(profile)
-  const {data: ownLinks} = useOwnProfileLinksQuery(profile.did, {
+  const {data: snapshot} = useOwnProfileLinksQuery(profile.did, {
     enabled: enabled && !hidden && isOwnProfile,
   })
   const links =
-    !enabled || hidden ? [] : isOwnProfile ? (ownLinks ?? []) : viewLinks
+    !enabled || hidden
+      ? []
+      : isOwnProfile
+        ? profileHeaderLinks(viewLinks, snapshot)
+        : viewLinks
   const supportLinkCount = links.filter(link =>
     getSupportProvider(link.url),
   ).length
@@ -107,7 +110,8 @@ export function ProfileHeaderLinks({
       links={links}
       germButton={germButton}
       isOwnProfile={isOwnProfile}
-      canEdit={isOwnProfile && canEdit}
+      canEdit={isOwnProfile && canEdit && !!snapshot}
+      snapshot={isOwnProfile ? snapshot : undefined}
     />
   )
 }
@@ -118,6 +122,7 @@ function ProfileLinksRow({
   germButton,
   isOwnProfile,
   canEdit,
+  snapshot,
 }: {
   profile: app.bsky.actor.defs.ProfileViewDetailed
   links: ProfileLink[]
@@ -125,6 +130,7 @@ function ProfileLinksRow({
   isOwnProfile: boolean
   /** The owner taps a link to edit it, instead of opening it. */
   canEdit: boolean
+  snapshot?: OwnProfileLinks
 }) {
   const {t: l} = useLingui()
   const ax = useAnalytics()
@@ -134,8 +140,11 @@ function ProfileLinksRow({
   const reportControl = useReportDialogControl()
   const formControl = useDialogControl()
   const {save} = useSaveProfileLinksMutation()
+  const [isSaving, setIsSaving] = useState(false)
   const [activeLink, setActiveLink] = useState<ProfileLink | null>(null)
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [editingSnapshot, setEditingSnapshot] = useState<OwnProfileLinks>()
+  const editingLinks = editingSnapshot?.links ?? links
   const [expanded, setExpanded] = useState(false)
 
   // the profile screen stays mounted elsewhere in the app, so fold back up on leave
@@ -165,16 +174,28 @@ function ProfileLinksRow({
   }
 
   const saveLinks = async (next: ProfileLink[]) => {
+    const baseline = editingSnapshot ?? snapshot
+    if (!baseline || isSaving) return
+    setIsSaving(true)
     try {
-      await save(profile, next, links)
-      logProfileLinkChanges(ax, links, next)
+      await save(profile, next, baseline)
+      logProfileLinkChanges(ax, baseline.links, next)
+      setEditingSnapshot(undefined)
+      setEditingIndex(null)
     } catch (e) {
-      if (!isNetworkError(e)) {
+      if (!isNetworkError(e) && !(e instanceof ProfileLinksChangedError)) {
         logger.error('Failed to save profile links', {safeMessage: e})
       }
-      Toast.show(l`Couldn’t save your links. Please try again.`, {
-        type: 'error',
-      })
+      Toast.show(
+        e instanceof ProfileLinksChangedError
+          ? l`Your links changed in another app. Please try again.`
+          : l`Couldn’t save your links. Please try again.`,
+        {
+          type: 'error',
+        },
+      )
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -183,19 +204,32 @@ function ProfileLinksRow({
       return {key: GERM_KEY, node: germButton}
     }
     const {link} = item
-    const index = links.indexOf(link)
+    const index = profileHeaderLinkIndex(link, snapshot)
+    const editable = index >= 0 && (canEdit || link.legacyWebsite !== undefined)
     return {
-      key: item.key,
-      node: canEdit ? (
+      key: websiteKey(link.url),
+      node: isOwnProfile ? (
         <ProfileLinkPill
           link={link}
           did={profile.did}
-          label={l`Edit link`}
-          onPress={() => {
-            playTapHaptic()
-            setEditingIndex(index)
-            formControl.open()
-          }}
+          label={editable ? l`Edit link` : undefined}
+          onPress={
+            isSaving
+              ? undefined
+              : () => {
+                  playTapHaptic()
+                  if (editable) {
+                    setEditingIndex(index)
+                    setEditingSnapshot(snapshot)
+                    formControl.open()
+                  } else {
+                    open(link)
+                  }
+                }
+          }
+          onLongPress={
+            !editable && IS_NATIVE ? () => showPreview(link) : undefined
+          }
         />
       ) : (
         <LinkHoverPreview url={link.url}>
@@ -239,51 +273,51 @@ function ProfileLinksRow({
         expanded={expanded}
         onExpand={() => setExpanded(true)}
       />
-      {canEdit ? (
+      {isOwnProfile && snapshot && (
         <LinkFormDialog
           control={formControl}
-          link={editingIndex === null ? null : links[editingIndex]}
-          existingUrls={links
+          link={editingIndex === null ? null : editingLinks[editingIndex]}
+          removeOnly={!canEdit}
+          existingUrls={editingLinks
             .filter((_, i) => i !== editingIndex)
             .map(link => link.url)}
           onSave={saved => {
             if (editingIndex === null) return
             void saveLinks(
-              links.map((link, i) => (i === editingIndex ? saved : link)),
+              editingLinks.map((link, i) =>
+                i === editingIndex ? saved : link,
+              ),
             )
           }}
           onRemove={() => {
             if (editingIndex === null) return
-            void saveLinks(links.filter((_, i) => i !== editingIndex))
+            void saveLinks(editingLinks.filter((_, i) => i !== editingIndex))
           }}
         />
-      ) : (
-        <>
-          <LinkPreviewSheet
-            control={previewControl}
-            link={activeLink}
-            onOpen={open}
-            onReport={
-              // nothing to report on your own profile
-              !isOwnProfile && activeLink?.uri && activeLink.cid
-                ? () => reportControl.open()
-                : undefined
-            }
-          />
-          {activeLink?.uri && activeLink.cid ? (
-            <ReportDialog
-              control={reportControl}
-              // the link was read off a profile view, so these are well-formed
-              subject={{
-                $type: 'app.bsky.actor.defs#profileLinkView',
-                uri: activeLink.uri as app.bsky.actor.defs.ProfileLinkView['uri'],
-                cid: activeLink.cid,
-                url: activeLink.url as app.bsky.actor.defs.ProfileLinkView['url'],
-              }}
-            />
-          ) : null}
-        </>
       )}
+      <LinkPreviewSheet
+        control={previewControl}
+        link={activeLink}
+        onOpen={open}
+        onReport={
+          // nothing to report on your own profile
+          !isOwnProfile && activeLink?.uri && activeLink.cid
+            ? () => reportControl.open()
+            : undefined
+        }
+      />
+      {activeLink?.uri && activeLink.cid ? (
+        <ReportDialog
+          control={reportControl}
+          // the link was read off a profile view, so these are well-formed
+          subject={{
+            $type: 'app.bsky.actor.defs#profileLinkView',
+            uri: activeLink.uri as app.bsky.actor.defs.ProfileLinkView['uri'],
+            cid: activeLink.cid,
+            url: activeLink.url as app.bsky.actor.defs.ProfileLinkView['url'],
+          }}
+        />
+      ) : null}
     </>
   )
 }
