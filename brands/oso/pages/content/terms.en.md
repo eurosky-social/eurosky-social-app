@@ -1,6 +1,6 @@
 ---
 lang: en
-title: Terms
+title: Terms of use
 ---
 
 
