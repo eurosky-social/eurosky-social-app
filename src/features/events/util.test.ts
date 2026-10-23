@@ -1,8 +1,15 @@
 import {UnicodeString} from '@bsky/sdk/richtext'
 
+import {BRAND} from '#/config/brand'
 import {type app} from '#/lexicons'
 import {router} from '#/routes'
-import {hideEventLinks, makeEventLink} from './util'
+import {type EventRecord} from './types'
+import {
+  getEventPostUrl,
+  getEventShareUrls,
+  hideEventLinks,
+  makeEventLink,
+} from './util'
 
 describe('makeEventLink', () => {
   it('opens the event page with the DID and record key', () => {
@@ -11,6 +18,28 @@ describe('makeEventLink', () => {
       'Event',
       {name: 'did:plc:abc', rkey: '3kxyz'},
     ])
+  })
+})
+
+describe('getEventPostUrl', () => {
+  const event = {did: 'did:plc:abc', rkey: '3kxyz'} as EventRecord
+  const profile = {did: 'did:plc:abc', handle: 'alice.test'}
+  const host = `https://${BRAND.web.hosts[0]}`
+
+  it("links to the event page on the brand's own site", () => {
+    expect(getEventPostUrl(event, profile)).toBe(
+      `${host}/events/alice.test/3kxyz`,
+    )
+  })
+
+  it('falls back to the DID without a handle', () => {
+    expect(getEventPostUrl(event)).toBe(`${host}/events/did:plc:abc/3kxyz`)
+  })
+
+  it('is listed among the share URLs in both forms', () => {
+    const urls = getEventShareUrls(event, profile)
+    expect(urls).toContain(`${host}/events/alice.test/3kxyz`)
+    expect(urls).toContain(`${host}/events/did:plc:abc/3kxyz`)
   })
 })
 
