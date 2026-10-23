@@ -3,7 +3,7 @@ import {Pressable, View} from 'react-native'
 import {useReducedMotion} from 'react-native-reanimated'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
-import {Trans} from '@lingui/react/macro'
+import {Trans, useLingui as useLinguiMacro} from '@lingui/react/macro'
 
 import {useWebMediaQueries} from '#/lib/hooks/useWebMediaQueries'
 import {ErrorBoundary} from '#/view/com/util/ErrorBoundary'
@@ -15,6 +15,9 @@ import {
 import {atoms as a, useBreakpoints, useTheme} from '#/alf'
 import {AppLanguageDropdown} from '#/components/AppLanguageDropdown'
 import {Button, ButtonText} from '#/components/Button'
+import * as Dialog from '#/components/Dialog'
+import * as TextField from '#/components/forms/TextField'
+import {Envelope_Stroke2_Corner0_Rounded as EnvelopeIcon} from '#/components/icons/Envelope'
 import {TimesLarge_Stroke2_Corner0_Rounded as TimesIcon} from '#/components/icons/Times'
 import * as Layout from '#/components/Layout'
 import {InlineLinkText} from '#/components/Link'
@@ -38,6 +41,7 @@ export const SplashScreen = ({
   const {isTabletOrMobile: IS_WEB_MOBILE} = useWebMediaQueries()
   const {gtMobile} = useBreakpoints()
   const [showClipOverlay, setShowClipOverlay] = useState(false)
+  const createAccountControl = Dialog.useDialogControl()
 
   useEffect(() => {
     const getParams = new URLSearchParams(window.location.search)
@@ -146,7 +150,7 @@ export const SplashScreen = ({
                     ]}>
                     <Button
                       testID="createAccountButton"
-                      onPress={onPressCreateAccount}
+                      onPress={() => createAccountControl.open()}
                       label={_(msg`Create new account`)}
                       accessibilityHint={_(
                         msg`Opens flow to create a new Bluesky account`,
@@ -183,11 +187,94 @@ export const SplashScreen = ({
           {gtMobile && <Footer />}
         </View>
       </View>
+      <CreateAccountWithInviteCodeDialog
+        control={createAccountControl}
+        onPressCreateAccount={onPressCreateAccount}
+      />
       <AppClipOverlay
         visible={showClipOverlay}
         setIsVisible={setShowClipOverlay}
       />
     </>
+  )
+}
+
+/**
+ * Gate in front of the signup flow while accounts are invite-only, offering
+ * the newsletter to anyone without a code.
+ */
+function CreateAccountWithInviteCodeDialog({
+  control,
+  onPressCreateAccount,
+}: {
+  control: Dialog.DialogControlProps
+  onPressCreateAccount: () => void
+}) {
+  const {t: l} = useLinguiMacro()
+  const [email, setEmail] = useState('')
+
+  const onSubmitNewsletter = () => {
+    // TODO: sign up `email` for the newsletter
+  }
+
+  return (
+    <Dialog.Outer control={control} webOptions={{alignCenter: true}}>
+      <Dialog.ScrollableInner label={l`Create account`} style={{maxWidth: 400}}>
+        <View style={{gap: 40}}>
+          <View style={a.gap_md}>
+            <Text style={[a.text_md, a.leading_snug]}>
+              <Trans>
+                Right now, you can only create an account if you have an invite
+                code.
+              </Trans>
+            </Text>
+            <Button
+              testID="createAccountWithInviteCodeButton"
+              onPress={() => control.close(() => onPressCreateAccount())}
+              label={l`Create account with invite code`}
+              size="large"
+              color="primary">
+              <ButtonText>
+                <Trans>Create account with invite code</Trans>
+              </ButtonText>
+            </Button>
+          </View>
+          <View style={a.gap_md}>
+            <Text style={[a.text_md, a.leading_snug]}>
+              <Trans>
+                If you don’t have a code, sign up for the newsletter to receive
+                an update when we launch.
+              </Trans>
+            </Text>
+            <TextField.Root>
+              <TextField.Icon icon={EnvelopeIcon} />
+              <TextField.Input
+                testID="newsletterEmailInput"
+                label={l`Email`}
+                placeholder={l`Email`}
+                defaultValue={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                autoComplete="email"
+                keyboardType="email-address"
+                returnKeyType="send"
+                onSubmitEditing={onSubmitNewsletter}
+              />
+            </TextField.Root>
+            <Button
+              testID="newsletterSubmitButton"
+              onPress={onSubmitNewsletter}
+              label={l`Sign up for newsletter`}
+              size="large"
+              color="secondary">
+              <ButtonText>
+                <Trans>Sign up for newsletter</Trans>
+              </ButtonText>
+            </Button>
+          </View>
+        </View>
+      </Dialog.ScrollableInner>
+    </Dialog.Outer>
   )
 }
 
