@@ -2,7 +2,13 @@ import {useLingui} from '@lingui/react/macro'
 
 import {useSession} from '#/state/session'
 import {type Props as IconProps} from '#/components/icons/common'
+import {IS_PARTNER_PREVIEW} from '#/env'
 import {EVENT_FEED_IDS, EVENT_FEEDS, type EventFeedId} from './feeds'
+
+/** The feed the events screen opens on; Oso leads with 40verse. */
+const DEFAULT_EVENT_FEED: EventFeedId = IS_PARTNER_PREVIEW
+  ? '40verse'
+  : 'upcoming'
 
 export type EventFeedOption = {
   id: EventFeedId
@@ -46,11 +52,11 @@ export function useEventFeedOptions() {
 
   /**
    * Maps the `feed` route param to a feed the user can see, falling back to
-   * `upcoming` for a missing or unknown param, or a feed that disappeared,
-   * e.g. after signing out.
+   * the default feed for a missing or unknown param, or a feed that
+   * disappeared, e.g. after signing out.
    */
   const resolveFeed = (param?: string): EventFeedId =>
-    options.find(option => option.id === param)?.id ?? 'upcoming'
+    options.find(option => option.id === param)?.id ?? DEFAULT_EVENT_FEED
 
   return {options, resolveFeed}
 }
