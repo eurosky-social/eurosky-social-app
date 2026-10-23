@@ -4,8 +4,12 @@ import {useReducedMotion} from 'react-native-reanimated'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans, useLingui as useLinguiMacro} from '@lingui/react/macro'
+import {useMutation} from '@tanstack/react-query'
+import * as EmailValidator from 'email-validator'
 
 import {useWebMediaQueries} from '#/lib/hooks/useWebMediaQueries'
+import {isNetworkError} from '#/lib/strings/errors'
+import {logger} from '#/logger'
 import {ErrorBoundary} from '#/view/com/util/ErrorBoundary'
 import {LogoHero} from '#/view/icons/LogoHero'
 import {
@@ -14,13 +18,15 @@ import {
 } from '#/screens/StarterPack/StarterPackLandingScreen'
 import {atoms as a, useBreakpoints, useTheme} from '#/alf'
 import {AppLanguageDropdown} from '#/components/AppLanguageDropdown'
-import {Button, ButtonText} from '#/components/Button'
+import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
+import {FormError} from '#/components/forms/FormError'
 import * as TextField from '#/components/forms/TextField'
 import {Envelope_Stroke2_Corner0_Rounded as EnvelopeIcon} from '#/components/icons/Envelope'
 import {TimesLarge_Stroke2_Corner0_Rounded as TimesIcon} from '#/components/icons/Times'
 import * as Layout from '#/components/Layout'
 import {InlineLinkText} from '#/components/Link'
+import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
 import {osoButton} from '#/features/osoAuthStyles'
@@ -210,11 +216,56 @@ function CreateAccountWithInviteCodeDialog({
   control: Dialog.DialogControlProps
   onPressCreateAccount: () => void
 }) {
+  /** ListMonk public subscription API, taking from the old oso.social announcement website */
+  const NEWSLETTER_ENDPOINT =
+    'https://listmonk.waag.org/api/public/subscription'
+  const NEWSLETTER_LIST_UUID = '9892c2a9-883c-47de-a725-2b5af094cf47'
+
   const {t: l} = useLinguiMacro()
   const [email, setEmail] = useState('')
+  const [error, setError] = useState('')
+
+  const {
+    mutate: signUpForNewsletter,
+    isPending,
+    isSuccess,
+  } = useMutation({
+    mutationFn: async (address: string) => {
+      const res = await fetch(NEWSLETTER_ENDPOINT, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          email: address,
+          name: '',
+          list_uuids: [NEWSLETTER_LIST_UUID],
+        }),
+      })
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as {
+          message?: string
+        }
+        throw new Error(
+          body?.message || `Newsletter signup failed with status ${res.status}`,
+        )
+      }
+    },
+    onError: err => {
+      if (!isNetworkError(err)) {
+        logger.error('Newsletter signup failed', {safeMessage: err})
+      }
+      setError(l`Something went wrong. Please try again later.`)
+    },
+  })
 
   const onSubmitNewsletter = () => {
-    // TODO: sign up `email` for the newsletter
+    if (isPending) return
+    const address = email.trim()
+    if (!EmailValidator.validate(address)) {
+      setError(l`Please enter a valid email address.`)
+      return
+    }
+    setError('')
+    signUpForNewsletter(address)
   }
 
   return (
@@ -222,56 +273,74 @@ function CreateAccountWithInviteCodeDialog({
       <Dialog.ScrollableInner label={l`Create account`} style={{maxWidth: 400}}>
         <View style={{gap: 40}}>
           <View style={a.gap_md}>
-            <Text style={[a.text_md, a.leading_snug]}>
-              <Trans>
-                Right now, you can only create an account if you have an invite
-                code.
-              </Trans>
-            </Text>
-            <Button
-              testID="createAccountWithInviteCodeButton"
-              onPress={() => control.close(() => onPressCreateAccount())}
-              label={l`Create account with invite code`}
-              size="large"
-              color="primary">
-              <ButtonText>
-                <Trans>Create account with invite code</Trans>
-              </ButtonText>
-            </Button>
+            {isSuccess ? (
+              <Text style={[a.text_md, a.leading_snug, a.font_semi_bold]}>
+                <Trans>
+                  Success! You’re now on the waiting list. Please note: it may
+                  take a few days for the code to arrive in your inbox.
+                </Trans>
+              </Text>
+            ) : (
+              <>
+                <Text style={[a.text_md, a.leading_snug]}>
+                  <Trans>
+                    In January 2027, we’ll be launching the beta version of
+                    oso.social. Do you already want to join and test the
+                    platform now? Sign up for the waiting list below. When it’s
+                    your turn, you’ll receive an invite code to create your
+                    account.
+                  </Trans>
+                </Text>
+                <FormError error={error} />
+                <TextField.Root isInvalid={!!error}>
+                  <TextField.Icon icon={EnvelopeIcon} />
+                  <TextField.Input
+                    testID="newsletterEmailInput"
+                    label={l`Email`}
+                    placeholder={l`Email`}
+                    defaultValue={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    keyboardType="email-address"
+                    returnKeyType="send"
+                    onSubmitEditing={onSubmitNewsletter}
+                  />
+                </TextField.Root>
+                <Button
+                  testID="newsletterSubmitButton"
+                  onPress={onSubmitNewsletter}
+                  label={l`Request a code`}
+                  size="large"
+                  color="secondary"
+                  disabled={isPending}>
+                  <ButtonText>
+                    <Trans>Request a code</Trans>
+                  </ButtonText>
+                  {isPending && <ButtonIcon icon={Loader} />}
+                </Button>
+              </>
+            )}
           </View>
-          <View style={a.gap_md}>
-            <Text style={[a.text_md, a.leading_snug]}>
-              <Trans>
-                If you don’t have a code, sign up for the newsletter to receive
-                an update when we launch.
-              </Trans>
-            </Text>
-            <TextField.Root>
-              <TextField.Icon icon={EnvelopeIcon} />
-              <TextField.Input
-                testID="newsletterEmailInput"
-                label={l`Email`}
-                placeholder={l`Email`}
-                defaultValue={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                autoComplete="email"
-                keyboardType="email-address"
-                returnKeyType="send"
-                onSubmitEditing={onSubmitNewsletter}
-              />
-            </TextField.Root>
-            <Button
-              testID="newsletterSubmitButton"
-              onPress={onSubmitNewsletter}
-              label={l`Sign up for newsletter`}
-              size="large"
-              color="secondary">
-              <ButtonText>
-                <Trans>Sign up for newsletter</Trans>
-              </ButtonText>
-            </Button>
-          </View>
+          {!isSuccess && (
+            <View style={a.gap_md}>
+              <Text style={[a.text_md, a.leading_snug]}>
+                <Trans>
+                  Do you have an invite code? Create an account here.
+                </Trans>
+              </Text>
+              <Button
+                testID="createAccountWithInviteCodeButton"
+                onPress={() => control.close(() => onPressCreateAccount())}
+                label={l`Register with an invite code`}
+                size="large"
+                color="primary">
+                <ButtonText>
+                  <Trans>Register with an invite code</Trans>
+                </ButtonText>
+              </Button>
+            </View>
+          )}
         </View>
       </Dialog.ScrollableInner>
     </Dialog.Outer>

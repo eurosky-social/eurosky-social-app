@@ -9349,8 +9349,9 @@ msgstr ""
 
 #: src/components/ageAssurance/AgeAssuranceInitDialog.tsx:113
 #: src/components/dialogs/EmailDialog/screens/Update.tsx:147
+#: src/view/com/auth/SplashScreen.web.tsx
 msgid "Please enter a valid email address."
-msgstr ""
+msgstr "Vul een geldig e-mailadres in."
 
 #: src/components/dialogs/MutedWords.tsx:91
 msgid "Please enter a valid word, tag, or phrase to mute"
@@ -16188,17 +16189,25 @@ msgid "your socials, your rules"
 msgstr "jouw socials, jouw regels"
 
 #: src/view/com/auth/SplashScreen.web.tsx
-msgid "Right now, you can only create an account if you have an invite code."
-msgstr "Op dit moment kun je alleen een account aanmaken als je een uitnodigingscode hebt."
+msgid "Something went wrong. Please try again later."
+msgstr "Er ging iets mis. Probeer het later opnieuw."
 
 #: src/view/com/auth/SplashScreen.web.tsx
-msgid "Create account with invite code"
-msgstr "Registreren met uitnodigingscode"
+msgid "In January 2027, we’ll be launching the beta version of oso.social. Do you already want to join and test the platform now? Sign up for the waiting list below. When it’s your turn, you’ll receive an invite code to create your account."
+msgstr "In januari 2027 lanceren we de bètaversie van oso.social. Wil je nu al mee testen? Meld je hieronder aan voor de wachtlijst. Als je aan de beurt bent, ontvang je een code om je account aan te maken."
 
 #: src/view/com/auth/SplashScreen.web.tsx
-msgid "If you don’t have a code, sign up for the newsletter to receive an update when we launch."
-msgstr "Heb je geen code? Meld je dan aan voor de nieuwsbrief, dan laten we je weten wanneer we live gaan."
+msgid "Request a code"
+msgstr "Vraag code aan"
 
 #: src/view/com/auth/SplashScreen.web.tsx
-msgid "Sign up for newsletter"
-msgstr "Aanmelden voor nieuwsbrief"
+msgid "Success! You’re now on the waiting list. Please note: it may take a few days for the code to arrive in your inbox."
+msgstr "Gelukt! Je staat op de wachtlijst. Let op: het kan een paar dagen duren voordat je een code in je inbox hebt."
+
+#: src/view/com/auth/SplashScreen.web.tsx
+msgid "Do you have an invite code? Create an account here."
+msgstr "Heb je een toegangscode? Maak hier een account aan."
+
+#: src/view/com/auth/SplashScreen.web.tsx
+msgid "Register with an invite code"
+msgstr "Registreren met toegangscode"
