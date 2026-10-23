@@ -68,6 +68,11 @@ export function ThreadComposePromptPill({onPress}: {onPress: () => void}) {
     onIn: onHoverIn,
     onOut: onHoverOut,
   } = useInteractionState()
+  const {
+    state: pressed,
+    onIn: onPressIn,
+    onOut: onPressOut,
+  } = useInteractionState()
 
   return (
     <PressableScale
@@ -84,14 +89,18 @@ export function ThreadComposePromptPill({onPress}: {onPress: () => void}) {
       })}
       onHoverIn={onHoverIn}
       onHoverOut={onHoverOut}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      // Tablet and up highlights on press instead of scaling.
+      targetScale={gtMobile ? 1 : undefined}
       style={[
         a.flex_row,
         a.align_center,
         a.p_sm,
         a.gap_sm,
         a.rounded_full,
-        (!gtMobile || hovered) && t.atoms.bg_contrast_25,
-        native([a.border, t.atoms.border_contrast_low]),
+        (!gtMobile || hovered || pressed) && t.atoms.bg_contrast_25,
+        !gtMobile && native([a.border, t.atoms.border_contrast_low]),
         a.transition_color,
       ]}>
       <UserAvatar
