@@ -16186,3 +16186,19 @@ msgstr "FAQ"
 #: src/view/com/auth/SplashScreen.web.tsx
 msgid "your socials, your rules"
 msgstr "jouw socials, jouw regels"
+
+#: src/view/com/auth/SplashScreen.web.tsx
+msgid "Right now, you can only create an account if you have an invite code."
+msgstr "Op dit moment kun je alleen een account aanmaken als je een uitnodigingscode hebt."
+
+#: src/view/com/auth/SplashScreen.web.tsx
+msgid "Create account with invite code"
+msgstr "Registreren met uitnodigingscode"
+
+#: src/view/com/auth/SplashScreen.web.tsx
+msgid "If you don’t have a code, sign up for the newsletter to receive an update when we launch."
+msgstr "Heb je geen code? Meld je dan aan voor de nieuwsbrief, dan laten we je weten wanneer we live gaan."
+
+#: src/view/com/auth/SplashScreen.web.tsx
+msgid "Sign up for newsletter"
+msgstr "Aanmelden voor nieuwsbrief"
