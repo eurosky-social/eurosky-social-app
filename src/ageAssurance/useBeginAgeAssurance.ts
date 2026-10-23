@@ -3,8 +3,9 @@ import {useMutation} from '@tanstack/react-query'
 
 import {wait} from '#/lib/async/wait'
 import {
+  BLUESKY_APPVIEW,
+  BLUESKY_APPVIEW_DID,
   DEV_ENV_APPVIEW,
-  PUBLIC_APPVIEW,
   PUBLIC_APPVIEW_DID,
 } from '#/lib/constants'
 import {createLexClient} from '#/lib/lexClient'
@@ -14,15 +15,18 @@ import {usePatchAgeAssuranceServerState} from '#/ageAssurance'
 import {logger} from '#/ageAssurance/logger'
 import {useAnalytics} from '#/analytics'
 import {BLUESKY_PROXY_DID} from '#/env'
-import {getAppViewDid, getPublicAppViewUrl} from '#/features/appView/config'
 import {useGeolocation} from '#/geolocation'
 import {app, com} from '#/lexicons'
 
+/*
+ * KWS-backed age assurance only exists on Bluesky's own AppView, so this
+ * always targets it directly via the build-time Bluesky-compatible service
+ * constants rather than the user's configured/overridden AppView (e.g. the
+ * "Eurosky" AppView preference), which doesn't implement it.
+ */
 const IS_DEV_ENV = BLUESKY_PROXY_DID !== PUBLIC_APPVIEW_DID
-const APPVIEW = getPublicAppViewUrl(
-  IS_DEV_ENV ? DEV_ENV_APPVIEW : PUBLIC_APPVIEW,
-)
-const APPVIEW_DID = getAppViewDid(BLUESKY_PROXY_DID)
+const APPVIEW = IS_DEV_ENV ? DEV_ENV_APPVIEW : BLUESKY_APPVIEW
+const APPVIEW_DID = BLUESKY_APPVIEW_DID
 
 export function useBeginAgeAssurance() {
   const ax = useAnalytics()
