@@ -12,13 +12,6 @@ jest.mock('fs', () => ({
   writeFileSync: jest.fn(),
 }))
 
-const allOrientations = [
-  'UIInterfaceOrientationPortrait',
-  'UIInterfaceOrientationPortraitUpsideDown',
-  'UIInterfaceOrientationLandscapeLeft',
-  'UIInterfaceOrientationLandscapeRight',
-]
-
 /** @param {import('@expo/config-types').ExpoConfig} inputConfig */
 async function generateClipInfoPlist(inputConfig) {
   const rawConfig = {
@@ -68,14 +61,12 @@ describe('App Clip orientations', () => {
     jest.clearAllMocks()
   })
 
-  it('inherits all multitasking orientations from the current app config', async () => {
+  it('inherits the iPhone-only orientations from the current app config', async () => {
     const {clip, parent} = await generateClipInfoPlist(
       createAppConfig({name: 'Bluesky', slug: 'bluesky'}).expo,
     )
 
-    expect(clip['UISupportedInterfaceOrientations~ipad']).toEqual(
-      allOrientations,
-    )
+    expect(clip).not.toHaveProperty('UISupportedInterfaceOrientations~ipad')
     expect(clip.UISupportedInterfaceOrientations).toEqual([
       'UIInterfaceOrientationPortrait',
     ])

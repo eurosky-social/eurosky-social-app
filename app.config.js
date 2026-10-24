@@ -83,7 +83,8 @@ module.exports = function (_config) {
       userInterfaceStyle: 'automatic',
       primaryColor: BRAND_ACCENT.primary_500,
       ios: {
-        supportsTablet: true,
+        // iPhone-only for now; iPads run the iPhone layout in compatibility mode.
+        supportsTablet: false,
         bundleIdentifier: 'social.mu.app',
         buildNumber: process.env.BSKY_IOS_BUILD_NUMBER ?? '1',
         appleTeamId: APPLE_TEAM_ID,
@@ -93,12 +94,6 @@ module.exports = function (_config) {
         icon: IOS_ICON_FILE,
         infoPlist: {
           UISupportedInterfaceOrientations: ['UIInterfaceOrientationPortrait'],
-          'UISupportedInterfaceOrientations~ipad': [
-            'UIInterfaceOrientationPortrait',
-            'UIInterfaceOrientationPortraitUpsideDown',
-            'UIInterfaceOrientationLandscapeLeft',
-            'UIInterfaceOrientationLandscapeRight',
-          ],
           CADisableMinimumFrameDurationOnPhone: true,
           UIBackgroundModes: ['remote-notification'],
           NSUserActivityTypes: ['INSendMessageIntent'],
