@@ -83,7 +83,14 @@ export function useEuroskyOnboardingSuggestedStarterPacks(props: {
     const hasAny = merged.length > 0
 
     return {
-      data: ours.data || bluesky.data ? {starterPacks: merged} : undefined,
+      data:
+        ours.data || bluesky.data
+          ? {
+              starterPacks: merged,
+              // Curated packs are not part of the upstream recommendation batch.
+              recId: ourPacks.length > 0 ? undefined : bluesky.data?.recId,
+            }
+          : undefined,
       isLoading: !hasAny && !settled,
       isError: !hasAny && settled && (bluesky.isError || ours.isError),
       isRefetching: ours.isRefetching || bluesky.isRefetching,

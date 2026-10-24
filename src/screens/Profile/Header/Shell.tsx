@@ -18,7 +18,7 @@ import {useSession} from '#/state/session'
 import {LoadingPlaceholder} from '#/view/com/util/LoadingPlaceholder'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {UserBanner} from '#/view/com/util/UserBanner'
-import {atoms as a, platform, useTheme} from '#/alf'
+import {atoms as a, platform, useBreakpoints, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
 import {useDialogControl} from '#/components/Dialog'
 import {ArrowLeft_Stroke2_Corner0_Rounded as ArrowLeftIcon} from '#/components/icons/Arrow'
@@ -35,6 +35,7 @@ import {LiveStatusDialog} from '#/features/liveNow/components/LiveStatusDialog'
 import {type app} from '#/lexicons'
 import {GrowableAvatar} from './GrowableAvatar'
 import {GrowableBanner} from './GrowableBanner'
+import {PROFILE_BANNER_HEIGHT} from './layout'
 import {StatusBarShadow} from './StatusBarShadow'
 
 interface Props {
@@ -52,13 +53,14 @@ let ProfileHeaderShell = ({
   isPlaceholderProfile,
 }: React.PropsWithChildren<Props>): React.ReactNode => {
   const t = useTheme()
+  const {gtMobile} = useBreakpoints()
   const ax = useAnalytics()
   const {currentAccount} = useSession()
   const {t: l} = useLingui()
   const {openLightbox} = useLightboxControls()
   const navigation = useNavigation<NavigationProp>()
   const {top: topInset} = useSafeAreaInsets()
-  const playHaptic = useHaptics()
+  const haptics = useHaptics()
   const liveStatusControl = useDialogControl()
 
   const aviRef = useAnimatedRef()
@@ -123,7 +125,7 @@ let ProfileHeaderShell = ({
 
   const onPressAvi = useCallback(() => {
     if (live.isActive) {
-      playHaptic('Light')
+      haptics.tap()
       ax.metric('live:card:open', {subject: profile.did, from: 'profile'})
       liveStatusControl.open()
     } else {
@@ -142,7 +144,7 @@ let ProfileHeaderShell = ({
     aviRef,
     liveStatusControl,
     live,
-    playHaptic,
+    haptics,
   ])
 
   const onPressBanner = useCallback(() => {
@@ -157,8 +159,8 @@ let ProfileHeaderShell = ({
     <View style={t.atoms.bg} pointerEvents={IS_IOS ? 'auto' : 'box-none'}>
       <View
         pointerEvents={IS_IOS ? 'auto' : 'box-none'}
-        style={[a.relative, {height: 150}]}>
-        <StatusBarShadow />
+        style={[a.relative, {height: PROFILE_BANNER_HEIGHT}]}>
+        {!gtMobile && <StatusBarShadow />}
         <GrowableBanner
           testID={profile.banner ? 'userBannerImage' : 'userBannerFallback'}
           label={

@@ -23,9 +23,12 @@
  */
 import {execFileSync, spawnSync} from 'node:child_process'
 import fs from 'node:fs'
+import {createRequire} from 'node:module'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 
+const require = createRequire(import.meta.url)
+const Jimp = require('jimp-compact')
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const BRAND_DIR = path.join(ROOT, 'assets/brand')
 const LOGO = JSON.parse(
@@ -47,7 +50,7 @@ const OUT_DIR = outIdx >= 0 ? path.resolve(argv[outIdx + 1]) : null
 
 // Outputs (relative to ROOT, or redirected into --out as basenames).
 const ICON_MASTER = 'assets/app-icons/ios_icon_default_next.png'
-const OG_IMAGE = 'web/og-image.jpg'
+const OG_IMAGE = 'public/og-image.jpg'
 const ICON_SIZE = 1024
 const OG_W = 2400
 const OG_H = 1600
@@ -170,7 +173,9 @@ if (fs.existsSync(iconSvgPath)) {
 const ogSvgPath = path.join(BRAND_DIR, 'og.svg')
 if (fs.existsSync(ogSvgPath)) {
   const svg = paint(fs.readFileSync(ogSvgPath, 'utf8'), {current: N.contrast_0})
-  write(OG_IMAGE, rasterize(svg, OG_W, OG_H))
+  const image = await Jimp.read(rasterize(svg, OG_W, OG_H))
+  image.quality(85)
+  write(OG_IMAGE, await image.getBufferAsync(Jimp.MIME_JPEG))
 } else if (COMPOSE) {
   // Default OG card: the lockup/mark in white on an accent field.
   const svg = compose('lockup', {
@@ -180,7 +185,9 @@ if (fs.existsSync(ogSvgPath)) {
     fg: N.contrast_0,
     scale: 0.4,
   })
-  write(OG_IMAGE, rasterize(svg, OG_W, OG_H))
+  const image = await Jimp.read(rasterize(svg, OG_W, OG_H))
+  image.quality(85)
+  write(OG_IMAGE, await image.getBufferAsync(Jimp.MIME_JPEG))
 }
 
 /* -- favicons (only if we regenerated the icon master in place) ----------- */

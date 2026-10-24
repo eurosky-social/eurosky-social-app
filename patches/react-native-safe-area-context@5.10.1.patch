@@ -1,0 +1,81 @@
+diff --git a/lib/commonjs/NativeSafeAreaProvider.web.js b/lib/commonjs/NativeSafeAreaProvider.web.js
+index d272a37b5cf0861b48d246b03a70d95616119ed7..dcbacb9e1a3e99d44bdbbb9e42a44d4665c63640 100644
+--- a/lib/commonjs/NativeSafeAreaProvider.web.js
++++ b/lib/commonjs/NativeSafeAreaProvider.web.js
+@@ -69,11 +69,13 @@ function NativeSafeAreaProvider({
+         // in viewport coordinates and clamp the window insets to the part
+         // overlapping the provider view.
+         const rect = providerElement.getBoundingClientRect();
++        // A provider can extend beyond the viewport (e.g. a scrolled page).
++        // Its offset must not increase an inset beyond the window safe area.
+         insets = {
+-          top: Math.max(0, windowInsets.top - rect.top),
+-          bottom: Math.max(0, windowInsets.bottom - (window.innerHeight - rect.bottom)),
+-          left: Math.max(0, windowInsets.left - rect.left),
+-          right: Math.max(0, windowInsets.right - (window.innerWidth - rect.right))
++          top: Math.min(windowInsets.top, Math.max(0, windowInsets.top - rect.top)),
++          bottom: Math.min(windowInsets.bottom, Math.max(0, windowInsets.bottom - (window.innerHeight - rect.bottom))),
++          left: Math.min(windowInsets.left, Math.max(0, windowInsets.left - rect.left)),
++          right: Math.min(windowInsets.right, Math.max(0, windowInsets.right - (window.innerWidth - rect.right)))
+         };
+         frame = {
+           x: rect.left,
+diff --git a/lib/module/NativeSafeAreaProvider.web.js b/lib/module/NativeSafeAreaProvider.web.js
+index 359ed9f254889056cf31fc70129804eb16c48747..c7e0f58d63d931ce0b5f97a5c2acfe704caa2d11 100644
+--- a/lib/module/NativeSafeAreaProvider.web.js
++++ b/lib/module/NativeSafeAreaProvider.web.js
+@@ -62,11 +62,13 @@ export function NativeSafeAreaProvider({
+         // in viewport coordinates and clamp the window insets to the part
+         // overlapping the provider view.
+         const rect = providerElement.getBoundingClientRect();
++        // A provider can extend beyond the viewport (e.g. a scrolled page).
++        // Its offset must not increase an inset beyond the window safe area.
+         insets = {
+-          top: Math.max(0, windowInsets.top - rect.top),
+-          bottom: Math.max(0, windowInsets.bottom - (window.innerHeight - rect.bottom)),
+-          left: Math.max(0, windowInsets.left - rect.left),
+-          right: Math.max(0, windowInsets.right - (window.innerWidth - rect.right))
++          top: Math.min(windowInsets.top, Math.max(0, windowInsets.top - rect.top)),
++          bottom: Math.min(windowInsets.bottom, Math.max(0, windowInsets.bottom - (window.innerHeight - rect.bottom))),
++          left: Math.min(windowInsets.left, Math.max(0, windowInsets.left - rect.left)),
++          right: Math.min(windowInsets.right, Math.max(0, windowInsets.right - (window.innerWidth - rect.right)))
+         };
+         frame = {
+           x: rect.left,
+diff --git a/src/NativeSafeAreaProvider.web.tsx b/src/NativeSafeAreaProvider.web.tsx
+index 5bcdf5cd07567d54530d241097e04a6e29240d84..df70dcc10c6a57662f6b65b71239f5b876e1710e 100644
+--- a/src/NativeSafeAreaProvider.web.tsx
++++ b/src/NativeSafeAreaProvider.web.tsx
+@@ -74,16 +74,24 @@ export function NativeSafeAreaProvider({
+         // in viewport coordinates and clamp the window insets to the part
+         // overlapping the provider view.
+         const rect = providerElement.getBoundingClientRect();
++        // A provider can extend beyond the viewport (e.g. a scrolled page).
++        // Its offset must not increase an inset beyond the window safe area.
+         insets = {
+-          top: Math.max(0, windowInsets.top - rect.top),
+-          bottom: Math.max(
+-            0,
+-            windowInsets.bottom - (window.innerHeight - rect.bottom),
++          top: Math.min(
++            windowInsets.top,
++            Math.max(0, windowInsets.top - rect.top),
+           ),
+-          left: Math.max(0, windowInsets.left - rect.left),
+-          right: Math.max(
+-            0,
+-            windowInsets.right - (window.innerWidth - rect.right),
++          bottom: Math.min(
++            windowInsets.bottom,
++            Math.max(0, windowInsets.bottom - (window.innerHeight - rect.bottom)),
++          ),
++          left: Math.min(
++            windowInsets.left,
++            Math.max(0, windowInsets.left - rect.left),
++          ),
++          right: Math.min(
++            windowInsets.right,
++            Math.max(0, windowInsets.right - (window.innerWidth - rect.right)),
+           ),
+         };
+         frame = {

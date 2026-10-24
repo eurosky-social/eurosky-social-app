@@ -2,11 +2,11 @@
  * Publisher RSS/article proxy (Bunny.net Edge Scripting).
  *
  * First-party passthrough for the newsroom pages (see
- * ../../../src/features/newsrooms/). Publisher feeds and article pages send no
+ * ../../../src/features/news/). Publisher feeds and article pages send no
  * Access-Control-Allow-Origin header, so a web build cannot fetch them from
  * the browser; this service refetches them server-side and re-serves the body
  * with CORS headers. The app points EXPO_PUBLIC_RSS_PROXY_URL at this host and
- * appends `?url=<target>` itself (see src/features/newsrooms/rss/config.ts).
+ * appends `?url=<target>` itself (see src/features/news/rss/config.ts).
  * It proxies two kinds of targets: feed XML, and article HTML (for the hero's
  * og:image scrape).
  *

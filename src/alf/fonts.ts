@@ -88,9 +88,14 @@ export function applyFonts(
       delete style.fontWeight
       delete style.fontStyle
     } else {
-      style.fontFamily = 'InterVariable'
+      // Web partner previews can ship a different theme font without changing
+      // the native font configuration or Mu's default.
+      const themeFont = IS_WEB
+        ? process.env.EXPO_PUBLIC_THEME_FONT_FAMILY || 'InterVariable'
+        : 'InterVariable'
+      style.fontFamily = themeFont
 
-      if (style.fontStyle === 'italic') {
+      if (style.fontStyle === 'italic' && themeFont === 'InterVariable') {
         style.fontFamily += 'Italic'
       }
     }
