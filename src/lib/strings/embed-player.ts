@@ -2,8 +2,6 @@ import {Dimensions} from 'react-native'
 
 import {IS_WEB} from '#/env'
 
-const {height: SCREEN_HEIGHT} = Dimensions.get('window')
-
 const IFRAME_HOST = IS_WEB
   ? /*
      * Serve the YouTube iframe player from our own origin. bsky.app/iframe/*
@@ -29,6 +27,7 @@ export const embedPlayerSources = [
   'flickr',
   'bandcamp',
   'plyr',
+  'freemix',
 ] as const
 
 export type EmbedPlayerSource = (typeof embedPlayerSources)[number]
@@ -53,6 +52,7 @@ export type EmbedPlayerType =
   | 'bandcamp_album'
   | 'bandcamp_track'
   | 'plyr_track'
+  | 'freemix_track'
 
 export function getEmbedPlayerMediaType(
   type: EmbedPlayerType,
@@ -70,7 +70,8 @@ export function getEmbedPlayerMediaType(
     type.startsWith('spotify_') ||
     type.startsWith('soundcloud_') ||
     type.startsWith('apple_music_') ||
-    type.startsWith('bandcamp_')
+    type.startsWith('bandcamp_') ||
+    type.startsWith('freemix_')
   ) {
     return 'audio'
   }
@@ -91,6 +92,7 @@ export const externalEmbedLabels: Record<EmbedPlayerSource, string> = {
   flickr: 'Flickr',
   bandcamp: 'Bandcamp',
   plyr: 'plyr.fm',
+  freemix: 'FreeMix',
 }
 
 /**
@@ -125,6 +127,22 @@ export interface EmbedPlayerParams {
 const giphyRegex = /media(?:[0-4]\.giphy\.com|\.giphy\.com)/i
 const gifFilenameRegex = /^(\S+)\.(webp|gif|mp4)$/i
 
+/** AT Protocol TID, i.e. the rkey of a `fm.freemix.track` record */
+const freemixRkeyRegex = /^[2-7a-z]{13}$/
+
+/** staging.freemix.fm is FreeMix's live test environment */
+const freemixHosts = ['app.freemix.fm', 'staging.freemix.fm']
+
+/**
+ * Converts a YouTube `t` param such as `90`, `90s` or `1h2m3s` to seconds.
+ */
+function parseYouTubeStart(t: string | null) {
+  const match = t?.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?$/)
+  if (!match) return 0
+  const [, h = 0, m = 0, s = 0] = match
+  return Number(h) * 3600 + Number(m) * 60 + Number(s)
+}
+
 export function parseEmbedPlayerFromUrl(
   url: string,
 ): EmbedPlayerParams | undefined {
@@ -151,8 +169,7 @@ export function parseEmbedPlayerFromUrl(
   // youtube
   if (urlp.hostname === 'youtu.be') {
     const videoId = urlp.pathname.split('/')[1]
-    const t = urlp.searchParams.get('t') ?? '0'
-    const seek = encodeURIComponent(t.replace(/s$/, ''))
+    const seek = parseYouTubeStart(urlp.searchParams.get('t'))
 
     if (videoId) {
       return {
@@ -176,8 +193,7 @@ export function parseEmbedPlayerFromUrl(
       isShorts || isLive
         ? shortOrLiveVideoId
         : (urlp.searchParams.get('v') as string)
-    const t = urlp.searchParams.get('t') ?? '0'
-    const seek = encodeURIComponent(t.replace(/s$/, ''))
+    const seek = parseYouTubeStart(urlp.searchParams.get('t'))
 
     if (videoId) {
       return {
@@ -562,6 +578,26 @@ export function parseEmbedPlayerFromUrl(
         return undefined
     }
   }
+
+  // freemix
+  if (freemixHosts.includes(urlp.hostname)) {
+    const segments = urlp.pathname.split('/').filter(Boolean)
+    /*
+     * /track/{actor}/{rkey} is the canonical track URL. Other paths, such as
+     * /track/{actor}/{rkey}/tree (remix-tree view), fall through to a link card.
+     */
+    if (segments[0] === 'track' && segments.length === 3) {
+      const [, actor, rkey] = segments
+      if (freemixRkeyRegex.test(rkey)) {
+        return {
+          type: 'freemix_track',
+          source: 'freemix',
+          // the player lives on the same host as the track URL
+          playerUri: `https://${urlp.hostname}/embed/${actor}/${rkey}`,
+        }
+      }
+    }
+  }
 }
 
 export function getPlayerAspect({
@@ -573,6 +609,13 @@ export function getPlayerAspect({
   hasThumb: boolean
   width: number
 }): {aspectRatio?: number; height?: number} {
+  /*
+   * The FreeMix player has a fixed intrinsic height, so it doesn't need a
+   * thumb to size the frame. Without this, posts lacking a thumb fall back to
+   * 16:9 and the player renders with a large dead area below it.
+   */
+  if (type === 'freemix_track') return {height: 175}
+
   if (!hasThumb) return {aspectRatio: 16 / 9}
 
   switch (type) {
@@ -581,7 +624,7 @@ export function getPlayerAspect({
     case 'vimeo_video':
       return {aspectRatio: 16 / 9}
     case 'youtube_short':
-      if (SCREEN_HEIGHT < 600) {
+      if (Dimensions.get('window').height < 600) {
         return {aspectRatio: (9 / 16) * 1.75}
       } else {
         return {aspectRatio: (9 / 16) * 1.5}

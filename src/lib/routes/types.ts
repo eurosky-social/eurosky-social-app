@@ -19,16 +19,38 @@ export type SearchParams = {
   tab?: 'user' | 'profile' | 'feed' | 'latest'
 } & SearchFilterParams
 
+export type ModerationInboxTab = 'reports' | 'account'
+
 export type CommonNavigatorParams = {
   NotFound: undefined
+  Atmosphere: undefined
   Lists: undefined
   NewsFeed: undefined
-  Newsroom: {name?: string}
+  NewsSettings: undefined
+  Frontpage: {name?: string}
+  NewsExplore: undefined
+  OutletDirectory: undefined
+  NewsArticle: {
+    url: string
+    title?: string
+    image?: string
+    description?: string
+    publishedAt?: string
+    outletName?: string
+    outletDid?: string
+    /** The outlet's slug at the news aggregator: its frontpage. */
+    outletSlug?: string
+    /** The story the article was opened from, for its other coverage. */
+    storyId?: string
+    storySource?: 'rss' | 'dutch'
+    /** How the story was read, to read its coverage the same way. */
+    storyView?: string
+  }
   Moderation: undefined
-  ModerationInbox: undefined
+  ModerationInbox: {tab?: ModerationInboxTab}
   ModerationInboxSettings: undefined
-  ModerationInboxReportDetails: undefined
-  ModerationInboxSubjectDetails: undefined
+  ModerationInboxReportDetails: {moderationService: string; id: string}
+  ModerationInboxNoticeDetails: {moderationService: string; subject: string}
   ModerationModlists: undefined
   ModerationMutedAccounts: undefined
   ModerationBlockedAccounts: undefined
@@ -69,6 +91,7 @@ export type CommonNavigatorParams = {
   PreferencesExternalEmbeds: undefined
   AccessibilitySettings: undefined
   AppearanceSettings: undefined
+  CostumeEditor: undefined
   NetworkServicesSettings: undefined
   ContentServiceSettings: undefined
   AppViewTransferSettings: undefined
@@ -118,6 +141,11 @@ export type BottomTabNavigatorParams = CommonNavigatorParams & {
   NotificationsTab: undefined
   MyProfileTab: undefined
   MessagesTab: undefined
+  AtmosphereTab: undefined
+  FeedsTab: undefined
+  ListsTab: undefined
+  BookmarksTab: undefined
+  SettingsTab: undefined
 }
 
 export type HomeTabNavigatorParams = CommonNavigatorParams & {
@@ -166,6 +194,11 @@ export type AllNavigatorParams = CommonNavigatorParams & {
   Notifications: undefined
   MyProfileTab: undefined
   MessagesTab: undefined
+  AtmosphereTab: undefined
+  FeedsTab: undefined
+  ListsTab: undefined
+  BookmarksTab: undefined
+  SettingsTab: undefined
   Messages: {
     pushToConversation?: string
     pushToNewGroupChat?: boolean

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Build the static web bundle (web-build/) for the Bunny deploy.
 #
-# Paired with scripts/bunny_upload.sh; run by the Bunny deploy workflows
-# (.github/workflows/deploy-web-bunny.yml and deploy-web-staging-bunny.yml).
+# Paired with scripts/bunny_upload.sh. Normally called by scripts/web_build.sh,
+# which loads an environment's settings first (.github/environments/).
 # The Cloudflare *Workers* path builds inline in scripts/deploy-cloudflare.sh
 # and does NOT use this script.
 #
@@ -49,29 +49,17 @@ pnpm intl:build
 # Build the web bundle. Output lands in ./web-build/.
 pnpm build-web
 
-# Webpack injects script/css tags with RELATIVE paths (`src="static/..."`).
-# When a user opens a non-root URL like /profile/x/post/y in a fresh tab, the
-# browser resolves those against the current path and 404s; Bunny's SPA fallback
-# (storage-zone "404 file path" serves index.html) then returns HTML for the
-# JS/CSS requests. Rewrite to absolute root paths so any URL works.
-sed -i'' -E 's#"static/#"/static/#g' web-build/index.html
-# Clean up the BSD sed backup file if any
-rm -f web-build/index.html-E
-
-# robots.txt: chosen per environment. Expo does not reliably copy arbitrary
-# files out of web/, so copy it explicitly.
-#   - prod (default): web/robots.txt disallows the high-cardinality, JS-only
-#     routes (profiles, posts, hashtags, search, ...) so crawlers stop treating
-#     every federated permalink as a unique page and re-downloading the JS
-#     bundles per URL. See web/robots.txt for the rationale.
-#   - non-prod (ROBOTS_MODE=disallow-all): web/robots.disallow.txt blocks all
+# Metro exports root-absolute asset URLs, including on nested SPA routes.
+# robots.txt is selected per environment from public/.
+#   - prod (default): public/robots.txt disallows high-cardinality JS-only routes.
+#   - non-prod (ROBOTS_MODE=disallow-all): public/robots.disallow.txt blocks all
 #     crawling, so staging/dev stay out of search entirely.
 # Prod-style is the default so a forgotten flag fails safe (a crawlable-but-
 # noindexed non-prod), never an accidentally deindexed prod.
 if [[ "${ROBOTS_MODE:-prod}" == "disallow-all" ]]; then
-  cp web/robots.disallow.txt web-build/robots.txt
+  cp public/robots.disallow.txt web-build/robots.txt
 else
-  cp web/robots.txt web-build/robots.txt
+  cp public/robots.txt web-build/robots.txt
 fi
 
 echo "Build complete. Output: web-build/"

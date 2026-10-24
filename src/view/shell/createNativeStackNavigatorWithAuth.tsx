@@ -38,6 +38,7 @@ import {SignupQueued} from '#/screens/SignupQueued'
 import {atoms as a, useLayoutBreakpoints} from '#/alf'
 import {PolicyUpdateOverlay} from '#/components/PolicyUpdateOverlay'
 import {IS_NATIVE, IS_WEB} from '#/env'
+import {HalloweenCornerWebs} from '#/features/halloween/CornerWebs'
 import {BottomBarWeb} from './bottom-bar/BottomBarWeb'
 import {DesktopLeftNav} from './desktop/LeftNav'
 import {DesktopRightNav} from './desktop/RightNav'
@@ -201,11 +202,10 @@ function NativeStackNavigator({
       </View>
       {IS_WEB && (
         <>
-          {showBottomBar ? (
-            <BottomBarWeb />
-          ) : (
-            <DesktopLeftNav routeName={activeRoute.name} />
-          )}
+          {showBottomBar && <BottomBarWeb />}
+          {/* Above the bottom bar, below desktop controls and the outer drawer. */}
+          <HalloweenCornerWebs />
+          {!showBottomBar && <DesktopLeftNav routeName={activeRoute.name} />}
           {!isMobile && <DesktopRightNav routeName={activeRoute.name} />}
         </>
       )}

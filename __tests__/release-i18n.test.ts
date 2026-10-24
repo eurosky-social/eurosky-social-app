@@ -119,16 +119,16 @@ describe('release translation preparation', () => {
 
   it('protects direct native/OTA and web builds, not only the release wrappers', () => {
     const metro = readFileSync(path.join(root, 'metro.config.ts'), 'utf8')
-    const webpack = readFileSync(path.join(root, 'webpack.config.js'), 'utf8')
+    const appConfig = readFileSync(path.join(root, 'app.config.js'), 'utf8')
+    const pkg = JSON.parse(
+      readFileSync(path.join(root, 'package.json'), 'utf8'),
+    ) as {scripts: Record<string, string>}
     expect(metro).toContain('prepareReleaseI18n(process.env.NODE_ENV)')
     expect(
       metro.indexOf('prepareReleaseI18n(process.env.NODE_ENV)'),
-    ).toBeLessThan(metro.indexOf('const config = getSentryExpoConfig'))
-    expect(webpack).toContain(
-      'prepareReleaseI18n(env.mode || process.env.NODE_ENV)',
-    )
-    expect(
-      webpack.indexOf('prepareReleaseI18n(env.mode || process.env.NODE_ENV)'),
-    ).toBeLessThan(webpack.indexOf('await createExpoWebpackConfigAsync'))
+    ).toBeLessThan(metro.indexOf('let config = getSentryExpoConfig'))
+    expect(appConfig).toContain("bundler: 'metro'")
+    expect(pkg.scripts['build-web']).toContain('expo export --platform web')
+    expect(pkg.scripts['build-web']).not.toContain('expo export:web')
   })
 })

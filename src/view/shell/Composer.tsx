@@ -38,19 +38,7 @@ export function Composer() {
       exiting={SlideOutDown.duration(200).easing(Easing.in(Easing.quad))}
       aria-modal
       accessibilityViewIsModal>
-      <ComposePost
-        replyTo={state.replyTo}
-        onPost={state.onPost}
-        onPostSuccess={state.onPostSuccess}
-        quote={state.quote}
-        mention={state.mention}
-        text={state.text}
-        externalUri={state.externalUri}
-        imageUris={state.imageUris}
-        videoUri={state.videoUri}
-        openGallery={state.openGallery}
-        editPost={state.editPost}
-      />
+      <ComposePost {...state} />
     </Animated.View>
   )
 }

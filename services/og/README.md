@@ -9,7 +9,7 @@ post's text and image instead of the one generic default card.
 The web app is a static SPA (uploaded to Bunny Edge Storage by
 `../../scripts/bunny_upload.sh`, served from the `mu.social` pull zone). A static SPA has
 no per-route server rendering, so every link - a post, a profile, the homepage -
-unfurls with the single default card baked into `../web/index.html`.
+unfurls with the single default card baked into `../public/index.html`.
 
 Upstream Bluesky avoids this by serving its HTML through the Go `bskyweb` server,
 which queries the appview and templates per-post / per-profile `og:*` tags (see
