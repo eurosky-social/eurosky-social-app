@@ -91,6 +91,7 @@ export type CommonNavigatorParams = {
   PreferencesExternalEmbeds: undefined
   AccessibilitySettings: undefined
   AppearanceSettings: undefined
+  CostumeEditor: undefined
   NetworkServicesSettings: undefined
   ContentServiceSettings: undefined
   AppViewTransferSettings: undefined

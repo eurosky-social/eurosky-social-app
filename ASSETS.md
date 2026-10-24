@@ -122,6 +122,11 @@ does not grant permission to reuse or redistribute it independently.
 Forks must obtain their own applicable license from ToffeeCraft or replace/remove the pet artwork.
 See [`assets/pets/README.md`](./assets/pets/README.md).
 
+The seasonal ghost in `assets/pets/halloween/` is also paid, license-restricted
+artwork, supplied from `HorrorUltimateEdition/GhostPaid/`. It is not MIT-licensed
+or licensed to downstream users through this repository. See its
+[`provenance and packing notes`](./assets/pets/halloween/README.md).
+
 ## 9. Mu brand assets
 
 Mu's name, logo, app icons, favicons, splash images, social cards, and other product-identity

@@ -67,6 +67,7 @@ export const router = new Router<AllNavigatableRoutes>({
   PreferencesExternalEmbeds: '/settings/external-embeds',
   AccessibilitySettings: '/settings/accessibility',
   AppearanceSettings: '/settings/appearance',
+  CostumeEditor: '/halloween/costume',
   NetworkServicesSettings: '/settings/network-services',
   ContentServiceSettings: '/settings/network-services/content-service',
   AppViewTransferSettings: '/settings/network-services/transfer-app-data',

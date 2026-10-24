@@ -106,6 +106,8 @@ import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {IS_ANDROID} from '#/env'
 import {usePostFeedQuery as useFollowingV2PostFeedQuery} from '#/features/followingV2/home/queries/postFeed'
+import {useHalloween} from '#/features/halloween/context'
+import {isCostumePost} from '#/features/halloween/costumes/records'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {Scrubber, VIDEO_PLAYER_BOTTOM_INSET} from './components/Scrubber'
@@ -1235,6 +1237,9 @@ function PlayPauseTapArea({
   reqId: string | undefined
 }) {
   const {t: l} = useLingui()
+  const {isHalloween} = useHalloween()
+  /* Matches useLikePresentation: only tagged costume posts collect candy. */
+  const isCandy = isHalloween && isCostumePost(post.record)
   const doubleTapRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const haptics = useHaptics()
   // TODO: implement viaRepost -sfn
@@ -1297,7 +1302,9 @@ function PlayPauseTapArea({
         post.author.handle,
         '@',
       )}. Tap to play or pause the video`}
-      accessibilityHint={l`Double tap to like`}
+      accessibilityHint={
+        isCandy ? l`Double tap to give candy` : l`Double tap to like`
+      }
       onPress={onPress}
       style={[a.absolute, a.inset_0, a.z_10]}>
       <View />

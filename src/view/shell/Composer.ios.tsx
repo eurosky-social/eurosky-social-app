@@ -53,19 +53,7 @@ export function Composer() {
           style={[a.flex_1, t.atoms.bg]}>
           <BreakpointWidthContext value={width}>
             <TooltipSheetCompatProvider>
-              <ComposePost
-                cancelRef={ref}
-                replyTo={state?.replyTo}
-                onPost={state?.onPost}
-                onPostSuccess={state?.onPostSuccess}
-                quote={state?.quote}
-                mention={state?.mention}
-                text={state?.text}
-                externalUri={state?.externalUri}
-                imageUris={state?.imageUris}
-                videoUri={state?.videoUri}
-                editPost={state?.editPost}
-              />
+              <ComposePost {...state} cancelRef={ref} />
             </TooltipSheetCompatProvider>
           </BreakpointWidthContext>
         </View>

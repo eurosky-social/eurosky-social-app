@@ -89,6 +89,7 @@ import {DesktopLeftNav} from '#/view/shell/desktop/LeftNav'
 import {getNativeTabBarVisibility} from '#/view/shell/nativeTabBarVisibility'
 import {AtmosphereScreen} from '#/screens/Atmosphere'
 import {BookmarksScreen} from '#/screens/Bookmarks'
+import {CostumeEditorScreen} from '#/screens/CostumeEditor'
 import {CustomFeedScreen} from '#/screens/CustomFeed'
 import {CustomFeedLikedByScreen} from '#/screens/CustomFeed/CustomFeedLikedBy'
 import {SharedPreferencesTesterScreen} from '#/screens/E2E/SharedPreferencesTesterScreen'
@@ -501,6 +502,15 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         options={{
           title: title(msg`Accessibility Settings`),
           requireAuth: true,
+        }}
+      />
+      <Stack.Screen
+        name="CostumeEditor"
+        getComponent={() => CostumeEditorScreen}
+        options={{
+          title: title(msg`Costume studio`),
+          requireAuth: true,
+          gestureEnabled: false,
         }}
       />
       <Stack.Screen

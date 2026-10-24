@@ -53,3 +53,11 @@ Mu's themed brand logos, splash artwork, favicons, and external assets remain ma
 `assets/brand/`, the `brand:*` commands, and `BrandLogo`. They are not replaced by this pipeline.
 Country flags and third-party service marks retain their own licensing notices. Native fonts
 containing service marks carry the same restrictions as those source marks.
+
+## Seasonal exception
+
+Halloween uses the explicitly chosen Lucide `candy` SVG at
+`src/features/halloween/CandyIcon.tsx`, with attribution in `NOTICE.md`. It uses
+our existing SVG helper and the supplied 1.5 stroke width on web and native.
+Both states retain the outline; only a toggled-on candy is colored. This is not
+part of the generated Phosphor catalog and does not add a Lucide dependency.

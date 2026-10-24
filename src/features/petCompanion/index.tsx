@@ -5,6 +5,7 @@ import Animated, {
   Easing,
   runOnJS,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
@@ -15,6 +16,8 @@ import {usePetCompanion} from '#/state/preferences/pet-companion'
 import {useSession} from '#/state/session'
 import {useShellLayout} from '#/state/shell/shell-layout'
 import {IS_WEB} from '#/env'
+import {useHalloween} from '#/features/halloween/context'
+import {halloweenGhost} from '#/features/halloween/ghost'
 import {PetSprite} from './PetSprite'
 import {getSpecies, resolveVariant} from './registry'
 import {type Species} from './types'
@@ -33,16 +36,18 @@ const pick = <T,>(arr: readonly T[]): T =>
  * A small companion that wanders along the bottom of the screen (on top of the
  * bottom navbar on mobile) and reacts when you tap it. The species, its art and
  * its behaviour all come from the pet registry, so this director is agnostic to
- * which animal is shown. Gated behind the `petCompanion` preference and an
- * active session so it cleanly unmounts when turned off.
+ * which animal is shown. Halloween temporarily substitutes a decorative ghost,
+ * independent of the saved pet preference. Both require an active session.
  */
 export function PetCompanion() {
   const {enabled, species: speciesId, variant} = usePetCompanion()
   const {hasSession} = useSession()
+  const {isActive} = useHalloween()
+  const reducedMotion = useReducedMotion()
 
-  if (!enabled || !hasSession) return null
+  if ((!enabled && !isActive) || !hasSession) return null
 
-  const species = getSpecies(speciesId)
+  const species = isActive ? halloweenGhost : getSpecies(speciesId)
   return (
     // Remount when the species changes so the director restarts cleanly with
     // the new behaviour/geometry. Variant changes don't need a remount.
@@ -50,6 +55,8 @@ export function PetCompanion() {
       key={species.id}
       species={species}
       variant={resolveVariant(species, variant)}
+      decorative={isActive}
+      animate={!isActive || !reducedMotion}
     />
   )
 }
@@ -57,9 +64,13 @@ export function PetCompanion() {
 function PetCompanionInner({
   species,
   variant,
+  decorative = false,
+  animate = true,
 }: {
   species: Species
   variant: string
+  decorative?: boolean
+  animate?: boolean
 }) {
   const {t: l} = useLingui()
   const {width} = useWindowDimensions()
@@ -114,6 +125,8 @@ function PetCompanionInner({
   }
 
   useEffect(() => {
+    if (!animate) return
+
     const maxX = () =>
       Math.max(EDGE_MARGIN, widthRef.current - size - EDGE_MARGIN)
 
@@ -182,7 +195,7 @@ function PetCompanionInner({
       cancelAnimation(tx)
       genRef.current++
     }
-  }, [tx, behavior, size, walkFacesRight])
+  }, [tx, behavior, size, walkFacesRight, animate])
 
   // Pause briefly after a reaction, then hand control back to the director.
   const resumeWandering = () => {
@@ -251,7 +264,12 @@ function PetCompanionInner({
 
   return (
     <Animated.View
-      pointerEvents="box-none"
+      testID={decorative ? 'halloweenGhost' : 'petCompanion'}
+      pointerEvents={decorative ? 'none' : 'box-none'}
+      accessible={decorative ? false : undefined}
+      aria-hidden={decorative || undefined}
+      accessibilityElementsHidden={decorative}
+      importantForAccessibility={decorative ? 'no-hide-descendants' : 'auto'}
       style={[
         {
           // Pin to the viewport on web so the pet doesn't scroll with content.
@@ -267,20 +285,23 @@ function PetCompanionInner({
         <PetSprite
           species={species}
           variant={variant}
-          state={state}
+          state={animate ? state : behavior.idle}
+          animate={animate}
           facing={facing}
           size={size}
           playToken={playToken}
           onAnimationEnd={onAnimationEnd}
         />
       </View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={l`Pet your companion`}
-        accessibilityHint={l`Plays a happy reaction`}
-        onPress={onPet}
-        style={hitArea}
-      />
+      {!decorative && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={l`Pet your companion`}
+          accessibilityHint={l`Plays a happy reaction`}
+          onPress={onPet}
+          style={hitArea}
+        />
+      )}
     </Animated.View>
   )
 }

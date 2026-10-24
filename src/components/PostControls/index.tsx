@@ -18,12 +18,13 @@ import {
   ProgressGuideAction,
   useProgressGuideControls,
 } from '#/state/shell/progress-guide'
-import {atoms as a, useBreakpoints, useTheme} from '#/alf'
+import {atoms as a, useBreakpoints} from '#/alf'
 import {Reply_Stroke2_Corner0_Rounded as Bubble} from '#/components/icons/Reply'
 import {useFormatPostStatCount} from '#/components/PostControls/util'
 import * as Skele from '#/components/Skeleton'
 import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
+import {useLikePresentation} from '#/features/halloween/useLikePresentation'
 import {type app} from '#/lexicons'
 import {BookmarkButton} from './BookmarkButton'
 import {
@@ -69,8 +70,13 @@ let PostControls = ({
   forceGoogleTranslate?: boolean
 }): React.ReactNode => {
   const ax = useAnalytics()
-  const t = useTheme()
   const {t: l} = useLingui()
+  const likePresentation = useLikePresentation({
+    uri: post.uri,
+    record,
+    isLiked: Boolean(post.viewer?.like),
+    likeCount: post.likeCount ?? 0,
+  })
   const {openComposer} = useOpenComposer()
   const {feedDescriptor} = useFeedFeedbackContext()
   const [queueLike, queueUnlike] = usePostLikeMutationQueue(
@@ -267,28 +273,11 @@ let PostControls = ({
             testID="likeBtn"
             big={big}
             active={Boolean(post.viewer?.like)}
-            activeColor={t.palette.pink}
+            activeColor={likePresentation.activeColor}
             onPress={() => requireAuth(() => onPressToggleLike())}
-            label={
-              post.viewer?.like
-                ? l({
-                    message: `Unlike (${plural(post.likeCount || 0, {
-                      one: '# like',
-                      other: '# likes',
-                    })})`,
-                    comment:
-                      'Accessibility label for the like button when the post has been liked, verb followed by number of likes and noun',
-                  })
-                : l({
-                    message: `Like (${plural(post.likeCount || 0, {
-                      one: '# like',
-                      other: '# likes',
-                    })})`,
-                    comment:
-                      'Accessibility label for the like button when the post has not been liked, verb form followed by number of likes and noun form',
-                  })
-            }>
+            label={likePresentation.label}>
             <AnimatedLikeIcon
+              {...likePresentation.iconProps}
               isLiked={Boolean(post.viewer?.like)}
               big={big}
               hasBeenToggled={hasLikeIconBeenToggled}

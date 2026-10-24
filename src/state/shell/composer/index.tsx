@@ -42,6 +42,10 @@ export interface ComposerOptsEditPost {
 
 export interface ComposerOpts {
   replyTo?: ComposerOptsPostRef
+  /** Only the seeded costume post carries this number; it is not thread-wide. */
+  halloweenCostumeNumber?: number
+  /** Release resources supplied by the caller after publishing or canceling. */
+  onClose?: () => void
   onPost?: (postUri: string | undefined) => void
   onPostSuccess?: (data: OnPostSuccessData) => void
   quote?: app.bsky.feed.defs.PostView
@@ -120,6 +124,7 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
   const closeComposer = useNonReactiveCallback(() => {
     let wasOpen = !!state
     if (wasOpen) {
+      state?.onClose?.()
       setState(undefined)
       purgeTemporaryImageFiles()
       // Purging deletes cached thumbnails on disk, so remove the query
