@@ -1,45 +1,67 @@
-import {useCallback} from 'react'
-import * as MediaLibrary from 'expo-media-library'
+import * as MediaLibrary from 'expo-media-library/legacy'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 
 import {useCameraPermission} from '#/lib/hooks/usePermissions'
+import {
+  requestPhotoSavePermission,
+  savePhotoToLibrary,
+} from '#/lib/media/photo-library'
 import {openCamera} from '#/lib/media/picker'
 import {logger} from '#/logger'
-import {type ComposerImage, createComposerImage} from '#/state/gallery'
+import {createComposerImage} from '#/state/gallery'
 import {atoms as a, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
 import {Camera_Stroke2_Corner0_Rounded as Camera} from '#/components/icons/Camera'
-import {IS_NATIVE, IS_WEB_MOBILE} from '#/env'
+import {IS_ANDROID, IS_NATIVE, IS_WEB_MOBILE} from '#/env'
+import {type OpenCameraBtnProps} from './OpenCameraBtn.shared'
 
-type Props = {
-  disabled?: boolean
-  onAdd: (next: ComposerImage[]) => void
-}
-
-export function OpenCameraBtn({disabled, onAdd}: Props) {
+export function OpenCameraBtn({disabled, onAdd}: OpenCameraBtnProps) {
   const {_} = useLingui()
   const {requestCameraAccessIfNeeded} = useCameraPermission()
   const [mediaPermissionRes, requestMediaPermission] =
-    MediaLibrary.usePermissions({granularPermissions: ['photo']})
+    MediaLibrary.usePermissions({
+      granularPermissions: ['photo'],
+      get: !IS_ANDROID,
+    })
   const t = useTheme()
 
-  const onPressTakePicture = useCallback(async () => {
+  const mediaGranted = mediaPermissionRes?.granted
+  const mediaCanAskAgain = mediaPermissionRes?.canAskAgain
+
+  /*
+   * No useCallback: with the diagnostics above resolved this component compiles,
+   * so React Compiler memoizes it, and the hand-written deps were what it could
+   * not preserve.
+   */
+  const onPressTakePicture = async () => {
     try {
       if (!(await requestCameraAccessIfNeeded())) {
         return
       }
-      if (!mediaPermissionRes?.granted && mediaPermissionRes?.canAskAgain) {
-        await requestMediaPermission()
+      if (!IS_ANDROID && !mediaGranted) {
+        if (mediaCanAskAgain) {
+          await requestMediaPermission()
+        }
       }
 
       const img = await openCamera({
         aspect: [1, 1],
       })
+      if (!img) {
+        return
+      }
 
-      // If we don't have permissions it's fine, we just wont save it. The post itself will still have access to
-      // the image even without these permissions
-      if (mediaPermissionRes) {
+      if (IS_ANDROID) {
+        /* Saving a gallery copy must never prevent attaching the capture. */
+        try {
+          if (await requestPhotoSavePermission()) {
+            await savePhotoToLibrary(img.path)
+          }
+        } catch (error) {
+          logger.warn('Failed to save camera photo', {error})
+        }
+      } else if (mediaPermissionRes) {
         await MediaLibrary.createAssetAsync(img.path)
       }
 
@@ -50,12 +72,7 @@ export function OpenCameraBtn({disabled, onAdd}: Props) {
       // ignore
       logger.warn('Error using camera', {error: err})
     }
-  }, [
-    onAdd,
-    requestCameraAccessIfNeeded,
-    mediaPermissionRes,
-    requestMediaPermission,
-  ])
+  }
 
   const shouldShowCameraButton = IS_NATIVE || IS_WEB_MOBILE
   if (!shouldShowCameraButton) {

@@ -9,6 +9,7 @@ type AllNavigatableRoutes = Omit<
 export const router = new Router<AllNavigatableRoutes>({
   Home: ['/', '/download'],
   Search: '/search',
+  Atmosphere: '/atmosphere',
   Feeds: '/feeds',
   Notifications: '/notifications',
   NotificationsActivityList: '/notifications/activity',
@@ -16,8 +17,23 @@ export const router = new Router<AllNavigatableRoutes>({
   Settings: '/settings',
   Lists: '/lists',
   NewsFeed: '/news',
+  NewsSettings: '/news/settings',
+  /*
+   * The `/newsroom` paths are the news hub's old addresses, kept so shared
+   * links still open. The old explore and article paths are matched before
+   * the frontpage route, whose `:name` would otherwise swallow them.
+   */
+  NewsExplore: ['/news/explore', '/newsroom/explore'],
+  NewsArticle: ['/news/article', '/newsroom/article'],
+  OutletDirectory: ['/outlets', '/newsrooms'],
+  Frontpage: ['/frontpage/:name', '/frontpage', '/newsroom/:name', '/newsroom'],
   // moderation
   Moderation: '/moderation',
+  ModerationInbox: '/moderation/inbox',
+  ModerationInboxSettings: '/moderation/inbox/settings',
+  ModerationInboxReportDetails:
+    '/moderation/inbox/report/:moderationService/:id',
+  ModerationInboxNoticeDetails: '/moderation/inbox/notice/details',
   ModerationModlists: '/moderation/modlists',
   ModerationMutedAccounts: '/moderation/muted-accounts',
   ModerationBlockedAccounts: '/moderation/blocked-accounts',
@@ -34,8 +50,8 @@ export const router = new Router<AllNavigatableRoutes>({
   PostLikedBy: '/profile/:name/post/:rkey/liked-by',
   PostRepostedBy: '/profile/:name/post/:rkey/reposted-by',
   PostQuotes: '/profile/:name/post/:rkey/quotes',
-  ProfileFeed: '/profile/:name/feed/:rkey',
-  ProfileFeedLikedBy: '/profile/:name/feed/:rkey/liked-by',
+  CustomFeed: '/profile/:name/feed/:rkey',
+  CustomFeedLikedBy: '/profile/:name/feed/:rkey/liked-by',
   ProfileLabelerLikedBy: '/profile/:name/labeler/liked-by',
   // debug
   Debug: '/sys/debug',
@@ -51,7 +67,13 @@ export const router = new Router<AllNavigatableRoutes>({
   PreferencesExternalEmbeds: '/settings/external-embeds',
   AccessibilitySettings: '/settings/accessibility',
   AppearanceSettings: '/settings/appearance',
+  CostumeEditor: '/halloween/costume',
+  NetworkServicesSettings: '/settings/network-services',
+  ContentServiceSettings: '/settings/network-services/content-service',
+  AppViewTransferSettings: '/settings/network-services/transfer-app-data',
   PetCompanionSettings: '/settings/pet-companion',
+  DecorationsSettings: '/settings/decorations',
+  BetaFeaturesSettings: '/settings/beta-features',
   SavedFeeds: '/settings/saved-feeds',
   AccountSettings: '/settings/account',
   AutomationLabelSettings: '/settings/automation-label',
@@ -62,6 +84,7 @@ export const router = new Router<AllNavigatableRoutes>({
   AboutSettings: '/settings/about',
   AppIconSettings: '/settings/app-icon',
   NotificationSettings: '/settings/notifications',
+  ActivityNotificationSettings: '/settings/notifications/activity',
   FindContactsSettings: '/settings/find-contacts',
   // support
   Support: '/support',
@@ -79,7 +102,7 @@ export const router = new Router<AllNavigatableRoutes>({
   MessagesConversation: '/messages/:conversation',
   MessagesConversationSettings: '/messages/:conversation/settings',
   MessagesJoinRequests: '/messages/:conversation/requests',
-  // starter packs
+  // Starter Packs
   Start: '/start/:name/:rkey',
   StarterPackEdit: '/starter-pack/edit/:rkey',
   StarterPack: '/starter-pack/:name/:rkey',

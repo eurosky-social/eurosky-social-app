@@ -1,8 +1,18 @@
 nodeLinker: 'hoisted'
 autoInstallPeers: true # default: true
 strictPeerDependencies: false # default: false
+packageExtensions:
+  eslint-plugin-react-native-a11y:
+    peerDependenciesMeta:
+      eslint:
+        optional: true
+  eslint-plugin-simple-import-sort:
+    peerDependenciesMeta:
+      eslint:
+        optional: true
 trustPolicy: 'no-downgrade' # default: off
 trustPolicyIgnoreAfter: 10080 # 7 days, default: undefined
+pmOnFail: download # run the pnpm version pinned in devEngines; package.json keeps onFail: warn because npm/npx read it too
 overrides:
   # Eurosky fork: zod is split across two majors on purpose.
   # - Default 3.24.4 (last pre-3.25): zod 3.25 restructured its internals ("Zod 4
@@ -14,60 +24,58 @@ overrides:
   #   `zod/v4` subpath, which only exists in zod >=3.25. With the 3.24.4 default
   #   they crash ESLint (ERR_PACKAGE_PATH_NOT_EXPORTED ./v4) and block pre-commit.
   #   These are lint-only (not in the web bundle), so pin them to 3.25.x.
+  # - @eloqnt/sdk (intl:lint tooling, not bundled) requires zod 4 itself, and
+  #   its AI SDK dependencies take zod from it, so keep the version upstream uses.
   'zod': '3.24.4'
   'eslint-plugin-react-hooks>zod': '3.25.76'
   'zod-validation-error>zod': '3.25.76'
+  '@eloqnt/sdk>zod': '4.6.5'
   # Eurosky fork: OAuth client stack pins (migrated from package.json "resolutions")
   '@atproto/jwk': '0.6.0'
   '@atproto/jwk-jose': '0.1.11'
   '@atproto/jwk-webcrypto': '0.2.0'
   '@atproto/oauth-client': '0.5.14'
   '@atproto/oauth-client-browser': '0.3.40'
-  '@react-native/babel-preset': '0.81.5'
-  '@react-native/normalize-colors': '0.81.5'
-  '@expo/image-utils': '0.8.12'
+  '@react-native/babel-preset': '0.88.0'
+  '@react-native/normalize-colors': '0.88.0'
+  '@expo/image-utils': '0.12.5'
   '@types/estree': '1.0.6'
-  'react-native-compressor': '1.13.0'
-  'react-native-reanimated': '3.19.1'
+  'react-native-reanimated': '4.7.1'
+  'react-native-worklets': '0.13.0'
   'psl': '1.9.0'
   '@types/psl': '1.1.1'
-  'react-native-screens': '4.24.0'
+  'react-native-screens': '4.30.0'
 allowBuilds:
   '@sentry/cli': true
-  'core-js-pure': true
-  'esbuild': true
-  # Eurosky fork: explicitly DENY these two build scripts (false) so pnpm does
-  # not re-prompt / rewrite this file.
-  # - unrs-resolver: pnpm 11.1.3 links its napi-postinstall bin as 0644 (no +x),
-  #   so the postinstall aborts with exit 126, breaking `pnpm install`/`pnpm web`.
-  #   The script is only a verifier; the native binding installs via
-  #   optionalDependencies and the resolver loads fine. Safe on all platforms
-  #   (lint-only dep; the web build does not use it).
-  # - core-js: its postinstall only prints a donation message; nothing to build.
-  'unrs-resolver': false
+  '@swc/core': false
   'core-js': false
+  'core-js-pure': true
+  'dtrace-provider': false
+  'esbuild': true
+  '@parcel/watcher': false
+  'protobufjs': false
+  'unrs-resolver': false
 patchedDependencies:
-  '@sentry/react-native@6.20.0': patches/@sentry__react-native@6.20.0.patch
-  expo-age-range@0.2.18: patches/expo-age-range@0.2.18.patch
-  'expo-glass-effect@55.0.8': patches/expo-glass-effect@55.0.8.patch
-  'expo-haptics@15.0.8': patches/expo-haptics@15.0.8.patch
-  'expo-image-picker@17.0.11': patches/expo-image-picker@17.0.11.patch
-  'expo-image@3.0.11': patches/expo-image@3.0.11.patch
-  'expo-media-library@18.2.1': patches/expo-media-library@18.2.1.patch
-  'expo-modules-core@3.0.30': patches/expo-modules-core@3.0.30.patch
-  'expo-notifications@0.32.17': patches/expo-notifications@0.32.17.patch
-  'expo-updates@29.0.17': patches/expo-updates@29.0.17.patch
-  'react-native-compressor@1.13.0': patches/react-native-compressor@1.13.0.patch
-  'react-native-date-picker@5.0.13': patches/react-native-date-picker@5.0.13.patch
-  'react-native-drawer-layout@4.2.3': patches/react-native-drawer-layout@4.2.3.patch
-  'react-native-keyboard-controller@1.21.8': patches/react-native-keyboard-controller@1.21.8.patch
-  'react-native-pager-view@6.8.0': patches/react-native-pager-view@6.8.0.patch
-  'react-native-reanimated@3.19.1': patches/react-native-reanimated@3.19.1.patch
-  'react-native-svg@15.12.1': patches/react-native-svg@15.12.1.patch
-  'react-native-uitextview@1.4.0': patches/react-native-uitextview@1.4.0.patch
-  'react-native-view-shot@4.0.3': patches/react-native-view-shot@4.0.3.patch
-  'react-native@0.81.5': patches/react-native@0.81.5.patch
-  'sonner-native@0.21.0': patches/sonner-native@0.21.0.patch
+  '@expo/cli@58.1.14': patches/@expo__cli@58.1.14.patch
+  '@formatjs/bigdecimal@0.2.5': patches/@formatjs__bigdecimal@0.2.5.patch
+  '@sentry/expo-upload-sourcemaps@8.26.0': patches/@sentry__expo-upload-sourcemaps@8.26.0.patch
+  'expo-image@58.0.15': patches/expo-image@58.0.15.patch
+  'expo-media-library@58.0.10': patches/expo-media-library@58.0.10.patch
+  'expo-modules-core@58.0.22': patches/expo-modules-core@58.0.22.patch
+  expo-notifications@58.1.5: patches/expo-notifications@58.1.5.patch
+  expo-updates@58.0.17: patches/expo-updates@58.0.17.patch
+  expo@58.0.14: patches/expo@58.0.14.patch
+  'metro-runtime@0.87.1': patches/metro-runtime@0.87.1.patch
+  'metro@0.87.1': patches/metro@0.87.1.patch
+  react-native-pager-view@9.0.9: patches/react-native-pager-view@9.0.9.patch
+  react-native-reanimated@4.7.1: patches/react-native-reanimated@4.7.1.patch
+  react-native-safe-area-context@5.10.1: patches/react-native-safe-area-context@5.10.1.patch
+  react-native-screens@4.30.0: patches/react-native-screens@4.30.0.patch
+  'react-native-svg@15.16.0': patches/react-native-svg@15.16.0.patch
+  react-native@0.88.0: patches/react-native@0.88.0.patch
 minimumReleaseAgeExclude:
   - '@atproto/*'
+  - '@atproto-labs/*'
   - '@bsky.app/*'
+  - '@bsky/*'
+  - react-native-nano-icons@1.0.1

@@ -1,9 +1,10 @@
 import {type Insets, Platform} from 'react-native'
-import {type AppBskyActorDefs, BSKY_LABELER_DID} from '@atproto/api'
+import {type Service} from '@atproto/lex'
+import {api} from '@bsky/sdk'
 
-import {type ProxyHeaderValue} from '#/state/session/agent'
 import {BRAND} from '#/config/brand'
-import {BLUESKY_PROXY_DID, CHAT_PROXY_DID, IS_DEV} from '#/env'
+import {BLUESKY_PROXY_DID, CHAT_PROXY_DID, IS_DEV, MOD_PROXY_DID} from '#/env'
+import {type app} from '#/lexicons'
 
 export const LOCAL_DEV_SERVICE =
   Platform.OS === 'android' ? 'http://10.0.2.2:2583' : 'http://localhost:2583'
@@ -11,6 +12,13 @@ export const STAGING_SERVICE = 'https://staging.bsky.dev'
 export const BSKY_SERVICE = BRAND.services.pds
 export const BSKY_SERVICE_DID = BRAND.services.pdsDid
 export const PUBLIC_BSKY_SERVICE = BRAND.services.publicApi
+/** Bluesky's canonical AppView, independent of the configured primary AppView. */
+export const BLUESKY_APPVIEW_DID = api.app.did
+export const BLUESKY_APPVIEW_SERVICE: Service = api.app.service
+export const BLUESKY_APPVIEW = api.app.url
+export const BLUESKY_PUBLIC_APPVIEW = api.app.urlPublic
+/** ozone.eurosky.social; its DID document resolves the labeler service endpoint. */
+export const EUROSKY_LABELER_DID = 'did:plc:h5cmg4t64mj4pxmqaiaoam7c'
 export const DEFAULT_SERVICE = BSKY_SERVICE
 export const HELP_DESK_URL = BRAND.links.helpDesk
 export const CHAT_SERVICE = BRAND.services.chat
@@ -19,7 +27,8 @@ export const EMBED_SCRIPT = `${EMBED_SERVICE}/static/embed.js`
 export const CDN_SERVICE = BRAND.services.cdn
 export const OG_CARD_SERVICE = BRAND.services.ogCard
 export const BSKY_DOWNLOAD_URL = BRAND.links.download
-export const STARTER_PACK_MAX_SIZE = 150
+export const STARTER_PACK_DEFAULT_SIZE = 150
+export const STARTER_PACK_MAX_SIZE = 500
 export const CARD_ASPECT_RATIO = 1200 / 630
 
 // HACK
@@ -79,6 +88,9 @@ export const MAX_ALT_TEXT = 2000
 
 export const MAX_REPORT_REASON_GRAPHEME_LENGTH = 2000
 
+/** Moderation inbox badges display 99+ at or above this unread count. */
+export const UNREAD_NOTIFICATION_CAP = 100
+
 export function IS_TEST_USER(handle?: string) {
   return handle && handle?.endsWith('.test')
 }
@@ -126,6 +138,16 @@ export function LINK_META_PROXY(_serviceUrl: string) {
   return PROD_LINK_META_PROXY
 }
 
+export const STAGING_LINK_FAVICON_PROXY =
+  'https://cardyb.staging.bsky.dev/v1/favicon?url='
+
+export const PROD_LINK_FAVICON_PROXY = 'https://cardyb.bsky.app/v1/favicon?url='
+
+/** Serves a page's favicon as a PNG, at most 64px. */
+export function LINK_FAVICON_PROXY() {
+  return IS_DEV ? STAGING_LINK_FAVICON_PROXY : PROD_LINK_FAVICON_PROXY
+}
+
 export const STATUS_PAGE_URL = BRAND.links.statusPage
 
 // Hitslop constants
@@ -149,6 +171,9 @@ export const BSKY_FEED_OWNER_DIDS = [
   'did:plc:vpkhqolt662uhesyj6nxm7ys',
   'did:plc:q6gjnaw2blty4crticxkmujt',
 ]
+
+export const TRENDING_DID = 'did:plc:qrz3lhbyuxbeilrc6nekdqme'
+export const TRENDING_HANDLE = 'trending.bsky.app'
 
 export const DISCOVER_FEED_URI =
   'at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.generator/whats-hot'
@@ -174,10 +199,13 @@ export const VIDEO_SAVED_FEED = {
 }
 
 /**
- * Eurosky "fu feed" personalized feed generator. Intended to become the default
- * home feed for new users once interest-post-seeded personalization is validated
- * (see StepFinished onboarding). Publisher DID + rkey `fu` are fixed by the
- * feedgen deployment (feed1.eurosky.network).
+ * Eurosky "fu feed" personalized feed generator. Publisher DID + rkey `fu` are
+ * fixed by the feedgen deployment (feed1.eurosky.network).
+ *
+ * Saved and pinned first in server-side preferences during onboarding. Existing
+ * accounts can opt in via the Mu For You announcement. Personalization is seeded
+ * by liking one interest post per selected interest (see euroskyInterestPosts).
+ * The display name comes from the published generator, not a local override.
  */
 export const FU_FEED_URI =
   'at://did:plc:ooensn4mr5mhznzypvxelfa3/app.bsky.feed.generator/fu'
@@ -188,9 +216,9 @@ export const FU_SAVED_FEED = {
 }
 
 export const RECOMMENDED_SAVED_FEEDS: Pick<
-  AppBskyActorDefs.SavedFeed,
+  app.bsky.actor.defs.SavedFeed,
   'type' | 'value' | 'pinned'
->[] = [DISCOVER_SAVED_FEED, TIMELINE_SAVED_FEED]
+>[] = [FU_SAVED_FEED, TIMELINE_SAVED_FEED]
 
 export const KNOWN_SHUTDOWN_FEEDS = [
   'at://did:plc:wqowuobffl66jv3kpsvo7ak4/app.bsky.feed.generator/the-algorithm', // for you by skygaze
@@ -208,7 +236,7 @@ export const MAX_LABELERS = 20
 export const VIDEO_SERVICE = BRAND.services.video
 export const VIDEO_SERVICE_DID = BRAND.services.videoDid
 
-export const VIDEO_MAX_DURATION_MS = 3 * 60 * 1000 // 3 minutes in milliseconds
+export const VIDEO_MAX_DURATION_MS = 10 * 60 * 1000 // 10 minutes in milliseconds
 /**
  * Maximum size of a video in megabytes, _not_ mebibytes. Backend uses
  * ISO megabytes.
@@ -297,33 +325,63 @@ export const VERIFICATION_DENYLIST_DIDS = new Set([
  * https://constellation.microcosm.blue/
  */
 export const CONSTELLATION_SERVICE = 'https://constellation.microcosm.blue'
+
+/**
+ * Microcosm Slingshot - a cached atproto record fetcher: getRecord for any
+ * repo/collection, resolved via the subject's PDS and edge-cached. Used where
+ * the appview can't help because it only serves collections it indexes
+ * (app.bsky.*), e.g. avatar decoration settings records.
+ * https://slingshot.microcosm.blue/
+ */
+export const SLINGSHOT_SERVICE = 'https://slingshot.microcosm.blue'
 export const PUBLIC_STAGING_APPVIEW_DID = 'did:web:api.staging.bsky.dev'
 
-export const DEV_ENV_APPVIEW = `http://localhost:2584` // always the same
-export const DEV_ENV_APPVIEW_DID = `did:plc:dw4kbjf5mn7nhenabiqpkyh3` // always the same
+export const DEV_ENV_APPVIEW =
+  process.env.EXPO_PUBLIC_DEV_ENV_APPVIEW_URL || 'http://localhost:2584'
 
 // temp hack for e2e - esb
 export const BLUESKY_PROXY_HEADER = {
   value: `${BLUESKY_PROXY_DID}#bsky_appview`,
   get() {
-    return this.value as ProxyHeaderValue
+    return this.value as Service
   },
   set(value: string) {
     this.value = value
   },
 }
 
-export const DM_SERVICE_HEADERS = {
-  'atproto-proxy': `${CHAT_PROXY_DID}#bsky_chat`,
-}
+/**
+ * The chat service's proxy target, in the `did#service_id` form a lex client's
+ * `service` option takes. A client constructed with it emits `atproto-proxy:
+ * <this value>` on every request, which is what routes `chat.bsky.*` calls to
+ * the chat service.
+ *
+ * The DID comes from the env-configurable `CHAT_PROXY_DID` (via
+ * `EXPO_PUBLIC_CHAT_PROXY_DID`) rather than a hard-coded constant, so the
+ * target can be retargeted per environment.
+ */
+export const CHAT_PROXY_SERVICE: Service = `${CHAT_PROXY_DID}#bsky_chat`
 
-export const BLUESKY_MOD_SERVICE_HEADERS = {
-  'atproto-proxy': `${BSKY_LABELER_DID}#atproto_labeler`,
-}
+/**
+ * Moderation service, in the `did#service_id` form a lex client's per-call
+ * `service` option takes. Passing it emits `atproto-proxy: <this value>` on that
+ * one request. The DID defaults to Bluesky's labeler but can be overridden for
+ * local Ozone development.
+ *
+ * Reports and appeals aimed at a DIFFERENT labeler build their own value from
+ * that labeler's creator did instead, so this is a per-call option rather than a
+ * client-level one like {@link CHAT_PROXY_SERVICE}.
+ */
+export const MOD_PROXY_SERVICE: Service = `${MOD_PROXY_DID || api.moderation.did}#atproto_labeler`
 
-export const BLUESKY_NOTIF_SERVICE_HEADERS = {
-  'atproto-proxy': `${BLUESKY_PROXY_DID}#bsky_notif`,
-}
+/**
+ * The notification service's proxy target, in the `did#service_id` form a lex
+ * client's per-call `service` option takes. Passing it emits `atproto-proxy:
+ * <this value>` on that one request, which is what routes push registration to
+ * the notification service (replaces the old
+ * `BLUESKY_NOTIF_SERVICE_HEADERS`).
+ */
+export const NOTIF_SERVICE: Service = `${BLUESKY_PROXY_DID}#bsky_notif`
 
 export const webLinks = {
   tos: BRAND.links.tos,

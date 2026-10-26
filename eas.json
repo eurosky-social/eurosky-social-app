@@ -1,12 +1,17 @@
 {
   "cli": {
-    "version": ">=18",
+    "version": "24.12.0",
     "promptToConfigurePushNotifications": false,
     "appVersionSource": "remote"
   },
   "build": {
     "base": {
-      "node": "24.15.0"
+      "node": "24.22.1",
+      "env": {
+        "EXPO_PUBLIC_APPVIEW_URL": "https://api.bsky.app",
+        "EXPO_PUBLIC_APPVIEW_DID": "did:web:api.bsky.app",
+        "EXPO_PUBLIC_BLUESKY_PROXY_DID": "did:web:api.bsky.app"
+      }
     },
     "development": {
       "extends": "base",
@@ -19,6 +24,23 @@
       },
       "env": {
         "EXPO_PUBLIC_ENV": "production"
+      }
+    },
+    "development-simulator": {
+      "extends": "development",
+      "env": {
+        "DISABLE_UPDATES": "1"
+      }
+    },
+    "e2e": {
+      "extends": "development",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_ENV": "e2e",
+        "NODE_ENV": "development",
+        "RN_SRC_EXT": "e2e.ts,e2e.tsx"
       }
     },
     "preview": {
@@ -63,31 +85,44 @@
     },
     "testflight-android": {
       "extends": "base",
+      "pnpm": "11.23.0",
       "ios": {
         "autoIncrement": true,
         "buildArtifactPaths": ["ios/build/*"]
       },
       "android": {
-        "autoIncrement": true
+        "autoIncrement": true,
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease :app:assembleRelease",
+        "applicationArchivePath": "android/app/build/outputs/bundle/release/*.aab",
+        "buildArtifactPaths": ["android/app/build/outputs/apk/release/*.apk"]
       },
       "channel": "testflight",
       "env": {
-        "EXPO_PUBLIC_ENV": "testflight"
+        "EXPO_PUBLIC_ENV": "testflight",
+        "EAS_BUILD_DISABLE_MAVEN_CACHE": "1"
       }
     }
   },
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "6444370199"
+        "ascAppId": "REPLACE_WITH_EUROSKY_ASC_APP_ID",
+        "appleTeamId": "2472Y2UN4X",
+        "ascApiKeyPath": "./credentials/asc-api-key.p8",
+        "ascApiKeyId": "REPLACE_WITH_ASC_API_KEY_ID",
+        "ascApiKeyIssuerId": "REPLACE_WITH_ASC_API_KEY_ISSUER_ID"
       },
       "android": {
-        "track": "production"
+        "track": "production",
+        "serviceAccountKeyPath": "./credentials/google-play-service-account.json"
       }
     },
     "testflight-android": {
       "android": {
-        "track": "internal"
+        "applicationId": "social.mu.app",
+        "track": "internal",
+        "releaseStatus": "completed"
       }
     }
   }

@@ -3,7 +3,7 @@ import {View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {logger} from '#/logger'
-import {useAgent, useSession} from '#/state/session'
+import {usePdsClient, useSession} from '#/state/session'
 import {atoms as a, useTheme, web} from '#/alf'
 import {Admonition} from '#/components/Admonition'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
@@ -43,7 +43,7 @@ export function MuAgeConfirmDialog({
 function Inner({control}: {control: Dialog.DialogControlProps}) {
   const {t: l} = useLingui()
   const t = useTheme()
-  const agent = useAgent()
+  const pdsClient = usePdsClient()
   const {currentAccount} = useSession()
   const patch = usePatchAgeAssuranceOtherRequiredData()
   const [isPending, setIsPending] = useState(false)
@@ -54,7 +54,7 @@ function Inner({control}: {control: Dialog.DialogControlProps}) {
     setIsPending(true)
     try {
       const flags = {over13: true, over16: true, over18: true}
-      await setMuAgeStatus(agent, flags)
+      await setMuAgeStatus(pdsClient, flags)
       const birthdate = birthdateFromFlags(flags)
       if (currentAccount?.did) {
         setBirthdateForDid({did: currentAccount.did, birthdate})
@@ -66,7 +66,7 @@ function Inner({control}: {control: Dialog.DialogControlProps}) {
       setError(l`Something went wrong. Please try again.`)
       setIsPending(false)
     }
-  }, [agent, currentAccount, patch, control, l])
+  }, [pdsClient, currentAccount, patch, control, l])
 
   return (
     <View style={[a.gap_md]}>

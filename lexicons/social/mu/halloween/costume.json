@@ -1,0 +1,68 @@
+{
+  "lexicon": 1,
+  "id": "social.mu.halloween.costume",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "literal:self",
+      "description": "A public Halloween costume. The avatar is also published to app.bsky.actor.profile so other clients can see it. The optional costume post collects likes; direct profile gifts use social.mu.halloween.candy records.",
+      "record": {
+        "type": "object",
+        "required": [
+          "costumeNumber",
+          "createdAt",
+          "updatedAt",
+          "avatar",
+          "drawing"
+        ],
+        "properties": {
+          "costumeNumber": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Starts at one and increases once per published costume change, not per post."
+          },
+          "createdAt": {"type": "string", "format": "datetime"},
+          "updatedAt": {"type": "string", "format": "datetime"},
+          "originalAvatar": {
+            "type": "blob",
+            "accept": ["image/*"],
+            "maxSize": 1000000,
+            "description": "Original photo retained for editing without stacking costumes."
+          },
+          "avatar": {
+            "type": "blob",
+            "accept": ["image/png"],
+            "maxSize": 1000000
+          },
+          "drawing": {"type": "ref", "ref": "#drawing"},
+          "post": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "Latest app.bsky.feed.post for this costume, with isHalloweenCostume: true. Cleared when the costume changes."
+          }
+        }
+      }
+    },
+    "drawing": {
+      "type": "object",
+      "required": ["version", "gridSize", "palette", "pixels", "updatedAt"],
+      "properties": {
+        "version": {"type": "integer", "const": 2},
+        "gridSize": {"type": "integer", "const": 64},
+        "palette": {
+          "type": "array",
+          "minLength": 1,
+          "maxLength": 256,
+          "items": {"type": "string", "minLength": 7, "maxLength": 7}
+        },
+        "pixels": {
+          "type": "array",
+          "minLength": 4096,
+          "maxLength": 4096,
+          "items": {"type": "integer", "minimum": -1, "maximum": 255}
+        },
+        "updatedAt": {"type": "string", "format": "datetime"}
+      }
+    }
+  }
+}

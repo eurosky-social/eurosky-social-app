@@ -77,7 +77,14 @@ dist/
 *.key
 *.mobileprovision
 *.orig.*
+
+# EAS submit credentials (Google Play service account, ASC API key, etc.)
+credentials/
+# Local build artifacts (EAS --local output)
+build-*.aab
+build-*.apk
 web-build/
+web-build-oso/
 stats.json
 
 # Temporary files created by Metro to check the health of the file watcher
@@ -101,6 +108,7 @@ stats.json
 # environment variables
 .env
 .env.*
+!/.env.e2e
 # Cloudflare Worker local dev secrets (services/*/cloudflare/.dev.vars)
 .dev.vars
 .dev.vars.*
@@ -112,14 +120,17 @@ google-services.json
 # Performance results (Flashlight)
 .perf/
 
-# ESLint
-.eslintcache
+# Oxlint
+.oxlintcache
 
 # i18n
 src/locale/locales/_build/
 src/locale/locales/**/messages.js
 src/locale/locales/**/messages.mjs
 src/locale/locales/**/messages.ts
+
+# generated lexicon schemas (pnpm lexicons:generate)
+src/lexicons/
 
 # local builds
 *.apk
@@ -138,3 +149,6 @@ bskyweb/static/media/*.svg
 # superpowers plugin plans/specs — local-only workspace
 docs/superpowers/
 .claude/worktrees
+
+# pnpm
+.pnpm-store/

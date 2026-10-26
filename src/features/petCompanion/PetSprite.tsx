@@ -1,8 +1,8 @@
 import {useEffect, useRef, useState} from 'react'
 import {View} from 'react-native'
-import {Image} from 'expo-image'
 
 import {atoms as a, web} from '#/alf'
+import {PixelArtImage} from '../../../modules/expo-bluesky-swiss-army/src/PixelArtImage'
 import {resolveVariant} from './registry'
 import {type Species} from './types'
 
@@ -19,6 +19,7 @@ export function PetSprite({
   state,
   size = species.size,
   facing = 1,
+  animate = true,
   // Bump to replay a one-shot animation even when `state` is unchanged.
   playToken = 0,
   onAnimationEnd,
@@ -28,6 +29,8 @@ export function PetSprite({
   state: string
   size?: number
   facing?: 1 | -1
+  /** Hold the first frame without scheduling a timer for reduced motion. */
+  animate?: boolean
   playToken?: number
   onAnimationEnd?: () => void
 }) {
@@ -54,6 +57,8 @@ export function PetSprite({
   })
 
   useEffect(() => {
+    if (!animate) return
+
     if (clip.frames <= 1) {
       if (!loop) onEndRef.current?.()
       return
@@ -78,11 +83,11 @@ export function PetSprite({
 
     return () => clearInterval(id)
     // playToken forces a restart for repeated one-shots.
-  }, [state, playToken, clip.frames, clip.fps, loop])
+  }, [state, playToken, clip.frames, clip.fps, loop, animate])
 
   // Frames read left-to-right from (row, col), wrapping at `cols`, so a clip can
   // start mid-row or span rows.
-  const cell = clip.row * cols + (clip.col ?? 0) + frameIdx
+  const cell = clip.row * cols + (clip.col ?? 0) + (animate ? frameIdx : 0)
   const cx = cell % cols
   const cy = Math.floor(cell / cols)
 
@@ -121,7 +126,7 @@ export function PetSprite({
                 ? [{translateY: dropY}, {scaleX: -1}]
                 : [{translateY: dropY}],
           }}>
-          <Image
+          <PixelArtImage
             source={sheet}
             accessibilityIgnoresInvertColors
             contentFit="fill"
@@ -133,7 +138,7 @@ export function PetSprite({
                 left: -cx * renderPx,
                 top: -cy * renderPx,
               },
-              // Crisp pixel-art scaling on web; native ignores this.
+              // iOS uses a nearest-neighbor native layer; web uses CSS.
               web({
                 imageRendering: 'pixelated',
                 // Stop mobile Safari from opening/saving the raw spritesheet on

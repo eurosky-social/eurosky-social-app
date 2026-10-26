@@ -1,12 +1,13 @@
-import {type AppBskyActorDefs, AtUri} from '@atproto/api'
+import {AtUri} from '@atproto/syntax'
 import {useMutation, useQueryClient} from '@tanstack/react-query'
 
 import {
   createMuVerificationQueryKey,
   type MuVerification,
 } from '#/state/queries/verification/useMuVerificationQuery'
-import {useAgent, useSession} from '#/state/session'
+import {usePdsClient, useSession} from '#/state/session'
 import {useAnalytics} from '#/analytics'
+import {app} from '#/lexicons'
 import type * as bsky from '#/types/bsky'
 
 // See useVerificationCreateMutation: optimistic update + delayed reconcile to
@@ -15,7 +16,7 @@ const CONSTELLATION_INDEX_DELAY = 8e3
 
 export function useVerificationsRemoveMutation() {
   const ax = useAnalytics()
-  const agent = useAgent()
+  const pdsClient = usePdsClient()
   const qc = useQueryClient()
   const {currentAccount} = useSession()
 
@@ -24,7 +25,7 @@ export function useVerificationsRemoveMutation() {
       verifications,
     }: {
       profile: bsky.profile.AnyProfileView
-      verifications: AppBskyActorDefs.VerificationView[]
+      verifications: app.bsky.actor.defs.VerificationView[]
     }) {
       if (!currentAccount) {
         throw new Error('User not logged in')
@@ -34,9 +35,8 @@ export function useVerificationsRemoveMutation() {
 
       await Promise.all(
         uris.map(uri => {
-          return agent.app.bsky.graph.verification.delete({
-            repo: currentAccount.did,
-            rkey: new AtUri(uri).rkey,
+          return pdsClient.delete(app.bsky.graph.verification, {
+            rkey: new AtUri(uri).rkeySafe,
           })
         }),
       )

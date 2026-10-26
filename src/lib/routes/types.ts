@@ -19,11 +19,38 @@ export type SearchParams = {
   tab?: 'user' | 'profile' | 'feed' | 'latest'
 } & SearchFilterParams
 
+export type ModerationInboxTab = 'reports' | 'account'
+
 export type CommonNavigatorParams = {
   NotFound: undefined
+  Atmosphere: undefined
   Lists: undefined
   NewsFeed: undefined
+  NewsSettings: undefined
+  Frontpage: {name?: string}
+  NewsExplore: undefined
+  OutletDirectory: undefined
+  NewsArticle: {
+    url: string
+    title?: string
+    image?: string
+    description?: string
+    publishedAt?: string
+    outletName?: string
+    outletDid?: string
+    /** The outlet's slug at the news aggregator: its frontpage. */
+    outletSlug?: string
+    /** The story the article was opened from, for its other coverage. */
+    storyId?: string
+    storySource?: 'rss' | 'dutch'
+    /** How the story was read, to read its coverage the same way. */
+    storyView?: string
+  }
   Moderation: undefined
+  ModerationInbox: {tab?: ModerationInboxTab}
+  ModerationInboxSettings: undefined
+  ModerationInboxReportDetails: {moderationService: string; id: string}
+  ModerationInboxNoticeDetails: {moderationService: string; subject: string}
   ModerationModlists: undefined
   ModerationMutedAccounts: undefined
   ModerationBlockedAccounts: undefined
@@ -40,12 +67,12 @@ export type CommonNavigatorParams = {
   PostLikedBy: {name: string; rkey: string}
   PostRepostedBy: {name: string; rkey: string}
   PostQuotes: {name: string; rkey: string}
-  ProfileFeed: {
+  CustomFeed: {
     name: string
     rkey: string
     feedCacheKey?: 'discover' | 'explore' | undefined
   }
-  ProfileFeedLikedBy: {name: string; rkey: string}
+  CustomFeedLikedBy: {name: string; rkey: string}
   ProfileLabelerLikedBy: {name: string}
   Debug: undefined
   DebugMod: undefined
@@ -64,13 +91,20 @@ export type CommonNavigatorParams = {
   PreferencesExternalEmbeds: undefined
   AccessibilitySettings: undefined
   AppearanceSettings: undefined
+  CostumeEditor: undefined
+  NetworkServicesSettings: undefined
+  ContentServiceSettings: undefined
+  AppViewTransferSettings: undefined
   PetCompanionSettings: undefined
+  DecorationsSettings: undefined
+  BetaFeaturesSettings: undefined
   AccountSettings: undefined
   AutomationLabelSettings: undefined
   PrivacyAndSecuritySettings: undefined
   ActivityPrivacySettings: undefined
   ContentAndMediaSettings: undefined
   NotificationSettings: undefined
+  ActivityNotificationSettings: undefined
   InterestsSettings: undefined
   AboutSettings: undefined
   AppIconSettings: undefined
@@ -107,6 +141,11 @@ export type BottomTabNavigatorParams = CommonNavigatorParams & {
   NotificationsTab: undefined
   MyProfileTab: undefined
   MessagesTab: undefined
+  AtmosphereTab: undefined
+  FeedsTab: undefined
+  ListsTab: undefined
+  BookmarksTab: undefined
+  SettingsTab: undefined
 }
 
 export type HomeTabNavigatorParams = CommonNavigatorParams & {
@@ -155,6 +194,11 @@ export type AllNavigatorParams = CommonNavigatorParams & {
   Notifications: undefined
   MyProfileTab: undefined
   MessagesTab: undefined
+  AtmosphereTab: undefined
+  FeedsTab: undefined
+  ListsTab: undefined
+  BookmarksTab: undefined
+  SettingsTab: undefined
   Messages: {
     pushToConversation?: string
     pushToNewGroupChat?: boolean
@@ -169,8 +213,7 @@ export type AllNavigatorParams = CommonNavigatorParams & {
 export type NavigationProp = NativeStackNavigationProp<AllNavigatorParams>
 
 export type State =
-  | NavigationState
-  | Omit<PartialState<NavigationState>, 'stale'>
+  NavigationState | Omit<PartialState<NavigationState>, 'stale'>
 
 export type RouteParams = Record<string, string>
 export type MatchResult = {params: RouteParams}

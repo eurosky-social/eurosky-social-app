@@ -5,6 +5,7 @@ import Animated, {
   useReducedMotion,
 } from 'react-native-reanimated'
 
+import {type AnimatedLikeIconProps} from '#/lib/custom-animations/LikeIcon.types'
 import {useTheme} from '#/alf'
 import {
   Heart2_Filled_Stroke2_Corner0_Rounded as HeartIconFilled,
@@ -70,12 +71,13 @@ export function AnimatedLikeIcon({
   isLiked,
   big,
   hasBeenToggled,
-}: {
-  isLiked: boolean
-  big?: boolean
-  hasBeenToggled: boolean
-}) {
+  color: colorProp,
+  icons,
+}: AnimatedLikeIconProps) {
   const t = useTheme()
+  const color = colorProp ?? t.palette.pink
+  const FilledIcon = icons?.filled ?? HeartIconFilled
+  const OutlineIcon = icons?.outline ?? HeartIconOutline
   const size = big ? 22 : 18
   const shouldAnimate = !useReducedMotion() && hasBeenToggled
 
@@ -85,10 +87,10 @@ export function AnimatedLikeIcon({
         {isLiked ? (
           <Animated.View
             entering={shouldAnimate ? keyframe.duration(300) : undefined}>
-            <HeartIconFilled style={{color: t.palette.pink}} width={size} />
+            <FilledIcon style={{color}} width={size} />
           </Animated.View>
         ) : (
-          <HeartIconOutline
+          <OutlineIcon
             style={[{color: t.palette.contrast_500}, {pointerEvents: 'none'}]}
             width={size}
           />
@@ -99,7 +101,7 @@ export function AnimatedLikeIcon({
               entering={circle1Keyframe.duration(300)}
               style={{
                 position: 'absolute',
-                backgroundColor: t.palette.pink,
+                backgroundColor: color,
                 top: 0,
                 left: 0,
                 width: size,
@@ -107,6 +109,7 @@ export function AnimatedLikeIcon({
                 zIndex: -1,
                 pointerEvents: 'none',
                 borderRadius: size / 2,
+                opacity: 0,
               }}
             />
             <Animated.View
@@ -121,6 +124,7 @@ export function AnimatedLikeIcon({
                 zIndex: -1,
                 pointerEvents: 'none',
                 borderRadius: size / 2,
+                opacity: 0,
               }}
             />
           </>

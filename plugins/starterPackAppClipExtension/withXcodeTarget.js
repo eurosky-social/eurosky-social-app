@@ -1,10 +1,11 @@
-const {withXcodeProject} = require('expo/config-plugins')
+const {IOSConfig, withXcodeProject} = require('expo/config-plugins')
 
 const BUILD_PHASE_FILES = ['AppDelegate.swift', 'ViewController.swift']
 
 const withXcodeTarget = (config, {targetName}) => {
   return withXcodeProject(config, config => {
     const pbxProject = config.modResults
+    const developmentTeam = config.ios.appleTeamId
 
     const target = pbxProject.addTarget(targetName, 'application', targetName)
     target.pbxNativeTarget.productType = `"com.apple.product-type.application.on-demand-install-capable"`
@@ -54,15 +55,23 @@ const withXcodeTarget = (config, {targetName}) => {
           buildSettingsObj.PRODUCT_BUNDLE_IDENTIFIER = `"${config.ios?.bundleIdentifier}.AppClip"`
           buildSettingsObj.SWIFT_EMIT_LOC_STRINGS = 'YES'
           buildSettingsObj.SWIFT_VERSION = '5.0'
-          buildSettingsObj.TARGETED_DEVICE_FAMILY = `"1"`
-          buildSettingsObj.DEVELOPMENT_TEAM = 'B3LX46C5HS'
-          buildSettingsObj.IPHONEOS_DEPLOYMENT_TARGET = '15.1'
+          // App Clips must support exactly the same device families as their parent.
+          buildSettingsObj.TARGETED_DEVICE_FAMILY =
+            IOSConfig.DeviceFamily.formatDeviceFamilies(
+              IOSConfig.DeviceFamily.getDeviceFamilies(config),
+            )
+          buildSettingsObj.DEVELOPMENT_TEAM = developmentTeam
+          buildSettingsObj.IPHONEOS_DEPLOYMENT_TARGET = '16.4'
           buildSettingsObj.ASSETCATALOG_COMPILER_APPICON_NAME = 'AppIcon'
         }
       }
     }
 
-    pbxProject.addTargetAttribute('DevelopmentTeam', 'B3LX46C5HS', targetName)
+    pbxProject.addTargetAttribute(
+      'DevelopmentTeam',
+      developmentTeam,
+      targetName,
+    )
 
     if (!pbxProject.hash.project.objects.PBXTargetDependency) {
       pbxProject.hash.project.objects.PBXTargetDependency = {}

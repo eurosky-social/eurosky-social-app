@@ -1,0 +1,26 @@
+# mu.social is a client-side-rendered single-page app. Every federated
+# permalink (/profile/<handle>, /profile/.../post/<id>, hashtags, DIDs) is an
+# effectively infinite set of URLs, and each one served the full JS bundles.
+# Crawling that space drove ~580 GB/month of origin bandwidth with no SEO
+# value (the pages have no server-rendered content to index anyway).
+#
+# Disallow the high-cardinality, JS-only routes. The home page and static
+# support/marketing pages stay crawlable. If you run bulk data collection,
+# use the AT Protocol firehose instead: https://atproto.com/
+
+User-Agent: *
+Disallow: /profile/
+Disallow: /hashtag/
+Disallow: /topic/
+Disallow: /search
+Disallow: /starter-pack/
+Disallow: /starter-pack-short/
+Disallow: /start/
+Disallow: /feeds
+Disallow: /lists
+Disallow: /notifications
+Disallow: /messages
+Disallow: /moderation
+Disallow: /settings
+Disallow: /intent/
+Allow: /

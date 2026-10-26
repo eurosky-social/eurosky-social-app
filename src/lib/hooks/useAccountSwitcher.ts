@@ -57,9 +57,8 @@ export function useAccountSwitcher() {
         Toast.show(_(msg`Please sign in as @${account.handle}`), {
           type: 'warning',
         })
-      } finally {
-        setPendingDid(null)
       }
+      setPendingDid(null)
     },
     [_, ax, resumeSession, requestSwitchToAccount, pendingDid],
   )

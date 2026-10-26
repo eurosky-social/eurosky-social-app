@@ -57,7 +57,6 @@ export function NotificationSettingsScreen({}: Props) {
   const mentionDialogControl = Dialog.useDialogControl()
   const quoteDialogControl = Dialog.useDialogControl()
   const repostDialogControl = Dialog.useDialogControl()
-  const activityDialogControl = Dialog.useDialogControl()
   const likeRepostDialogControl = Dialog.useDialogControl()
   const repostRepostDialogControl = Dialog.useDialogControl()
   const chatDialogControl = Dialog.useDialogControl()
@@ -104,7 +103,7 @@ export function NotificationSettingsScreen({}: Props) {
             [
               {
                 key: 'android.provider.extra.APP_PACKAGE',
-                value: 'xyz.blueskyweb.app',
+                value: 'social.mu.app',
               },
             ],
           )
@@ -217,9 +216,9 @@ export function NotificationSettingsScreen({}: Props) {
                 showSkeleton={!settings}
               />
             </SettingsList.PressableItem>
-            <SettingsList.PressableItem
+            <SettingsList.LinkItem
               label={l`Settings for activity from others`}
-              onPress={activityDialogControl.open}
+              to={{screen: 'ActivityNotificationSettings'}}
               contentContainerStyle={[a.align_start]}>
               <SettingsList.ItemIcon icon={BellRingingIcon} />
               <ItemTextWithSubtitle
@@ -229,7 +228,7 @@ export function NotificationSettingsScreen({}: Props) {
                 }
                 showSkeleton={!settings}
               />
-            </SettingsList.PressableItem>
+            </SettingsList.LinkItem>
             <SettingsList.PressableItem
               label={l`Settings for notifications for likes of your reposts`}
               onPress={likeRepostDialogControl.open}
@@ -359,19 +358,6 @@ export function NotificationSettingsScreen({}: Props) {
         }
       />
       <NotificationSettingsDialog
-        control={activityDialogControl}
-        name="subscribedPost"
-        icon={BellRingingIcon}
-        titleText={<Trans>Activity from others</Trans>}
-        subtitleText={
-          <Trans>
-            Get notifications when there's activity on posts you're subscribed
-            to.
-          </Trans>
-        }
-        allowDisableInApp={false}
-      />
-      <NotificationSettingsDialog
         control={likeRepostDialogControl}
         name="likeViaRepost"
         icon={LikeRepostIcon}
@@ -401,7 +387,7 @@ export function NotificationSettingsScreen({}: Props) {
         titleText={<Trans>Everything else</Trans>}
         subtitleText={
           <Trans>
-            Get notifications for starter pack joins, verification, and other
+            Get notifications for Starter Pack joins, verification, and other
             activity.
           </Trans>
         }

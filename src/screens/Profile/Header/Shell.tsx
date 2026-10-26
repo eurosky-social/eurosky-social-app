@@ -5,8 +5,8 @@ import Animated, {
   useAnimatedRef,
 } from 'react-native-reanimated'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
-import {type AppBskyActorDefs, type ModerationDecision} from '@atproto/api'
 import {utils} from '@bsky.app/alf'
+import {type ModerationDecision} from '@bsky/sdk/moderation'
 import {useLingui} from '@lingui/react/macro'
 import {useNavigation} from '@react-navigation/native'
 
@@ -18,7 +18,7 @@ import {useSession} from '#/state/session'
 import {LoadingPlaceholder} from '#/view/com/util/LoadingPlaceholder'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {UserBanner} from '#/view/com/util/UserBanner'
-import {atoms as a, platform, useTheme} from '#/alf'
+import {atoms as a, platform, useBreakpoints, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
 import {useDialogControl} from '#/components/Dialog'
 import {ArrowLeft_Stroke2_Corner0_Rounded as ArrowLeftIcon} from '#/components/icons/Arrow'
@@ -27,16 +27,19 @@ import {LabelsOnMe} from '#/components/moderation/LabelsOnMe'
 import {ProfileHeaderAlerts} from '#/components/moderation/ProfileHeaderAlerts'
 import {useAnalytics} from '#/analytics'
 import {IS_IOS} from '#/env'
+import {useAvatarDecoration} from '#/features/avatarDecorations'
 import {useActorStatus} from '#/features/liveNow'
 import {EditLiveDialog} from '#/features/liveNow/components/EditLiveDialog'
 import {LiveIndicator} from '#/features/liveNow/components/LiveIndicator'
 import {LiveStatusDialog} from '#/features/liveNow/components/LiveStatusDialog'
+import {type app} from '#/lexicons'
 import {GrowableAvatar} from './GrowableAvatar'
 import {GrowableBanner} from './GrowableBanner'
+import {PROFILE_BANNER_HEIGHT} from './layout'
 import {StatusBarShadow} from './StatusBarShadow'
 
 interface Props {
-  profile: Shadow<AppBskyActorDefs.ProfileViewDetailed>
+  profile: Shadow<app.bsky.actor.defs.ProfileViewDetailed>
   moderation: ModerationDecision
   hideBackButton?: boolean
   isPlaceholderProfile?: boolean
@@ -50,17 +53,18 @@ let ProfileHeaderShell = ({
   isPlaceholderProfile,
 }: React.PropsWithChildren<Props>): React.ReactNode => {
   const t = useTheme()
+  const {gtMobile} = useBreakpoints()
   const ax = useAnalytics()
   const {currentAccount} = useSession()
   const {t: l} = useLingui()
   const {openLightbox} = useLightboxControls()
   const navigation = useNavigation<NavigationProp>()
   const {top: topInset} = useSafeAreaInsets()
-  const playHaptic = useHaptics()
+  const haptics = useHaptics()
   const liveStatusControl = useDialogControl()
 
   const aviRef = useAnimatedRef()
-  const bannerRef = useAnimatedRef<Animated.View>()
+  const bannerRef = useAnimatedRef()
 
   const onPressBack = useCallback(() => {
     if (navigation.canGoBack()) {
@@ -73,7 +77,7 @@ let ProfileHeaderShell = ({
   const _openLightbox = useCallback(
     (
       uri: string,
-      thumbRef: AnimatedRef<any>,
+      thumbRef: AnimatedRef,
       type: 'circle-avi' | 'rect-avi' | 'image' = 'circle-avi',
     ) => {
       openLightbox({
@@ -111,6 +115,7 @@ let ProfileHeaderShell = ({
   )
 
   const live = useActorStatus(profile)
+  const decoration = useAvatarDecoration(profile.did)
 
   useEffect(() => {
     if (live.isActive) {
@@ -120,7 +125,7 @@ let ProfileHeaderShell = ({
 
   const onPressAvi = useCallback(() => {
     if (live.isActive) {
-      playHaptic('Light')
+      haptics.tap()
       ax.metric('live:card:open', {subject: profile.did, from: 'profile'})
       liveStatusControl.open()
     } else {
@@ -139,7 +144,7 @@ let ProfileHeaderShell = ({
     aviRef,
     liveStatusControl,
     live,
-    playHaptic,
+    haptics,
   ])
 
   const onPressBanner = useCallback(() => {
@@ -154,8 +159,8 @@ let ProfileHeaderShell = ({
     <View style={t.atoms.bg} pointerEvents={IS_IOS ? 'auto' : 'box-none'}>
       <View
         pointerEvents={IS_IOS ? 'auto' : 'box-none'}
-        style={[a.relative, {height: 150}]}>
-        <StatusBarShadow />
+        style={[a.relative, {height: PROFILE_BANNER_HEIGHT}]}>
+        {!gtMobile && <StatusBarShadow />}
         <GrowableBanner
           testID={profile.banner ? 'userBannerImage' : 'userBannerFallback'}
           label={
@@ -228,7 +233,6 @@ let ProfileHeaderShell = ({
       {!isPlaceholderProfile &&
         (isMe ? (
           <LabelsOnMe
-            type="account"
             labels={profile.labels}
             style={[
               a.px_lg,
@@ -240,6 +244,7 @@ let ProfileHeaderShell = ({
         ) : (
           <ProfileHeaderAlerts
             moderation={moderation}
+            profile={profile}
             style={[
               a.px_lg,
               a.pt_xs,
@@ -277,6 +282,7 @@ let ProfileHeaderShell = ({
                 avatar={profile.avatar}
                 moderation={moderation.ui('avatar')}
                 noBorder
+                decoration={decoration}
               />
               {live.isActive && <LiveIndicator size="large" />}
             </Animated.View>

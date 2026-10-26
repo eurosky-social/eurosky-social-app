@@ -45,12 +45,18 @@ const APP_BRAND_MSGIDS = new Set<string>([
   '4bbQsQ', // Your contact firstAuthorName is on Bluesky
   'AETlrv', // profileName joined Bluesky using a starter pack timeAgoString ago
   'AgLgDA', // Your contact firstAuthorLink is on Bluesky
+  '1zNIpL', // Your contact <0/> is on Bluesky (notifications v2)
   'RbsMSV', // This will irreversibly delete your Bluesky account <0>currentHandle</0>... (review: account)
+  'sMXDJR', // New to Bluesky? <0>Sign up</0>
   'UuBuVb', // 0plural# people have joined Bluesky via this starter pack!
   'Wf4SRR', // You joined Bluesky timeAgoString ago
   'ehdCS5', // profileName joined Bluesky timeAgoString ago
   's3c7j6', // Invite name to join Bluesky
   'vsdeY2', // You joined Bluesky using a starter pack timeAgoString ago
+  'jJp4nR', // You joined Bluesky just now
+  'cgMeG8', // You joined Bluesky using a Starter Pack just now
+  'OgXM6V', // profileName joined Bluesky just now
+  'O9K/5I', // profileName joined Bluesky using a Starter Pack just now
   '0ssEYu', // You are accessing Bluesky from a region that legally requires...
   'xZFNnS', // Unfortunately, your declared age indicates that you are not old enough... Bluesky
   'QciFed', // Unfortunately, the birthdate you have saved... too young to access Bluesky
@@ -72,8 +78,11 @@ const APP_BRAND_MSGIDS = new Set<string>([
   'UGGtmB', // ...continue enjoying all the features of Bluesky.
   'E8ogPW', // Your email has not yet been verified... all the features of Bluesky.
   'QfDITI', // Leaving Bluesky
+  'SEDOhX', // Opens 0 outside Bluesky (profile links)
   'WqbUOH', // A screenshot of the post composer... "Bluesky has drafts now!!!"
   'dKRV7a', // Post it to Bluesky or share anywhere. (group chats announcement)
+  '6oSz7c', // Bluesky now makes full use of your iPad's screen... (iPad announcement)
+  'SdoOAM', // Bluesky adapts to your iPad's screen... (beta feature settings)
   'pYv2lK', // ...let them scan the code to join you on Bluesky. (invite friends announcement)
   'BZUP5P', // Bluesky needs camera access to scan QR codes from other profiles. (invite scanner)
   'CFvtZB', // Please use the Bluesky mobile app to scan a QR code. (invite scanner, web)
@@ -135,9 +144,6 @@ const APP_BRAND_MSGIDS = new Set<string>([
  *   'tBlmFu'  ...violations of Bluesky's community guidelines...   (policy doc)
  *   'QPZ2Bk'  ...first seen by Bluesky on <date>   (appview/network indexing)
  *   'f4olkV'  Bluesky cannot confirm... claimed date (appview/network)
- *   'dMRRI+'  Bluesky+ icons                       (product/subscription name)
- *   'E1Imji'  Bluesky+                             (product/subscription name)
- *   'oaQ0RU'  Bluesky Classic(TM)                  (trademark / app-icon variant)
  *   '7+c6/U'  ...sign in to other Bluesky clients  (network ecosystem)
  *   'u7I+xA'  ...sent to Bluesky's moderation service (the real Bluesky-run
  *             labeler at moderation.bsky.app; keep until we run our own -
@@ -147,6 +153,9 @@ const APP_BRAND_MSGIDS = new Set<string>([
  *   'f6UtWw'  ...Bluesky Social Terms of Service   (legal entity + doc)
  *   'TXVWpp'  Bluesky Social Terms of Service      (legal entity + doc)
  *   'kuhbOb'  See jobs at Bluesky                  (Bluesky PBC the company)
+ *   'KeyOyU'  Thanks for helping keep Bluesky safe... (Bluesky moderation
+ *   'RYETfO'  Thanks for helping keep Bluesky safe... report outcome)
+ *   'ezmI3e'  ...a site that's blocked on Bluesky  (Bluesky's link blocklist)
  */
 
 const BLUESKY_SOCIAL = /Bluesky Social\b/g

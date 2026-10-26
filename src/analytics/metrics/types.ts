@@ -6,6 +6,7 @@ import {type Platform} from 'react-native'
 
 import {type NotificationReason} from '#/lib/hooks/useNotificationHandler'
 import {type VideoCompressSkipReason} from '#/lib/media/video/types'
+import {type GroupedNotificationsFeed} from '#/state/queries/notifications/grouped/types'
 import {type NotificationType} from '#/state/queries/notifications/types'
 import {type FeedDescriptor} from '#/state/queries/post-feed'
 import {type LiveEventFeedMetricContext} from '#/features/liveEvents/types'
@@ -44,6 +45,7 @@ export type Events = {
       | 'SignupQueued'
       | 'Deactivated'
       | 'Takendown'
+      | 'AgeAssuranceDataUnavailableScreen'
       | 'AgeAssuranceNoAccessScreen'
     scope: 'current' | 'every'
   }
@@ -59,17 +61,121 @@ export type Events = {
     notificationType: NotificationType
     authorCount: number
   }
-  'state:background': {
-    secondsActive: number
+  /**
+   * A tab of the Notifications screen came into view: the tab it's on when
+   * the screen gains focus, which includes mounting, and each tab the user
+   * switches to. A switch is logged once, as the pager settles on the new
+   * tab.
+   */
+  'notifications:tabDisplayed': {
+    tab: GroupedNotificationsFeed
+    /** The tab's position in the tab pills, from 0. */
+    index: number
+    /**
+     * - `focus`: the screen gained focus, or mounted, on the tab. Web mounts
+     *   the screen on every visit.
+     * - `tap`: the user pressed the tab's pill.
+     * - `swipe`: the user swiped the pager to the tab, which only native
+     *   does.
+     */
+    reason: 'focus' | 'tap' | 'swipe'
   }
+  /**
+   * A tab of the Notifications screen started loading its newest
+   * notifications, in place of what it shows. Not the tab's first load or a
+   * retry of it, nor a check that only asks whether there's anything new, as
+   * a quick return to the app or a switch between tabs does, or any return
+   * while the user is partway down the tab. Nor the refresh of "All" that
+   * refreshing any other tab sets off behind it.
+   */
+  'notifications:refresh': {
+    tab: GroupedNotificationsFeed
+    /**
+     * - `pullToRefresh`: the user pulled the tab down.
+     * - `softReset`: the user pressed Notifications in the app's navigation,
+     *   or the tab's own pill, while already on the tab.
+     * - `pill`: the user pressed the "Refresh" pill.
+     * - `focus`: the screen came back into view, e.g. from a post opened
+     *   from it, or mounted with the tab already loaded, as web's does on
+     *   every visit.
+     * - `significantReturn`: the user came back to the app after a while
+     *   away, with the screen in view.
+     * - `pushOpened`: the user opened a push notification with the screen in
+     *   view.
+     */
+    reason:
+      | 'pullToRefresh'
+      | 'softReset'
+      | 'pill'
+      | 'focus'
+      | 'significantReturn'
+      | 'pushOpened'
+  }
+  /**
+   * The "Refresh" pill came into view on a Notifications tab, offering what an
+   * unread check, or a peek at the tab, found that it hasn't loaded. Only
+   * while the tab is the one in view, on the focused screen, with the app in
+   * the foreground, and again each time it comes back into view still up. One
+   * hide follows each.
+   */
+  'notifications:refreshPill:impression': {
+    tab: GroupedNotificationsFeed
+  }
+  /**
+   * The user pressed the pill, which loads the tab's newest notifications.
+   */
+  'notifications:refreshPill:press': {
+    tab: GroupedNotificationsFeed
+    /** How long since it came into view. */
+    shownMs: number
+  }
+  /** The pill went, after it came into view. */
+  'notifications:refreshPill:hide': {
+    tab: GroupedNotificationsFeed
+    /**
+     * - `pressed`: the user pressed it.
+     * - `left`: the tab went out of view: the user switched tab, opened
+     *   another screen, or left the app, or the screen closed, as web's does
+     *   on every navigation away.
+     * - `refreshed`: the tab started loading its newest notifications some
+     *   other way, e.g. a pull-to-refresh.
+     * - `gone`: a later unread check found nothing new for the tab to load,
+     *   e.g. once the notifications were seen somewhere else.
+     */
+    reason: 'pressed' | 'left' | 'refreshed' | 'gone'
+    /** How long it was in view. */
+    shownMs: number
+  }
+  'state:background': {}
   'state:foreground': {}
   'router:navigate': {
     from?: string
+  }
+  'web:list:size': {
+    itemCount: number
+    renderedRowCount: number
+    contentHeight: number
+    sessionAgeMs: number
+    milestone: 100 | 250 | 500 | 1000
+    heapUsedBytes?: number
+    heapLimitBytes?: number
+  }
+  'web:list:longTasks': {
+    itemCount: number
+    renderedRowCount: number
+    taskCount: number
+    totalDurationMs: number
+    maxDurationMs: number
+    intervalMs: number
+    sessionAgeMs: number
+    heapUsedBytes?: number
+    heapLimitBytes?: number
   }
   'nav:click': {
     item:
       | 'home'
       | 'search'
+      | 'atmosphere'
       | 'chat'
       | 'notifications'
       | 'profile'
@@ -103,7 +209,23 @@ export type Events = {
     activeStep: number
   }
   'signup:captchaSuccess': {}
-  'signup:captchaFailure': {}
+  'signup:captchaFailure': {
+    reason: 'state-mismatch' | 'webview-error' | 'http-error'
+    host?: string
+    statusCode?: number
+  }
+  'signup:captchaSlow': {}
+  'signup:captchaBlockedLoad': {
+    host: string
+    isTopFrame: boolean
+  }
+  'signup:captchaBackPress': {
+    phase?: 'attesting' | 'challenge'
+  }
+  'signup:attestTimeout': {}
+  'signup:createAccountFailure': {
+    reason: string
+  }
   'signup:fieldError': {
     field: string
     errorCount: number
@@ -137,6 +259,7 @@ export type Events = {
     selectedInterests: string[]
     selectedInterestsLength: number
   }
+  'onboarding:interests:disabledNextPressed': {}
   'onboarding:suggestedAccounts:tabPressed': {
     tab: string
   }
@@ -191,18 +314,54 @@ export type Events = {
     feedType: string
     reason: 'pull-to-refresh' | 'soft-reset' | 'load-latest'
   }
-  'feed:save': {
-    feedUrl: string
-  }
-  'feed:unsave': {
-    feedUrl: string
-  }
-  'feed:pin': {
-    feedUrl: string
-  }
-  'feed:unpin': {
-    feedUrl: string
-  }
+  'feed:save': {feedUrl: string} & (
+    | {
+        logContext?: never
+        recId?: never
+        position?: never
+      }
+    | {
+        logContext: 'Explore'
+        recId: string
+        position: number
+      }
+  )
+  'feed:unsave': {feedUrl: string} & (
+    | {
+        logContext?: never
+        recId?: never
+        position?: never
+      }
+    | {
+        logContext: 'Explore'
+        recId: string
+        position: number
+      }
+  )
+  'feed:pin': {feedUrl: string} & (
+    | {
+        logContext?: never
+        recId?: never
+        position?: never
+      }
+    | {
+        logContext: 'Explore'
+        recId: string
+        position: number
+      }
+  )
+  'feed:unpin': {feedUrl: string} & (
+    | {
+        logContext?: never
+        recId?: never
+        position?: never
+      }
+    | {
+        logContext: 'Explore'
+        recId: string
+        position: number
+      }
+  )
   'feed:like': {
     feedUrl: string
   }
@@ -214,9 +373,15 @@ export type Events = {
   }
   'feed:suggestion:seen': {
     feedUrl: string
+    logContext: 'Explore'
+    recId?: string
+    position: number
   }
   'feed:suggestion:press': {
     feedUrl: string
+    logContext: 'Explore'
+    recId?: string
+    position: number
   }
   'post:showMore': {
     uri: string
@@ -269,12 +434,7 @@ export type Events = {
   }
   'composer:open': {
     logContext:
-      | 'Fab'
-      | 'PostReply'
-      | 'QuotePost'
-      | 'ProfileFeed'
-      | 'Deeplink'
-      | 'Other'
+      'Fab' | 'PostReply' | 'QuotePost' | 'ProfileFeed' | 'Deeplink' | 'Other'
     isReply: boolean
     hasQuote: boolean
     hasDraft: boolean
@@ -428,9 +588,14 @@ export type Events = {
     feedDescriptor?: string
     position?: number
   }
+  'post:quotes:view': {
+    uri: string
+    quoteSort: 'top' | 'latest'
+  }
   'post:view': {
     uri: string
     authorDid: string
+    isReply: boolean
     logContext:
       | 'FeedItem'
       | 'PostThreadItem'
@@ -442,6 +607,7 @@ export type Events = {
       | 'Hashtag'
       | 'Topic'
       | 'PostQuotes'
+    quoteSort?: 'top' | 'latest'
     feedDescriptor?: string
     position?: number
   }
@@ -472,32 +638,42 @@ export type Events = {
       | 'FindContacts'
       | 'GroupChat'
       | 'NotificationExpandedProfileCard'
+      | 'NotificationFollowRow'
+      | 'NotificationFollowersTabRow'
+      | 'NotificationContactMatchRow'
   }
   'profile:followers:view': {
     contextProfileDid: string
     isOwnProfile: boolean
+    sort?: 'latest' | 'top'
   }
   'profile:followers:paginate': {
     contextProfileDid: string
     itemCount: number
     page: number
+    sort?: 'latest' | 'top'
   }
   'profile:following:view': {
     contextProfileDid: string
     isOwnProfile: boolean
+    sort?: 'latest' | 'top'
   }
   'profile:following:paginate': {
     contextProfileDid: string
     itemCount: number
     page: number
+    sort?: 'latest' | 'top'
   }
   'profileCard:seen': {
     contextProfileDid?: string
     profileDid: string
     position?: number
+    sort?: 'latest' | 'top'
   }
   'profile:mute': {}
   'profile:unmute': {}
+  'profile:muteReposts': {}
+  'profile:unmuteReposts': {}
   'profile:block': {}
   'profile:unblock': {}
   'suggestedUser:follow': {
@@ -511,7 +687,7 @@ export type Events = {
       | 'ProgressGuide'
     location: 'Card' | 'Profile' | 'FollowAll'
     recSource?: 'Search'
-    recId?: number | string
+    recId?: string
     position: number
     suggestedDid: string
     category: string | null
@@ -524,7 +700,7 @@ export type Events = {
       | 'ProfileHeader'
       | 'Onboarding'
       | 'SeeMoreSuggestedUsers'
-    recId?: number | string
+    recId?: string
     position: number
     suggestedDid: string
     category: string | null
@@ -539,7 +715,7 @@ export type Events = {
       | 'SeeMoreSuggestedUsers'
       | 'ProgressGuide'
     recSource?: 'Search'
-    recId?: number | string
+    recId?: string
     position: number
     suggestedDid: string
     category: string | null
@@ -551,11 +727,11 @@ export type Events = {
       | 'ProfileInterstitial'
       | 'ProfileHeader'
       | 'Onboarding'
-    recId?: number | string
+    recId?: string
   }
   'suggestedUser:dismiss': {
     logContext: 'DiscoverInterstitial' | 'ProfileInterstitial' | 'ProfileHeader'
-    recId?: number | string
+    recId?: string
     position: number
     suggestedDid: string
   }
@@ -579,13 +755,13 @@ export type Events = {
       | 'FindContacts'
       | 'GroupChat'
       | 'NotificationExpandedProfileCard'
+      | 'NotificationFollowRow'
+      | 'NotificationFollowersTabRow'
+      | 'NotificationContactMatchRow'
   }
   'chat:create': {
     logContext:
-      | 'ProfileHeader'
-      | 'NewChatDialog'
-      | 'SendViaChatDialog'
-      | 'ConvoSettings'
+      'ProfileHeader' | 'NewChatDialog' | 'SendViaChatDialog' | 'ConvoSettings'
   }
   'chat:open': {
     logContext:
@@ -606,7 +782,7 @@ export type Events = {
 
   // Group chat adoption
   'groupchat:create': {
-    logContext: 'NewChatDialog'
+    logContext: 'NewChatDialog' | 'SendViaChatDialog'
   }
   'groupchat:landingPage:view': {
     hasSession: boolean
@@ -680,6 +856,7 @@ export type Events = {
   }
   'starterPack:removeUser': {
     starterPack?: string
+    context?: 'opt-out'
   }
   'starterPack:share': {
     starterPack: string
@@ -690,8 +867,26 @@ export type Events = {
     logContext: 'StarterPackProfilesList' | 'Onboarding'
     starterPack: string
     count: number
+    recId?: string
+    position?: number
+  }
+  'starterPack:suggestion:seen': {
+    logContext: 'Explore' | 'Onboarding'
+    starterPack: string
+    recId: string
+    position: number
+  }
+  'starterPack:suggestion:press': {
+    logContext: 'Explore'
+    starterPack: string
+    recId: string
+    position: number
   }
   'starterPack:delete': {}
+  'starterPack:optOut': {
+    starterPack: string
+    action: 'optOut' | 'undo'
+  }
   'starterPack:create': {
     setName: boolean
     setDescription: boolean
@@ -742,11 +937,19 @@ export type Events = {
   'trendingTopics:hide': {
     context: 'settings' | 'sidebar' | 'interstitial' | 'explore:trending'
   }
+  'trendingTopic:seen': {
+    context: 'sidebar' | 'interstitial' | 'explore'
+    feedUri?: string
+    recId?: string
+    rank: number
+    feedSliceIndex?: number
+  }
   'trendingTopic:click': {
     context: 'sidebar' | 'interstitial' | 'explore'
-  }
-  'recommendedTopic:click': {
-    context: 'explore'
+    feedUri?: string
+    recId?: string
+    rank: number
+    feedSliceIndex?: number
   }
   'trendingVideos:show': {
     context: 'settings'
@@ -780,13 +983,13 @@ export type Events = {
   }
 
   'search:results:loaded': {
-    tab: 'top' | 'latest' | 'people' | 'feeds'
+    tab: 'top' | 'latest' | 'people' | 'feeds' | 'starterPacks'
     initialCount: number
   }
 
   'search:result:press': {
-    tab?: 'top' | 'latest' | 'people' | 'feeds'
-    resultType: 'post' | 'profile' | 'feed'
+    tab?: 'top' | 'latest' | 'people' | 'feeds' | 'starterPacks'
+    resultType: 'post' | 'profile' | 'feed' | 'starterPack'
     position: number
     uri: string
   }
@@ -794,6 +997,11 @@ export type Events = {
   'search:recent:press': {
     profileDid: string
     position: number
+  }
+
+  'search:recent:clearAll': {
+    termCount: number
+    profileCount: number
   }
 
   'search:autocomplete:press': {
@@ -829,14 +1037,38 @@ export type Events = {
     listType: 'mute' | 'block'
   }
 
+  'moderation:inbox:view': {
+    tab: 'reports' | 'account'
+  }
+  'moderation:inbox:filter': {
+    tab: 'reports' | 'account'
+    filter: 'all' | 'pending' | 'resolved' | 'unread'
+  }
+  'moderation:inbox:markAllAsRead': {
+    tab: 'reports' | 'account'
+  }
+  'moderation:inbox:viewAccountStatus': {
+    status: 'warning' | 'atRisk'
+  }
+  'moderation:inbox:viewReport': {}
+  'moderation:inbox:viewNotice': {}
+  'moderation:inbox:startAppeal': {
+    type?: string
+  }
+  'moderation:inbox:submitAppeal': {
+    type?: string
+  }
+
   'reportDialog:open': {
     subjectType: string
   }
   'reportDialog:close': {}
   'reportDialog:success': {
+    subjectType: string
     reason: string
     labeler: string
     details: boolean
+    videoTimestamp: boolean
   }
   'reportDialog:failure': {}
 
@@ -1062,6 +1294,8 @@ export type Events = {
   'bot:label:toggle': {state: 'add' | 'remove'}
   'bot:badge:click': {}
 
+  'contentVisibility:algorithmicRecommendations:change': {hide: boolean}
+
   'live:create': {duration: number}
   'live:edit': {}
   'live:remove': {}
@@ -1079,12 +1313,28 @@ export type Events = {
     postContext: 'feed' | 'thread'
     position?: number
   }
-  'share:press:copyLink': {}
+  'share:press:copyLink': {uri: string}
   'share:press:nativeShare': {}
+  /**
+   * Fires when the system share sheet closes after sharing a post. Not
+   * logged on web, or on Android builds without the native share module.
+   */
+  'share:nativeShare:result': {
+    uri: string
+    authorDid: string
+    entryPoint: 'ShareMenu' | 'LongPress'
+    status: 'shared' | 'dismissed'
+    /**
+     * The app the user picked: the `activityType` on iOS, the package name on
+     * Android. Android reports the chooser's own actions (e.g. Copy) as
+     * `dismissed` with no target.
+     */
+    target?: string
+  }
   'share:press:openDmSearch': {}
-  'share:press:dmSelected': {}
-  'share:press:recentDm': {}
-  'share:press:embed': {}
+  'share:press:dmSelected': {uri: string}
+  'share:press:recentDm': {uri: string}
+  'share:press:embed': {uri: string}
 
   'embed:standardSite:view': {url: string}
   'embed:standardSite:article:press': {url: string}
@@ -1276,6 +1526,62 @@ export type Events = {
   'profile:associated:germ:self-disconnect': {}
   'profile:associated:germ:self-reconnect': {}
 
+  'profile:links:click': {
+    domain: string
+    /**
+     * Name of the recognized support provider, if the link is a support link.
+     */
+    supportProvider: string | undefined
+    isOwnProfile: boolean
+  }
+  /**
+   * A profile showing links was viewed. The denominator for tap rate.
+   */
+  'profile:links:impression': {
+    linkCount: number
+    supportLinkCount: number
+    isOwnProfile: boolean
+  }
+  /**
+   * Edit Profile was opened, from any profile header.
+   */
+  'profile:edit:open': {}
+  /**
+   * Edit Profile was opened with the Links section available.
+   */
+  'profile:links:editorOpen': {
+    linkCount: number
+  }
+  /**
+   * Logged on save, one event per link actually added or removed.
+   */
+  'profile:links:add': {
+    domain: string
+    supportProvider: string | undefined
+  }
+  'profile:links:remove': {
+    domain: string
+    supportProvider: string | undefined
+  }
+  /**
+   * A visitor opened a link's details, e.g. by long-pressing it.
+   */
+  'profile:links:preview': {
+    domain: string
+    supportProvider: string | undefined
+  }
+  /**
+   * A link couldn't be added, e.g. because its site is blocked.
+   */
+  'profile:links:rejected': {
+    reason: 'safelink' | 'shortener' | 'insecure'
+    /**
+     * Left out for Safelink blocks, which can be sensitive sites. The other
+     * reasons come from public lists in the app.
+     */
+    domain?: string
+  }
+
   // Post photo embed events
   'post:photoEmbed:impression': {
     layout: 'single' | 'grid' | 'carousel'
@@ -1321,10 +1627,7 @@ export type Events = {
   // invite friends dialog opened, with the surface that triggered it
   'invite:dialog:open': {
     logContext:
-      | 'ProfileHeader'
-      | 'Drawer'
-      | 'FindContactsSettings'
-      | 'NuxAnnouncement'
+      'ProfileHeader' | 'Drawer' | 'FindContactsSettings' | 'NuxAnnouncement'
   }
   // user copied the invite link to clipboard
   'invite:action:copy': {}
@@ -1349,10 +1652,87 @@ export type Events = {
   // user dismissed the empty-followers promo banner
   'invite:followersPromo:dismiss': {}
 
+  /**
+   * Fired when a video fails terminally during playback: unreachable (404),
+   * undecodable, or the client lacks the required codecs. Complements the
+   * Sentry-only video.playback spans with a countable, unsampled event.
+   */
+  'video:playback:failed': {
+    surface: 'feed' | 'immersiveFeed'
+    presentation: 'video' | 'gif'
+    /**
+     * Coarse failure bucket: VideoNotFoundError, HLSUnsupportedError, an
+     * hls.js error details code (e.g. bufferAppendError), or PlayerError on
+     * native.
+     */
+    errorClass: string
+    /** Truncated to 256 chars */
+    errorMessage: string
+    /** HLS playlist URL, identifies the exact video for server-side lookup */
+    playlist: string
+  }
+
+  /**
+   * The playable video was meaningfully visible. This is an exposure event,
+   * not proof that playback started. Fires once per mounted video item.
+   */
+  'video:impression': {
+    postUri?: string
+    postAuthorDid?: string
+    context: 'embed' | 'immersiveFeed'
+    presentation: 'video' | 'gif'
+  }
+  /**
+   * Playback advanced far enough to render the first frame. Preloading and
+   * merely becoming active do not count. Fires once per mounted video item;
+   * automatic loops do not produce another event.
+   */
+  'video:playback:start': {
+    postUri?: string
+    postAuthorDid?: string
+    context: 'embed' | 'immersiveFeed'
+    presentation: 'video' | 'gif'
+    autoplay: boolean
+  }
+  /**
+   * Incremental, non-overlapping wall-clock watch time. Segments are uniquely
+   * identified by playbackSessionId + segmentIndex for downstream deduping.
+   */
+  'video:playback:duration': {
+    playbackSessionId: string
+    segmentIndex: number
+    durationMs: number
+    postUri?: string
+    postAuthorDid?: string
+    context: 'embed' | 'immersiveFeed'
+    presentation: 'video' | 'gif'
+    endReason:
+      | 'paused'
+      | 'deactivated'
+      | 'backgrounded'
+      | 'buffering'
+      | 'checkpoint'
+      | 'ended'
+      | 'error'
+      | 'unmounted'
+  }
+  /**
+   * The user activated a third-party media player. Cross-origin players do
+   * not expose confirmed playback consistently, so this must not be treated
+   * as equivalent to video:playback:start without an explicit methodology.
+   */
+  'externalEmbed:playerActivated': {
+    postUri?: string
+    postAuthorDid?: string
+    source: string
+    playerType: string
+    mediaType: 'video' | 'audio' | 'gif' | 'other'
+  }
+
   // === Video upload funnel (Frontend Spec section D) ===
   // Every event carries uploadId (client-generated UUID, ties one upload
   // session end-to-end) + engine (compression engine id, e.g.
-  // native:react-native-compressor@1.13.0). jobId is added once the server
+  // native:@bsky.app/video-compressor@0.2.0). jobId is added once the server
   // returns it. Sizes / codecs / dimensions / timings only - never content.
   'video:upload:picked': {
     uploadId: string
@@ -1371,7 +1751,7 @@ export type Events = {
   // Native-only. Raw container metadata returned by the new module's probe()
   // (bitrate, codec, HDR, frame rate, rotation, etc.). Fires once per upload
   // between compressStarted and the compressSkipped/compressCompleted decision.
-  // The web (mediabunny) and legacy rn-compressor engines do not surface this.
+  // The web mediabunny engine also emits this from its own probe.
   'video:upload:probed': {
     uploadId: string
     engine: string
@@ -1407,6 +1787,8 @@ export type Events = {
     uploadId: string
     engine: string
     errorClass: string
+    /** Truncated to 256 chars */
+    errorMessage: string
     elapsedMs: number
   }
   'video:upload:uploadStarted': {
@@ -1461,5 +1843,28 @@ export type Events = {
     phase: 'compress' | 'upload' | 'processing'
     jobId?: string
     elapsedInPhaseMs: number
+  }
+
+  'post:likedBy:click': {}
+
+  /*
+   * Beta features settings screen
+   */
+
+  // user toggled "Enable beta features"; fired only after the preference
+  // write succeeds
+  'betaFeatures:toggle': {
+    enabled: boolean
+    /** Gate keys of beta features active for this user at toggle time */
+    betaFeatureKeys: string[]
+  }
+  // user pressed the "Share feedback" button, opening the dialog
+  'betaFeatures:feedback:open': {
+    betaFeatureKeys: string[]
+  }
+  // user submitted feedback and it was sent successfully
+  'betaFeatures:feedback:submit': {
+    betaFeatureKeys: string[]
+    feedbackLength: number
   }
 }

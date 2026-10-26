@@ -6,6 +6,7 @@ const withXcodeTarget = (
 ) => {
   return withXcodeProject(config, config => {
     let pbxProject = config.modResults
+    const developmentTeam = config.ios.appleTeamId
 
     const target = pbxProject.addTarget(
       extensionName,
@@ -53,18 +54,20 @@ const withXcodeTarget = (
           buildSettingsObj.PRODUCT_BUNDLE_IDENTIFIER = `"${config.ios?.bundleIdentifier}.${extensionName}"`
           buildSettingsObj.SWIFT_EMIT_LOC_STRINGS = 'YES'
           buildSettingsObj.SWIFT_VERSION = '5.0'
-          buildSettingsObj.TARGETED_DEVICE_FAMILY = `"1,2"`
-          buildSettingsObj.DEVELOPMENT_TEAM = 'B3LX46C5HS'
+          buildSettingsObj.TARGETED_DEVICE_FAMILY = config.ios?.supportsTablet
+            ? `"1,2"`
+            : `"1"`
+          buildSettingsObj.DEVELOPMENT_TEAM = developmentTeam
         }
       }
     }
 
     pbxProject.addTargetAttribute(
       'DevelopmentTeam',
-      'B3LX46C5HS',
+      developmentTeam,
       extensionName,
     )
-    pbxProject.addTargetAttribute('DevelopmentTeam', 'B3LX46C5HS')
+    pbxProject.addTargetAttribute('DevelopmentTeam', developmentTeam)
 
     return config
   })

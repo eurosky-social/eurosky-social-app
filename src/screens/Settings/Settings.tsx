@@ -1,12 +1,14 @@
 import {useState} from 'react'
 import {Alert, LayoutAnimation, Linking, Pressable, View} from 'react-native'
 import {useReducedMotion} from 'react-native-reanimated'
-import {type AppBskyActorDefs, moderateProfile} from '@atproto/api'
+import {removeNuxs} from '@bsky/sdk'
+import {moderateProfile} from '@bsky/sdk/moderation'
+import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {useNavigation} from '@react-navigation/native'
 import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 
-import {HELP_DESK_URL} from '#/lib/constants'
+import {HELP_DESK_URL, HITSLOP_10} from '#/lib/constants'
 import {useAccountSwitcher} from '#/lib/hooks/useAccountSwitcher'
 import {useApplyPullRequestOTAUpdate} from '#/lib/hooks/useOTAUpdates'
 import {
@@ -20,18 +22,15 @@ import * as persisted from '#/state/persisted'
 import {clearStorage} from '#/state/persisted'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {useDeleteActorDeclaration} from '#/state/queries/messages/actor-declaration'
+import {useModerationInboxUnreadCountQuery} from '#/state/queries/moderation-inbox'
 import {useProfileQuery, useProfilesQuery} from '#/state/queries/profile'
-import {
-  type SessionAccount,
-  useAgent,
-  useSession,
-  useSessionApi,
-} from '#/state/session'
-import {getPdsAgent} from '#/state/session/pds-agent'
+import {usePdsClient} from '#/state/session'
+import {type SessionAccount, useSession, useSessionApi} from '#/state/session'
 import {useOnboardingDispatch} from '#/state/shell'
 import {useLoggedOutViewControls} from '#/state/shell/logged-out'
 import {useCloseAllActiveElements} from '#/state/util'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
+import {GrowthbookDialog} from '#/screens/Settings/components/GrowthbookDialog'
 import * as SettingsList from '#/screens/Settings/components/SettingsList'
 import {atoms as a, platform, tokens, useBreakpoints, useTheme} from '#/alf'
 import {AgeAssuranceDismissibleNotice} from '#/components/ageAssurance/AgeAssuranceDismissibleNotice'
@@ -41,6 +40,7 @@ import {useIsFindContactsFeatureEnabledBasedOnGeolocation} from '#/components/co
 import {useDialogControl} from '#/components/Dialog'
 import {SwitchAccountDialog} from '#/components/dialogs/SwitchAccount'
 import {Accessibility_Stroke2_Corner2_Rounded as AccessibilityIcon} from '#/components/icons/Accessibility'
+import {Beaker_Stroke2_Corner2_Rounded as BeakerIcon} from '#/components/icons/Beaker'
 import {Bell_Stroke2_Corner0_Rounded as NotificationIcon} from '#/components/icons/Bell'
 import {BubbleInfo_Stroke2_Corner2_Rounded as BubbleInfoIcon} from '#/components/icons/BubbleInfo'
 import {ChevronTop_Stroke2_Corner0_Rounded as ChevronUpIcon} from '#/components/icons/Chevron'
@@ -59,6 +59,7 @@ import {
   PersonX_Stroke2_Corner0_Rounded as PersonXIcon,
 } from '#/components/icons/Person'
 import {RaisingHand4Finger_Stroke2_Corner2_Rounded as HandIcon} from '#/components/icons/RaisingHand'
+import {Sparkle_Stroke2_Corner0_Rounded as SparkleIcon} from '#/components/icons/Sparkle'
 import {Window_Stroke2_Corner2_Rounded as WindowIcon} from '#/components/icons/Window'
 import * as Layout from '#/components/Layout'
 import {Loader} from '#/components/Loader'
@@ -69,8 +70,10 @@ import * as Prompt from '#/components/Prompt'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
+import {BRAND} from '#/config/brand'
 import {IS_INTERNAL, IS_IOS, IS_NATIVE} from '#/env'
 import {useActorStatus} from '#/features/liveNow'
+import {type app} from '#/lexicons'
 import {device, useStorage} from '#/storage'
 import {useActivitySubscriptionsNudged} from '#/storage/hooks/activity-subscriptions-nudged'
 
@@ -78,6 +81,15 @@ type Props = NativeStackScreenProps<CommonNavigatorParams, 'Settings'>
 export function SettingsScreen({}: Props) {
   const ax = useAnalytics()
   const {t: l} = useLingui()
+  const isModerationInboxEnabled = ax.features.enabled(
+    ax.features.ModerationInboxEnable,
+  )
+  const unreadCountQuery = useModerationInboxUnreadCountQuery(
+    isModerationInboxEnabled,
+  )
+  const unreadCount = isModerationInboxEnabled
+    ? (unreadCountQuery.data?.unreadCounts.total ?? 0)
+    : 0
   const reducedMotion = useReducedMotion()
   const {logoutEveryAccount} = useSessionApi()
   const {accounts, currentAccount} = useSession()
@@ -192,11 +204,20 @@ export function SettingsScreen({}: Props) {
           </SettingsList.LinkItem>
           <SettingsList.LinkItem
             to="/moderation"
-            label={l`Moderation and content filters`}>
+            label={l`Moderation tools`}
+            accessibilityHint={
+              unreadCount > 0
+                ? plural(unreadCount, {
+                    one: '# unread update',
+                    other: '# unread updates',
+                  })
+                : undefined
+            }>
             <SettingsList.ItemIcon icon={HandIcon} />
             <SettingsList.ItemText>
-              <Trans>Moderation and content filters</Trans>
+              <Trans>Moderation tools</Trans>
             </SettingsList.ItemText>
+            <SettingsList.BadgeCount count={unreadCount} />
           </SettingsList.LinkItem>
           <SettingsList.LinkItem
             to="/settings/notifications"
@@ -212,6 +233,14 @@ export function SettingsScreen({}: Props) {
             <SettingsList.ItemIcon icon={WindowIcon} />
             <SettingsList.ItemText>
               <Trans>Content and media</Trans>
+            </SettingsList.ItemText>
+          </SettingsList.LinkItem>
+          <SettingsList.LinkItem
+            to="/settings/network-services"
+            label={l`Network services`}>
+            <SettingsList.ItemIcon icon={EarthIcon} />
+            <SettingsList.ItemText>
+              <Trans>Network services</Trans>
             </SettingsList.ItemText>
           </SettingsList.LinkItem>
           {IS_NATIVE &&
@@ -242,6 +271,16 @@ export function SettingsScreen({}: Props) {
               <Trans>Companion</Trans>
             </SettingsList.ItemText>
           </SettingsList.LinkItem>
+          {BRAND.decorations.enabled && (
+            <SettingsList.LinkItem
+              to="/settings/decorations"
+              label={l`Profile decorations`}>
+              <SettingsList.ItemIcon icon={SparkleIcon} />
+              <SettingsList.ItemText>
+                <Trans>Profile decorations</Trans>
+              </SettingsList.ItemText>
+            </SettingsList.LinkItem>
+          )}
           <SettingsList.LinkItem
             to="/settings/accessibility"
             label={l`Accessibility`}>
@@ -254,6 +293,14 @@ export function SettingsScreen({}: Props) {
             <SettingsList.ItemIcon icon={EarthIcon} />
             <SettingsList.ItemText>
               <Trans>Languages</Trans>
+            </SettingsList.ItemText>
+          </SettingsList.LinkItem>
+          <SettingsList.LinkItem
+            to="/settings/beta-features"
+            label={l`Beta features`}>
+            <SettingsList.ItemIcon icon={BeakerIcon} />
+            <SettingsList.ItemText>
+              <Trans>Beta features</Trans>
             </SettingsList.ItemText>
           </SettingsList.LinkItem>
           <SettingsList.PressableItem
@@ -323,7 +370,7 @@ export function SettingsScreen({}: Props) {
 function ProfilePreview({
   profile,
 }: {
-  profile: AppBskyActorDefs.ProfileViewDetailed
+  profile: app.bsky.actor.defs.ProfileViewDetailed
 }) {
   const t = useTheme()
   const {gtMobile} = useBreakpoints()
@@ -389,7 +436,7 @@ function ProfilePreview({
 
 function DevOptions() {
   const {t: l} = useLingui()
-  const agent = useAgent()
+  const pdsClient = usePdsClient()
   const [override, setOverride] = useStorage(device, [
     'policyUpdateDebugOverride',
   ])
@@ -398,11 +445,12 @@ function DevOptions() {
   const {mutate: deleteChatDeclarationRecord} = useDeleteActorDeclaration()
   const {
     tryApplyUpdate,
-    revertToEmbedded,
+    restoreDefaultChannel,
     isCurrentlyRunningPullRequestDeployment,
     currentChannel,
   } = useApplyPullRequestOTAUpdate()
   const [actyNotifNudged, setActyNotifNudged] = useActivitySubscriptionsNudged()
+  const growthbookControl = useDialogControl()
 
   const resetOnboarding = () => {
     navigation.navigate('Home')
@@ -464,6 +512,14 @@ function DevOptions() {
         </SettingsList.ItemText>
       </SettingsList.PressableItem>
       <SettingsList.PressableItem
+        onPress={() => growthbookControl.open()}
+        label={l`View GrowthBook information`}>
+        <SettingsList.ItemText>
+          <Trans>GrowthBook</Trans>
+        </SettingsList.ItemText>
+      </SettingsList.PressableItem>
+      <GrowthbookDialog control={growthbookControl} />
+      <SettingsList.PressableItem
         onPress={() => navigation.navigate('Debug')}
         label={l`Open storybook page`}>
         <SettingsList.ItemText>
@@ -479,7 +535,7 @@ function DevOptions() {
       </SettingsList.PressableItem>
       <SettingsList.PressableItem
         onPress={() => deleteChatDeclarationRecord()}
-        label={l`Open storybook page`}>
+        label={l`Delete chat declaration record`}>
         <SettingsList.ItemText>
           <Trans>Delete chat declaration record</Trans>
         </SettingsList.ItemText>
@@ -525,7 +581,7 @@ function DevOptions() {
       ) : null}
       {IS_NATIVE && isCurrentlyRunningPullRequestDeployment ? (
         <SettingsList.PressableItem
-          onPress={() => void revertToEmbedded()}
+          onPress={() => void restoreDefaultChannel()}
           label={l`Unapply Pull Request`}>
           <SettingsList.ItemText>
             <Trans>Unapply Pull Request {currentChannel}</Trans>
@@ -555,7 +611,7 @@ function DevOptions() {
           <Button
             onPress={() => {
               device.set([PolicyUpdate202508], false)
-              void getPdsAgent(agent).bskyAppRemoveNuxs([PolicyUpdate202508])
+              void pdsClient.call(removeNuxs, [PolicyUpdate202508])
               Toast.show(`Done`, {
                 type: 'info',
               })
@@ -601,7 +657,7 @@ function AccountRow({
   pendingDid,
   onPressSwitchAccount,
 }: {
-  profile?: AppBskyActorDefs.ProfileViewDetailed
+  profile?: app.bsky.actor.defs.ProfileViewDetailed
   account: SessionAccount
   pendingDid: string | null
   onPressSwitchAccount: (
@@ -652,6 +708,7 @@ function AccountRow({
             {({props, state}) => (
               <Pressable
                 {...props}
+                hitSlop={HITSLOP_10}
                 style={[
                   a.absolute,
                   {top: 10, right: tokens.space.lg},

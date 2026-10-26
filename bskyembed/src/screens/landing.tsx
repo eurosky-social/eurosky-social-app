@@ -1,28 +1,31 @@
 import '../index.css'
 
-import {AppBskyFeedDefs, AppBskyFeedPost, AtpAgent, AtUri} from '@atproto/api'
+import {AtUriString, Client, type HandleString} from '@atproto/lex'
+import {AtUri} from '@atproto/syntax'
+import {app, com} from '@bsky/sdk/lexicons'
 import {h, render} from 'preact'
 import {useEffect, useMemo, useRef, useState} from 'preact/hooks'
 
-import arrowBottom from '../../assets/arrowBottom_stroke2_corner0_rounded.svg'
-import logo from '../../assets/logo.svg'
+import {BRAND, isSupportedAppHost} from '#/brand'
 import {
   assertColorModeValues,
   ColorModeValues,
   initSystemColorMode,
-} from '../color-mode'
-import {Container} from '../components/container'
-import {Link} from '../components/link'
-import {Post} from '../components/post'
-import * as bsky from '../types/bsky'
-import {niceDate} from '../util/nice-date'
+} from '#/color-mode'
+import {Container} from '#/components/container'
+import {Link} from '#/components/link'
+import {Post} from '#/components/post'
+import {ArrowDown} from '#/icons/Phosphor'
+import {niceDate} from '#/util/nice-date'
+
+import logo from '../../assets/logo.svg'
 
 const DEFAULT_POST =
   'https://bsky.app/profile/did:plc:vjug55kidv6sye7ykr5faxxn/post/3jzn6g7ixgq2y'
 const DEFAULT_URI =
   'at://did:plc:vjug55kidv6sye7ykr5faxxn/app.bsky.feed.post/3jzn6g7ixgq2y'
 
-export const EMBED_SERVICE = 'https://embed.bsky.app'
+export const EMBED_SERVICE = BRAND.embedService
 export const EMBED_SCRIPT = `${EMBED_SERVICE}/static/embed.js`
 
 const root = document.getElementById('app')
@@ -30,9 +33,7 @@ if (!root) throw new Error('No root element')
 
 initSystemColorMode({additionalBodyClasses: 'dark:bg-dimmedBgDarken'})
 
-const agent = new AtpAgent({
-  service: 'https://public.api.bsky.app',
-})
+const client = new Client(BRAND.publicApi, {strictResponseProcessing: false})
 
 render(<LandingPage />, root)
 
@@ -42,14 +43,12 @@ function LandingPage() {
 
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [thread, setThread] = useState<AppBskyFeedDefs.ThreadViewPost | null>(
-    null,
-  )
+  const [post, setPost] = useState<app.bsky.feed.defs.PostView | null>(null)
 
   useEffect(() => {
     void (async () => {
       setError(null)
-      setThread(null)
+      setPost(null)
       setLoading(true)
       try {
         let atUri = DEFAULT_URI
@@ -60,7 +59,7 @@ function LandingPage() {
           } else {
             try {
               const urlp = new URL(uri)
-              if (!urlp.hostname.endsWith('bsky.app')) {
+              if (!isSupportedAppHost(urlp.hostname)) {
                 throw new Error('Invalid hostname')
               }
               const split = urlp.pathname.slice(1).split('/')
@@ -74,33 +73,34 @@ function LandingPage() {
 
               let did = didOrHandle
               if (!didOrHandle.startsWith('did:')) {
-                const resolution = await agent.resolveHandle({
-                  handle: didOrHandle,
-                })
-                if (!resolution.data.did) {
+                const resolution = await client.call(
+                  com.atproto.identity.resolveHandle,
+                  {handle: didOrHandle as HandleString},
+                )
+                if (!resolution.did) {
                   throw new Error('No DID found')
                 }
-                did = resolution.data.did
+                did = resolution.did
               }
 
               atUri = `at://${did}/app.bsky.feed.post/${rkey}`
             } catch (err) {
               console.log(err)
-              throw new Error('Invalid Bluesky URL')
+              throw new Error('Invalid post URL', {cause: err})
             }
           }
         }
 
-        const {data} = await agent.getPostThread({
-          uri: atUri,
-          depth: 0,
-          parentHeight: 0,
+        const {posts} = await client.call(app.bsky.feed.getPosts, {
+          uris: [atUri as AtUriString],
         })
 
-        if (!AppBskyFeedDefs.isThreadViewPost(data.thread)) {
+        const post = posts[0]
+
+        if (!post) {
           throw new Error('Post not found')
         }
-        const pwiOptOut = !!data.thread.post.author.labels?.find(
+        const pwiOptOut = !!post.author.labels?.find(
           label => label.val === '!no-unauthenticated',
         )
         if (pwiOptOut) {
@@ -108,10 +108,10 @@ function LandingPage() {
             'The author of this post has requested their posts not be displayed on external sites.',
           )
         }
-        setThread(data.thread)
+        setPost(post)
       } catch (err) {
         console.error(err)
-        setError(err instanceof Error ? err.message : 'Invalid Bluesky URL')
+        setError(err instanceof Error ? err.message : 'Invalid post URL')
       } finally {
         setLoading(false)
       }
@@ -121,12 +121,14 @@ function LandingPage() {
   return (
     <main className="w-full min-h-dvh flex flex-col items-center gap-8 py-14 px-4 md:pt-32 dark:text-slate-200">
       <Link
-        href="https://bsky.social/about"
+        href={BRAND.appUrl}
         className="transition-transform hover:scale-110">
         <img src={logo} className="h-10" />
       </Link>
 
-      <h1 className="text-4xl font-bold text-center">Embed a Bluesky Post</h1>
+      <h1 className="text-4xl font-bold text-center">
+        Embed a {BRAND.name} Post
+      </h1>
 
       <div className="flex flex-col w-full max-w-[600px] gap-6">
         <input
@@ -158,7 +160,7 @@ function LandingPage() {
         </div>
       </div>
 
-      <img src={arrowBottom} className="w-6 dark:invert" />
+      <ArrowDown size={24} />
 
       {loading ? (
         <div className={`${colorMode} w-full max-w-[600px]`}>
@@ -166,11 +168,11 @@ function LandingPage() {
         </div>
       ) : (
         <div className="w-full max-w-[600px] gap-8 flex flex-col">
-          {!error && thread && uri && (
-            <Snippet thread={thread} colorMode={colorMode} />
+          {!error && post && uri && (
+            <Snippet post={post} colorMode={colorMode} />
           )}
           <div className={colorMode}>
-            {!error && thread && <Post thread={thread} key={thread.post.uri} />}
+            {!error && post && <Post post={post} key={post.uri} />}
           </div>
           {error && (
             <div className="w-full border border-red-500 bg-red-500/10 px-4 py-3 rounded-lg">
@@ -203,10 +205,10 @@ function Skeleton() {
 }
 
 function Snippet({
-  thread,
+  post,
   colorMode,
 }: {
-  thread: AppBskyFeedDefs.ThreadViewPost
+  post: app.bsky.feed.defs.PostView
   colorMode: ColorModeValues
 }) {
   const ref = useRef<HTMLInputElement>(null)
@@ -223,24 +225,19 @@ function Snippet({
   }, [copied])
 
   const snippet = useMemo(() => {
-    const record = thread.post.record
-
-    if (
-      !bsky.dangerousIsType<AppBskyFeedPost.Record>(
-        record,
-        AppBskyFeedPost.isRecord,
-      )
-    ) {
+    const validation = app.bsky.feed.post.$safeValidate(post.record, {
+      strict: false,
+    })
+    if (!validation.success) {
       return ''
     }
+    const record = validation.value
 
     const lang = record.langs && record.langs.length > 0 ? record.langs[0] : ''
-    const profileHref = toShareUrl(
-      ['/profile', thread.post.author.did].join('/'),
-    )
-    const urip = new AtUri(thread.post.uri)
+    const profileHref = toShareUrl(['/profile', post.author.did].join('/'))
+    const urip = new AtUri(post.uri)
     const href = toShareUrl(
-      ['/profile', thread.post.author.did, 'post', urip.rkey].join('/'),
+      ['/profile', post.author.did, 'post', urip.rkey].join('/'),
     )
 
     // x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x
@@ -248,9 +245,9 @@ function Snippet({
     // Also, keep this code synced with the app code in Embed.tsx.
     // x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x
     return `<blockquote class="bluesky-embed" data-bluesky-uri="${escapeHtml(
-      thread.post.uri,
+      post.uri,
     )}" data-bluesky-cid="${escapeHtml(
-      thread.post.cid,
+      post.cid,
     )}" data-bluesky-embed-color-mode="${escapeHtml(
       colorMode,
     )}"><p lang="${escapeHtml(lang)}">${escapeHtml(record.text)}${
@@ -258,13 +255,13 @@ function Snippet({
         ? `<br><br><a href="${escapeHtml(href)}">[image or embed]</a>`
         : ''
     }</p>&mdash; ${escapeHtml(
-      thread.post.author.displayName || thread.post.author.handle,
+      post.author.displayName || post.author.handle,
     )} (<a href="${escapeHtml(profileHref)}">@${escapeHtml(
-      thread.post.author.handle,
+      post.author.handle,
     )}</a>) <a href="${escapeHtml(href)}">${escapeHtml(
-      niceDate(thread.post.indexedAt),
+      niceDate(post.indexedAt),
     )}</a></blockquote><script async src="${EMBED_SCRIPT}" charset="utf-8"></script>`
-  }, [thread, colorMode])
+  }, [post, colorMode])
 
   return (
     <div className="flex gap-2 w-full">
@@ -294,7 +291,7 @@ function Snippet({
 }
 
 function toShareUrl(path: string) {
-  return `https://bsky.app${path}?ref_src=embed`
+  return `${BRAND.appUrl}${path}?ref_src=embed`
 }
 
 /**

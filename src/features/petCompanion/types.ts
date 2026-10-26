@@ -1,4 +1,4 @@
-import {type ImageSourcePropType} from 'react-native'
+import {type ImageRequireSource} from 'react-native'
 import {type MessageDescriptor} from '@lingui/core'
 
 // One animation: `frames` consecutive cells read left-to-right starting at
@@ -72,8 +72,8 @@ export interface Species {
   variants: readonly string[]
   variantLabels: Record<string, MessageDescriptor>
   defaultVariant: string
-  // One sheet per variant, all sharing this species' geometry and catalog.
-  sheets: Record<string, ImageSourcePropType>
+  /** Bundled sheet per variant, sharing this species' geometry and catalog. */
+  sheets: Record<string, ImageRequireSource>
   clips: Record<string, PetClip>
   // States that loop forever. Everything else is a one-shot that plays once,
   // holds its last frame, and reports completion via PetSprite.onAnimationEnd.

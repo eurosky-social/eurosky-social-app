@@ -4,11 +4,25 @@ import {
   type TextProps as RNTextProps,
   type TextStyle,
 } from 'react-native'
-import {UITextView} from 'react-native-uitextview'
+import {UITextView} from '@bsky.app/react-native-uitextview'
 import createEmojiRegex from 'emoji-regex'
 
-import {type Alf, applyFonts, atoms, flatten} from '#/alf'
-import {IS_IOS, IS_NATIVE} from '#/env'
+import {
+  type Alf,
+  applyFonts,
+  atoms,
+  flatten,
+  type MutableTextStyle,
+} from '#/alf'
+import {IS_IOS, IS_NATIVE, IS_WEB} from '#/env'
+
+// Optional, build-time web typography adjustment. Mu and native stay at 1.
+const BODY_TEXT_SCALE = IS_WEB
+  ? Math.min(
+      1.2,
+      Math.max(1, Number(process.env.EXPO_PUBLIC_THEME_BODY_SCALE) || 1),
+    )
+  : 1
 
 /**
  * Ensures that `lineHeight` defaults to a relative value of `1`, or applies
@@ -27,10 +41,16 @@ export function normalizeTextStyles(
     fontFamily: Alf['fonts']['family']
   } & Pick<Alf, 'flags'>,
 ) {
-  const s = flatten(styles) ?? {}
+  const s: MutableTextStyle = {...flatten(styles)}
 
-  // should always be defined on these components
-  s.fontSize = (s.fontSize || atoms.text_md.fontSize) * fontScale
+  // Keep large headings and tiny UI labels as designed; increase just the
+  // small/medium body range for brands whose typeface reads smaller than Inter.
+  const baseSize = s.fontSize || atoms.text_md.fontSize
+  const bodyScale =
+    baseSize >= atoms.text_sm.fontSize && baseSize <= atoms.text_md.fontSize
+      ? BODY_TEXT_SCALE
+      : 1
+  s.fontSize = baseSize * fontScale * bodyScale
 
   if (s?.lineHeight) {
     if (s.lineHeight !== 0 && s.lineHeight <= 2) {

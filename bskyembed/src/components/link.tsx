@@ -1,4 +1,6 @@
-import {h} from 'preact'
+import {h, HTMLAttributes} from 'preact'
+
+import {BRAND} from '../brand'
 
 export function Link({
   href,
@@ -9,7 +11,7 @@ export function Link({
   href: string
   className?: string
   disableTracking?: boolean
-} & h.JSX.HTMLAttributes<HTMLAnchorElement>) {
+} & HTMLAttributes<HTMLAnchorElement>) {
   const searchParam = new URLSearchParams(window.location.search)
   const ref_url = searchParam.get('ref_url')
 
@@ -21,7 +23,7 @@ export function Link({
 
   return (
     <a
-      href={`${href.startsWith('http') ? href : `https://bsky.app${href}`}${
+      href={`${href.startsWith('http') ? href : `${BRAND.appUrl}${href}`}${
         disableTracking ? '' : `?${newSearchParam.toString()}`
       }`}
       target="_blank"

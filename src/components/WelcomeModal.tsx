@@ -1,30 +1,25 @@
-import {useEffect, useState} from 'react'
+import {useEffect, useEffectEvent, useState} from 'react'
 import {Pressable, View} from 'react-native'
-import {msg} from '@lingui/core/macro'
-import {useLingui} from '@lingui/react'
-import {Trans} from '@lingui/react/macro'
-import {FocusGuards, FocusScope} from 'radix-ui/internal'
+import {Trans, useLingui} from '@lingui/react/macro'
+import * as FocusGuards from '@radix-ui/react-focus-guards'
+import * as FocusScope from '@radix-ui/react-focus-scope'
 
 import {useLoggedOutViewControls} from '#/state/shell/logged-out'
 import {LogoHero} from '#/view/icons/LogoHero'
 import {atoms as a, flatten, useBreakpoints, useTheme, web} from '#/alf'
-import {BetaTag} from '#/components/BetaTag'
 import {Button, ButtonText} from '#/components/Button'
+import {type WelcomeModalControl} from '#/components/hooks/useWelcomeModal.shared'
 import {TimesLarge_Stroke2_Corner0_Rounded as XIcon} from '#/components/icons/Times'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {BRAND} from '#/config/brand'
 
 interface WelcomeModalProps {
-  control: {
-    isOpen: boolean
-    open: () => void
-    close: () => void
-  }
+  control: WelcomeModalControl
 }
 
 export function WelcomeModal({control}: WelcomeModalProps) {
-  const {_} = useLingui()
+  const {t: l} = useLingui()
   const t = useTheme()
   const ax = useAnalytics()
   const {requestSwitchToAccount} = useLoggedOutViewControls()
@@ -42,11 +37,14 @@ export function WelcomeModal({control}: WelcomeModalProps) {
     }, 150)
   }
 
+  const onPresented = useEffectEvent(() => {
+    ax.metric('welcomeModal:presented', {})
+  })
+
   useEffect(() => {
     if (control.isOpen) {
-      ax.metric('welcomeModal:presented', {})
+      onPresented()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [control.isOpen])
 
   const onPressCreateAccount = () => {
@@ -97,14 +95,12 @@ export function WelcomeModal({control}: WelcomeModalProps) {
           ])}>
           <View style={[a.flex_1, a.justify_center]}>
             <View style={[a.gap_2xl, a.align_center, a.p_4xl]}>
-              <View
-                style={[a.align_center, a.justify_center, a.w_full, a.gap_sm]}>
+              <View style={[a.align_center, a.justify_center, a.w_full]}>
                 <LogoHero
                   width={140}
                   accessibilityLabel={BRAND.name}
                   accessibilityHint=""
                 />
-                <BetaTag />
               </View>
               <View style={[a.gap_sm, a.align_center, a.pt_lg, a.pb_3xl]}>
                 <Text
@@ -126,7 +122,7 @@ export function WelcomeModal({control}: WelcomeModalProps) {
                 <View>
                   <Button
                     onPress={onPressCreateAccount}
-                    label={_(msg`Create account`)}
+                    label={l`Create account`}
                     size="large"
                     color="primary"
                     style={{
@@ -139,7 +135,7 @@ export function WelcomeModal({control}: WelcomeModalProps) {
                   </Button>
                   <Button
                     onPress={onPressExplore}
-                    label={_(msg`Explore the app`)}
+                    label={l`Explore the app`}
                     size="large"
                     color="primary"
                     variant="ghost"
@@ -163,18 +159,18 @@ export function WelcomeModal({control}: WelcomeModalProps) {
                     ]}>
                     <Trans>Already have an account?</Trans>{' '}
                     <Pressable
+                      onPress={onPressSignIn}
                       onPointerEnter={() => setSignInLinkHovered(true)}
                       onPointerLeave={() => setSignInLinkHovered(false)}
                       accessibilityRole="button"
-                      accessibilityLabel={_(msg`Sign in`)}
+                      accessibilityLabel={l`Sign in`}
                       accessibilityHint="">
                       <Text
                         style={[
                           a.font_medium,
                           {color: linkColor, fontSize: undefined},
                           signInLinkHovered && a.underline,
-                        ]}
-                        onPress={onPressSignIn}>
+                        ]}>
                         <Trans>Sign in</Trans>
                       </Text>
                     </Pressable>
@@ -183,7 +179,7 @@ export function WelcomeModal({control}: WelcomeModalProps) {
               </View>
             </View>
             <Button
-              label={_(msg`Close welcome modal`)}
+              label={l`Close welcome modal`}
               style={[
                 a.absolute,
                 {

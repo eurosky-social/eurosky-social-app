@@ -24,6 +24,9 @@ import {
   type StateStore,
 } from '@atproto/oauth-client'
 
+import {logger} from '#/logger'
+import {describeOAuthError} from './oauth-logging'
+
 // -- Runtime -----------------------------------------------------------------
 
 const requestLock: RuntimeImplementation['requestLock'] =
@@ -153,6 +156,19 @@ async function pruneExpired(store: StoreName, ttlMs: number): Promise<void> {
   }
 }
 
+/** Report store read/write failures before rethrowing them unchanged. */
+function logStoreError(
+  op: 'get' | 'set',
+  store: StoreName,
+  error: unknown,
+): void {
+  logger.error('oauth: store operation failed', {
+    op,
+    store,
+    ...describeOAuthError(error),
+  })
+}
+
 /**
  * Generic IndexedDB-backed SimpleStore whose value carries a `dpopKey` Key
  * that must be encoded/decoded around the structured-clone boundary. All
@@ -174,28 +190,38 @@ function createKeyStore<V extends {dpopKey: Key}>(
     tx(store, 'readwrite', s => s.delete(key)).then(() => undefined)
   return {
     async get(key: string): Promise<V | undefined> {
-      const stored = await tx<Stored | undefined>(store, 'readonly', s =>
-        s.get(key),
-      )
-      if (!stored) return undefined
-      const {dpopKey, __storedAt, ...rest} = stored
-      if (
-        ttlMs &&
-        (typeof __storedAt !== 'number' || Date.now() - __storedAt > ttlMs)
-      ) {
-        await del(key)
-        return undefined
+      try {
+        const stored = await tx<Stored | undefined>(store, 'readonly', s =>
+          s.get(key),
+        )
+        if (!stored) return undefined
+        const {dpopKey, __storedAt, ...rest} = stored
+        if (
+          ttlMs &&
+          (typeof __storedAt !== 'number' || Date.now() - __storedAt > ttlMs)
+        ) {
+          await del(key)
+          return undefined
+        }
+        return {...rest, dpopKey: await decodeKey(dpopKey)} as unknown as V
+      } catch (err) {
+        logStoreError('get', store, err)
+        throw err
       }
-      return {...rest, dpopKey: await decodeKey(dpopKey)} as unknown as V
     },
     async set(key: string, value: V): Promise<void> {
-      const {dpopKey, ...rest} = value
-      const encoded: Stored = {
-        ...rest,
-        dpopKey: encodeKey(dpopKey),
-        ...(ttlMs ? {__storedAt: Date.now()} : {}),
+      try {
+        const {dpopKey, ...rest} = value
+        const encoded: Stored = {
+          ...rest,
+          dpopKey: encodeKey(dpopKey),
+          ...(ttlMs ? {__storedAt: Date.now()} : {}),
+        }
+        await tx(store, 'readwrite', s => s.put(encoded, key))
+      } catch (err) {
+        logStoreError('set', store, err)
+        throw err
       }
-      await tx(store, 'readwrite', s => s.put(encoded, key))
     },
     del,
     async clear(): Promise<void> {

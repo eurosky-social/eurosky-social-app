@@ -1,0 +1,32 @@
+{
+  "lexicon": 1,
+  "id": "social.mu.deco.getStatus",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Returns the calling account's Eurosky+ decoration subscription status and current plan price.",
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["active", "cancelAtPeriodEnd", "plan"],
+          "properties": {
+            "active": { "type": "boolean" },
+            "paidUntil": { "type": "string", "format": "datetime" },
+            "cancelAtPeriodEnd": { "type": "boolean" },
+            "plan": { "ref": "#plan" }
+          }
+        }
+      }
+    },
+    "plan": {
+      "type": "object",
+      "required": ["amount", "currency", "billingMonths"],
+      "properties": {
+        "amount": { "type": "string" },
+        "currency": { "type": "string" },
+        "billingMonths": { "type": "integer", "minimum": 1, "maximum": 12 }
+      }
+    }
+  }
+}

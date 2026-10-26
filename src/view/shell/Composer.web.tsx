@@ -1,5 +1,7 @@
 import {StyleSheet, View} from 'react-native'
-import {DismissableLayer, FocusGuards, FocusScope} from 'radix-ui/internal'
+import * as DismissableLayer from '@radix-ui/react-dismissable-layer'
+import * as FocusGuards from '@radix-ui/react-focus-guards'
+import * as FocusScope from '@radix-ui/react-focus-scope'
 import {RemoveScrollBar} from 'react-remove-scroll-bar'
 
 import {useA11y} from '#/state/a11y'
@@ -62,18 +64,7 @@ function Inner({state}: {state: ComposerOpts}) {
               {animationFillMode: 'backwards'},
             ],
           ]}>
-          <ComposePost
-            cancelRef={ref}
-            replyTo={state.replyTo}
-            quote={state.quote}
-            onPost={state.onPost}
-            onPostSuccess={state.onPostSuccess}
-            mention={state.mention}
-            text={state.text}
-            imageUris={state.imageUris}
-            openGallery={state.openGallery}
-            editPost={state.editPost}
-          />
+          <ComposePost {...state} cancelRef={ref} />
         </View>
       </DismissableLayer.DismissableLayer>
     </FocusScope.FocusScope>
@@ -89,14 +80,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 0,
     borderWidth: 1,
-    // @ts-expect-error web only
     maxHeight: 'calc(100% - (40px * 2))',
     overflow: 'hidden',
   },
   containerMobile: {
     borderRadius: 0,
     marginBottom: BOTTOM_BAR_HEIGHT,
-    // @ts-expect-error web only
     maxHeight: `calc(100% - ${BOTTOM_BAR_HEIGHT}px)`,
   },
 })

@@ -1,4 +1,5 @@
-import {type AtpAgent, AtUri} from '@atproto/api'
+import {type Client} from '@atproto/lex'
+import {AtUri} from '@atproto/syntax'
 import {type QueryClient, useQuery} from '@tanstack/react-query'
 
 import {TRUSTED_VERIFIER_LIST_URIS} from '#/lib/constants'
@@ -6,7 +7,7 @@ import {logger} from '#/logger'
 import {STALE} from '#/state/queries'
 import {getAllListMembers} from '#/state/queries/list-members'
 import {createQueryKey} from '#/state/queries/util'
-import {useAgent} from '#/state/session'
+import {useAppviewClient} from '#/state/session'
 
 /**
  * The trust root for our on-protocol verification: the set of DIDs allowed to
@@ -33,7 +34,7 @@ function listCreatorDid(listUri: string): string {
 }
 
 async function fetchTrustedVerifierDids(
-  agent: AtpAgent,
+  client: Client,
   listUris: readonly string[],
 ): Promise<string[]> {
   const dids = new Set<string>()
@@ -46,7 +47,7 @@ async function fetchTrustedVerifierDids(
   const results = await Promise.allSettled(
     // getAllListMembers caps at 300 members (6 pages x 50). Plenty for a
     // verifier list; members beyond 300 would silently stop being trusted.
-    listUris.map(listUri => getAllListMembers(agent, listUri)),
+    listUris.map(listUri => getAllListMembers(client, listUri)),
   )
   let anyLoaded = false
   results.forEach((result, i) => {
@@ -83,13 +84,13 @@ async function fetchTrustedVerifierDids(
  */
 export async function ensureTrustedVerifierDids(
   qc: QueryClient,
-  agent: AtpAgent,
+  client: Client,
 ): Promise<Set<string>> {
   try {
     const dids = await qc.ensureQueryData({
       queryKey: createTrustedVerifiersQueryKey(TRUSTED_VERIFIER_LIST_URIS),
       queryFn: () =>
-        fetchTrustedVerifierDids(agent, TRUSTED_VERIFIER_LIST_URIS),
+        fetchTrustedVerifierDids(client, TRUSTED_VERIFIER_LIST_URIS),
       staleTime: STALE.HOURS.ONE,
       // Queries default to retry:false app-wide (fail fast for user-facing
       // fetches). This one is background and has no user-facing retry control,
@@ -114,10 +115,10 @@ export async function ensureTrustedVerifierDids(
  * via `ensureTrustedVerifierDids` inside `useMuVerificationQuery`.
  */
 export function useTrustedVerifiersQuery() {
-  const agent = useAgent()
+  const client = useAppviewClient()
   return useQuery({
     queryKey: createTrustedVerifiersQueryKey(TRUSTED_VERIFIER_LIST_URIS),
-    queryFn: () => fetchTrustedVerifierDids(agent, TRUSTED_VERIFIER_LIST_URIS),
+    queryFn: () => fetchTrustedVerifierDids(client, TRUSTED_VERIFIER_LIST_URIS),
     staleTime: STALE.HOURS.ONE,
     retry: 2,
   })

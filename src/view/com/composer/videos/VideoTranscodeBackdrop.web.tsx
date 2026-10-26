@@ -1,6 +1,8 @@
-import {atoms as a, flatten} from '#/alf'
+import {type QueryClient} from '@tanstack/react-query'
 
-export function clearThumbnailCache() {
+import {atoms as a, flattenToCSS} from '#/alf'
+
+export function clearThumbnailCache(_queryClient: QueryClient) {
   // no-op on web
 }
 
@@ -8,7 +10,7 @@ export function VideoTranscodeBackdrop({uri}: {uri: string}) {
   return (
     <video
       src={uri}
-      style={flatten([
+      style={flattenToCSS([
         a.absolute,
         a.inset_0,
         a.h_full,

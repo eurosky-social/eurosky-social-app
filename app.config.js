@@ -1,5 +1,25 @@
 // @ts-check
 const pkg = require('./package.json')
+
+/**
+ * FCM config for Android push. Gitignored (see .gitignore) and provisioned
+ * out-of-band - present for credentialed local/EAS builds, absent otherwise.
+ * When absent we omit the key entirely so prebuild doesn't fail trying to copy
+ * a missing file; Android remote push just isn't configured on that build. We
+ * probe with `require.resolve` (module-relative, like the requires above) to
+ * avoid importing the `fs`/`path` builtins, which the lint config forbids here.
+ */
+const GOOGLE_SERVICES_FILE = (() => {
+  try {
+    require.resolve('./google-services.json')
+    return './google-services.json'
+  } catch {
+    console.warn(
+      '[app.config] google-services.json not found - building without Android FCM config.',
+    )
+    return undefined
+  }
+})()
 /**
  * Single brand config (src/config/brand.json; see brand.schema.json). Shared
  * with the in-app adapters, the web codegen and the Workers. Native chrome
@@ -10,6 +30,7 @@ const pkg = require('./package.json')
 const brand = require('./src/config/brand.json')
 const brandMeta = brand
 const BRAND_ACCENT = brand.colors.accents[brand.colors.defaultAccent]
+const APPLE_TEAM_ID = process.env.EXPO_APPLE_TEAM_ID ?? '2472Y2UN4X'
 
 /**
  * @param {import('@expo/config-types').ExpoConfig} _config
@@ -30,18 +51,8 @@ module.exports = function (_config) {
 
   const IS_TESTFLIGHT = process.env.EXPO_PUBLIC_ENV === 'testflight'
   const IS_PRODUCTION = process.env.EXPO_PUBLIC_ENV === 'production'
+  const IS_E2E = process.env.EXPO_PUBLIC_ENV === 'e2e'
   const IS_DEV = !IS_TESTFLIGHT && !IS_PRODUCTION
-
-  const ASSOCIATED_DOMAINS = [
-    'applinks:bsky.app',
-    'applinks:staging.bsky.app',
-    'appclips:bsky.app',
-    'appclips:go.bsky.app', // Allows App Clip to work when scanning QR codes
-    // When testing local services, enter an ngrok (et al) domain here. It must use a standard HTTP/HTTPS port.
-    ...(IS_DEV || IS_TESTFLIGHT ? [] : []),
-  ]
-
-  const UPDATES_ENABLED = IS_TESTFLIGHT || IS_PRODUCTION
 
   const USE_SENTRY = Boolean(process.env.SENTRY_AUTH_TOKEN)
 
@@ -55,10 +66,12 @@ module.exports = function (_config) {
   return {
     expo: {
       version: VERSION,
-      name: 'Bluesky',
-      slug: 'bluesky',
+      name: 'mu',
+      slug: 'mu-social',
       scheme: 'bluesky',
-      owner: 'blueskysocial',
+      // Expo org slug (the developer org, not the app's store brand). Must match
+      // the account/org that owns the EAS project (created via `eas init`).
+      owner: 'eurosky',
       runtimeVersion: {
         policy: 'appVersion',
       },
@@ -69,16 +82,18 @@ module.exports = function (_config) {
       icon: './assets/app-icons/ios_icon_default_next.png',
       userInterfaceStyle: 'automatic',
       primaryColor: BRAND_ACCENT.primary_500,
-      newArchEnabled: false,
       ios: {
+        // iPhone-only for now; iPads run the iPhone layout in compatibility mode.
         supportsTablet: false,
-        bundleIdentifier: 'xyz.blueskyweb.app',
-        appleTeamId: process.env.EXPO_APPLE_TEAM_ID,
+        bundleIdentifier: 'social.mu.app',
+        buildNumber: process.env.BSKY_IOS_BUILD_NUMBER ?? '1',
+        appleTeamId: APPLE_TEAM_ID,
         config: {
           usesNonExemptEncryption: false,
         },
         icon: IOS_ICON_FILE,
         infoPlist: {
+          UISupportedInterfaceOrientations: ['UIInterfaceOrientationPortrait'],
           CADisableMinimumFrameDurationOnPhone: true,
           UIBackgroundModes: ['remote-notification'],
           NSUserActivityTypes: ['INSendMessageIntent'],
@@ -90,7 +105,7 @@ module.exports = function (_config) {
             'Used to save images to your library.',
           NSPhotoLibraryUsageDescription:
             'Used for profile pictures, posts, and other kinds of content',
-          CFBundleSpokenName: 'Blue Sky',
+          CFBundleSpokenName: 'mu',
           CFBundleLocalizations: [
             'en',
             'an',
@@ -135,11 +150,10 @@ module.exports = function (_config) {
             'zh-Hant',
           ],
         },
-        associatedDomains: ASSOCIATED_DOMAINS,
         entitlements: {
           'com.apple.developer.kernel.increased-memory-limit': true,
           'com.apple.developer.kernel.extended-virtual-addressing': true,
-          'com.apple.security.application-groups': 'group.app.bsky',
+          'com.apple.security.application-groups': 'group.social.mu.app',
           'com.apple.developer.usernotifications.communication': true,
           // 'com.apple.developer.device-information.user-assigned-device-name': true,
           'com.apple.developer.declared-age-range': true,
@@ -196,13 +210,6 @@ module.exports = function (_config) {
           ],
         },
       },
-      androidStatusBar: {
-        barStyle: 'light-content',
-      },
-      // Dark nav bar in light mode is better than light nav bar in dark mode
-      androidNavigationBar: {
-        barStyle: 'light-content',
-      },
       android: {
         icon: './assets/app-icons/android_icon_default_next.png',
         adaptiveIcon: {
@@ -210,39 +217,25 @@ module.exports = function (_config) {
           monochromeImage: './assets/icon-android-monochrome.png',
           backgroundColor: BRAND_ACCENT.primary_500,
         },
-        googleServicesFile: './google-services.json',
-        package: 'xyz.blueskyweb.app',
-        intentFilters: [
-          {
-            action: 'VIEW',
-            autoVerify: true,
-            data: [
-              {
-                scheme: 'https',
-                host: 'bsky.app',
-              },
-              ...(IS_DEV
-                ? [
-                    {
-                      scheme: 'http',
-                      host: 'localhost:19006',
-                    },
-                  ]
-                : []),
-            ],
-            category: ['BROWSABLE', 'DEFAULT'],
-          },
+        googleServicesFile: GOOGLE_SERVICES_FILE,
+        package: 'social.mu.app',
+        /*
+         * Uploads use the system picker; saves only write app-created media.
+         * Block permissions also contributed by native libraries/config plugins.
+         * Keep WRITE_EXTERNAL_STORAGE for saving on Android 10 and older.
+         */
+        blockedPermissions: [
+          'android.permission.READ_MEDIA_IMAGES',
+          'android.permission.READ_MEDIA_VIDEO',
+          'android.permission.READ_MEDIA_AUDIO',
+          'android.permission.READ_MEDIA_VISUAL_USER_SELECTED',
+          'android.permission.READ_EXTERNAL_STORAGE',
+          'android.permission.ACCESS_MEDIA_LOCATION',
         ],
       },
       web: {
-        // Eurosky fork: web-only display name -> drives the static
-        // %WEB_TITLE% pre-boot tab title (@expo/webpack-config uses
-        // web.name ?? name). Native app name stays a later pass.
         name: brandMeta.name,
-        // mu favicon: the brand pink app-icon tile (rounded square, "mu"
-        // wordmark) from the brand kit. The pink fill reads on both light and
-        // dark browser themes. Standard Expo mechanism, same as upstream, so
-        // no custom <link> wiring and minimal merge surface.
+        bundler: 'metro',
         favicon: './assets/favicon.png',
         // Brand default-accent primary_500 (from src/config/brand.json).
         // Drives the PWA manifest theme_color and the <meta name="theme-color">,
@@ -251,37 +244,89 @@ module.exports = function (_config) {
         // (expo-pwa: theme_color = web.themeColor ?? primaryColor).
         themeColor: BRAND_ACCENT.primary_500,
       },
+      /*
+       * OTA delivery is intentionally disabled until Mu owns the update
+       * service and signing key. Keep expo-updates installed so this can be
+       * restored without changing the runtime integration.
+       */
       updates: {
-        url: 'https://updates.bsky.app/manifest',
-        enabled: UPDATES_ENABLED,
-        fallbackToCacheTimeout: 30000,
-        codeSigningCertificate: UPDATES_ENABLED
-          ? './code-signing/certificate.pem'
-          : undefined,
-        codeSigningMetadata: UPDATES_ENABLED
-          ? {
-              keyid: 'main',
-              alg: 'rsa-v1_5-sha256',
-            }
-          : undefined,
-        checkAutomatically: 'NEVER',
+        enabled: false,
       },
       plugins: [
+        [
+          'expo-dev-client',
+          {
+            toolsButton: false,
+            ...(IS_E2E
+              ? {
+                  launchMode: 'most-recent',
+                  skipOnboarding: true,
+                  showMenuAtLaunch: false,
+                  ios: {
+                    defaultLaunchURL: 'http://localhost:8081',
+                  },
+                  android: {
+                    defaultLaunchURL: 'http://10.0.2.2:8081',
+                  },
+                }
+              : {}),
+          },
+        ],
+        'expo-asset',
+        'expo-sharing',
         'expo-video',
-        'expo-localization',
+        [
+          'expo-localization',
+          {
+            /*
+             * React Native 0.88 fixed Android RTL detection, which until then
+             * always reported LTR. Opt out so Android keeps rendering LTR like
+             * iOS, until RTL layouts get a proper QA pass.
+             */
+            supportsRTL: false,
+          },
+        ],
         'expo-web-browser',
+        [
+          'react-native-nano-icons',
+          {
+            /*
+             * One font per codegen directory under `assets/icons/`, see
+             * `scripts/icons/README.md`.
+             */
+            iconSets: ['ui', 'brands', 'community'].map(lane => ({
+              inputDir: `./assets/icons/${lane}`,
+              outputDir: './assets/nano-icons/nanoicons',
+              fontFamily: `icons-${lane}`,
+            })),
+          },
+        ],
         [
           'react-native-edge-to-edge',
           {android: {enforceNavigationBarContrast: false}},
+        ],
+        /*
+         * Expo runs Gradle mods in reverse registration order. Keep Bitdrift
+         * before Sentry so its plugins block is prepended after Sentry's apply
+         * statement and remains at the top, as required by Gradle.
+         */
+        [
+          '@bitdrift/react-native',
+          {
+            networkInstrumentation: true,
+          },
         ],
         ...(USE_SENTRY
           ? [
               /** @type {[string, any]} */ ([
                 '@sentry/react-native/expo',
                 {
-                  organization: 'blueskyweb',
+                  organization: 'eurosky',
                   project: 'app',
                   url: 'https://sentry.io',
+                  experimental_android: {
+                    enableAndroidGradlePlugin: true,
+                  },
                 },
               ]),
             ]
@@ -290,7 +335,7 @@ module.exports = function (_config) {
           'expo-build-properties',
           {
             ios: {
-              deploymentTarget: '15.1',
+              deploymentTarget: '16.4',
               buildReactNativeFromSource: true,
               ccacheEnabled: IS_DEV,
               cxxLanguageStandard: 'c++23',
@@ -303,10 +348,11 @@ module.exports = function (_config) {
               ],
             },
             android: {
-              compileSdkVersion: 36,
-              targetSdkVersion: 35,
-              buildToolsVersion: '35.0.0',
-              buildReactNativeFromSource: IS_PRODUCTION,
+              compileSdkVersion: 37,
+              targetSdkVersion: 36,
+              buildToolsVersion: '37.0.0',
+              buildReactNativeFromSource: true,
+              enableMinifyInReleaseBuilds: true,
             },
           },
         ],
@@ -318,38 +364,46 @@ module.exports = function (_config) {
             sounds: PLATFORM === 'ios' ? ['assets/dm.aiff'] : ['assets/dm.mp3'],
           },
         ],
-        'react-native-compressor',
-        [
-          '@bitdrift/react-native',
-          {
-            networkInstrumentation: true,
-          },
-        ],
-        './plugins/starterPackAppClipExtension/withStarterPackAppClip.js',
         './plugins/withGradleJVMHeapSizeIncrease.js',
         './plugins/withAndroidManifestLargeHeapPlugin.js',
         './plugins/withAndroidManifestFCMIconPlugin.js',
         './plugins/withAndroidManifestIntentQueriesPlugin.js',
+        './plugins/withAndroidManifestOptionalCameraPlugin.js',
         './plugins/withAndroidStylesAccentColorPlugin.js',
         './plugins/withAndroidNoJitpackPlugin.js',
+        './plugins/withAndroidPreparedTextLayoutPlugin.js',
+        './plugins/withAndroidComposeVersion.js',
         './plugins/shareExtension/withShareExtensions.js',
         './plugins/notificationsExtension/withNotificationsExtension.js',
         [
           'expo-font',
           {
-            fonts: [
-              './assets/fonts/inter/InterVariable.woff2',
-              './assets/fonts/inter/InterVariable-Italic.woff2',
-              // Android only
-              './assets/fonts/inter/Inter-Regular.otf',
-              './assets/fonts/inter/Inter-Italic.otf',
-              './assets/fonts/inter/Inter-Medium.otf',
-              './assets/fonts/inter/Inter-MediumItalic.otf',
-              './assets/fonts/inter/Inter-SemiBold.otf',
-              './assets/fonts/inter/Inter-SemiBoldItalic.otf',
-              './assets/fonts/inter/Inter-Bold.otf',
-              './assets/fonts/inter/Inter-BoldItalic.otf',
-            ],
+            ios: {
+              /*
+               * Uncompressed TTF rather than WOFF2: iOS decompresses WOFF2
+               * fonts on every launch, which took ~200 ms of the startup
+               * critical path. These are the same Inter 4.001 fonts as the
+               * WOFF2 files used on web.
+               */
+              fonts: [
+                './assets/fonts/inter/InterVariable.ttf',
+                './assets/fonts/inter/InterVariable-Italic.ttf',
+              ],
+            },
+            android: {
+              fonts: [
+                './assets/fonts/inter/InterVariable.woff2',
+                './assets/fonts/inter/InterVariable-Italic.woff2',
+                './assets/fonts/inter/Inter-Regular.otf',
+                './assets/fonts/inter/Inter-Italic.otf',
+                './assets/fonts/inter/Inter-Medium.otf',
+                './assets/fonts/inter/Inter-MediumItalic.otf',
+                './assets/fonts/inter/Inter-SemiBold.otf',
+                './assets/fonts/inter/Inter-SemiBoldItalic.otf',
+                './assets/fonts/inter/Inter-Bold.otf',
+                './assets/fonts/inter/Inter-BoldItalic.otf',
+              ],
+            },
           },
         ],
         [
@@ -395,64 +449,15 @@ module.exports = function (_config) {
               android: './assets/app-icons/android_icon_legacy_dark.png',
               prerendered: true,
             },
-
-            /**
-             * Bluesky+ core set
-             */
-            core_aurora: {
-              ios: './assets/app-icons/ios_icon_core_aurora.png',
-              android: './assets/app-icons/android_icon_core_aurora.png',
-              prerendered: true,
-            },
-            core_bonfire: {
-              ios: './assets/app-icons/ios_icon_core_bonfire.png',
-              android: './assets/app-icons/android_icon_core_bonfire.png',
-              prerendered: true,
-            },
-            core_sunrise: {
-              ios: './assets/app-icons/ios_icon_core_sunrise.png',
-              android: './assets/app-icons/android_icon_core_sunrise.png',
-              prerendered: true,
-            },
-            core_sunset: {
-              ios: './assets/app-icons/ios_icon_core_sunset.png',
-              android: './assets/app-icons/android_icon_core_sunset.png',
-              prerendered: true,
-            },
-            core_midnight: {
-              ios: './assets/app-icons/ios_icon_core_midnight.png',
-              android: './assets/app-icons/android_icon_core_midnight.png',
-              prerendered: true,
-            },
-            core_flat_blue: {
-              ios: './assets/app-icons/ios_icon_core_flat_blue.png',
-              android: './assets/app-icons/android_icon_core_flat_blue.png',
-              prerendered: true,
-            },
-            core_flat_white: {
-              ios: './assets/app-icons/ios_icon_core_flat_white.png',
-              android: './assets/app-icons/android_icon_core_flat_white.png',
-              prerendered: true,
-            },
-            core_flat_black: {
-              ios: './assets/app-icons/ios_icon_core_flat_black.png',
-              android: './assets/app-icons/android_icon_core_flat_black.png',
-              prerendered: true,
-            },
-            core_classic: {
-              ios: './assets/app-icons/ios_icon_core_classic.png',
-              android: './assets/app-icons/android_icon_core_classic.png',
-              prerendered: true,
-            },
           },
         ],
-        ['expo-screen-orientation', {initialOrientation: 'PORTRAIT_UP'}],
+        ['expo-screen-orientation'],
         ['expo-location'],
         [
           'expo-contacts',
           {
             contactsPermission:
-              'I agree to allow Bluesky to use my contacts for friend discovery until I opt out.',
+              'Allow mu to access your contacts for friend discovery. You can opt out at any time.',
           },
         ],
       ],
@@ -464,32 +469,35 @@ module.exports = function (_config) {
                 appExtensions: [
                   {
                     targetName: 'Share-with-Bluesky',
-                    bundleIdentifier: 'xyz.blueskyweb.app.Share-with-Bluesky',
+                    bundleIdentifier: 'social.mu.app.Share-with-Bluesky',
                     entitlements: {
                       'com.apple.security.application-groups': [
-                        'group.app.bsky',
+                        'group.social.mu.app',
                       ],
                     },
                   },
                   {
                     targetName: 'BlueskyNSE',
-                    bundleIdentifier: 'xyz.blueskyweb.app.BlueskyNSE',
+                    bundleIdentifier: 'social.mu.app.BlueskyNSE',
                     entitlements: {
                       'com.apple.security.application-groups': [
-                        'group.app.bsky',
+                        'group.social.mu.app',
                       ],
                     },
-                  },
-                  {
-                    targetName: 'BlueskyClip',
-                    bundleIdentifier: 'xyz.blueskyweb.app.AppClip',
                   },
                 ],
               },
             },
           },
-          projectId: '55bd077a-d905-4184-9c7f-94789ba0f302',
+          // PLACEHOLDER: replaced by `eas init` (or paste the id from the
+          // Eurosky EAS project). Builds will fail until this is a real id.
+          projectId: '52e14cdd-ab10-4b16-a0f4-fc918a9fa323',
         },
+      },
+      experiments: {
+        // Mu serves Metro's export at the origin root, not through bskyweb.
+        baseUrl: '',
+        buildCacheProvider: 'eas',
       },
     },
   }

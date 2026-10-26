@@ -1,0 +1,181 @@
+# Asset licensing
+
+The [MIT license](./LICENSE) in this repository covers our source code. It does not cover
+every file in the tree.
+
+The tree also includes third-party assets, assets licensed to Bluesky Social PBC, and Mu
+product marks. Rights to those files do not flow from the MIT software license. This document
+identifies them and records which restricted upstream assets this fork removed or replaced.
+
+The upstream project added explicit asset licensing notices in August 2026. This fork carries
+those notices forward where they still apply. If you have already shipped one of the assets
+listed below, work through the [If you are forking](#if-you-are-forking) checklist.
+
+Assets are scoped by directory wherever possible, so that adding a file to a carved-out
+directory does not require an edit here. Individual paths are listed only where an asset does
+not sit in a dedicated directory.
+
+**The rule:** if a file is listed in this document, the MIT license does not grant you rights
+to it. Everything in [Section 6](#6-third-party-assets-you-may-redistribute) is redistributable
+on its own terms, which travel with the files.
+
+---
+
+## 1. Commissioned Bluesky artwork — removed
+
+The commissioned landing-screen illustrations from the upstream Bluesky repository have been
+removed from this fork. They were licensed for Bluesky's products only and must not be restored
+during an upstream sync.
+
+## 2. Licensed icon system — removed
+
+The Central icon system glyphs inherited from the upstream Bluesky repository have been removed
+from `assets/icons/`, `bskyembed/assets/`, and the app's icon components. Do not restore those
+files during an upstream sync unless you hold an appropriate license from Iconists.
+Upstream's native icon fonts must also be rebuilt from the replacement SVGs, never copied as-is.
+
+The replacement UI icon system is generated from MIT-licensed Phosphor Icons. Its source,
+generation commands, and notice are described in [Section 6](#6-third-party-assets-you-may-redistribute)
+and [`assets/icons/README.md`](./assets/icons/README.md).
+
+## 3. Bluesky trademarks and brand assets — removed
+
+The inherited Bluesky name, butterfly marks, logotypes, app icons, Newskie glyph, verification
+glyphs, and starter-pack glyphs have been removed or replaced with Mu and openly licensed
+assets. Do not restore them during an upstream sync.
+
+You may still refer to Bluesky by name to describe interoperability or origin — for example,
+"a client for Bluesky," or "based on the Bluesky app." Do not use Bluesky's marks as the
+identity of this product or in a way that suggests Bluesky publishes, endorses, or supports it.
+
+## 4. Community and contest artwork — removed
+
+The community and contest logo variants inherited from the upstream Bluesky repository have
+been removed from this fork. Do not restore them without permission from their artists.
+
+## 5. Third-party trademarks
+
+These marks belong to other companies. We include them to identify their services in our UI —
+sign-in buttons, store badges, and links to third-party applications. We are neither granting
+nor withholding permission, because it is not ours to give. Your use of them rests on your own
+nominative-use basis or on permission from the mark owner.
+
+- `assets/icons/brands/AppleLogo.svg` — Apple Inc.
+- `assets/icons/brands/AndroidLogo.svg` — Google LLC
+- `assets/icons/community/` — third-party services and support providers; rights holders are
+  listed in [`assets/icons/community/README.md`](./assets/icons/community/README.md).
+- `assets/nano-icons/` — generated fonts inherit the rights and restrictions of their source
+  artwork, including the Apple, Android, and community service marks above.
+
+Apple's and Google's marks in particular carry their own brand guidelines governing size,
+spacing, and permitted contexts. If you ship a sign-in button or a store badge, follow theirs,
+not ours.
+
+## 6. Third-party assets you may redistribute
+
+These are licensed on terms that permit redistribution. Nothing in this document restricts them.
+Keep the applicable notices with redistributed copies.
+
+| Asset | Path | Rights holder | License | Notice |
+|---|---|---|---|---|
+| Inter typeface | `assets/fonts/inter/`, `bskyogcard/src/assets/fonts/Inter-*.ttf` | The Inter Project Authors | SIL Open Font License 1.1 | [`OFL.txt`](./assets/fonts/inter/OFL.txt) |
+| Noto Sans families (OG card service) | Downloaded by `bskyogcard/scripts/install-fonts.ts` | Adobe, Google LLC, and The Noto Project Authors | SIL Open Font License 1.1 | [`README.md`](./bskyogcard/src/assets/fonts/README.md) |
+| country-flag-icons | `assets/icons/flags/` | @catamphetamine | MIT | [`LICENSE`](./assets/icons/flags/LICENSE) |
+| Phosphor UI icons | `assets/icons/ui/`, Phosphor replacements in `assets/icons/brands/`, and their generated components/fonts<br>`bskyembed/src/icons/Phosphor.tsx` | Phosphor Icons | MIT | [`NOTICE.md`](./NOTICE.md) |
+| Material Icons | `bskyweb/static/media/MaterialIcons.*.ttf` | Google, Inc. | Apache License 2.0 | [`NOTICE.md`](./NOTICE.md) |
+
+Build output under `bskyweb/static/media/` also contains compiled Inter files. They are the same
+OFL-licensed typeface, emitted by the web build. The bundled Inter license does not designate a
+Reserved Font Name.
+
+The OG card build downloads Noto Sans fonts into `bskyogcard/src/assets/fonts/` and copies them
+into its build output. Their copyright notices and OFL text are in
+[`bskyogcard/src/assets/fonts/OFL-NOTO.txt`](./bskyogcard/src/assets/fonts/OFL-NOTO.txt). The CJK
+fonts reserve the name "Source."
+
+See [`NOTICE.md`](./NOTICE.md) for the consolidated third-party notices.
+
+## 7. Product imagery — provenance being documented
+
+**`assets/images/`**
+
+Product illustration and announcement imagery — onboarding art, chat backgrounds, feature
+announcement graphics, and similar.
+
+**Rights holder: mixed, and not yet fully documented.** Some of this is Bluesky's own work. Some
+was commissioned from outside illustrators on terms that do not allow sublicensing.
+
+Until that provenance is complete, **treat the whole directory as outside the MIT license and not
+licensed for your use.** If you are forking, replace these assets or ship without them. See
+[`assets/images/README.md`](./assets/images/README.md).
+
+## 8. Licensed pet artwork — not ours to pass on
+
+**`assets/pets/`**
+
+The cat, dog, and fox sprite sheets are paid artwork from
+[ToffeeCraft](https://toffeecraft.itch.io/). We have a license to use them in this project, but
+that license does not transfer through this repository and does not extend to forks or other
+downstream users. The repository's MIT license does not cover this artwork, and its presence here
+does not grant permission to reuse or redistribute it independently.
+
+Forks must obtain their own applicable license from ToffeeCraft or replace/remove the pet artwork.
+See [`assets/pets/README.md`](./assets/pets/README.md).
+
+The seasonal ghost in `assets/pets/halloween/` is also paid, license-restricted
+artwork, supplied from `HorrorUltimateEdition/GhostPaid/`. It is not MIT-licensed
+or licensed to downstream users through this repository. See its
+[`provenance and packing notes`](./assets/pets/halloween/README.md).
+
+## 9. Mu brand assets
+
+Mu's name, logo, app icons, favicons, splash images, social cards, and other product-identity
+assets are not Bluesky assets. Forks should still replace them with their own branding rather
+than ship as Mu.
+
+The white-label sources are `src/config/brand.json`, `assets/brand/`, and the primary app-icon
+master. Run `pnpm brand` after changing them; it regenerates the runtime logo data, web and embed
+identity, QR/default-avatar rasters, App Clip icon, social cards, and favicon set. See
+[`docs/rebranding.md`](./docs/rebranding.md).
+
+---
+
+## If you are forking
+
+You have our blessing to fork this application. To do it cleanly:
+
+1. **Do not restore the upstream landing illustrations.** They were commissioned for Bluesky's
+   products only and have been removed. See
+   [Section 1](#1-commissioned-bluesky-artwork--removed).
+2. **Keep the Phosphor notice if you redistribute the generated UI icons.** See
+   [Section 6](#6-third-party-assets-you-may-redistribute).
+3. **Replace `assets/images/`.** Treat as not licensed to you until its provenance is fully
+   documented. See [Section 7](#7-product-imagery--provenance-being-documented).
+4. **License or replace the pet artwork.** Our ToffeeCraft license does not transfer to forks.
+   See [Section 8](#8-licensed-pet-artwork--not-ours-to-pass-on).
+5. **Do not restore the removed Bluesky marks** described in
+   [Section 3](#3-bluesky-trademarks-and-brand-assets--removed).
+6. **Do not restore the removed community artwork** described in
+   [Section 4](#4-community-and-contest-artwork--removed).
+7. **Check your own position on the third-party marks** in
+   [Section 5](#5-third-party-trademarks).
+8. **Keep the license notices** for the assets in
+   [Section 6](#6-third-party-assets-you-may-redistribute).
+9. **Change your branding, support links, and analytics** as described in the
+   [Forking guidelines](./README.md#forking-guidelines).
+
+This list is about licensing. The [Forking guidelines](./README.md#forking-guidelines) in the
+README cover the rest of what makes a fork clearly distinguishable from Bluesky, which matters
+both for your users and for app store review.
+
+## Questions
+
+If something in this repository looks like it should be on this list and is not, or if you are
+unsure whether an asset is covered, open an issue or email us and we will sort it out. We would
+much rather answer the question than have someone guess.
+
+---
+
+*Last reviewed: August 2026. This document describes the licensing position of assets in this
+repository. It is not a grant of rights, and it does not modify the [MIT license](./LICENSE) as
+it applies to source code.*

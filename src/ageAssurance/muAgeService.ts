@@ -1,7 +1,9 @@
-import {type AtpAgent} from '@atproto/api'
+import {type Client} from '@atproto/lex'
+import {type NsidString} from '@atproto/syntax'
 
 import {logger} from '#/ageAssurance/logger'
 import {BRAND} from '#/config/brand'
+import {com} from '#/lexicons'
 
 /**
  * Client for the mu age-assurance backend (`mu-age-service`).
@@ -46,8 +48,8 @@ export function birthdateFromFlags(flags: MuAgeFlags): string {
  * maximum age (300s)". A PDS-clock-relative short token avoids both, since
  * `bearer` is called immediately before each request.
  */
-async function bearer(agent: AtpAgent, lxm: string): Promise<string> {
-  const {data} = await agent.com.atproto.server.getServiceAuth({
+async function bearer(client: Client, lxm: NsidString): Promise<string> {
+  const data = await client.call(com.atproto.server.getServiceAuth, {
     aud: BRAND.ageAssurance.serviceDid,
     lxm,
   })
@@ -61,11 +63,24 @@ async function bearer(agent: AtpAgent, lxm: string): Promise<string> {
  */
 const REQUEST_TIMEOUT = 8000
 
-export async function getMuAgeStatus(agent: AtpAgent): Promise<MuAgeStatus> {
-  const authorization = await bearer(agent, GET_STATUS)
+/**
+ * Cross-platform request-timeout signal. `AbortSignal.timeout()` is a
+ * browser/Node API that Hermes (React Native) does not implement, so calling it
+ * throws synchronously on native - which made every age-service call fail and
+ * silently failed the gate open to a restricted state (web, which has the API,
+ * worked fine). `AbortController` + `setTimeout` is supported on both.
+ */
+function timeoutSignal(ms: number): AbortSignal {
+  const controller = new AbortController()
+  setTimeout(() => controller.abort(), ms)
+  return controller.signal
+}
+
+export async function getMuAgeStatus(client: Client): Promise<MuAgeStatus> {
+  const authorization = await bearer(client, GET_STATUS)
   const res = await fetch(
     `${BRAND.ageAssurance.serviceUrl}/xrpc/${GET_STATUS}`,
-    {headers: {authorization}, signal: AbortSignal.timeout(REQUEST_TIMEOUT)},
+    {headers: {authorization}, signal: timeoutSignal(REQUEST_TIMEOUT)},
   )
   if (!res.ok) {
     throw new Error(`getMuAgeStatus: ${res.status}`)
@@ -74,17 +89,17 @@ export async function getMuAgeStatus(agent: AtpAgent): Promise<MuAgeStatus> {
 }
 
 export async function setMuAgeStatus(
-  agent: AtpAgent,
+  client: Client,
   flags: MuAgeFlags,
 ): Promise<void> {
-  const authorization = await bearer(agent, SET_STATUS)
+  const authorization = await bearer(client, SET_STATUS)
   const res = await fetch(
     `${BRAND.ageAssurance.serviceUrl}/xrpc/${SET_STATUS}`,
     {
       method: 'POST',
       headers: {authorization, 'content-type': 'application/json'},
       body: JSON.stringify(flags),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT),
+      signal: timeoutSignal(REQUEST_TIMEOUT),
     },
   )
   if (!res.ok) {

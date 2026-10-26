@@ -1,7 +1,10 @@
-import {type AtpAgent} from '@atproto/api'
+import {type Client} from '@atproto/lex'
+import {type AtIdentifierString} from '@atproto/syntax'
 
 import {interests} from '#/lib/interests'
 import {BRAND} from '#/config/brand'
+import {app, type com} from '#/lexicons'
+import * as bsky from '#/types/bsky'
 
 /*
  * The onboarding interest posts live on the "picker" account configured at
@@ -29,23 +32,24 @@ function interestOf(text: unknown): string | undefined {
  * never throws, so onboarding is never blocked by this.
  */
 export async function fetchInterestPostRefs(
-  agent: AtpAgent,
-): Promise<Map<string, {uri: string; cid: string}>> {
-  const refs = new Map<string, {uri: string; cid: string}>()
+  client: Client,
+): Promise<Map<string, com.atproto.repo.strongRef.Main>> {
+  const refs = new Map<string, com.atproto.repo.strongRef.Main>()
   const pickerDid = BRAND.fu.pickerDid
   if (!pickerDid) return refs
 
   try {
     let cursor: string | undefined
     do {
-      const {data} = await agent.app.bsky.feed.getAuthorFeed({
-        actor: pickerDid,
+      const data = await client.call(app.bsky.feed.getAuthorFeed, {
+        actor: pickerDid as AtIdentifierString,
         filter: 'posts_no_replies',
         limit: 100,
         cursor,
       })
       for (const item of data.feed) {
         if (item.reason) continue // skip reposts
+        if (!bsky.isType(app.bsky.feed.post, item.post.record)) continue
         const interest = interestOf(item.post.record.text)
         if (interest && !refs.has(interest)) {
           refs.set(interest, {uri: item.post.uri, cid: item.post.cid})
@@ -65,11 +69,11 @@ export async function fetchInterestPostRefs(
  * ready to be liked. Empty until the picker account is configured / reachable.
  */
 export async function interestPostRefsFor(
-  agent: AtpAgent,
+  client: Client,
   selectedInterests: string[],
-): Promise<{uri: string; cid: string}[]> {
-  const refs = await fetchInterestPostRefs(agent)
+): Promise<com.atproto.repo.strongRef.Main[]> {
+  const refs = await fetchInterestPostRefs(client)
   return selectedInterests
     .map(interest => refs.get(interest))
-    .filter((ref): ref is {uri: string; cid: string} => ref !== undefined)
+    .filter((ref): ref is com.atproto.repo.strongRef.Main => ref !== undefined)
 }

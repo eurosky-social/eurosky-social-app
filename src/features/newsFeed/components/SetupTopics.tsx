@@ -9,35 +9,55 @@ import * as Toggle from '#/components/forms/Toggle'
 import {Newspaper_Stroke2_Corner2_Rounded as Newspaper} from '#/components/icons/Newspaper'
 import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
-import {NEWS_REGIONS, NEWS_TOPICS} from '../sources'
+import {useDutchThemesQuery} from '#/features/news/dutch/queries'
+import {ALL_TOPICS, NEWS_LANGUAGES, NEWS_REGIONS} from '../sources'
 import {SetupFooter} from './SetupFooter'
 import {SetupHeader} from './SetupHeader'
 
 export function SetupTopics({
   topics,
   regions,
+  languages,
   onChangeTopics,
   onChangeRegions,
+  onChangeLanguages,
   onBack,
   onReset,
   onNext,
 }: {
   topics: string[]
   regions: string[]
+  languages: string[]
   onChangeTopics: (next: string[]) => void
   onChangeRegions: (next: string[]) => void
+  onChangeLanguages: (next: string[]) => void
   onBack: () => boolean | void
   onReset: () => void
   onNext: () => void
 }) {
+  const t = useTheme()
   const {t: l} = useLingui()
+  const countries = NEWS_REGIONS.filter(region => !region.parent)
+  const provinces = NEWS_REGIONS.filter(
+    region => region.parent === 'netherlands',
+  )
+
+  /*
+   * The topics are the news aggregator's themes. Without it there are none to
+   * list, and every topic is the one choice left.
+   */
+  const {themes} = useDutchThemesQuery()
+  const topicChoices = [
+    {id: ALL_TOPICS, label: l`All topics`},
+    ...themes.map(theme => ({id: theme.slug, label: theme.name})),
+  ]
 
   // "All topics" is mutually exclusive with specific topics.
   const handleTopicsChange = (next: string[]) => {
-    if (next.includes('all') && !topics.includes('all')) {
-      onChangeTopics(['all'])
-    } else if (next.includes('all') && next.length > 1) {
-      onChangeTopics(next.filter(topic => topic !== 'all'))
+    if (next.includes(ALL_TOPICS) && !topics.includes(ALL_TOPICS)) {
+      onChangeTopics([ALL_TOPICS])
+    } else if (next.includes(ALL_TOPICS) && next.length > 1) {
+      onChangeTopics(next.filter(topic => topic !== ALL_TOPICS))
     } else {
       onChangeTopics(next)
     }
@@ -59,7 +79,9 @@ export function SetupTopics({
             </Text>
           </View>
           <Text style={[a.text_sm, a.leading_snug]}>
-            <Trans>Select the regions and topics you care about.</Trans>
+            <Trans>
+              Select the regions, languages and topics you care about.
+            </Trans>
           </Text>
         </View>
 
@@ -74,13 +96,60 @@ export function SetupTopics({
               label={l`Regions`}
               values={regions}
               onChange={onChangeRegions}>
+              <View style={[a.gap_lg]}>
+                <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
+                  {countries.map(region => (
+                    <Toggle.Item
+                      key={region.id}
+                      name={region.id}
+                      label={region.label}>
+                      <Chip label={region.label} />
+                    </Toggle.Item>
+                  ))}
+                </View>
+                <View style={[a.gap_sm]}>
+                  <Text
+                    style={[
+                      a.text_sm,
+                      a.font_semi_bold,
+                      t.atoms.text_contrast_medium,
+                    ]}>
+                    <Trans>Provinces of the Netherlands</Trans>
+                  </Text>
+                  <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
+                    {provinces.map(region => (
+                      <Toggle.Item
+                        key={region.id}
+                        name={region.id}
+                        label={region.label}>
+                        <Chip label={region.label} />
+                      </Toggle.Item>
+                    ))}
+                  </View>
+                </View>
+              </View>
+            </Toggle.Group>
+          </Section>
+        </View>
+
+        <Divider />
+
+        <View style={[a.px_xl, a.pt_2xl, a.pb_lg]}>
+          <Section
+            titleText={<Trans>Languages</Trans>}
+            hintText={<Trans>Only show news in these</Trans>}>
+            <Toggle.Group
+              type="checkbox"
+              label={l`Languages`}
+              values={languages}
+              onChange={onChangeLanguages}>
               <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
-                {NEWS_REGIONS.map(region => (
+                {NEWS_LANGUAGES.map(language => (
                   <Toggle.Item
-                    key={region.id}
-                    name={region.id}
-                    label={region.label}>
-                    <Chip label={region.label} />
+                    key={language.id}
+                    name={language.id}
+                    label={language.label}>
+                    <Chip label={language.label} />
                   </Toggle.Item>
                 ))}
               </View>
@@ -100,7 +169,7 @@ export function SetupTopics({
               values={topics}
               onChange={handleTopicsChange}>
               <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
-                {NEWS_TOPICS.map(topic => (
+                {topicChoices.map(topic => (
                   <Toggle.Item
                     key={topic.id}
                     name={topic.id}
@@ -121,7 +190,11 @@ export function SetupTopics({
             label={l`Reset`}
             size="large"
             color="secondary"
-            disabled={topics.length === 0 && regions.length === 0}
+            disabled={
+              topics.length === 0 &&
+              regions.length === 0 &&
+              languages.length === 0
+            }
             onPress={onReset}>
             <ButtonText>
               <Trans>Reset</Trans>
@@ -145,7 +218,7 @@ export function SetupTopics({
   )
 }
 
-function Section({
+export function Section({
   titleText,
   hintText,
   children,
@@ -172,7 +245,7 @@ function Section({
 
 // Matches the interest pills from the Interests settings (InterestButton) so
 // selection looks consistent across the app.
-function Chip({label}: {label: string}) {
+export function Chip({label}: {label: string}) {
   const t = useTheme()
   const ctx = Toggle.useItemContext()
   const interacted = ctx.hovered || ctx.focused || ctx.pressed

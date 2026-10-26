@@ -1,5 +1,7 @@
 import {useMemo, useState} from 'react'
 import {type TextStyle, View, type ViewStyle} from 'react-native'
+import {currentDatetimeString} from '@atproto/syntax'
+import {setInterestsPref} from '@bsky/sdk'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
@@ -23,8 +25,7 @@ import {createGetSuggestedUsersForDiscoverQueryKey} from '#/state/queries/trendi
 import {createGetSuggestedUsersForExploreQueryKey} from '#/state/queries/trending/useGetSuggestedUsersForExploreQuery'
 import {createGetSuggestedUsersForSeeMoreQueryKey} from '#/state/queries/trending/useGetSuggestedUsersForSeeMoreQuery'
 import {createSuggestedStarterPacksQueryKey} from '#/state/queries/useSuggestedStarterPacksQuery'
-import {useAgent} from '#/state/session'
-import {getPdsAgent} from '#/state/session/pds-agent'
+import {usePdsClient} from '#/state/session'
 import {atoms as a, useGutters, useTheme} from '#/alf'
 import {Admonition} from '#/components/Admonition'
 import {Divider} from '#/components/Divider'
@@ -89,7 +90,7 @@ function Inner({
   setIsSaving: (isSaving: boolean) => void
 }) {
   const {_} = useLingui()
-  const agent = useAgent()
+  const pdsClient = usePdsClient()
   const qc = useQueryClient()
   const interestsDisplayNames = useInterestsDisplayNames()
   const preselectedInterests = useMemo(
@@ -111,13 +112,24 @@ function Inner({
       setIsSaving(true)
 
       try {
-        await getPdsAgent(agent).setInterestsPref({tags: interests})
+        await pdsClient.call(setInterestsPref, {tags: interests})
+        /*
+         * The SDK timestamps the preference during the request, so this local
+         * timestamp may differ slightly from the persisted value.
+         */
+        const updatedAt = currentDatetimeString()
         qc.setQueriesData(
           {queryKey: preferencesQueryKey},
           (old?: UsePreferencesQueryResponse) => {
             if (!old) return old
-            old.interests.tags = interests
-            return old
+            return {
+              ...old,
+              interests: {
+                ...old.interests,
+                tags: interests,
+                updatedAt,
+              },
+            }
           },
         )
         await Promise.all([
@@ -158,7 +170,7 @@ function Inner({
         setIsSaving(false)
       }
     }, 1500)
-  }, [_, agent, setIsSaving, qc, preselectedInterests])
+  }, [_, pdsClient, setIsSaving, qc, preselectedInterests])
 
   const onChangeInterests = async (interests: string[]) => {
     setInterests(interests)

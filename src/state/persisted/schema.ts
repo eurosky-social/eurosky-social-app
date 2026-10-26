@@ -1,9 +1,11 @@
+import {isDidString} from '@atproto/lex'
+import {PlatformInfo} from '@bsky.app/expo-bluesky-swiss-army'
 import {z} from 'zod'
 
 import {deviceLanguageCodes, deviceLocales} from '#/locale/deviceLocales'
 import {findSupportedAppLanguage} from '#/locale/helpers'
 import {logger} from '#/logger'
-import {PlatformInfo} from '../../../modules/expo-bluesky-swiss-army'
+import {costumeSchema} from '#/features/halloween/costumes/model'
 
 const externalEmbedOptions = ['show', 'hide'] as const
 
@@ -13,7 +15,17 @@ const externalEmbedOptions = ['show', 'hide'] as const
  */
 const accountSchema = z.object({
   service: z.string(),
-  did: z.string(),
+  /**
+   * Genuinely validated, not just branded: the refinement rejects malformed
+   * values at runtime and narrows the inferred type to `DidString`.
+   *
+   * Weigh any further tightening of this field carefully. One failing field
+   * fails the whole root schema, and {@link tryParse} then discards the ENTIRE
+   * persisted state - every account and every preference - so the app boots
+   * logged out with defaults. Persisted dids come from com.atproto.server
+   * responses and are always canonical, so this particular check is safe.
+   */
+  did: z.string().refine(isDidString),
   handle: z.string(),
   email: z.string().optional(),
   emailConfirmed: z.boolean().optional(),
@@ -54,6 +66,27 @@ const schema = z.object({
   // String (not enum) so it stays brand-agnostic; unknown/undefined falls back
   // to the brand's defaultAccent at read time.
   accentColor: z.string().optional(),
+  /** Local seasonal consent; optional so existing installs keep their state. */
+  halloween: z
+    .object({
+      enabled: z.boolean(),
+      promptedYear: z.number().int().optional(),
+      costumePromptedYear: z.number().int().optional(),
+    })
+    .optional(),
+  /** Local per-DID costumes; corrupt art must never discard account sessions. */
+  halloweenCostumes: z.record(costumeSchema).optional().catch(undefined),
+  /** Device-local editor color history, not part of a costume record. */
+  halloweenCostumeColors: z
+    .record(z.array(z.string().regex(/^#[0-9A-F]{6}$/)).max(24))
+    .optional()
+    .catch(undefined),
+  // Eurosky: app-chrome styling preferences, separate from color themes.
+  interfaceStyle: z
+    .object({
+      borders: z.enum(['standard', 'hidden']).optional(),
+    })
+    .optional(),
   session: z.object({
     accounts: z.array(accountSchema),
     currentAccount: currentAccountSchema.optional(),
@@ -114,6 +147,7 @@ const schema = z.object({
       flickr: z.enum(externalEmbedOptions).optional(),
       bandcamp: z.enum(externalEmbedOptions).optional(),
       plyr: z.enum(externalEmbedOptions).optional(),
+      freemix: z.enum(externalEmbedOptions).optional(),
     })
     .optional(),
   invites: z.object({
@@ -129,7 +163,6 @@ const schema = z.object({
   pdsAddressHistory: z.array(z.string()).optional(),
   disableHaptics: z.boolean().optional(),
   disableAutoplay: z.boolean().optional(),
-  kawaii: z.boolean().optional(),
   /** @deprecated migrated to `petCompanion` in normalizeData; kept so legacy
    * persisted data survives schema parsing long enough to migrate. */
   catCompanion: z
@@ -169,6 +202,10 @@ export type Schema = z.infer<typeof schema>
 export const defaults: Schema = {
   colorMode: 'system',
   darkTheme: 'dim',
+  halloween: {enabled: false},
+  interfaceStyle: {
+    borders: 'standard',
+  },
   session: {
     accounts: [],
     currentAccount: undefined,
@@ -205,7 +242,6 @@ export const defaults: Schema = {
   pdsAddressHistory: [],
   disableHaptics: false,
   disableAutoplay: PlatformInfo.getIsReducedMotionEnabled(),
-  kawaii: false,
   petCompanion: {enabled: false, species: 'cat', variant: 'orange'},
   hasCheckedForStarterPack: false,
   subtitlesEnabled: true,
@@ -234,7 +270,7 @@ export function tryParse(rawData: string): Schema | undefined {
     const errors =
       parsed.error?.errors?.map(e => ({
         code: e.code,
-        // @ts-ignore exists on some types
+        // @ts-expect-error exists on some types
         expected: e?.expected,
         path: e.path?.join('.'),
       })) || []

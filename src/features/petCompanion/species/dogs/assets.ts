@@ -2,9 +2,9 @@
 // paths, so each breed is listed explicitly. Every sheet is a grid of 64px
 // frames with one animation per row (see ./catalog for each breed's geometry).
 
-import {type ImageSourcePropType} from 'react-native'
+import {type ImageRequireSource} from 'react-native'
 
-export const DOG_SHEETS: Record<string, ImageSourcePropType> = {
+export const DOG_SHEETS: Record<string, ImageRequireSource> = {
   'cane-corso': require('../../../../../assets/pets/dogs/cane-corso.png'),
   dalmatian: require('../../../../../assets/pets/dogs/dalmatian.png'),
   'dogo-argentino': require('../../../../../assets/pets/dogs/dogo-argentino.png'),
@@ -17,7 +17,7 @@ export const DOG_SHEETS: Record<string, ImageSourcePropType> = {
 // The Labrador pack ships three coat variants as pre-combined sheets.
 export const LABRADOR_SHEETS: Record<
   'ruby' | 'blond' | 'reddish',
-  ImageSourcePropType
+  ImageRequireSource
 > = {
   ruby: require('../../../../../assets/pets/dogs/labrador-ruby.png'),
   blond: require('../../../../../assets/pets/dogs/labrador-blond.png'),

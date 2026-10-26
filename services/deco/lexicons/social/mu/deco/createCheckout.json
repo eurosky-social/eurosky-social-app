@@ -1,0 +1,24 @@
+{
+  "lexicon": 1,
+  "id": "social.mu.deco.createCheckout",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Creates or reuses a Mollie hosted checkout for the calling account.",
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["checkoutUrl"],
+          "properties": {
+            "checkoutUrl": { "type": "string", "format": "uri" }
+          }
+        }
+      },
+      "errors": [
+        { "name": "SubscriptionActive" },
+        { "name": "PaymentProcessing" }
+      ]
+    }
+  }
+}

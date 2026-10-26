@@ -37,4 +37,4 @@ If you discover any security issues related specifically to Mu's deployment or m
 
 ## License (MIT)
 
-See [./LICENSE](./LICENSE) for the full license. This project is licensed under the MIT License, following the upstream repository's licensing.
+See [./LICENSE](./LICENSE) for the full license, which covers the source code in this repository. Some images, icons, fonts, and brand assets have separate licensing or trademark restrictions; see [./ASSETS.md](./ASSETS.md) and [./NOTICE.md](./NOTICE.md).

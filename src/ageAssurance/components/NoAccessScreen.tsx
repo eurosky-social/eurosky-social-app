@@ -1,6 +1,7 @@
-import {useCallback, useEffect} from 'react'
+import {useCallback, useEffect, useEffectEvent} from 'react'
 import {ScrollView, View} from 'react-native'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
+import {BottomSheetOutlet} from '@bsky.app/bottom-sheet'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
@@ -20,12 +21,12 @@ import {createStaticClick, SimpleInlineLinkText} from '#/components/Link'
 import {Outlet as PortalOutlet} from '#/components/Portal'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
-import {BottomSheetOutlet} from '#/../modules/bottom-sheet'
 import {useAgeAssurance} from '#/ageAssurance'
 import {useAgeAssuranceServerDataContext} from '#/ageAssurance/data'
 import {useComputeAgeAssuranceRegionAccess} from '#/ageAssurance/useComputeAgeAssuranceRegionAccess'
 import {useAgeAssuranceRegionConfig} from '#/ageAssurance/util'
 import {useAnalytics} from '#/analytics'
+import {BRAND} from '#/config/brand'
 import {IS_NATIVE, IS_WEB} from '#/env'
 import {useDeviceGeolocationApi} from '#/geolocation'
 
@@ -59,14 +60,17 @@ export function NoAccessScreen() {
   const isAARegion = !!region
   const hasDeclaredAge = metadata?.declaredAge !== undefined
 
-  useEffect(() => {
+  const onShown = useEffectEvent(() => {
     ax.metric(`ageAssurance:noAccessScreen:shown`, {
       accountCreatedAt: metadata?.accountCreatedAt || 'unknown',
       isAARegion,
       hasDeclaredAge,
       canUpdateBirthday: true,
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  })
+
+  useEffect(() => {
+    onShown()
   }, [])
 
   const onPressLogout = useCallback(() => {
@@ -154,7 +158,9 @@ export function NoAccessScreen() {
             ) : !aa.flags.isOverAppMinAccessAge ? (
               <View style={[a.gap_lg]}>
                 <Text style={textStyles}>
-                  <Trans>You must be at least 13 years old to use mu.</Trans>
+                  <Trans>
+                    You must be at least 13 years old to use {BRAND.name}.
+                  </Trans>
                 </Text>
                 {updateAge}
               </View>
@@ -162,8 +168,8 @@ export function NoAccessScreen() {
               <View style={[a.gap_lg]}>
                 <Text style={textStyles}>
                   <Trans>
-                    Your declared age is below the minimum required to use mu in
-                    your region.
+                    Your declared age is below the minimum required to use{' '}
+                    {BRAND.name} in your region.
                   </Trans>
                 </Text>
                 {updateAge}
@@ -172,8 +178,8 @@ export function NoAccessScreen() {
               <View style={[a.gap_lg]}>
                 <Text style={textStyles}>
                   <Trans>
-                    mu isn't available in your region, which legally requires
-                    verified age assurance.
+                    {BRAND.name} isn't available in your region, which legally
+                    requires verified age assurance.
                   </Trans>
                 </Text>
                 {updateAge}

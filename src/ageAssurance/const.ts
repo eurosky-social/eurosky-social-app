@@ -1,10 +1,6 @@
-import {
-  ageAssuranceRuleIDs as ids,
-  type AppBskyAgeassuranceDefs,
-} from '@atproto/api'
-
 import {AgeAssuranceAccess} from '#/ageAssurance/types'
-import {ANDROID_API_LEVEL, IOS_MAJOR_VERSION, IS_ANDROID, IS_IOS} from '#/env'
+import {IS_IOS, IS_WEB} from '#/env'
+import {app} from '#/lexicons'
 
 /**
  * Minimum age required to access the app at all.
@@ -12,35 +8,52 @@ import {ANDROID_API_LEVEL, IOS_MAJOR_VERSION, IS_ANDROID, IS_IOS} from '#/env'
 export const MIN_ACCESS_AGE = 13
 
 /**
+ * The identifier for the current platform, matching the `knownValues` of the
+ * `platforms` property on `app.bsky.ageassurance.defs#configRegion`. Used to
+ * filter out region configs that don't apply to this platform.
+ */
+export const AGE_ASSURANCE_PLATFORM: 'web' | 'ios' | 'android' = IS_WEB
+  ? 'web'
+  : IS_IOS
+    ? 'ios'
+    : 'android'
+
+/**
  * Whether the current device can provide the native on-device age signals we
- * use for age assurance (via `expo-age-range`). We gate on OS version because
- * the underlying platform APIs are only available on:
+ * use for age assurance (via `expo-age-range`). The underlying platform APIs
+ * are only available on:
  *
  * - iOS 26.0+ (Declared Age Range API)
  *   https://developer.apple.com/documentation/declaredagerange/
  * - Android 6.0 / API level 23+ (Play Age Signals API)
  *   https://developer.android.com/google/play/age-signals/use-age-signals-api
  *
- * On unsupported platforms/versions (including web) this is `false`, so we skip
- * the device flow and fall back to KWS.
+ * mu fork: force-disabled for now. On a supported native device this would
+ * otherwise trigger the OS age prompt (e.g. the iOS Declared Age Range sheet)
+ * on an explicit "Verify" - a surface web never shows, since there
+ * `expo-age-range` is unavailable. Disabling it makes native match web: the
+ * only age flow anywhere is the mu birthdate declaration (see NoAccessScreen /
+ * MuAgeConfirmDialog). When it is `false`, `getDeviceSignals` returns undefined
+ * and `allowsDeviceVerification` is off everywhere. Re-enable (restore the
+ * OS-version check below) once the mu device-verification flow is fully wired.
+ *
+ *   (IS_IOS && IOS_MAJOR_VERSION >= 26) || (IS_ANDROID && ANDROID_API_LEVEL >= 23)
  */
-export const DEVICE_SIGNALS_SUPPORTED: boolean =
-  (IS_IOS && IOS_MAJOR_VERSION >= 26) || (IS_ANDROID && ANDROID_API_LEVEL >= 23)
+export const DEVICE_SIGNALS_SUPPORTED: boolean = false
 
-// Fork divergence: in regions with no explicit age-assurance config (i.e. every
-// non-regulated country - Germany and most of the world), grant Full access by
-// default instead of failing safe to None. Upstream's fallback Default is None,
-// which gates anyone without a self-declared birthdate - including OAuth/non-
-// Bluesky-signup accounts that have no way to set one. Regulated regions are
-// unaffected: they match server-provided rules and never hit this fallback.
-export const FALLBACK_REGION_CONFIG: AppBskyAgeassuranceDefs.ConfigRegion = {
+/*
+ * Fork divergence: in regions with no explicit age-assurance config (i.e. every
+ * non-regulated country - Germany and most of the world), grant Full access by
+ * default instead of failing safe to None. Regulated regions match
+ * server-provided rules and never hit this fallback.
+ */
+export const FALLBACK_REGION_CONFIG: app.bsky.ageassurance.defs.ConfigRegion = {
   countryCode: '*',
   regionCode: undefined,
   minAccessAge: MIN_ACCESS_AGE,
   rules: [
-    {
-      $type: ids.Default,
+    app.bsky.ageassurance.defs.configRegionRuleDefault.build({
       access: AgeAssuranceAccess.Full,
-    },
+    }),
   ],
 }

@@ -1,12 +1,14 @@
 import {useMemo} from 'react'
+import {type AtUriString} from '@atproto/syntax'
 import {useQuery} from '@tanstack/react-query'
 
 import {useLanguagePrefs} from '#/state/preferences'
 import {STALE} from '#/state/queries'
 import {useOnboardingSuggestedStarterPacksQuery as useBlueskyOnboardingSuggestedStarterPacksQuery} from '#/state/queries/useOnboardingSuggestedStarterPacksQuery'
 import {createQueryKey} from '#/state/queries/util'
-import {useAgent} from '#/state/session'
+import {useAppviewClient} from '#/state/session'
 import {selectStep3Packs} from '#/screens/Onboarding/euroskyCuratedPacks'
+import {app} from '#/lexicons'
 
 /**
  * Eurosky fork: curated onboarding starter packs, layered on top of Bluesky's.
@@ -32,7 +34,7 @@ export function useEuroskyOnboardingSuggestedStarterPacks(props: {
   enabled?: boolean
   overrideInterests?: string[]
 }) {
-  const agent = useAgent()
+  const appviewClient = useAppviewClient()
   // Filter by the app/UI language the user explicitly set, NOT contentLanguages
   // (which defaults from the device locale and can include languages the user
   // never chose - e.g. German showing for an English user).
@@ -49,11 +51,13 @@ export function useEuroskyOnboardingSuggestedStarterPacks(props: {
       // allSettled so one bad/unavailable pack doesn't drop the rest.
       const results = await Promise.allSettled(
         packUris.map(uri =>
-          agent.app.bsky.graph.getStarterPack({starterPack: uri}),
+          appviewClient.call(app.bsky.graph.getStarterPack, {
+            starterPack: uri as AtUriString,
+          }),
         ),
       )
       return results.flatMap(r =>
-        r.status === 'fulfilled' ? [r.value.data.starterPack] : [],
+        r.status === 'fulfilled' ? [r.value.starterPack] : [],
       )
     },
   })
@@ -79,7 +83,14 @@ export function useEuroskyOnboardingSuggestedStarterPacks(props: {
     const hasAny = merged.length > 0
 
     return {
-      data: ours.data || bluesky.data ? {starterPacks: merged} : undefined,
+      data:
+        ours.data || bluesky.data
+          ? {
+              starterPacks: merged,
+              // Curated packs are not part of the upstream recommendation batch.
+              recId: ourPacks.length > 0 ? undefined : bluesky.data?.recId,
+            }
+          : undefined,
       isLoading: !hasAny && !settled,
       isError: !hasAny && settled && (bluesky.isError || ours.isError),
       isRefetching: ours.isRefetching || bluesky.isRefetching,

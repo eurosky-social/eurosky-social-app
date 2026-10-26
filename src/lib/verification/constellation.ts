@@ -1,4 +1,4 @@
-import {AtUri} from '@atproto/api'
+import {AtUri, type AtUriString, type DidString} from '@atproto/syntax'
 
 import {CONSTELLATION_SERVICE} from '#/lib/constants'
 
@@ -15,9 +15,9 @@ const VERIFICATION_SUBJECT_SOURCE = `${VERIFICATION_COLLECTION}:subject`
  */
 export type VerificationBacklink = {
   /** DID of the account that issued the verification (the record's repo). */
-  issuer: string
+  issuer: DidString
   /** AT-URI of the verification record. */
-  uri: string
+  uri: AtUriString
 }
 
 type GetBacklinksResponse = {
@@ -60,7 +60,7 @@ export async function getVerificationBacklinks(
 
     for (const r of json.records ?? []) {
       out.push({
-        issuer: r.did,
+        issuer: r.did as DidString,
         uri: AtUri.make(r.did, r.collection, r.rkey).toString(),
       })
     }

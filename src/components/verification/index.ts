@@ -1,10 +1,10 @@
 import {useMemo} from 'react'
-import {type AppBskyActorDefs} from '@atproto/api'
 
 import {usePreferencesQuery} from '#/state/queries/preferences'
 import {useCurrentAccountProfile} from '#/state/queries/useCurrentAccountProfile'
 import {useMergedVerificationState} from '#/state/queries/verification/useMergedVerificationState'
 import {useSession} from '#/state/session'
+import {type app} from '#/lexicons'
 import type * as bsky from '#/types/bsky'
 
 export type FullVerificationState = {
@@ -29,7 +29,7 @@ export type FullVerificationState = {
    * The merged verification records (ours + Bluesky's), exposed so consumers
    * read these instead of reaching into `profile.verification` directly.
    */
-  verifications: AppBskyActorDefs.VerificationView[]
+  verifications: app.bsky.actor.defs.VerificationView[]
 }
 
 export function useFullVerificationState({

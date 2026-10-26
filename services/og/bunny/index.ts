@@ -5,7 +5,7 @@
  * ../../../scripts/bunny_upload.sh) and served from the main pull zone (mu.social). A
  * static SPA has no per-route server rendering, so out of the box EVERY shared
  * link - a post, a profile, the homepage - unfurls with the single default card
- * baked into index.html (../../web/index.html). Upstream Bluesky avoids this by
+ * baked into index.html (../../public/index.html). Upstream Bluesky avoids this by
  * serving its HTML through the Go `bskyweb` server, which queries the appview
  * and templates per-post/per-profile og:* tags (see ../../bskyweb/templates/).
  * That server is not in our request path.
@@ -216,6 +216,7 @@ async function buildPostTags(
     meta('property', 'og:url', canonical),
     meta('property', 'og:title', title),
     meta('name', 'twitter:title', title),
+    meta('name', 'at:canonical', post.uri),
   ]
   if (text) {
     const desc = truncate(text, MAX_DESC)
@@ -270,6 +271,7 @@ async function buildProfileTags(
     meta('property', 'profile:username', handle),
     meta('property', 'og:title', title),
     meta('name', 'twitter:title', title),
+    meta('name', 'at:canonical', `at://${p.did}/app.bsky.actor.profile/self`),
   ]
   if (p.description) {
     const desc = truncate(p.description, MAX_DESC)
@@ -345,6 +347,7 @@ async function buildStarterPackTags(
     meta('property', 'og:description', desc),
     meta('name', 'twitter:description', desc),
     meta('name', 'twitter:card', 'summary'),
+    meta('name', 'at:canonical', sp.uri),
   ]
   return {title: name, tags}
 }

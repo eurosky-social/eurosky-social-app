@@ -1,10 +1,6 @@
 import {memo, useCallback} from 'react'
 import {type StyleProp, View, type ViewStyle} from 'react-native'
-import {
-  type AppBskyActorDefs,
-  type AppBskyFeedPost,
-  type ModerationDecision,
-} from '@atproto/api'
+import {type ModerationDecision} from '@bsky/sdk/moderation'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {useQueryClient} from '@tanstack/react-query'
@@ -24,17 +20,19 @@ import {ProfileBadges} from '#/components/ProfileBadges'
 import {ProfileHoverCard} from '#/components/ProfileHoverCard'
 import {Text} from '#/components/Typography'
 import {IS_ANDROID} from '#/env'
+import {useNameStyle} from '#/features/avatarDecorations'
 import {useActorStatus} from '#/features/liveNow'
+import {type app} from '#/lexicons'
 import {TimeElapsed} from './TimeElapsed'
 import {PreviewableUserAvatar} from './UserAvatar'
 
 interface PostMetaOpts {
-  author: AppBskyActorDefs.ProfileViewBasic
+  author: app.bsky.actor.defs.ProfileViewBasic
   moderation: ModerationDecision | undefined
   postHref: string
   timestamp: string
   // Pass the record to show an "Edited" badge on edited posts.
-  record?: AppBskyFeedPost.Record
+  record?: app.bsky.feed.post.Main
   linkDisabled?: boolean
   showAvatar?: boolean
   avatarSize?: number
@@ -62,6 +60,7 @@ let PostMeta = (opts: PostMetaOpts): React.ReactNode => {
 
   const timestampLabel = niceDate(i18n, opts.timestamp)
   const {isActive: live} = useActorStatus(author)
+  const nameStyle = useNameStyle(author.did)
 
   const MaybeLinkText = opts.linkDisabled ? Text : WebOnlyInlineLinkText
 
@@ -106,6 +105,8 @@ let PostMeta = (opts: PostMetaOpts): React.ReactNode => {
                 a.leading_tight,
                 a.flex_shrink_0,
                 {maxWidth: '70%'},
+                nameStyle,
+                web({direction: 'ltr', unicodeBidi: 'isolate'}),
               ]}>
               {forceLTR(
                 sanitizeDisplayName(

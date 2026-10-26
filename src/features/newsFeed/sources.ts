@@ -1,17 +1,22 @@
 /**
- * The curated registry of approved news accounts, each tagged with the topics,
+ * The registry of approved news accounts, each tagged with the topics,
  * regions, and languages it covers. This is shared, operator-owned config
  * rather than per-user state, so it lives as a local list instead of in the
- * PDS. The user's own selections live in the `social.mu.newsFeedPrefs`
- * record (see ./state/prefs).
+ * PDS. The user's own selections live in their private preferences
+ * (see ./state/prefs).
  */
 
-export interface NewsTopic {
+export interface NewsRegion {
   id: string
   label: string
+  /**
+   * The country a province belongs to. A province selects the same accounts
+   * as its country, since accounts are tagged by country only.
+   */
+  parent?: string
 }
 
-export interface NewsRegion {
+export interface NewsLanguage {
   id: string
   label: string
 }
@@ -20,34 +25,97 @@ export interface NewsSource {
   did: string
   handle: string
   displayName: string
+  /**
+   * The news aggregator's theme slugs the account covers. Empty for general
+   * news, which only a reader taking every topic is shown.
+   */
   topics: string[]
   regions: string[]
   langs: string[]
 }
 
-// `id` is stored in the user's prefs; `label` is display-only and wrapped for
-// translation at render time.
-export const NEWS_TOPICS: NewsTopic[] = [
-  {id: 'all', label: 'All topics'},
-  {id: 'general', label: 'General'},
-  {id: 'politics', label: 'Politics'},
-  {id: 'arts-culture', label: 'Art & Culture'},
-  {id: 'sports', label: 'Sports'},
-  {id: 'tech', label: 'Tech'},
-  {id: 'climate', label: 'Climate'},
-  {id: 'health', label: 'Health'},
-  {id: 'science', label: 'Science'},
-]
+/**
+ * The topic value meaning every topic. The topics themselves are the news
+ * aggregator's themes (`/api/themes`), by slug, so nothing here lists them.
+ */
+export const ALL_TOPICS = 'all'
 
+/**
+ * The topics records were written with before they became the news
+ * aggregator's themes, by the theme each now reads as. `general` named no
+ * subject, only general news, which every topic takes in.
+ */
+const LEGACY_TOPICS: Record<string, string | null> = {
+  sports: 'sport',
+  'arts-culture': 'culture',
+  general: null,
+}
+
+/**
+ * A record's topics as theme slugs. One that picked only general news reads
+ * as every topic, the only choice that still shows it.
+ */
+export function topicsAsThemes(topics: string[]): string[] {
+  const themes = [
+    ...new Set(
+      topics
+        .map(topic => (topic in LEGACY_TOPICS ? LEGACY_TOPICS[topic] : topic))
+        .filter((theme): theme is string => !!theme),
+    ),
+  ]
+  return topics.length > 0 && themes.length === 0 ? [ALL_TOPICS] : themes
+}
+
+/**
+ * `id` is stored in the user's prefs; `label` is display-only and wrapped for
+ * translation at render time.
+ */
 export const NEWS_REGIONS: NewsRegion[] = [
+  // The Netherlands leads: the news aggregator covers it most closely.
+  {id: 'netherlands', label: 'Netherlands'},
   {id: 'global', label: 'Global'},
   {id: 'europe', label: 'Europe'},
   {id: 'belgium', label: 'Belgium'},
+  {id: 'dk', label: 'Denmark'},
   {id: 'france', label: 'France'},
   {id: 'germany', label: 'Germany'},
-  {id: 'netherlands', label: 'Netherlands'},
   {id: 'spain', label: 'Spain'},
   {id: 'uk', label: 'UK'},
+  /*
+   * Ids are the Dutch labeler's province label values, so a selected province
+   * can be read straight off the stories it labels.
+   */
+  {id: 'nl-drenthe', label: 'Drenthe', parent: 'netherlands'},
+  {id: 'nl-flevoland', label: 'Flevoland', parent: 'netherlands'},
+  {id: 'nl-friesland', label: 'Friesland', parent: 'netherlands'},
+  {id: 'nl-gelderland', label: 'Gelderland', parent: 'netherlands'},
+  {id: 'nl-groningen', label: 'Groningen', parent: 'netherlands'},
+  {id: 'nl-limburg', label: 'Limburg', parent: 'netherlands'},
+  {id: 'nl-noord-brabant', label: 'Noord-Brabant', parent: 'netherlands'},
+  {id: 'nl-noord-holland', label: 'Noord-Holland', parent: 'netherlands'},
+  {id: 'nl-overijssel', label: 'Overijssel', parent: 'netherlands'},
+  {id: 'nl-utrecht', label: 'Utrecht', parent: 'netherlands'},
+  {id: 'nl-zeeland', label: 'Zeeland', parent: 'netherlands'},
+  {id: 'nl-zuid-holland', label: 'Zuid-Holland', parent: 'netherlands'},
+]
+
+/**
+ * The languages news can be read in. Ids are ISO 639-1 codes, as the source
+ * registry's `langs` and the Dutch labeler's articles carry them.
+ */
+export const NEWS_LANGUAGES: NewsLanguage[] = [
+  {id: 'en', label: 'English'},
+  {id: 'nl', label: 'Dutch'},
+  {id: 'de', label: 'German'},
+  {id: 'fr', label: 'French'},
+  {id: 'es', label: 'Spanish'},
+  {id: 'it', label: 'Italian'},
+  {id: 'pl', label: 'Polish'},
+  {id: 'da', label: 'Danish'},
+  {id: 'sv', label: 'Swedish'},
+  {id: 'no', label: 'Norwegian'},
+  {id: 'fi', label: 'Finnish'},
+  {id: 'cs', label: 'Czech'},
 ]
 
 /**
@@ -61,7 +129,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:vcepp6trx4vpe5ourxso4tjl',
     handle: '404media.co',
     displayName: '404 Media',
-    topics: ['arts-culture', 'tech'],
+    topics: ['culture', 'tech'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -69,7 +137,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:kkf4naxqmweop7dv4l2iqqf5',
     handle: 'aendra.com',
     displayName: 'Aendra Rininsland (FT data)',
-    topics: ['general', 'tech'],
+    topics: ['tech'],
     regions: ['global', 'uk'],
     langs: ['en'],
   },
@@ -77,7 +145,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:ffccycfh6c6pmxwkhvq5clkv',
     handle: 'afp.com',
     displayName: 'AFP English',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -85,7 +153,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:2lofqead276vtc5647ye7sl2',
     handle: 'aljazeera.com',
     displayName: 'Al Jazeera English',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -93,7 +161,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:a67zdrt4nl2tv2qojpngogbq',
     handle: 'apnews.com',
     displayName: 'AP News',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -109,7 +177,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:i3xfsu4onekr2uziapdqcru4',
     handle: 'artforum.com',
     displayName: 'ArtForum',
-    topics: ['arts-culture'],
+    topics: ['culture'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -125,7 +193,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:f2vkoe6mu7hyiyjxwwirkd5l',
     handle: 'bbcnews-world-rss.bsky.social',
     displayName: 'BBC News World (unofficial)',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -141,7 +209,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:uewxgchsjy4kmtu7dcxa77us',
     handle: 'bloomberg.com',
     displayName: 'Bloomberg',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -181,7 +249,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:kfygevef2pjjsyu7dfd6xpxi',
     handle: 'courrierinter.bsky.social',
     displayName: 'Courrier International',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global', 'france'],
     langs: ['fr'],
   },
@@ -189,7 +257,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:kup2mpgz32mi5apmu7ouxbol',
     handle: 'cyclingweekly.com',
     displayName: 'Cycling Weekly',
-    topics: ['sports'],
+    topics: ['sport'],
     regions: ['global', 'uk'],
     langs: ['en'],
   },
@@ -213,7 +281,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:x7d6j54pm22ufehkes6jo4jf',
     handle: 'espn.com',
     displayName: 'ESPN',
-    topics: ['sports'],
+    topics: ['sport'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -221,7 +289,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:6uybbvnd3pfjh5oztjngzdss',
     handle: 'euronews.com',
     displayName: 'Euronews',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global', 'europe'],
     langs: ['en'],
   },
@@ -229,7 +297,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:5u54z2qgkq43dh2nzwzdbbhb',
     handle: 'financialtimes.com',
     displayName: 'Financial Times',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global', 'europe', 'uk'],
     langs: ['en'],
   },
@@ -253,7 +321,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:wkreszch2k4mumsrlkeaflgn',
     handle: 'france24.com',
     displayName: 'France 24 English',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global', 'europe', 'france'],
     langs: ['en', 'fr'],
   },
@@ -269,7 +337,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:5x3a6jke5p3ni7mnpd57ijhw',
     handle: 'globalvoices.org',
     displayName: 'Global Voices',
-    topics: ['general'],
+    topics: [],
     regions: ['global'],
     langs: [],
   },
@@ -285,7 +353,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:nl32untxngcg74dl3w7scd74',
     handle: 'us.theguardian.com',
     displayName: 'Guardian US',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -349,7 +417,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:omf7ijgofbpg6qdivyv7mio4',
     handle: 'nybooks.com',
     displayName: 'New York Review of Books',
-    topics: ['politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -357,7 +425,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:ln72v57ivz2g46uqf4xxqiuh',
     handle: 'npr.org',
     displayName: 'NPR',
-    topics: ['general', 'politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -373,7 +441,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:bz2qt2eyn4wu5nnpqxu7iydz',
     handle: 'pitchfork.com',
     displayName: 'Pitchfork',
-    topics: ['arts-culture'],
+    topics: ['culture'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -389,7 +457,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:k4jt6heuiamymgi46yeuxtpt',
     handle: 'propublica.org',
     displayName: 'ProPublica',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -405,7 +473,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:jbvnehrrdqoulco4rf5gxg5r',
     handle: 'reuters.com',
     displayName: 'Reuters',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -413,7 +481,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:vvlpfarso2eojm2xpzc7qrd7',
     handle: 'rfi.fr',
     displayName: 'RFI',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global', 'france'],
     langs: ['fr'],
   },
@@ -429,7 +497,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:2jwxoziacifmtqa5felhqms6',
     handle: 'semafor.com',
     displayName: 'Semafor',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -437,7 +505,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:tshrll7hb5scyeg4m6nitxtr',
     handle: 'news.sky.com',
     displayName: 'Sky News',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global', 'uk'],
     langs: ['en'],
   },
@@ -469,7 +537,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:b2kutgxqlltwc6lhs724cfwr',
     handle: 'theathletic.com',
     displayName: 'The Athletic',
-    topics: ['sports'],
+    topics: ['sport'],
     regions: ['global', 'uk'],
     langs: ['en'],
   },
@@ -477,7 +545,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:nyxviptfyic2lvuorkr5yy3y',
     handle: 'theatlantic.com',
     displayName: 'The Atlantic',
-    topics: ['politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -485,7 +553,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:tcwxpp3qs5jlcmly4fdbxpx3',
     handle: 'theconversation.com',
     displayName: 'The Conversation',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global', 'uk'],
     langs: ['en'],
   },
@@ -493,7 +561,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:mhzk3blh4pfxo3fqh2meowbb',
     handle: 'economist.com',
     displayName: 'The Economist',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global', 'europe', 'uk'],
     langs: ['en'],
   },
@@ -501,7 +569,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:vovinwhtulbsx4mwfw26r5ni',
     handle: 'theguardian.com',
     displayName: 'The Guardian',
-    topics: ['general', 'politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['global', 'europe', 'uk'],
     langs: ['en'],
   },
@@ -525,7 +593,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:eclio37ymobqex2ncko63h4r',
     handle: 'nytimes.com',
     displayName: 'The New York Times',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -533,7 +601,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:t2dfq4ktezmwjdnjjaygw4bl',
     handle: 'newyorker.com',
     displayName: 'The New Yorker',
-    topics: ['politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -549,7 +617,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:i3fhjvvkbmirhyu4aeihhrnv',
     handle: 'wsj.com',
     displayName: 'The Wall Street Journal',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -557,7 +625,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:omofselcxdbcjhkc4235ygyl',
     handle: 'time.com',
     displayName: 'Time',
-    topics: ['general', 'politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -573,7 +641,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:2yyvxfpy4s63ars26dzlpbf2',
     handle: 'usatoday.com',
     displayName: 'USA Today',
-    topics: ['general'],
+    topics: [],
     regions: ['global'],
     langs: ['en'],
   },
@@ -581,7 +649,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:telglo5rrcxytqro5nqha3pt',
     handle: 'vox.com',
     displayName: 'Vox',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -589,7 +657,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:sfvkd7mmhdpilq6zwiomisqe',
     handle: 'vulture.com',
     displayName: 'Vulture',
-    topics: ['arts-culture'],
+    topics: ['culture'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -597,7 +665,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:k5nskatzhyxersjilvtnz4lh',
     handle: 'washingtonpost.com',
     displayName: 'Washington Post',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -605,7 +673,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:inz4fkbbp7ms3ixufw6xuvdi',
     handle: 'wired.com',
     displayName: 'WIRED',
-    topics: ['arts-culture', 'tech'],
+    topics: ['culture', 'tech'],
     regions: ['global'],
     langs: ['en'],
   },
@@ -614,7 +682,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:g46lsajb4yjsxnpzut7al6cg',
     handle: 'brusselstimes.com',
     displayName: 'Brussels Times',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['europe', 'belgium'],
     langs: ['en'],
   },
@@ -622,7 +690,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:y76r3wcphgsa2tabzsrfdwgg',
     handle: 'standaard.be',
     displayName: 'De Standaard',
-    topics: ['general', 'politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['europe', 'belgium'],
     langs: ['nl'],
   },
@@ -630,7 +698,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:ass4aukj7qniiiswynzx24xa',
     handle: 'volkskrant.nl',
     displayName: 'de Volkskrant',
-    topics: ['general', 'politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['europe', 'netherlands'],
     langs: ['nl'],
   },
@@ -638,7 +706,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:6xofcnvvojjnmggqx43zghwh',
     handle: 'spiegel.de',
     displayName: 'Der Spiegel',
-    topics: ['general', 'politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['europe', 'germany'],
     langs: ['de'],
   },
@@ -646,7 +714,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:42pjb4dy3p3ubiekmwpkthen',
     handle: 'zeit.de',
     displayName: 'Die Zeit',
-    topics: ['general', 'politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['europe', 'germany'],
     langs: ['de'],
   },
@@ -654,7 +722,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:zsw7yua6jh627a5y4j4txnff',
     handle: 'elmundotoday.com',
     displayName: 'El Mundo Today',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['europe', 'spain'],
     langs: ['es'],
   },
@@ -662,7 +730,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:u6mkbcgviwlbhuwqirmhcgu3',
     handle: 'elpais.com',
     displayName: 'El País',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['europe', 'spain'],
     langs: ['es'],
   },
@@ -678,7 +746,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:qqxqxgdu5z3he2piqfbfaku4',
     handle: 'lemonde.fr',
     displayName: 'Le Monde',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['europe', 'france'],
     langs: ['fr'],
   },
@@ -694,7 +762,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:drxqcoxx5lgv2tue57fgnxcj',
     handle: 'lesoir.be',
     displayName: 'Le Soir',
-    topics: ['general', 'politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['europe', 'belgium'],
     langs: ['fr'],
   },
@@ -702,7 +770,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:bvkk4kkuavnhqrwapc34wtfp',
     handle: 'nrc.nl',
     displayName: 'NRC',
-    topics: ['general', 'politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['europe', 'netherlands'],
     langs: ['nl'],
   },
@@ -715,10 +783,18 @@ export const NEWS_SOURCES: NewsSource[] = [
     langs: ['en'],
   },
   {
+    did: 'did:plc:xnmkjaouspdzqv4hzvvcf3j3',
+    handle: 'euobserver.com',
+    displayName: 'EUobserver',
+    topics: ['politics'],
+    regions: ['europe'],
+    langs: ['en'],
+  },
+  {
     did: 'did:plc:klknudxgybzgrr4nkyjm2owg',
     handle: 'thetimes.com',
     displayName: 'The Times and Sunday Times',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['europe', 'uk'],
     langs: ['en'],
   },
@@ -727,7 +803,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:6oy7hvraackzt2fy7duur62q',
     handle: 'demorgen.be',
     displayName: 'De Morgen',
-    topics: ['general', 'politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['belgium'],
     langs: ['nl'],
   },
@@ -743,7 +819,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:74lezito7fe4crvzxqaxlb4w',
     handle: 'hln.be',
     displayName: 'Het Laatste Nieuws',
-    topics: ['general'],
+    topics: [],
     regions: ['belgium'],
     langs: ['nl'],
   },
@@ -751,7 +827,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:3eqiobea3kpknblyifns2erm',
     handle: 'knack.be',
     displayName: 'Knack',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['belgium'],
     langs: ['nl'],
   },
@@ -759,7 +835,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:e6dbovlsokffoxeo7pdnzkap',
     handle: 'lalibre.be',
     displayName: 'La Libre Belgique',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['belgium'],
     langs: ['fr'],
   },
@@ -767,7 +843,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:qc4mcscqvjucmhpk76oonop5',
     handle: 'rtbf.be',
     displayName: 'RTBF Info',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['belgium'],
     langs: ['fr'],
   },
@@ -775,7 +851,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:rzjix5b5fwl3lhbxccsb5m5u',
     handle: 'vrtnws.be',
     displayName: 'VRT NWS',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['belgium'],
     langs: ['nl'],
   },
@@ -792,7 +868,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:wb4ovhhcrif6cp66oe2pqx7i',
     handle: 'bfmtv.com',
     displayName: 'BFMTV',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['france'],
     langs: ['fr'],
   },
@@ -800,7 +876,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:vm2tsoixg7vsygrolxd4rrho',
     handle: 'charliehebdo.fr',
     displayName: 'Charlie Hebdo',
-    topics: ['politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['france'],
     langs: ['fr'],
   },
@@ -808,7 +884,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:vb7d3zz6khc7zqcg7743eqiq',
     handle: 'franceinfo.fr',
     displayName: 'Franceinfo',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['france'],
     langs: ['fr'],
   },
@@ -824,7 +900,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:fpambcnvhstbckgv23fh7rem',
     handle: 'lexpress.fr',
     displayName: "L'Express",
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['france'],
     langs: ['fr'],
   },
@@ -832,7 +908,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:xhye77kvlv7vddwpapebsljj',
     handle: 'nouvelobs.com',
     displayName: "L'Obs",
-    topics: ['general', 'politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['france'],
     langs: ['fr'],
   },
@@ -840,7 +916,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:lv3e3gevfzmjvjcauffv4sjp',
     handle: 'la-croix.com',
     displayName: 'La Croix',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['france'],
     langs: ['fr'],
   },
@@ -848,7 +924,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:znu3bmhx5mx2icucilix5rpa',
     handle: 'lefigaro.fr',
     displayName: 'Le Figaro',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['france'],
     langs: ['fr'],
   },
@@ -856,7 +932,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:anpfslmr5xhyw7oqzai3dprd',
     handle: 'leparisien.fr',
     displayName: 'Le Parisien',
-    topics: ['general'],
+    topics: [],
     regions: ['france'],
     langs: ['fr'],
   },
@@ -864,7 +940,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:aixwsdaeubfrxedelxe7rqwq',
     handle: 'lepoint.fr',
     displayName: 'Le Point',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['france'],
     langs: ['fr'],
   },
@@ -880,7 +956,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:uo4didwt5qe4onrscbmqwvwm',
     handle: 'liberation.fr',
     displayName: 'Libération',
-    topics: ['general', 'politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['france'],
     langs: ['fr'],
   },
@@ -904,7 +980,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:p7gdpofkiswapwrhfos7nqqd',
     handle: 'ouest-france.fr',
     displayName: 'Ouest-France',
-    topics: ['general'],
+    topics: [],
     regions: ['france'],
     langs: ['fr'],
   },
@@ -920,7 +996,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:rc2vahjsltfy2fkaqyxpzkul',
     handle: 'sofoot.com',
     displayName: 'So Foot',
-    topics: ['sports'],
+    topics: ['sport'],
     regions: ['france'],
     langs: ['fr'],
   },
@@ -928,7 +1004,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:qtupmmogj72y37n7pl4u736w',
     handle: 'sudouest.fr',
     displayName: 'Sud Ouest',
-    topics: ['general'],
+    topics: [],
     regions: ['france'],
     langs: ['fr'],
   },
@@ -937,7 +1013,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:oalaoatxe7hlkqbz7kt2e3qm',
     handle: 'freitag.de',
     displayName: 'Der Freitag',
-    topics: ['politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['germany'],
     langs: ['de'],
   },
@@ -953,7 +1029,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:fbs7q5ymtsv6kbokagsk6dan',
     handle: 'kicker.de',
     displayName: 'Kicker',
-    topics: ['sports'],
+    topics: ['sport'],
     regions: ['germany'],
     langs: ['de'],
   },
@@ -961,7 +1037,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:46gspxu3aehikdcmmegutcxd',
     handle: 'ndr.de',
     displayName: 'NDR',
-    topics: ['general'],
+    topics: [],
     regions: ['germany'],
     langs: ['de'],
   },
@@ -977,7 +1053,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:fraeyszjcz6qjjksrkct7mpr',
     handle: 'stern.de',
     displayName: 'Stern',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['germany'],
     langs: ['de'],
   },
@@ -993,7 +1069,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:ulwdhcuhr3ujocgxgrsi6kca',
     handle: 'tagesspiegel.de',
     displayName: 'Tagesspiegel',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['germany'],
     langs: ['de'],
   },
@@ -1001,7 +1077,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:zorx72vm56gtgv4hzl66q4zm',
     handle: 'taz.de',
     displayName: 'TAZ',
-    topics: ['politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['germany'],
     langs: ['de'],
   },
@@ -1009,7 +1085,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:zx3fea4j6a4m5ior3332q2l5',
     handle: 'uebermedien.de',
     displayName: 'Übermedien',
-    topics: ['general'],
+    topics: [],
     regions: ['germany'],
     langs: ['de'],
   },
@@ -1026,7 +1102,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:7fq77ywjddp4kaju2gklzi77',
     handle: 'ad.nl',
     displayName: 'AD',
-    topics: ['general'],
+    topics: [],
     regions: ['netherlands'],
     langs: ['nl'],
   },
@@ -1034,7 +1110,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:afrq5upux4xh2o5psosn6rnv',
     handle: 'at5.nl',
     displayName: 'AT5',
-    topics: ['general'],
+    topics: [],
     regions: ['netherlands'],
     langs: ['nl'],
   },
@@ -1042,7 +1118,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:le3qtd7rmw3hzqrigwve7ocx',
     handle: 'bnr.nl',
     displayName: 'BNR Nieuwsradio',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['netherlands'],
     langs: ['nl'],
   },
@@ -1050,7 +1126,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:u7gjifeh4gxmompxjrugvunu',
     handle: 'decorrespondent.nl',
     displayName: 'De Correspondent',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['netherlands'],
     langs: ['nl'],
   },
@@ -1058,7 +1134,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:xpftwxnjd6qa4c72i2grsch5',
     handle: 'groene.nl',
     displayName: 'De Groene Amsterdammer',
-    topics: ['politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['netherlands'],
     langs: ['nl'],
   },
@@ -1066,7 +1142,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:v2th7wjz4ct3wydmeolnsapz',
     handle: 'telegraaf.nl',
     displayName: 'De Telegraaf',
-    topics: ['general'],
+    topics: [],
     regions: ['netherlands'],
     langs: ['nl'],
   },
@@ -1090,7 +1166,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:7jhjmjekhzpmk6cvnbtornz5',
     handle: 'parool.nl',
     displayName: 'Het Parool',
-    topics: ['general'],
+    topics: [],
     regions: ['netherlands'],
     langs: ['nl'],
   },
@@ -1098,7 +1174,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:5b4u3uwhlcj4f2f6gvflcrce',
     handle: 'nieuwsuur.nl',
     displayName: 'Nieuwsuur',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['netherlands'],
     langs: ['nl'],
   },
@@ -1106,7 +1182,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:f43ryzeuv5o5ob5pf7u34ztt',
     handle: 'nu.nl',
     displayName: 'NU.nl',
-    topics: ['general'],
+    topics: [],
     regions: ['netherlands'],
     langs: ['nl'],
   },
@@ -1114,7 +1190,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:zysbwg6enjz6hatjrdye6wuo',
     handle: 'trouw.nl',
     displayName: 'Trouw',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['netherlands'],
     langs: ['nl'],
   },
@@ -1130,7 +1206,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:j6333oww6ixrxlbb4fsfyzeq',
     handle: 'vn.nl',
     displayName: 'Vrij Nederland',
-    topics: ['politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['netherlands'],
     langs: ['nl'],
   },
@@ -1139,7 +1215,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:7zw6euiay4tdf7mphq2opnks',
     handle: '20minutos.es',
     displayName: '20Minutos',
-    topics: ['general'],
+    topics: [],
     regions: ['spain'],
     langs: ['es'],
   },
@@ -1147,7 +1223,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:j22lmfbgns43aqcy5rzhavx3',
     handle: 'abc.es',
     displayName: 'ABC',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['spain'],
     langs: ['es'],
   },
@@ -1155,7 +1231,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:ntbkjzkatqtw4p2ngfkvm7ov',
     handle: 'ara.cat',
     displayName: 'ARA',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['spain'],
     langs: ['ca'],
   },
@@ -1163,7 +1239,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:vwc3u2sqfxdykd2m6qu3p74b',
     handle: 'as.com',
     displayName: 'AS',
-    topics: ['sports'],
+    topics: ['sport'],
     regions: ['spain'],
     langs: ['es'],
   },
@@ -1171,7 +1247,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:cgtt2xmdufwgh6msvt7vvpg2',
     handle: 'cadenaser.com',
     displayName: 'Cadena SER',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['spain'],
     langs: ['es'],
   },
@@ -1187,7 +1263,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:nwkkuivtcwljhotpkj52xsu5',
     handle: 'elespanol.com',
     displayName: 'El Español',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['spain'],
     langs: ['es'],
   },
@@ -1195,7 +1271,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:kz7u7qx5zzgatcd2rsq6crac',
     handle: 'elperiodico.com',
     displayName: 'El Periódico',
-    topics: ['general'],
+    topics: [],
     regions: ['spain'],
     langs: ['es'],
   },
@@ -1203,7 +1279,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:sv2ivxvf7fxchmo2xamo3wwx',
     handle: 'eldiario.es',
     displayName: 'eldiario.es',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['spain'],
     langs: ['es'],
   },
@@ -1211,7 +1287,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:ma7n4u3bhcyc5bznvk7fsgkh',
     handle: 'lavanguardia.com',
     displayName: 'La Vanguardia',
-    topics: ['general', 'politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['spain'],
     langs: ['es'],
   },
@@ -1219,7 +1295,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:7qf5kjqpgcsqqrf52fwa7xcx',
     handle: 'ondacero.es',
     displayName: 'Onda Cero',
-    topics: ['general'],
+    topics: [],
     regions: ['spain'],
     langs: ['es'],
   },
@@ -1235,7 +1311,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:6mocxy76qhlrhhp3t7ltkbqf',
     handle: 'sport.es',
     displayName: 'SPORT',
-    topics: ['sports'],
+    topics: ['sport'],
     regions: ['spain'],
     langs: ['es'],
   },
@@ -1260,7 +1336,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:euezu3e2jurm5spgr35f2a7u',
     handle: 'bbcsounds.bsky.social',
     displayName: 'BBC Sounds',
-    topics: ['general', 'arts-culture'],
+    topics: ['culture'],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1276,7 +1352,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:572hutetu6rfcrof4jyzm6xi',
     handle: 'channel4news.bsky.social',
     displayName: 'Channel 4 News',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1284,7 +1360,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:mzeafnu2fiz4jsuohywamioa',
     handle: 'dailymail.co.uk',
     displayName: 'Daily Mail',
-    topics: ['general'],
+    topics: [],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1292,7 +1368,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:shxqhlplcrwpegumqqltpvzz',
     handle: 'mirror.co.uk',
     displayName: 'Daily Mirror',
-    topics: ['general'],
+    topics: [],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1300,7 +1376,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:33wdmcwpkvsckk4sqcnsav42',
     handle: 'eurogamer.bsky.social',
     displayName: 'Eurogamer',
-    topics: ['arts-culture', 'tech'],
+    topics: ['culture', 'tech'],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1316,7 +1392,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:zd2xrecgi2uwl2q44op2rani',
     handle: 'itvnews.bsky.social',
     displayName: 'ITV News',
-    topics: ['general'],
+    topics: [],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1324,7 +1400,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:lwmiyyhcs43mpjjuqppu4cfq',
     handle: 'lbc.co.uk',
     displayName: 'LBC News',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1332,7 +1408,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:3cgh6tdhxnnih4axrgy57cyz',
     handle: 'liverpoolecho.co.uk',
     displayName: 'Liverpool Echo',
-    topics: ['general', 'sports'],
+    topics: ['sport'],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1340,7 +1416,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:63zjpqfhowjsbfl26dipg3e2',
     handle: 'lrb.co.uk',
     displayName: 'LRB (London Review of Books)',
-    topics: ['politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1348,7 +1424,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:jo37bwbi4dkt4ce6dckcqcjx',
     handle: 'manchestereveningnews.co.uk',
     displayName: 'Manchester Evening News',
-    topics: ['general'],
+    topics: [],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1356,7 +1432,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:sdpon5ex2jtxg4b7wqp3xtv6',
     handle: 'metro.co.uk',
     displayName: 'Metro UK',
-    topics: ['general'],
+    topics: [],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1372,7 +1448,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:o62es4jcsgabgaswnjuvrbjm',
     handle: 'nujofficial.bsky.social',
     displayName: 'NUJ',
-    topics: ['general'],
+    topics: [],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1380,7 +1456,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:m44am22qggkwh6xqvddql3ss',
     handle: 'pressgazette.co.uk',
     displayName: 'Press Gazette',
-    topics: ['general'],
+    topics: [],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1388,7 +1464,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:2lbg7npnbv2fjgeroontnvas',
     handle: 'privateeyenews.bsky.social',
     displayName: 'Private Eye',
-    topics: ['politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1396,7 +1472,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:cn6pb5ywkbtqicg4drteegjr',
     handle: 'prospectmagazine.co.uk',
     displayName: 'Prospect',
-    topics: ['politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1404,7 +1480,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:ldpm7rbssri7q63rujlfcsna',
     handle: 'talksport.com',
     displayName: 'talkSPORT',
-    topics: ['sports'],
+    topics: ['sport'],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1412,7 +1488,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:g2syplhduvniqojxe2qpc4uh',
     handle: 'uk.theconversation.com',
     displayName: 'The Conversation UK',
-    topics: ['general'],
+    topics: [],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1420,7 +1496,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:nu2dnq6t4q6hpifmdnrjhm4v',
     handle: 'thefence.bsky.social',
     displayName: 'The Fence',
-    topics: ['politics', 'arts-culture'],
+    topics: ['politics', 'culture'],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1436,7 +1512,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:4sqb5ugga4lhhrkkuw2sa5oi',
     handle: 'theipaper.com',
     displayName: 'The i',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1444,7 +1520,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:yc54nj2zlnqrdotewpkbrauy',
     handle: 'the-independent.com',
     displayName: 'The Independent',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1460,7 +1536,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:rer7bi5nn2yvvsnlaiiwin2k',
     handle: 'telegraph.co.uk',
     displayName: 'The Telegraph',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1468,7 +1544,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:dh6kpxgui4whoahqyhc4lzb2',
     handle: 'timeout.com',
     displayName: 'Time Out London',
-    topics: ['arts-culture'],
+    topics: ['culture'],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1476,7 +1552,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:itf3eviftt7nis4q27cnjqwz',
     handle: 'tortoisemedia.bsky.social',
     displayName: 'Tortoise Media',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['uk'],
     langs: ['en'],
   },
@@ -1484,33 +1560,78 @@ export const NEWS_SOURCES: NewsSource[] = [
     did: 'did:plc:us655ytwdg3kp5yg5b4cqfk4',
     handle: 'ukparliament.parliament.uk',
     displayName: 'UK Parliament',
-    topics: ['general', 'politics'],
+    topics: ['politics'],
     regions: ['uk'],
     langs: ['en'],
+  },
+  {
+    did: 'did:plc:pvao7wm4e4b3c7rtco4vh766',
+    handle: 'politiken.dk',
+    displayName: 'Politiken',
+    topics: ['all'],
+    regions: ['dk'],
+    langs: ['da'],
+  },
+  {
+    did: 'did:plc:jhglrf4jb5jp4lleylz3bsiy',
+    handle: 'information.dk',
+    displayName: 'Dagbladet Information',
+    topics: ['all'],
+    regions: ['dk'],
+    langs: ['da'],
+  },
+  {
+    did: 'did:plc:sm3r6zeqp23xqm6lpumuaamc',
+    handle: 'tjekdet.dk',
+    displayName: 'TjekDet',
+    topics: ['all'],
+    regions: ['dk'],
+    langs: ['da'],
+  },
+  {
+    did: 'did:plc:ifhfs5naduarldztu2k5jmjs',
+    handle: 'videnskab.dk',
+    displayName: 'Videnskab.dk',
+    topics: ['science', 'health', 'climate', 'tech'],
+    regions: ['dk'],
+    langs: ['da'],
+  },
+  {
+    did: 'did:plc:pru765sx5kjcjtujgfm3stcm',
+    handle: 'finans.dk',
+    displayName: 'Finans',
+    topics: ['general', 'politics'],
+    regions: ['dk'],
+    langs: ['da'],
   },
 ]
 
 /**
- * Filter the registry by a selection. Empty `topics`/`regions` mean "no
- * constraint" on that facet. Pass `applyExclusions: false` to get the full
+ * Filter the registry by a selection. Empty `topics`/`regions`/`languages`
+ * mean "no constraint" on that facet, and so does `ALL_TOPICS` among the
+ * topics. Pass `applyExclusions: false` to get the full
  * match set for the opt-out screen, where the user toggles sources off.
  */
 export function selectSources(
   selection: {
     topics: string[]
     regions: string[]
+    languages?: string[]
     excludedDids?: string[]
   },
   {applyExclusions = true}: {applyExclusions?: boolean} = {},
 ): NewsSource[] {
-  const {topics, regions, excludedDids = []} = selection
-  // `all` is a catch-all that disables topic filtering entirely.
-  const filterByTopic = topics.length > 0 && !topics.includes('all')
+  const {topics, languages = [], excludedDids = []} = selection
+  const regions = withParents(selection.regions)
+  const filterByTopic = topics.length > 0 && !topics.includes(ALL_TOPICS)
   return NEWS_SOURCES.filter(source => {
     if (filterByTopic && !topics.some(t => source.topics.includes(t))) {
       return false
     }
     if (regions.length && !regions.some(r => source.regions.includes(r))) {
+      return false
+    }
+    if (languages.length && !languages.some(l => source.langs.includes(l))) {
       return false
     }
     if (applyExclusions && excludedDids.includes(source.did)) {
@@ -1520,13 +1641,33 @@ export function selectSources(
   })
 }
 
-const REGION_LABELS = new Map(NEWS_REGIONS.map(r => [r.id, r.label]))
-const TOPIC_LABELS = new Map(NEWS_TOPICS.map(t => [t.id, t.label]))
+const REGION_PARENTS = new Map(
+  NEWS_REGIONS.flatMap(r => (r.parent ? [[r.id, r.parent] as const] : [])),
+)
 
-// Labels for a source's tags (regions first, then topics) for the source card.
-export function sourceTagLabels(source: NewsSource): string[] {
+/** The regions, plus the country of any province among them. */
+function withParents(regions: string[]): string[] {
+  return [
+    ...new Set(
+      regions.flatMap(id => {
+        const parent = REGION_PARENTS.get(id)
+        return parent ? [id, parent] : [id]
+      }),
+    ),
+  ]
+}
+
+const REGION_LABELS = new Map(NEWS_REGIONS.map(r => [r.id, r.label]))
+/**
+ * Labels for a source's tags, regions first, then topics, for the source card.
+ * Topics are the news aggregator's themes, so their names come from it.
+ */
+export function sourceTagLabels(
+  source: NewsSource,
+  themeName: (slug: string) => string,
+): string[] {
   return [
     ...source.regions.map(id => REGION_LABELS.get(id) ?? id),
-    ...source.topics.map(id => TOPIC_LABELS.get(id) ?? id),
+    ...source.topics.map(themeName),
   ]
 }

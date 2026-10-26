@@ -3,9 +3,21 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-outputIos=$(eas build:version:get -p ios)
-outputAndroid=$(eas build:version:get -p android)
-BSKY_IOS_BUILD_NUMBER=${outputIos#*buildNumber - }
-BSKY_ANDROID_VERSION_CODE=${outputAndroid#*versionCode - }
+# Build numbers already present in the environment take precedence over the
+# global EAS counters. Production OTA deploys rely on this to target the
+# specific native build they are for, since the counters advance with every
+# testflight build.
+if [ -z "${BSKY_IOS_BUILD_NUMBER:-}" ] || [ -z "${BSKY_ANDROID_VERSION_CODE:-}" ]; then
+  output=$(eas build:version:get -p all --json --non-interactive)
+fi
 
-bash -c "BSKY_IOS_BUILD_NUMBER=$BSKY_IOS_BUILD_NUMBER BSKY_ANDROID_VERSION_CODE=$BSKY_ANDROID_VERSION_CODE $*"
+if [ -z "${BSKY_IOS_BUILD_NUMBER:-}" ]; then
+  BSKY_IOS_BUILD_NUMBER=$(jq -r '.buildNumber // 1' <<< "$output")
+fi
+
+if [ -z "${BSKY_ANDROID_VERSION_CODE:-}" ]; then
+  BSKY_ANDROID_VERSION_CODE=$(jq -r '.versionCode // 1' <<< "$output")
+fi
+
+export BSKY_IOS_BUILD_NUMBER BSKY_ANDROID_VERSION_CODE
+exec "$@"

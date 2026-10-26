@@ -1,6 +1,7 @@
-import {type JSX, useCallback, useRef} from 'react'
+import {type JSX, useCallback, useEffect, useRef} from 'react'
 import * as Linking from 'expo-linking'
 import * as Notifications from 'expo-notifications'
+import {Referrer} from '@bsky.app/expo-bluesky-swiss-army'
 import {i18n, type MessageDescriptor} from '@lingui/core'
 import {msg} from '@lingui/core/macro'
 import {
@@ -12,6 +13,7 @@ import {
   createNavigationContainerRef,
   DarkTheme,
   DefaultTheme,
+  getActionFromState as getActionFromStateDefault,
   type LinkingOptions,
   NavigationContainer,
   StackActions,
@@ -30,10 +32,17 @@ import {
 } from '#/lib/hooks/useNotificationHandler'
 import {useWebScrollRestoration} from '#/lib/hooks/useWebScrollRestoration'
 import {useCallOnce} from '#/lib/once'
-import {buildStateObject} from '#/lib/routes/helpers'
+import {
+  buildStateObject,
+  getCurrentRoute,
+  getTabState,
+  TabState,
+} from '#/lib/routes/helpers'
+import {type SidebarTab} from '#/lib/routes/tab-to-nav-item'
 import {
   type AllNavigatorParams,
   type BottomTabNavigatorParams,
+  type CommonNavigatorParams,
   type FlatNavigatorParams,
   type HomeTabNavigatorParams,
   type MessagesTabNavigatorParams,
@@ -45,40 +54,50 @@ import {
 } from '#/lib/routes/types'
 import {bskyTitle} from '#/lib/strings/headings'
 import {CHAT_INVITE_CODE_REGEX} from '#/lib/strings/url-helpers'
+import {emitSoftReset} from '#/state/events'
 import {useUnreadNotifications} from '#/state/queries/notifications/unread'
 import {useSession} from '#/state/session'
-import {useLoggedOutViewControls} from '#/state/shell/logged-out'
+import {useOnboardingState} from '#/state/shell'
+import {
+  useLoggedOutView,
+  useLoggedOutViewControls,
+} from '#/state/shell/logged-out'
 import {
   shouldRequestEmailConfirmation,
   snoozeEmailConfirmationPrompt,
 } from '#/state/shell/reminders'
+import {useShellLayout} from '#/state/shell/shell-layout'
 import {useCloseAllActiveElements} from '#/state/util'
 import {CommunityGuidelinesScreen} from '#/view/screens/CommunityGuidelines'
 import {CopyrightPolicyScreen} from '#/view/screens/CopyrightPolicy'
 import {DebugModScreen} from '#/view/screens/DebugMod'
 import {FeedsScreen} from '#/view/screens/Feeds'
-import {HomeScreen} from '#/view/screens/Home'
 import {ListsScreen} from '#/view/screens/Lists'
 import {ModerationBlockedAccounts} from '#/view/screens/ModerationBlockedAccounts'
 import {ModerationModlistsScreen} from '#/view/screens/ModerationModlists'
 import {ModerationMutedAccounts} from '#/view/screens/ModerationMutedAccounts'
 import {NotFoundScreen} from '#/view/screens/NotFound'
-import {NotificationsScreen} from '#/view/screens/Notifications'
 import {PostThreadScreen} from '#/view/screens/PostThread'
 import {PrivacyPolicyScreen} from '#/view/screens/PrivacyPolicy'
 import {ProfileScreen} from '#/view/screens/Profile'
-import {ProfileFeedLikedByScreen} from '#/view/screens/ProfileFeedLikedBy'
 import {StorybookScreen} from '#/view/screens/Storybook'
 import {SupportScreen} from '#/view/screens/Support'
 import {TermsOfServiceScreen} from '#/view/screens/TermsOfService'
 import {BottomBar} from '#/view/shell/bottom-bar/BottomBar'
 import {createNativeStackNavigatorWithAuth} from '#/view/shell/createNativeStackNavigatorWithAuth'
+import {DesktopLeftNav} from '#/view/shell/desktop/LeftNav'
+import {getNativeTabBarVisibility} from '#/view/shell/nativeTabBarVisibility'
+import {AtmosphereScreen} from '#/screens/Atmosphere'
 import {BookmarksScreen} from '#/screens/Bookmarks'
+import {CostumeEditorScreen} from '#/screens/CostumeEditor'
+import {CustomFeedScreen} from '#/screens/CustomFeed'
+import {CustomFeedLikedByScreen} from '#/screens/CustomFeed/CustomFeedLikedBy'
 import {SharedPreferencesTesterScreen} from '#/screens/E2E/SharedPreferencesTesterScreen'
 import {FindContactsFlowScreen} from '#/screens/FindContactsFlowScreen'
 import HashtagScreen from '#/screens/Hashtag'
 import {LogScreen} from '#/screens/Log'
 import {MessagesScreen} from '#/screens/Messages/ChatList'
+import {renderMessagesSplitViewLayout} from '#/screens/Messages/components/splitView/MessagesSplitViewLayout'
 import {MessagesConversationScreen} from '#/screens/Messages/Conversation'
 import {MessagesConversationSettingsScreen} from '#/screens/Messages/ConversationSettings'
 import {MessagesInboxScreen} from '#/screens/Messages/Inbox'
@@ -86,13 +105,17 @@ import {MessagesJoinRequestsScreen} from '#/screens/Messages/JoinRequests'
 import {MessagesSettingsScreen} from '#/screens/Messages/Settings'
 import {ModerationScreen} from '#/screens/Moderation'
 import {Screen as ModerationVerificationSettings} from '#/screens/Moderation/VerificationSettings'
+import {ModerationInboxScreen} from '#/screens/ModerationInbox'
+import {ModerationInboxNoticeDetailsScreen} from '#/screens/ModerationInbox/Notice'
+import {ModerationInboxReportDetailsScreen} from '#/screens/ModerationInbox/Report'
+import {ModerationInboxSettingsScreen} from '#/screens/ModerationInbox/Settings'
 import {Screen as ModerationInteractionSettings} from '#/screens/ModerationInteractionSettings'
+import {NotificationsScreen} from '#/screens/Notifications'
 import {NotificationsActivityListScreen} from '#/screens/Notifications/ActivityList'
 import {PostLikedByScreen} from '#/screens/Post/PostLikedBy'
 import {PostQuotesScreen} from '#/screens/Post/PostQuotes'
 import {PostRepostedByScreen} from '#/screens/Post/PostRepostedBy'
 import {ProfileKnownFollowersScreen} from '#/screens/Profile/KnownFollowers'
-import {ProfileFeedScreen} from '#/screens/Profile/ProfileFeed'
 import {ProfileFollowersScreen} from '#/screens/Profile/ProfileFollowers'
 import {ProfileFollowsScreen} from '#/screens/Profile/ProfileFollows'
 import {ProfileLabelerLikedByScreen} from '#/screens/Profile/ProfileLabelerLikedBy'
@@ -108,14 +131,20 @@ import {AppearanceSettingsScreen} from '#/screens/Settings/AppearanceSettings'
 import {AppIconSettingsScreen} from '#/screens/Settings/AppIconSettings'
 import {AppPasswordsScreen} from '#/screens/Settings/AppPasswords'
 import {AutomationLabelSettingsScreen} from '#/screens/Settings/AutomationLabelSettings'
+import {BetaFeaturesSettingsScreen} from '#/screens/Settings/BetaFeaturesSettings'
 import {ContentAndMediaSettingsScreen} from '#/screens/Settings/ContentAndMediaSettings'
+import {DecorationsSettingsScreen} from '#/screens/Settings/DecorationsSettings'
 import {ExternalMediaPreferencesScreen} from '#/screens/Settings/ExternalMediaPreferences'
 import {FindContactsSettingsScreen} from '#/screens/Settings/FindContactsSettings'
 import {FollowingFeedPreferencesScreen} from '#/screens/Settings/FollowingFeedPreferences'
 import {InterestsSettingsScreen} from '#/screens/Settings/InterestsSettings'
 import {LanguageSettingsScreen} from '#/screens/Settings/LanguageSettings'
 import {LegacyNotificationSettingsScreen} from '#/screens/Settings/LegacyNotificationSettings'
+import {NetworkServicesSettingsScreen} from '#/screens/Settings/NetworkServicesSettings'
+import {AppViewTransferSettingsScreen} from '#/screens/Settings/NetworkServicesSettings/AppViewTransfer'
+import {ContentServiceSettingsScreen} from '#/screens/Settings/NetworkServicesSettings/ContentServiceSettings'
 import {NotificationSettingsScreen} from '#/screens/Settings/NotificationSettings'
+import {ActivityNotificationSettingsScreen} from '#/screens/Settings/NotificationSettings/ActivityNotificationSettings'
 import {PetCompanionSettingsScreen} from '#/screens/Settings/PetCompanionSettings'
 import {PrivacyAndSecuritySettingsScreen} from '#/screens/Settings/PrivacyAndSecuritySettings'
 import {SettingsScreen} from '#/screens/Settings/Settings'
@@ -127,7 +156,7 @@ import {
 import {Wizard} from '#/screens/StarterPack/Wizard'
 import TopicScreen from '#/screens/Topic'
 import {VideoFeed} from '#/screens/VideoFeed'
-import {type Theme, useTheme} from '#/alf'
+import {type Theme, useBreakpoints, useTheme} from '#/alf'
 import {
   EmailDialogScreenID,
   useEmailDialogControl,
@@ -136,11 +165,18 @@ import {useAnalytics} from '#/analytics'
 import {setNavigationMetadata} from '#/analytics/metadata'
 import {BRAND} from '#/config/brand'
 import {IS_LIQUID_GLASS, IS_NATIVE, IS_WEB} from '#/env'
+import {HomeScreen} from '#/features/followingV2/home'
+import {OutletDirectoryScreen} from '#/features/frontpages/directory'
+import {FrontpageScreen} from '#/features/frontpages/FrontpageScreen'
+import {NewsroomScreen as LegacyFrontpageScreen} from '#/features/frontpages/legacy/NewsroomScreen'
 import {InviteScannerScreen} from '#/features/inviteFriends'
+import {NewsArticleScreen} from '#/features/news/article/NewsArticleScreen'
+import {NewsExploreScreen} from '#/features/news/explore'
+import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
+import {NewsFeedScreen as LegacyNewsFeedScreen} from '#/features/newsFeed/legacy/NewsFeedScreen'
 import {NewsFeedScreen} from '#/features/newsFeed/NewsFeedScreen'
+import {NewsSettingsScreen} from '#/features/newsFeed/NewsSettingsScreen'
 import {router} from '#/routes'
-import {Referrer} from '../modules/expo-bluesky-swiss-army'
-import {renderMessagesSplitViewLayout} from './screens/Messages/components/splitView/MessagesSplitViewLayout'
 
 const navigationRef = createNavigationContainerRef<AllNavigatorParams>()
 
@@ -152,6 +188,7 @@ const MyProfileTab =
   createNativeStackNavigatorWithAuth<MyProfileTabNavigatorParams>()
 const MessagesTab =
   createNativeStackNavigatorWithAuth<MessagesTabNavigatorParams>()
+const SecondaryTab = createNativeStackNavigatorWithAuth<CommonNavigatorParams>()
 const Flat = createNativeStackNavigatorWithAuth<FlatNavigatorParams>()
 const Tab = createBottomTabNavigator<BottomTabNavigatorParams>()
 
@@ -170,19 +207,89 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         options={{title: title(msg`Not Found`)}}
       />
       <Stack.Screen
+        name="Atmosphere"
+        getComponent={() => AtmosphereScreen}
+        options={{title: title(msg`Atmosphere`)}}
+      />
+      <Stack.Screen
         name="Lists"
         component={ListsScreen}
         options={{title: title(msg`Lists`), requireAuth: true}}
       />
       <Stack.Screen
         name="NewsFeed"
-        getComponent={() => NewsFeedScreen}
+        getComponent={() =>
+          NEWS_V2_ENABLED ? NewsFeedScreen : LegacyNewsFeedScreen
+        }
         options={{title: title(msg`News`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="NewsSettings"
+        getComponent={() =>
+          NEWS_V2_ENABLED ? NewsSettingsScreen : NotFoundScreen
+        }
+        options={{title: title(msg`News preferences`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="Frontpage"
+        getComponent={() =>
+          NEWS_V2_ENABLED ? FrontpageScreen : LegacyFrontpageScreen
+        }
+        options={{
+          title: NEWS_V2_ENABLED
+            ? title(msg`${BRAND.name} News`)
+            : title(msg`${BRAND.name} Newsrooms`),
+          requireAuth: true,
+        }}
+      />
+      <Stack.Screen
+        name="NewsExplore"
+        getComponent={() =>
+          NEWS_V2_ENABLED ? NewsExploreScreen : NotFoundScreen
+        }
+        options={{
+          title: title(msg`${BRAND.name} News`),
+          requireAuth: true,
+        }}
+      />
+      <Stack.Screen
+        name="OutletDirectory"
+        getComponent={() =>
+          NEWS_V2_ENABLED ? OutletDirectoryScreen : NotFoundScreen
+        }
+        options={{title: title(msg`Outlets`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="NewsArticle"
+        getComponent={() =>
+          NEWS_V2_ENABLED ? NewsArticleScreen : NotFoundScreen
+        }
+        options={{title: title(msg`Article`), requireAuth: true}}
       />
       <Stack.Screen
         name="Moderation"
         getComponent={() => ModerationScreen}
         options={{title: title(msg`Moderation`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="ModerationInbox"
+        getComponent={() => ModerationInboxScreen}
+        options={{title: title(msg`Moderation inbox`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="ModerationInboxSettings"
+        getComponent={() => ModerationInboxSettingsScreen}
+        options={{title: title(msg`Mod inbox settings`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="ModerationInboxReportDetails"
+        getComponent={() => ModerationInboxReportDetailsScreen}
+        options={{title: title(msg`Your report`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="ModerationInboxNoticeDetails"
+        getComponent={() => ModerationInboxNoticeDetailsScreen}
+        options={{title: title(msg`Notice`), requireAuth: true}}
       />
       <Stack.Screen
         name="ModerationModlists"
@@ -294,13 +401,13 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         })}
       />
       <Stack.Screen
-        name="ProfileFeed"
-        getComponent={() => ProfileFeedScreen}
+        name="CustomFeed"
+        getComponent={() => CustomFeedScreen}
         options={{title: title(msg`Feed`)}}
       />
       <Stack.Screen
-        name="ProfileFeedLikedBy"
-        getComponent={() => ProfileFeedLikedByScreen}
+        name="CustomFeedLikedBy"
+        getComponent={() => CustomFeedLikedByScreen}
         options={{title: title(msg`Liked by`)}}
       />
       <Stack.Screen
@@ -398,10 +505,43 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         }}
       />
       <Stack.Screen
+        name="CostumeEditor"
+        getComponent={() => CostumeEditorScreen}
+        options={{
+          title: title(msg`Costume studio`),
+          requireAuth: true,
+          gestureEnabled: false,
+        }}
+      />
+      <Stack.Screen
         name="AppearanceSettings"
         getComponent={() => AppearanceSettingsScreen}
         options={{
           title: title(msg`Appearance`),
+          requireAuth: true,
+        }}
+      />
+      <Stack.Screen
+        name="NetworkServicesSettings"
+        getComponent={() => NetworkServicesSettingsScreen}
+        options={{
+          title: title(msg`Network services`),
+          requireAuth: true,
+        }}
+      />
+      <Stack.Screen
+        name="ContentServiceSettings"
+        getComponent={() => ContentServiceSettingsScreen}
+        options={{
+          title: title(msg`Content service`),
+          requireAuth: true,
+        }}
+      />
+      <Stack.Screen
+        name="AppViewTransferSettings"
+        getComponent={() => AppViewTransferSettingsScreen}
+        options={{
+          title: title(msg`Transfer app data`),
           requireAuth: true,
         }}
       />
@@ -413,11 +553,29 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
           requireAuth: true,
         }}
       />
+      {BRAND.decorations.enabled && (
+        <Stack.Screen
+          name="DecorationsSettings"
+          getComponent={() => DecorationsSettingsScreen}
+          options={{
+            title: title(msg`Profile decorations`),
+            requireAuth: true,
+          }}
+        />
+      )}
       <Stack.Screen
         name="AccountSettings"
         getComponent={() => AccountSettingsScreen}
         options={{
           title: title(msg`Account`),
+          requireAuth: true,
+        }}
+      />
+      <Stack.Screen
+        name="BetaFeaturesSettings"
+        getComponent={() => BetaFeaturesSettingsScreen}
+        options={{
+          title: title(msg`Beta features`),
           requireAuth: true,
         }}
       />
@@ -457,6 +615,14 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         name="NotificationSettings"
         getComponent={() => NotificationSettingsScreen}
         options={{title: title(msg`Notification settings`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="ActivityNotificationSettings"
+        getComponent={() => ActivityNotificationSettingsScreen}
+        options={{
+          title: title(msg`Activity notifications`),
+          requireAuth: true,
+        }}
       />
       <Stack.Screen
         name="ContentAndMediaSettings"
@@ -555,12 +721,12 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
       <Stack.Screen
         name="StarterPackWizard"
         getComponent={() => Wizard}
-        options={{title: title(msg`Create a starter pack`), requireAuth: true}}
+        options={{title: title(msg`Create a Starter Pack`), requireAuth: true}}
       />
       <Stack.Screen
         name="StarterPackEdit"
         getComponent={() => Wizard}
-        options={{title: title(msg`Edit your starter pack`), requireAuth: true}}
+        options={{title: title(msg`Edit your Starter Pack`), requireAuth: true}}
       />
       <Stack.Screen
         name="VideoFeed"
@@ -602,7 +768,7 @@ function TabsNavigator({
 }) {
   const tabBar = useCallback(
     (props: JSX.IntrinsicAttributes & BottomTabBarProps) => (
-      <BottomBar {...props} />
+      <NativeTabBar {...props} />
     ),
     [],
   )
@@ -628,8 +794,120 @@ function TabsNavigator({
         name="MyProfileTab"
         getComponent={() => MyProfileTabNavigator}
       />
+      <Tab.Screen
+        name="AtmosphereTab"
+        getComponent={() => AtmosphereTabNavigator}
+      />
+      <Tab.Screen name="FeedsTab" getComponent={() => FeedsTabNavigator} />
+      <Tab.Screen name="ListsTab" getComponent={() => ListsTabNavigator} />
+      <Tab.Screen
+        name="BookmarksTab"
+        getComponent={() => BookmarksTabNavigator}
+      />
+      <Tab.Screen
+        name="SettingsTab"
+        getComponent={() => SettingsTabNavigator}
+      />
     </Tab.Navigator>
   )
+}
+
+function SecondaryTabNavigator({
+  initialRouteName,
+}: {
+  initialRouteName: keyof CommonNavigatorParams
+}) {
+  const t = useTheme()
+  return (
+    <SecondaryTab.Navigator
+      screenOptions={screenOptions(t)}
+      initialRouteName={initialRouteName}>
+      {commonScreens(SecondaryTab as typeof Flat)}
+    </SecondaryTab.Navigator>
+  )
+}
+
+function AtmosphereTabNavigator() {
+  return <SecondaryTabNavigator initialRouteName="Atmosphere" />
+}
+
+function FeedsTabNavigator() {
+  return <SecondaryTabNavigator initialRouteName="Feeds" />
+}
+
+function ListsTabNavigator() {
+  return <SecondaryTabNavigator initialRouteName="Lists" />
+}
+
+function BookmarksTabNavigator() {
+  return <SecondaryTabNavigator initialRouteName="Bookmarks" />
+}
+
+function SettingsTabNavigator() {
+  return <SecondaryTabNavigator initialRouteName="Settings" />
+}
+
+function NativeTabBar(props: BottomTabBarProps) {
+  const {gtMobile} = useBreakpoints()
+  const {hasSession, currentAccount} = useSession()
+  const onboardingState = useOnboardingState()
+  const {showLoggedOut} = useLoggedOutView()
+  const {footerHeight} = useShellLayout()
+  const currentRouteName = getCurrentRoute(props.state).name
+  const {showTabletSidebar, hideTabBar} = getNativeTabBarVisibility({
+    gtMobile,
+    hasSession,
+    signupQueued: !!currentAccount?.signupQueued,
+    showLoggedOut,
+    onboardingActive: onboardingState.isActive,
+    isVideoFeed: currentRouteName === 'VideoFeed',
+  })
+
+  useEffect(() => {
+    if (showTabletSidebar || hideTabBar) {
+      footerHeight.set(0)
+    }
+  }, [showTabletSidebar, hideTabBar, footerHeight])
+
+  const onNavigateTab = (tab: SidebarTab) => {
+    const state = props.navigation.getState()
+    const tabState = getTabState(state, tab)
+    if (tabState === TabState.InsideAtRoot) {
+      emitSoftReset()
+    } else if (tabState === TabState.Inside) {
+      const target = state.routes.find(route => route.name === `${tab}Tab`)
+        ?.state?.key
+      if (target) {
+        props.navigation.dispatch({
+          ...StackActions.popToTop(),
+          target,
+        })
+      } else {
+        props.navigation.reset({
+          index: 0,
+          routes: [{name: `${tab}Tab`}],
+        })
+      }
+    } else {
+      // The tab navigator route names mirror the shared navigation tab names.
+      props.navigation.navigate(`${tab}Tab`)
+    }
+  }
+
+  if (hideTabBar) {
+    return null
+  }
+
+  if (showTabletSidebar) {
+    return (
+      <DesktopLeftNav
+        routeName={currentRouteName}
+        onNavigateTab={onNavigateTab}
+      />
+    )
+  }
+
+  return <BottomBar {...props} />
 }
 
 function screenOptions(t: Theme) {
@@ -642,18 +920,20 @@ function screenOptions(t: Theme) {
 
 function HomeTabNavigator() {
   const t = useTheme()
+  const {gtMobile} = useBreakpoints()
 
-  const BLURRED_SCROLL_EDGE_EFFECT = IS_LIQUID_GLASS
-    ? ({
-        headerShown: true,
-        headerTransparent: true,
-        headerTitle: '',
-        headerBackVisible: false,
-        scrollEdgeEffects: {
-          top: 'soft',
-        },
-      } as const)
-    : {}
+  const BLURRED_SCROLL_EDGE_EFFECT =
+    IS_LIQUID_GLASS && !gtMobile
+      ? ({
+          headerShown: true,
+          headerTransparent: true,
+          headerTitle: '',
+          headerBackVisible: false,
+          scrollEdgeEffects: {
+            top: 'soft',
+          },
+        } as const)
+      : {}
 
   return (
     <HomeTab.Navigator screenOptions={screenOptions(t)} initialRouteName="Home">
@@ -792,6 +1072,19 @@ const FlatNavigator = ({
  * to the navigation context.
  */
 
+/**
+ * `LINKING` has no `config`, so on its own `getActionFromState` doesn't know
+ * that Home is the HomeTab stack's initial route. For the [Home, screen] state
+ * that `getStateFromPath` builds for most links, it then resets the whole
+ * HomeTab stack, remounting Home and losing its feeds and scroll position.
+ * With this, a link opens the screen on top of the existing stack, or on top of
+ * Home if the stack hasn't mounted yet. It is defined at module scope so that
+ * `getActionFromState` can cache what it derives from it.
+ */
+const NATIVE_LINK_ACTION_CONFIG = {
+  screens: {HomeTab: {initialRouteName: 'Home'}},
+}
+
 const LINKING = {
   // TODO figure out what we are going to use
   // note: `bluesky://` is what is used in app.config.js
@@ -799,10 +1092,7 @@ const LINKING = {
 
   getPathFromState(state: State) {
     // find the current node in the navigation tree
-    let node = state.routes[state.index || 0]
-    while (node.state?.routes && typeof node.state?.index === 'number') {
-      node = node.state?.routes[node.state?.index]
-    }
+    const node = getCurrentRoute(state)
 
     // build the path
     const route = router.matchName(node.name)
@@ -852,6 +1142,15 @@ const LINKING = {
       if (name === 'Messages') {
         return buildStateObject('MessagesTab', 'Messages', params)
       }
+      if (
+        name === 'Atmosphere' ||
+        name === 'Feeds' ||
+        name === 'Lists' ||
+        name === 'Bookmarks' ||
+        name === 'Settings'
+      ) {
+        return buildStateObject(`${name}Tab`, name, params)
+      }
       // if the path is something else, like a post, profile, or even settings, we need to initialize the home tab as pre-existing state otherwise the back button will not work
       return buildStateObject('HomeTab', name, params, [
         {
@@ -863,6 +1162,13 @@ const LINKING = {
       const res = buildStateObject('Flat', name, params)
       return res
     }
+  },
+
+  getActionFromState(state, options) {
+    return getActionFromStateDefault(
+      state,
+      IS_NATIVE ? NATIVE_LINK_ACTION_CONFIG : options,
+    )
   },
 } satisfies LinkingOptions<AllNavigatorParams>
 
@@ -920,7 +1226,7 @@ function RoutesContainer({children}: React.PropsWithChildren<{}>) {
         // chat-removed-from-group, chat-join-request-rejected: the convo is
         // no longer accessible to the recipient, so just open the list.
         // @ts-expect-error nested navigators aren't typed -sfn
-        navigate('MessagesTab', {screen: 'Messages'})
+        void navigate('MessagesTab', {screen: 'Messages'})
       }
     },
   )
@@ -1007,24 +1313,25 @@ function RoutesContainer({children}: React.PropsWithChildren<{}>) {
 
     ax.metric('init', {
       initMs: Math.round(
-        // @ts-ignore Emitted by Metro in the bundle prelude
+        // @ts-expect-error Emitted by Metro in the bundle prelude
         performance.now() - global.__BUNDLE_START_TIME__,
       ),
     })
 
     if (IS_WEB) {
-      const referrerInfo = Referrer.getReferrerInfo()
-      if (
-        referrerInfo &&
-        referrerInfo.hostname !== 'bsky.app' &&
-        !BRAND.web.hosts.includes(referrerInfo.hostname)
-      ) {
-        ax.metric('deepLink:referrerReceived', {
-          to: window.location.href,
-          referrer: referrerInfo?.referrer,
-          hostname: referrerInfo?.hostname,
-        })
-      }
+      void Referrer.getReferrerInfo().then(referrerInfo => {
+        if (
+          referrerInfo &&
+          referrerInfo.hostname !== 'bsky.app' &&
+          !BRAND.web.hosts.includes(referrerInfo.hostname)
+        ) {
+          ax.metric('deepLink:referrerReceived', {
+            to: window.location.href,
+            referrer: referrerInfo.referrer,
+            hostname: referrerInfo.hostname,
+          })
+        }
+      })
     }
 
     // temp, just testing
@@ -1085,7 +1392,7 @@ function navigate<K extends keyof AllNavigatorParams>(
         }
         navigationRef.addListener('state', handler)
 
-        // @ts-ignore I don't know what would make typescript happy but I have a life -prf
+        // @ts-expect-error I don't know what would make typescript happy but I have a life -prf
         navigationRef.navigate(name, params)
       }),
       timeout(1e3),

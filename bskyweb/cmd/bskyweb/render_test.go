@@ -44,10 +44,20 @@ func extractJSONLD(t *testing.T, html string) string {
 }
 
 func TestRenderBase_NoindexMeta(t *testing.T) {
-    html := renderTemplate(t, "base.html", pongo2.Context{"noindex": true, "nofollow": true})
-    if !strings.Contains(html, `<meta name="robots" content="noindex, nofollow">`) {
-        t.Errorf("expected combined noindex,nofollow meta; got:\n%s", html)
-    }
+	html := renderTemplate(t, "base.html", pongo2.Context{"noindex": true, "nofollow": true})
+	if !strings.Contains(html, `<meta name="robots" content="noindex, nofollow">`) {
+		t.Errorf("expected combined noindex,nofollow meta; got:\n%s", html)
+	}
+}
+
+func TestRenderHome_UsesGeneratedBrand(t *testing.T) {
+	html := renderTemplate(t, "home.html", pongo2.Context{})
+	if !strings.Contains(html, "<title>"+brandName+"</title>") {
+		t.Errorf("expected generated brand title; got:\n%s", html)
+	}
+	if !strings.Contains(html, `content="`+brandSocialCardURL+`"`) {
+		t.Errorf("expected generated social card URL; got:\n%s", html)
+	}
 }
 
 func TestRenderPost_EmitsJSONLD(t *testing.T) {

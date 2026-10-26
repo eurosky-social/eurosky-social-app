@@ -1,5 +1,5 @@
 import type * as AgeRange from 'expo-age-range'
-import {type computeAgeAssuranceRegionAccess} from '@atproto/api'
+import {type computeAgeAssuranceRegionAccess} from '@bsky/sdk/utils'
 
 import {logger} from '#/ageAssurance/logger'
 
@@ -43,7 +43,8 @@ export type AgeAssuranceState = {
   lastInitiatedAt?: string
   status: AgeAssuranceStatus
   access: AgeAssuranceAccess
-  error?: 'config' | 'metadata' // maybe other specific cases in the future
+  isLoading?: boolean
+  error?: 'config' | 'metadata' | 'account-data'
 }
 
 export type AgeAssuranceFlags = {

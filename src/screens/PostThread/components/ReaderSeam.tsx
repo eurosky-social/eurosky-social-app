@@ -1,7 +1,6 @@
 import {useState} from 'react'
 import {View} from 'react-native'
 import Animated, {FadeIn} from 'react-native-reanimated'
-import {type AppBskyFeedDefs, type AppBskyFeedThreadgate} from '@atproto/api'
 import {plural} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react/macro'
 
@@ -23,6 +22,7 @@ import {type OnPostSuccessData} from '#/state/shell/composer'
 import {ReaderSeamReplies} from '#/screens/PostThread/components/ReaderSeamControls'
 import {ThreadComposePromptPill} from '#/screens/PostThread/components/ThreadComposePrompt'
 import {
+  getReplyLineColor,
   OUTER_SPACE,
   READER_BRACKET_WIDTH,
   READER_SEAM_HEIGHT,
@@ -38,6 +38,8 @@ import {
 import {RepostButton} from '#/components/PostControls/RepostButton'
 import {useFormatPostStatCount} from '#/components/PostControls/util'
 import * as Toast from '#/components/Toast'
+import {useLikePresentation} from '#/features/halloween/useLikePresentation'
+import {type app} from '#/lexicons'
 
 /**
  * The toggle rendered after a reader post, inside its bracket. Collapsed it
@@ -65,7 +67,7 @@ export function ReaderSeam({
   sort: string
   onToggle: () => void
   onPostSuccess?: (data: OnPostSuccessData) => void
-  threadgateRecord?: AppBskyFeedThreadgate.Record
+  threadgateRecord?: app.bsky.feed.threadgate.Main
 }) {
   const postShadow = usePostShadow(post.value.post)
 
@@ -102,7 +104,7 @@ function ReaderSeamInner({
   threadgateRecord,
 }: {
   post: ThreadPostItem
-  postShadow: Shadow<AppBskyFeedDefs.PostView>
+  postShadow: Shadow<app.bsky.feed.defs.PostView>
   expanded: boolean
   hiddenReplyCount: number
   continuationUri: string
@@ -110,7 +112,7 @@ function ReaderSeamInner({
   sort: string
   onToggle: () => void
   onPostSuccess?: (data: OnPostSuccessData) => void
-  threadgateRecord?: AppBskyFeedThreadgate.Record
+  threadgateRecord?: app.bsky.feed.threadgate.Main
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
@@ -124,6 +126,12 @@ function ReaderSeamInner({
   const logContext = 'PostThreadItem'
 
   const shadow = postShadow
+  const likePresentation = useLikePresentation({
+    uri: shadow.uri,
+    record: post.value.post.record,
+    isLiked: Boolean(shadow.viewer?.like),
+    likeCount: shadow.likeCount ?? 0,
+  })
   const record = post.value.post.record
   const moderation = post.moderation
 
@@ -228,7 +236,7 @@ function ReaderSeamInner({
               marginTop: READER_SEAM_HEIGHT / 2 - 1,
               height: READER_BRACKET_WIDTH,
               opacity: lineVisible ? 1 : 0,
-              backgroundColor: t.atoms.border_contrast_low.borderColor,
+              backgroundColor: getReplyLineColor(t),
             },
           ]}
         />
@@ -263,26 +271,11 @@ function ReaderSeamInner({
           />
           <PostControlButton
             active={Boolean(shadow.viewer?.like)}
-            activeColor={t.palette.pink}
+            activeColor={likePresentation.activeColor}
             onPress={() => requireAuth(() => onPressToggleLike())}
-            label={
-              shadow.viewer?.like
-                ? l({
-                    message: `Unlike (${plural(shadow.likeCount || 0, {
-                      one: '# like',
-                      other: '# likes',
-                    })})`,
-                    comment: 'Like button, liked state',
-                  })
-                : l({
-                    message: `Like (${plural(shadow.likeCount || 0, {
-                      one: '# like',
-                      other: '# likes',
-                    })})`,
-                    comment: 'Like button, unliked state',
-                  })
-            }>
+            label={likePresentation.label}>
             <AnimatedLikeIcon
+              {...likePresentation.iconProps}
               isLiked={Boolean(shadow.viewer?.like)}
               hasBeenToggled={hasLikeBeenToggled}
             />

@@ -1,15 +1,26 @@
+import {useState} from 'react'
 import {View} from 'react-native'
+import Animated from 'react-native-reanimated'
 import {Trans, useLingui} from '@lingui/react/macro'
 
+import {ScrollProvider, useScrollHandlers} from '#/lib/ScrollContext'
 import {type FeedDescriptor} from '#/state/queries/post-feed'
 import {PostFeed} from '#/view/com/posts/PostFeed'
-import {atoms as a, useTheme} from '#/alf'
+import {atoms as a, native, useTheme, web} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {SettingsGear2_Stroke2_Corner0_Rounded as SettingsGear} from '#/components/icons/SettingsGear2'
 import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
+import {BRAND} from '#/config/brand'
+import {
+  ExploreHeaderOuter,
+  ExploreSpreadBorders,
+  useExploreSpread,
+} from '#/features/news/explore/components/ExploreColumn'
+import {useCollapsingTitle} from '#/features/news/hub/useCollapsingTitle'
 import {selectSources} from '../sources'
 import {type NewsFeedPrefs} from '../state/prefs'
+import {NewsFeedRailColumn} from './NewsFeedRailColumn'
 
 export function NewsFeedTab({
   prefs,
@@ -23,41 +34,96 @@ export function NewsFeedTab({
   const dids = selectSources({
     topics: prefs.topics,
     regions: prefs.regions,
+    languages: prefs.languages,
     excludedDids: prefs.excludedDids,
   }).map(source => source.did)
   const feed = `newsfeed|${dids.join(',')}` as FeedDescriptor
 
-  return (
-    <Layout.Screen testID="newsFeedScreen">
-      <Layout.Header.Outer>
-        <Layout.Header.BackButton />
-        <Layout.Header.Content>
-          <Layout.Header.TitleText>
-            <Trans>News</Trans>
-          </Layout.Header.TitleText>
-        </Layout.Header.Content>
-        <Layout.Header.Slot>
-          <Button
-            testID="newsFeedEditBtn"
-            label={l`Customize news feed`}
-            size="small"
-            color="secondary"
-            shape="round"
-            onPress={onEdit}>
-            <ButtonIcon icon={SettingsGear} size="md" />
-          </Button>
-        </Layout.Header.Slot>
-      </Layout.Header.Outer>
+  const {wide} = useExploreSpread()
+  /** Height of the pinned header, which the right column sits under. */
+  const [chromeHeight, setChromeHeight] = useState(0)
+  const titleCollapse = useCollapsingTitle()
+  const parentScrollHandlers = useScrollHandlers()
 
-      {dids.length === 0 ? (
-        <NoSources onEdit={onEdit} />
-      ) : (
-        <PostFeed
-          testID="newsFeed"
-          feed={feed}
-          renderEmptyState={renderEmpty}
-        />
-      )}
+  const headerContent = (
+    <>
+      <Layout.Header.BackButton />
+      <Layout.Header.Content>
+        <Layout.Header.TitleText>
+          <Trans>{BRAND.name} News</Trans>
+        </Layout.Header.TitleText>
+      </Layout.Header.Content>
+      {/* Outside Header.Slot: slots are fixed-width squares and this button
+       * carries a text label. */}
+      <Button
+        testID="newsFeedEditBtn"
+        label={l`Customize news feed`}
+        size="small"
+        color="secondary"
+        onPress={onEdit}>
+        <ButtonIcon icon={SettingsGear} />
+        <ButtonText>
+          <Trans>Configure</Trans>
+        </ButtonText>
+      </Button>
+    </>
+  )
+
+  /*
+   * The header pins above the feed on every screen size. On a wide web layout
+   * it runs the width of the spread, as on the hub's other pages, with the
+   * feed and the page's own right column below it.
+   */
+  return (
+    <Layout.Screen testID="newsFeedScreen" noCenterBorders={wide}>
+      {wide && <ExploreSpreadBorders />}
+      <View
+        pointerEvents="box-none"
+        style={[web([a.sticky, {top: 0}]), native(a.overflow_hidden), a.z_10]}
+        onLayout={
+          wide
+            ? event => setChromeHeight(event.nativeEvent.layout.height)
+            : undefined
+        }>
+        <Animated.View style={titleCollapse.blockStyle}>
+          <View onLayout={titleCollapse.onTitleLayout}>
+            {wide ? (
+              <ExploreHeaderOuter>{headerContent}</ExploreHeaderOuter>
+            ) : (
+              <Layout.Header.Outer>{headerContent}</Layout.Header.Outer>
+            )}
+          </View>
+        </Animated.View>
+      </View>
+      {/* Relative, so the right column can run the feed's full height and
+       * stick within it. */}
+      <View style={[a.relative, a.flex_1]}>
+        {dids.length === 0 ? (
+          <NoSources onEdit={onEdit} />
+        ) : (
+          /* Passes the feed's native scroll on to the title collapse, while
+           * keeping the shell's own handlers (which hide its bottom bar). */
+          <ScrollProvider
+            {...parentScrollHandlers}
+            onScroll={(event, context) => {
+              'worklet'
+              parentScrollHandlers.onScroll?.(event, context)
+              titleCollapse.onScroll(event)
+            }}>
+            <PostFeed
+              testID="newsFeed"
+              feed={feed}
+              renderEmptyState={renderEmpty}
+            />
+          </ScrollProvider>
+        )}
+        {wide && (
+          <NewsFeedRailColumn
+            top={chromeHeight}
+            offset={titleCollapse.offset}
+          />
+        )}
+      </View>
     </Layout.Screen>
   )
 }

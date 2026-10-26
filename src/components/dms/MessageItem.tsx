@@ -8,6 +8,7 @@ import {
   type ViewStyle,
 } from 'react-native'
 import Animated, {
+  type AnimatedStyle,
   FadeIn,
   FadeOut,
   interpolateColor,
@@ -21,14 +22,8 @@ import Animated, {
   ZoomIn,
   ZoomOut,
 } from 'react-native-reanimated'
-import {
-  AppBskyEmbedRecord,
-  type ChatBskyActorDefs,
-  ChatBskyConvoDefs,
-  ChatBskyEmbedJoinLink,
-  moderateProfile,
-  RichText as RichTextAPI,
-} from '@atproto/api'
+import {moderateProfile} from '@bsky/sdk/moderation'
+import {RichText as RichTextAPI} from '@bsky/sdk/richtext'
 import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
@@ -57,6 +52,8 @@ import * as ProfileCard from '#/components/ProfileCard'
 import * as Prompt from '#/components/Prompt'
 import {RichText} from '#/components/RichText'
 import {Text} from '#/components/Typography'
+import {app, chat} from '#/lexicons'
+import * as bsky from '#/types/bsky'
 import {DateDivider} from './DateDivider'
 import {MessageItemEmbed} from './MessageItemEmbed'
 import {MessageItemInviteEmbed} from './MessageItemInviteEmbed'
@@ -75,16 +72,19 @@ const SQUARED_BORDER_RADIUS = 4
 const DISPLAY_NAME_INSET = 20
 
 export type MessageItemNeighbor =
-  | ChatBskyConvoDefs.MessageView
-  | ChatBskyConvoDefs.DeletedMessageView
+  | chat.bsky.convo.defs.MessageView
+  | chat.bsky.convo.defs.DeletedMessageView
   | null
 
 function messageIsReply(message: MessageItemNeighbor): boolean {
   return (
-    ChatBskyConvoDefs.isMessageView(message) &&
-    (ChatBskyConvoDefs.isMessageView(message.replyTo) ||
-      ChatBskyConvoDefs.isDeletedMessageView(message.replyTo) ||
-      ChatBskyConvoDefs.isMessageBeforeUserJoinedGroupView(message.replyTo))
+    bsky.isType(chat.bsky.convo.defs.messageView, message) &&
+    (bsky.isType(chat.bsky.convo.defs.messageView, message.replyTo) ||
+      bsky.isType(chat.bsky.convo.defs.deletedMessageView, message.replyTo) ||
+      bsky.isType(
+        chat.bsky.convo.defs.messageBeforeUserJoinedGroupView,
+        message.replyTo,
+      ))
   )
 }
 
@@ -96,7 +96,7 @@ function isWithinClusterBoundary({
   direction,
 }: {
   isPending: boolean
-  message: ChatBskyConvoDefs.MessageView
+  message: chat.bsky.convo.defs.MessageView
   adjacentMessage: MessageItemNeighbor
   isFromSameSender: boolean
   direction: 'prev' | 'next'
@@ -108,7 +108,7 @@ function isWithinClusterBoundary({
     return true
   }
   if (!isFromSameSender) return true
-  if (ChatBskyConvoDefs.isMessageView(adjacentMessage)) {
+  if (bsky.isType(chat.bsky.convo.defs.messageView, adjacentMessage)) {
     const currentSentAt = message.sentAt
     const thisDate = new Date(currentSentAt)
     const adjDate = new Date(adjacentMessage.sentAt)
@@ -135,7 +135,7 @@ let MessageItem = ({
   isGroupChat?: boolean
   prevMessage: MessageItemNeighbor
   nextMessage: MessageItemNeighbor
-  relatedProfiles: Map<string, ChatBskyActorDefs.ProfileViewBasic>
+  relatedProfiles: Map<string, chat.bsky.actor.defs.ProfileViewBasic>
 }): React.ReactNode => {
   const t = useTheme()
   const {currentAccount} = useSession()
@@ -153,13 +153,17 @@ let MessageItem = ({
   // tombstone, or a before-joined placeholder. Narrow away the open-union
   // fallback so we only render shapes we understand.
   const replyTo =
-    ChatBskyConvoDefs.isMessageView(message.replyTo) ||
-    ChatBskyConvoDefs.isDeletedMessageView(message.replyTo) ||
-    ChatBskyConvoDefs.isMessageBeforeUserJoinedGroupView(message.replyTo)
+    bsky.isType(chat.bsky.convo.defs.messageView, message.replyTo) ||
+    bsky.isType(chat.bsky.convo.defs.deletedMessageView, message.replyTo) ||
+    bsky.isType(
+      chat.bsky.convo.defs.messageBeforeUserJoinedGroupView,
+      message.replyTo,
+    )
       ? message.replyTo
       : undefined
   const replyToMessageId =
-    replyTo && !ChatBskyConvoDefs.isMessageBeforeUserJoinedGroupView(replyTo)
+    replyTo &&
+    !bsky.isType(chat.bsky.convo.defs.messageBeforeUserJoinedGroupView, replyTo)
       ? replyTo.id
       : undefined
   const onPressReplyTo = replyToMessageId
@@ -173,8 +177,14 @@ let MessageItem = ({
   const isFromSelf =
     message.sender?.did != null && message.sender.did === currentAccount?.did
 
-  const prevIsMessage = ChatBskyConvoDefs.isMessageView(prevMessage)
-  const nextIsMessage = ChatBskyConvoDefs.isMessageView(nextMessage)
+  const prevIsMessage = bsky.isType(
+    chat.bsky.convo.defs.messageView,
+    prevMessage,
+  )
+  const nextIsMessage = bsky.isType(
+    chat.bsky.convo.defs.messageView,
+    nextMessage,
+  )
 
   const isPrevFromSameSender =
     prevIsMessage &&
@@ -202,7 +212,7 @@ let MessageItem = ({
   })
 
   const hasLargeGapFromPrev =
-    !ChatBskyConvoDefs.isMessageView(prevMessage) ||
+    !bsky.isType(chat.bsky.convo.defs.messageView, prevMessage) ||
     new Date(message.sentAt).getTime() -
       new Date(prevMessage.sentAt).getTime() >
       MESSAGE_GAP_THRESHOLD_MS
@@ -244,11 +254,16 @@ let MessageItem = ({
     ? t.palette.primary_300
     : t.palette.primary_100
 
-  const rt = new RichTextAPI({text: message.text, facets: message.facets})
+  const rt = new RichTextAPI({
+    text: message.text,
+    facets: message.facets,
+  })
+
+  const isEmojiOnly = isOnlyEmoji(message.text)
 
   const hasEmbed =
-    AppBskyEmbedRecord.isView(message.embed) ||
-    ChatBskyEmbedJoinLink.isView(message.embed)
+    bsky.isType(app.bsky.embed.record.view, message.embed) ||
+    bsky.isType(chat.bsky.embed.joinLink.view, message.embed)
   const hasEmbedAndText = hasEmbed && rt.text.length > 0
 
   const targetBottomRadius = squaredBottomCorner
@@ -261,16 +276,33 @@ let MessageItem = ({
   const topRadiusSV = useSharedValue(targetTopRadius)
 
   const showDisplayName =
-    isGroupChat && !isFromSelf && isFirstInCluster && !isOnlyEmoji(message.text)
+    isGroupChat && !isFromSelf && isFirstInCluster && !isEmojiOnly
   const showAvatar = isGroupChat && !isFromSelf && isLastInCluster
 
+  /*
+   * Emoji-only messages have no bubble background (see the `!isOnlyEmoji` gate
+   * on the bubble styling below), so the corner-radius animation is invisible
+   * overhead for them. Worse, on Android the resulting re-layout of the parent
+   * Animated.View re-measures the enlarged emoji `<Text>` and some Android
+   * device's text stack drops the trailing glyph on that second pass (while
+   * keeping its reserved width). Set the radii directly for emoji-only messages
+   * so nothing re-lays-out the glyph after its initial paint.
+   */
   useEffect(() => {
-    bottomRadiusSV.set(withTiming(targetBottomRadius, {duration: 300}))
-  }, [targetBottomRadius, bottomRadiusSV])
+    bottomRadiusSV.set(
+      isEmojiOnly
+        ? targetBottomRadius
+        : withTiming(targetBottomRadius, {duration: 300}),
+    )
+  }, [targetBottomRadius, bottomRadiusSV, isEmojiOnly])
 
   useEffect(() => {
-    topRadiusSV.set(withTiming(targetTopRadius, {duration: 300}))
-  }, [targetTopRadius, topRadiusSV])
+    topRadiusSV.set(
+      isEmojiOnly
+        ? targetTopRadius
+        : withTiming(targetTopRadius, {duration: 300}),
+    )
+  }, [targetTopRadius, topRadiusSV, isEmojiOnly])
 
   // Flash the message background when it's been scrolled to (e.g. by tapping a
   // reply that quotes it), so it's easy to spot. Keyed on the highlight `key`
@@ -492,7 +524,7 @@ let MessageItem = ({
                   message={message}
                   senderProfile={profile}
                   moderationOpts={moderationOpts}>
-                  {AppBskyEmbedRecord.isView(message.embed) && (
+                  {bsky.isType(app.bsky.embed.record.view, message.embed) && (
                     <MessageItemEmbed
                       embed={message.embed}
                       isFromSelf={isFromSelf}
@@ -504,7 +536,10 @@ let MessageItem = ({
                       highlightSV={highlightSV}
                     />
                   )}
-                  {ChatBskyEmbedJoinLink.isView(message.embed) && (
+                  {bsky.isType(
+                    chat.bsky.embed.joinLink.view,
+                    message.embed,
+                  ) && (
                     <MessageItemInviteEmbed
                       embed={message.embed}
                       isFromSelf={isFromSelf}
@@ -521,7 +556,7 @@ let MessageItem = ({
                       accessibilityHint={l`Double tap or long press the message to add a reaction`}
                       style={[
                         !isFromSelf && isGroupChat && a.ml_sm,
-                        !isOnlyEmoji(message.text) && [
+                        !isEmojiOnly && [
                           a.rounded_xl,
                           a.py_sm,
                           a.px_md,
@@ -536,7 +571,7 @@ let MessageItem = ({
                           highlightStyle,
                         ],
                       ]}>
-                      {replyTo && !isOnlyEmoji(message.text) ? (
+                      {replyTo && !isEmojiOnly ? (
                         <ReplyQuote
                           replyTo={replyTo}
                           isFromSelf={isFromSelf}
@@ -553,7 +588,7 @@ let MessageItem = ({
                           // glyph, then pull the bottom up by the same amount so
                           // the glyph bottom-aligns with the avatar instead of
                           // sitting above its line-box baseline.
-                          isOnlyEmoji(message.text) && [
+                          isEmojiOnly && [
                             a.leading_tight,
                             // Visually align bottom of the emoji with the avatar
                             !isFromSelf &&
@@ -642,8 +677,8 @@ function BlockedPlaceholder({
   profile,
   style,
 }: {
-  profile: Shadow<ChatBskyActorDefs.ProfileViewBasic>
-  style?: StyleProp<ViewStyle>
+  profile: Shadow<chat.bsky.actor.defs.ProfileViewBasic>
+  style?: AnimatedStyle<ViewStyle>
 }) {
   const {t: l} = useLingui()
   const t = useTheme()
@@ -752,13 +787,13 @@ function ReplyCaption({
   onPress,
 }: {
   replyTo:
-    | ChatBskyConvoDefs.MessageView
-    | ChatBskyConvoDefs.DeletedMessageView
-    | ChatBskyConvoDefs.MessageBeforeUserJoinedGroupView
+    | chat.bsky.convo.defs.MessageView
+    | chat.bsky.convo.defs.DeletedMessageView
+    | chat.bsky.convo.defs.MessageBeforeUserJoinedGroupView
   isFromSelf: boolean
   isGroupChat: boolean
   replierDisplayName: string | null
-  relatedProfiles: Map<string, ChatBskyActorDefs.ProfileViewBasic>
+  relatedProfiles: Map<string, chat.bsky.actor.defs.ProfileViewBasic>
   onPress?: () => void
 }) {
   const t = useTheme()
@@ -767,8 +802,8 @@ function ReplyCaption({
 
   let caption: string = ''
   if (
-    ChatBskyConvoDefs.isMessageView(replyTo) ||
-    ChatBskyConvoDefs.isDeletedMessageView(replyTo)
+    bsky.isType(chat.bsky.convo.defs.messageView, replyTo) ||
+    bsky.isType(chat.bsky.convo.defs.deletedMessageView, replyTo)
   ) {
     const originalSenderIsSelf = replyTo.sender.did === currentAccount?.did
     const originalProfile = relatedProfiles.get(replyTo.sender.did)
@@ -841,11 +876,11 @@ function ReplyQuote({
   onPress,
 }: {
   replyTo:
-    | ChatBskyConvoDefs.MessageView
-    | ChatBskyConvoDefs.DeletedMessageView
-    | ChatBskyConvoDefs.MessageBeforeUserJoinedGroupView
+    | chat.bsky.convo.defs.MessageView
+    | chat.bsky.convo.defs.DeletedMessageView
+    | chat.bsky.convo.defs.MessageBeforeUserJoinedGroupView
   isFromSelf: boolean
-  relatedProfiles: Map<string, ChatBskyActorDefs.ProfileViewBasic>
+  relatedProfiles: Map<string, chat.bsky.actor.defs.ProfileViewBasic>
   onPress?: () => void
 }) {
   const t = useTheme()
@@ -853,8 +888,8 @@ function ReplyQuote({
   const getReplyPreviewText = useReplyPreviewText()
 
   const senderDid =
-    ChatBskyConvoDefs.isMessageView(replyTo) ||
-    ChatBskyConvoDefs.isDeletedMessageView(replyTo)
+    bsky.isType(chat.bsky.convo.defs.messageView, replyTo) ||
+    bsky.isType(chat.bsky.convo.defs.deletedMessageView, replyTo)
       ? replyTo.sender.did
       : undefined
   const senderProfile = useMaybeProfileShadow(
@@ -884,9 +919,11 @@ function ReplyQuote({
       comment: 'A reply summary in chat',
     })
     subtle = true
-  } else if (ChatBskyConvoDefs.isMessageView(replyTo)) {
+  } else if (bsky.isType(chat.bsky.convo.defs.messageView, replyTo)) {
     ;({text, subtle} = getReplyPreviewText(replyTo))
-  } else if (ChatBskyConvoDefs.isMessageBeforeUserJoinedGroupView(replyTo)) {
+  } else if (
+    bsky.isType(chat.bsky.convo.defs.messageBeforeUserJoinedGroupView, replyTo)
+  ) {
     text = l({
       message: `(message sent before you joined)`,
       comment: 'A reply summary in chat',

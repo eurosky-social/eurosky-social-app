@@ -1,12 +1,7 @@
 import {Fragment, type ReactNode, useMemo} from 'react'
 import {Text as RNText, View} from 'react-native'
-import {
-  AppBskyFeedDefs,
-  AppBskyFeedPost,
-  type AppBskyFeedThreadgate,
-  AtUri,
-  RichText as RichTextAPI,
-} from '@atproto/api'
+import {AtUri, type AtUriString} from '@atproto/syntax'
+import {RichText as RichTextAPI} from '@bsky/sdk/richtext'
 import {Plural, Trans, useLingui} from '@lingui/react/macro'
 import {useQuery} from '@tanstack/react-query'
 
@@ -22,10 +17,11 @@ import {FeedFeedbackProvider, useFeedFeedback} from '#/state/feed-feedback'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {sortAndAnnotateThreadItems} from '#/state/queries/usePostThread/traversal'
 import {postThreadQueryKeyRoot} from '#/state/queries/usePostThread/types'
-import {useAgent, useSession} from '#/state/session'
+import {useAppviewClient, useSession} from '#/state/session'
 import {type OnPostSuccessData} from '#/state/shell/composer'
 import {useMergedThreadgateHiddenReplies} from '#/state/threadgate-hidden-replies'
 import {type PostSource} from '#/state/unstable-post-source'
+import {LikesStat} from '#/screens/PostThread/components/LikesStat'
 import {ThreadComposePromptPill} from '#/screens/PostThread/components/ThreadComposePrompt'
 import {
   ThreadItemPost,
@@ -33,6 +29,7 @@ import {
 } from '#/screens/PostThread/components/ThreadItemPost'
 import {ThreadItemReadMore} from '#/screens/PostThread/components/ThreadItemReadMore'
 import {
+  getReplyLineColor,
   OUTER_SPACE,
   READER_BRACKET_WIDTH,
   READER_LINE_INDENT,
@@ -43,12 +40,15 @@ import {atoms as a, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
 import {CalendarClock_Stroke2_Corner0_Rounded as CalendarClockIcon} from '#/components/icons/CalendarClock'
 import {Link} from '#/components/Link'
+import {KnownLikers} from '#/components/Post/KnownLikers'
 import {PostControls} from '#/components/PostControls'
 import {useFormatPostStatCount} from '#/components/PostControls/util'
 import {PostEditedIndicator} from '#/components/PostEditedIndicator'
 import * as Prompt from '#/components/Prompt'
 import {Text} from '#/components/Typography'
 import {WhoCanReply} from '#/components/WhoCanReply'
+import {Features} from '#/analytics'
+import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 
 /**
@@ -79,7 +79,7 @@ export function ReaderBracket({
         borderLeftWidth: READER_BRACKET_WIDTH,
         borderTopWidth: READER_BRACKET_WIDTH,
         borderBottomWidth: READER_BRACKET_WIDTH,
-        borderColor: t.atoms.border_contrast_low.borderColor,
+        borderColor: getReplyLineColor(t),
       }}
     />
   )
@@ -108,7 +108,7 @@ export function ReaderSeamControls({
    */
   showDetails?: boolean
   onPostSuccess?: (data: OnPostSuccessData) => void
-  threadgateRecord?: AppBskyFeedThreadgate.Record
+  threadgateRecord?: app.bsky.feed.threadgate.Main
 }) {
   const postShadow = usePostShadow(postItem.value.post)
 
@@ -139,12 +139,12 @@ function ReaderSeamControlsInner({
   threadgateRecord,
 }: {
   post: ThreadPostItem
-  postShadow: Shadow<AppBskyFeedDefs.PostView>
+  postShadow: Shadow<app.bsky.feed.defs.PostView>
   postSource?: PostSource
   showComposePrompt?: boolean
   showDetails?: boolean
   onPostSuccess?: (data: OnPostSuccessData) => void
-  threadgateRecord?: AppBskyFeedThreadgate.Record
+  threadgateRecord?: app.bsky.feed.threadgate.Main
 }) {
   const t = useTheme()
   const {t: l, i18n} = useLingui()
@@ -165,7 +165,6 @@ function ReaderSeamControlsInner({
   )
 
   const urip = new AtUri(post.uri)
-  const likesHref = makeProfileLink(post.author, 'post', urip.rkey, 'liked-by')
   const repostsHref = makeProfileLink(
     post.author,
     'post',
@@ -176,7 +175,9 @@ function ReaderSeamControlsInner({
 
   const reason = postSource?.post.reason
   const viaRepost =
-    AppBskyFeedDefs.isReasonRepost(reason) && reason.uri && reason.cid
+    bsky.isType(app.bsky.feed.defs.reasonRepost, reason) &&
+    reason.uri &&
+    reason.cid
       ? {uri: reason.uri, cid: reason.cid}
       : undefined
 
@@ -233,8 +234,7 @@ function ReaderSeamControlsInner({
             a.align_center,
             {rowGap: a.gap_sm.gap, columnGap: a.gap_lg.gap},
             a.border_t,
-            a.border_b,
-            a.py_md,
+            a.py_sm,
             t.atoms.border_contrast_low,
           ]}>
           {post.repostCount ? (
@@ -269,20 +269,7 @@ function ReaderSeamControlsInner({
               </Text>
             </Link>
           ) : null}
-          {post.likeCount ? (
-            <Link to={likesHref} label={l`Likes on this post`}>
-              <Text
-                testID="likeCount-expanded"
-                style={[a.text_md, t.atoms.text_contrast_medium]}>
-                <Trans comment="Like count display, the <0> tags enclose the number of likes in bold (will never be 0)">
-                  <Text style={[a.text_md, a.font_semi_bold, t.atoms.text]}>
-                    {formatPostStatCount(post.likeCount)}
-                  </Text>{' '}
-                  <Plural value={post.likeCount} one="like" other="likes" />
-                </Trans>
-              </Text>
-            </Link>
-          ) : null}
+          <LikesStat post={post} />
           {post.bookmarkCount ? (
             <Text
               testID="bookmarkCount-expanded"
@@ -297,6 +284,13 @@ function ReaderSeamControlsInner({
           ) : null}
         </View>
       ) : null}
+      {showDetails && (
+        <KnownLikers
+          post={post}
+          feature={Features.PostThreadKnownLikersEnable}
+          outerStyle={[a.pt_xs, a.pb_sm]}
+        />
+      )}
 
       {/* Action bar + optional compose prompt as one gap item */}
       <View>
@@ -346,16 +340,13 @@ function ReaderSeamControlsInner({
   )
 }
 
-function BackdatedPostIndicator({post}: {post: AppBskyFeedDefs.PostView}) {
+function BackdatedPostIndicator({post}: {post: app.bsky.feed.defs.PostView}) {
   const t = useTheme()
   const {t: l, i18n} = useLingui()
   const control = Prompt.usePromptControl()
 
   const indexedAt = new Date(post.indexedAt)
-  const createdAt = bsky.dangerousIsType<AppBskyFeedPost.Record>(
-    post.record,
-    AppBskyFeedPost.isRecord,
-  )
+  const createdAt = bsky.isType(app.bsky.feed.post, post.record)
     ? new Date(post.record.createdAt)
     : new Date(post.indexedAt)
 
@@ -456,11 +447,11 @@ export function ReaderSeamReplies({
   href: string
   sort: string
   onPostSuccess?: (data: OnPostSuccessData) => void
-  threadgateRecord?: AppBskyFeedThreadgate.Record
+  threadgateRecord?: app.bsky.feed.threadgate.Main
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
-  const agent = useAgent()
+  const appviewClient = useAppviewClient()
   const moderationOpts = useModerationOpts()
   const threadgateHiddenReplies = useMergedThreadgateHiddenReplies({
     threadgateRecord,
@@ -474,16 +465,19 @@ export function ReaderSeamReplies({
       {anchor: uri, sort},
     ],
     async queryFn() {
-      const {data: res} = await agent.app.bsky.unspecced.getPostThreadV2({
-        anchor: uri,
-        below: 1,
-        sort,
-      })
+      const data = await appviewClient.call(
+        app.bsky.unspecced.getPostThreadV2,
+        {
+          anchor: uri as AtUriString,
+          below: 1,
+          sort,
+        },
+      )
       /*
        * Everything under the `post-thread-v2` query key root gets scanned by
        * the post shadow cache integration, which expects a `{thread}` shape.
        */
-      return {thread: res.thread || []}
+      return {thread: data.thread || []}
     },
   })
 
@@ -578,7 +572,7 @@ export function ReaderSeamReplies({
         style={{
           height: REPLY_LINE_WIDTH,
           marginLeft: READER_LINE_INDENT,
-          backgroundColor: t.atoms.border_contrast_low.borderColor,
+          backgroundColor: getReplyLineColor(t),
         }}
       />
     </>

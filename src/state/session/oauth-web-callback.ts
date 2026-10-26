@@ -51,6 +51,26 @@ export async function tryFinishWebOAuthSignIn(
   const client = getWebOAuthClient()
   const result = await client.init()
   if (result?.session) {
+    // A fresh signup (prompt=create) is created on the external PDS page, which
+    // never runs our in-app signup wizard - so start onboarding here, the same
+    // way that wizard does. Plain sign-ins carry no state and are untouched.
+    //
+    // Start it BEFORE login() so onboarding is already active the instant the
+    // session appears. login() never touches onboarding state ('skip' only fires
+    // on logout / account switch), and persisted onboarding defaults to 'Home'
+    // (inactive) for a new account - so starting it AFTER login left a gap in
+    // which the shell rendered the default home feed for ~1-2s before the wizard.
+    //
+    // We drive the in-memory onboarding reducer (startOnboarding) rather than
+    // only writing persisted state. OnboardingProvider is mounted above the
+    // session, so login() never remounts it, and on web persisted.write() does
+    // not fire onUpdate listeners in the same tab (its cross-tab BroadcastChannel
+    // never echoes back to the sender). A bare write would leave the onboarding
+    // context stale and the wizard would not appear until a manual reload. The
+    // reducer's 'start' action persists the step itself.
+    if (result.state === OAUTH_SIGNUP_STATE) {
+      startOnboarding()
+    }
     // For a handle step-up the DID is unchanged, so login() replaces the
     // existing session in place with the upgraded (identity:handle) tokens.
     await login(
@@ -62,20 +82,6 @@ export async function tryFinishWebOAuthSignIn(
       },
       'LoginForm',
     )
-    // A fresh signup (prompt=create) is created on the external PDS page, which
-    // never runs our in-app signup wizard - so start onboarding here, the same
-    // way that wizard does. Plain sign-ins carry no state and are untouched.
-    //
-    // We drive the in-memory onboarding reducer (startOnboarding) rather than
-    // only writing persisted state. OnboardingProvider is mounted above the
-    // session, so login() never remounts it, and on web persisted.write() does
-    // not fire onUpdate listeners in the same tab (its cross-tab
-    // BroadcastChannel never echoes back to the sender). A bare write would
-    // leave the onboarding context stale and the wizard would not appear until
-    // a manual reload. The reducer's 'start' action persists the step itself.
-    if (result.state === OAUTH_SIGNUP_STATE) {
-      startOnboarding()
-    }
     if (result.state === OAUTH_HANDLE_STEPUP_STATE) {
       // The redirect lands at the site root; rewrite the path before the
       // navigator reads it so web linking resolves to account settings, where

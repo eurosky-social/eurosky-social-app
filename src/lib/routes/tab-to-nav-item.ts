@@ -1,11 +1,10 @@
 import {type Events} from '#/analytics/metrics/types'
 
 export type SharedNavTab =
-  | 'Home'
-  | 'Search'
-  | 'Messages'
-  | 'Notifications'
-  | 'MyProfile'
+  'Home' | 'Search' | 'Messages' | 'Notifications' | 'MyProfile'
+
+export type SidebarTab =
+  SharedNavTab | 'Atmosphere' | 'Feeds' | 'Lists' | 'Bookmarks' | 'Settings'
 
 export const TAB_TO_NAV_ITEM: Record<
   SharedNavTab,

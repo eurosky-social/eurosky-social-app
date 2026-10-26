@@ -1,11 +1,6 @@
 import {memo, useMemo, useState} from 'react'
 import {type StyleProp, View, type ViewStyle} from 'react-native'
-import {
-  type AppBskyFeedDefs,
-  type AppBskyFeedPost,
-  type AppBskyFeedThreadgate,
-  type RichText as RichTextAPI,
-} from '@atproto/api'
+import {type RichText as RichTextAPI} from '@bsky/sdk/richtext'
 import {plural} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react/macro'
 
@@ -23,12 +18,14 @@ import {
   ProgressGuideAction,
   useProgressGuideControls,
 } from '#/state/shell/progress-guide'
-import {atoms as a, useBreakpoints, useTheme} from '#/alf'
-import {Reply as Bubble} from '#/components/icons/Reply'
+import {atoms as a, useBreakpoints} from '#/alf'
+import {Reply_Stroke2_Corner0_Rounded as Bubble} from '#/components/icons/Reply'
 import {useFormatPostStatCount} from '#/components/PostControls/util'
 import * as Skele from '#/components/Skeleton'
 import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
+import {useLikePresentation} from '#/features/halloween/useLikePresentation'
+import {type app} from '#/lexicons'
 import {BookmarkButton} from './BookmarkButton'
 import {
   PostControlButton,
@@ -57,8 +54,8 @@ let PostControls = ({
   forceGoogleTranslate = false,
 }: {
   big?: boolean
-  post: Shadow<AppBskyFeedDefs.PostView>
-  record: AppBskyFeedPost.Record
+  post: Shadow<app.bsky.feed.defs.PostView>
+  record: app.bsky.feed.post.Main
   richText: RichTextAPI
   feedContext?: string | undefined
   reqId?: string | undefined
@@ -66,15 +63,20 @@ let PostControls = ({
   onPressReply: () => void
   onPostReply?: (postUri: string | undefined) => void
   logContext: 'FeedItem' | 'PostThreadItem' | 'Post' | 'ImmersiveVideo'
-  threadgateRecord?: AppBskyFeedThreadgate.Record
-  onShowLess?: (interaction: AppBskyFeedDefs.Interaction) => void
+  threadgateRecord?: app.bsky.feed.threadgate.Main
+  onShowLess?: (interaction: app.bsky.feed.defs.Interaction) => void
   viaRepost?: {uri: string; cid: string}
   variant?: 'compact' | 'normal' | 'large'
   forceGoogleTranslate?: boolean
 }): React.ReactNode => {
   const ax = useAnalytics()
-  const t = useTheme()
   const {t: l} = useLingui()
+  const likePresentation = useLikePresentation({
+    uri: post.uri,
+    record,
+    isLiked: Boolean(post.viewer?.like),
+    likeCount: post.likeCount ?? 0,
+  })
   const {openComposer} = useOpenComposer()
   const {feedDescriptor} = useFeedFeedbackContext()
   const [queueLike, queueUnlike] = usePostLikeMutationQueue(
@@ -111,9 +113,10 @@ let PostControls = ({
       return
     }
 
+    const existingLike = post.viewer?.like
     try {
       setHasLikeIconBeenToggled(true)
-      if (!post.viewer?.like) {
+      if (!existingLike) {
         sendInteraction({
           item: post.uri,
           event: 'app.bsky.feed.defs#interactionLike',
@@ -141,8 +144,9 @@ let PostControls = ({
       return
     }
 
+    const existingRepost = post.viewer?.repost
     try {
-      if (!post.viewer?.repost) {
+      if (!existingRepost) {
         sendInteraction({
           item: post.uri,
           event: 'app.bsky.feed.defs#interactionRepost',
@@ -269,28 +273,11 @@ let PostControls = ({
             testID="likeBtn"
             big={big}
             active={Boolean(post.viewer?.like)}
-            activeColor={t.palette.pink}
+            activeColor={likePresentation.activeColor}
             onPress={() => requireAuth(() => onPressToggleLike())}
-            label={
-              post.viewer?.like
-                ? l({
-                    message: `Unlike (${plural(post.likeCount || 0, {
-                      one: '# like',
-                      other: '# likes',
-                    })})`,
-                    comment:
-                      'Accessibility label for the like button when the post has been liked, verb followed by number of likes and noun',
-                  })
-                : l({
-                    message: `Like (${plural(post.likeCount || 0, {
-                      one: '# like',
-                      other: '# likes',
-                    })})`,
-                    comment:
-                      'Accessibility label for the like button when the post has not been liked, verb form followed by number of likes and noun form',
-                  })
-            }>
+            label={likePresentation.label}>
             <AnimatedLikeIcon
+              {...likePresentation.iconProps}
               isLiked={Boolean(post.viewer?.like)}
               big={big}
               hasBeenToggled={hasLikeIconBeenToggled}

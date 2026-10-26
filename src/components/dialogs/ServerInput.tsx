@@ -18,7 +18,7 @@ import {InlineLinkText} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 
-type SegmentedControlOptions = typeof BSKY_SERVICE | 'custom'
+type SegmentedControlOptions = 'custom' | (string & {})
 
 export function ServerInputDialog({
   control,
@@ -131,11 +131,11 @@ function DialogInner({
       style={web({maxWidth: 500})}>
       <View style={[a.relative, a.gap_md, a.w_full]}>
         <Text nativeID="dialog-title" style={[a.text_2xl, a.font_bold]}>
-          <Trans>Choose your account provider</Trans>
+          <Trans>Choose your hosting provider</Trans>
         </Text>
         <SegmentedControl.Root
           type="tabs"
-          label={_(msg`Account provider`)}
+          label={_(msg`Hosting provider`)}
           value={fixedOption}
           onChange={setFixedOption}>
           <SegmentedControl.Item

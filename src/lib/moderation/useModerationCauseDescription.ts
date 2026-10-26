@@ -1,9 +1,6 @@
 import {useMemo} from 'react'
-import {
-  BSKY_LABELER_DID,
-  type ModerationCause,
-  type ModerationCauseSource,
-} from '@atproto/api'
+import {api} from '@bsky/sdk'
+import {type ModerationCause} from '@bsky/sdk/moderation'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 
@@ -16,6 +13,7 @@ import {type Props as SVGIconProps} from '#/components/icons/common'
 import {EyeSlash_Stroke2_Corner0_Rounded as EyeSlash} from '#/components/icons/EyeSlash'
 import {Warning_Stroke2_Corner0_Rounded as Warning} from '#/components/icons/Warning'
 import {type AppModerationCause} from '#/components/Pills'
+import {isAccountLabel} from '../moderation'
 import {useGlobalLabelStrings} from './useGlobalLabelStrings'
 import {getDefinition, getLabelStrings} from './useLabelInfo'
 
@@ -25,7 +23,7 @@ export interface ModerationCauseDescription {
   description: string
   source?: string
   sourceDisplayName?: string
-  sourceType?: ModerationCauseSource['type']
+  sourceType?: ModerationCause['source']['type']
   sourceAvi?: string
   sourceDid?: string
   isSubjectAccount?: boolean
@@ -138,7 +136,7 @@ export function useModerationCauseDescription(
         : undefined
       let sourceDisplayName = labeler?.creator.displayName
       if (!source) {
-        if (cause.label.src === BSKY_LABELER_DID) {
+        if (cause.label.src === api.moderation.did) {
           source = 'moderation.bsky.app'
           sourceDisplayName = 'Bluesky Moderation Service'
         } else {
@@ -163,7 +161,7 @@ export function useModerationCauseDescription(
         sourceType: cause.source.type,
         sourceAvi: labeler?.creator.avatar,
         sourceDid: cause.label.src,
-        isSubjectAccount: cause.label.uri.startsWith('did:'),
+        isSubjectAccount: isAccountLabel(cause.label),
       }
     }
     // should never happen

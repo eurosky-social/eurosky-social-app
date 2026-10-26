@@ -1,8 +1,15 @@
-import {createContext, useContext, useMemo} from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useSyncExternalStore,
+} from 'react'
 import {Platform} from 'react-native'
-import {type Result} from '@growthbook/growthbook-react'
+import {type Result, type WidenPrimitives} from '@growthbook/growthbook-react'
 
 import {Logger} from '#/logger'
+import {recordFeatureFlagEvaluation} from '#/logger/sentry/featureFlags'
 import {
   Features,
   features as feats,
@@ -13,14 +20,14 @@ import {
 import {
   getAndMigrateDeviceId,
   getDeviceId,
-  getInitialSessionId,
-  useSessionId,
+  getSessionId,
 } from '#/analytics/identifiers'
 import {
   getMetadataForLogger,
   getNavigationMetadata,
   type MergeableMetadata,
   type Metadata,
+  type MetricMetadata,
 } from '#/analytics/metadata'
 import {type Metrics, metrics} from '#/analytics/metrics'
 import * as refParams from '#/analytics/misc/refParams'
@@ -28,7 +35,7 @@ import {plausible} from '#/analytics/plausible'
 import {PLAUSIBLE_GOALS} from '#/analytics/plausible/shared'
 import * as env from '#/env'
 import {useGeolocationServiceResponse} from '#/geolocation/service'
-import {device} from '#/storage'
+import {account, device} from '#/storage'
 
 export * as utils from '#/analytics/utils'
 export const features = {init, refresh}
@@ -63,22 +70,33 @@ export type AnalyticsContextType = {
   ) => void
   features: typeof Features & {
     enabled(feature: Features): boolean
+    getValue<T>(feature: Features, defaultValue: T): WidenPrimitives<T>
   }
 }
 export type AnalyticsBaseContextType = Omit<AnalyticsContextType, 'features'>
 
 function createLogger(
   context: Logger['context'],
-  metadata: Partial<Metadata>,
+  metadata: Record<string, unknown>,
 ): LoggerType {
   const logger = Logger.create(context, metadata)
+  const currentLogger = () => {
+    // Replace the snapshot so previously recorded entries stay unchanged.
+    logger.ambientMetadata = {
+      ...metadata,
+      deviceId: metadata.deviceId ?? getDeviceId() ?? 'unknown',
+      sessionId: getSessionId(),
+    }
+    return logger
+  }
   return {
-    debug: logger.debug.bind(logger),
-    info: logger.info.bind(logger),
-    log: logger.log.bind(logger),
-    warn: logger.warn.bind(logger),
-    error: logger.error.bind(logger),
+    debug: (...args) => currentLogger().debug(...args),
+    info: (...args) => currentLogger().info(...args),
+    log: (...args) => currentLogger().log(...args),
+    warn: (...args) => currentLogger().warn(...args),
+    error: (...args) => currentLogger().error(...args),
     useChild: (context: Exclude<Logger['context'], undefined>) => {
+      // oxlint-disable-next-line react-hooks/exhaustive-deps
       return useMemo(() => createLogger(context, metadata), [context, metadata])
     },
     Context: Logger.Context,
@@ -87,34 +105,34 @@ function createLogger(
 
 const Context = createContext<AnalyticsBaseContextType>({
   logger: createLogger(Logger.Context.Default, {}),
-  metric: (event, payload, metadata) => {
-    if (metadata && '__meta' in metadata) {
-      delete metadata.__meta
+  /**
+   * Session IDs are captured when an event is emitted. Deferred exposure events
+   * use the reporting session, which may differ from the evaluation session.
+   */
+  metric: (event, payload, metadata: Partial<Metadata> = {}) => {
+    const snapshot: MetricMetadata = {
+      ...metadata,
+      base: {
+        ...metadata.base,
+        deviceId: metadata.base?.deviceId ?? getDeviceId() ?? 'unknown',
+        sessionId: getSessionId(),
+      },
+      navigation: getNavigationMetadata(),
     }
-    /**
-     * All `metric()` calls bubble up to this root handler, so this is the
-     * single routing point. When a Plausible domain is configured we forward an
-     * allowlisted subset of goals to Plausible (pageviews are auto-captured by
-     * the tracker on web; native is disabled). Otherwise we fall back to the
-     * primary metrics pipeline. See `#/analytics/plausible`.
-     */
+    if ('__meta' in snapshot) {
+      delete snapshot.__meta
+    }
     if (env.PLAUSIBLE_DOMAIN) {
       if (PLAUSIBLE_GOALS.has(event)) {
-        plausible.track(event, payload, metadata)
+        plausible.track(event, payload, snapshot)
       }
-      // Non-goal events are not sent to Plausible
     } else {
-      // In case of no Plausible domain, we go back to the primary metrics pipeline for all events
-      metrics.track(event, payload, {
-        ...metadata,
-        navigation: getNavigationMetadata(),
-      })
+      metrics.track(event, payload, snapshot)
     }
   },
   metadata: {
     base: {
       deviceId: getDeviceId() ?? 'unknown',
-      sessionId: getInitialSessionId(),
       platform: Platform.OS,
       appVersion: env.APP_VERSION,
       bundleIdentifier: env.BUNDLE_IDENTIFIER,
@@ -125,6 +143,7 @@ const Context = createContext<AnalyticsBaseContextType>({
     geolocation: device.get(['geolocationServiceResponse']) || {
       countryCode: '',
       regionCode: '',
+      city: '',
     },
   },
 })
@@ -146,6 +165,38 @@ plausible.init()
 export const setupDeviceId = getAndMigrateDeviceId()
 
 /**
+ * Reads the per-account cached `isBetaUser` flag for `did`, kept in sync with
+ * writes from `BetaUserStorageSync` and the beta settings toggle.
+ *
+ * This deliberately does not use `useStorage`, whose `useState` seeds once and
+ * only updates via the change listener. The consuming `AnalyticsContext` lives
+ * above the `<Fragment key={did}>` remount breaker, so on an account switch it
+ * re-renders (with a new did) rather than remounting. `useStorage` would keep
+ * serving the previous account's seeded value until a write happened to fire
+ * its listener, leaking a beta account's flag into a non-beta account. Reading
+ * via `useSyncExternalStore` re-evaluates `getSnapshot` every render, so the
+ * value is always correct for the current did.
+ */
+function useAccountIsBetaUser(did: string | undefined): boolean | undefined {
+  const subscribe = useCallback(
+    (onChange: () => void) => {
+      if (!did) return () => {}
+      const sub = account.addOnValueChangedListener(
+        [did, 'isBetaUser'],
+        onChange,
+      )
+      return () => sub.remove()
+    },
+    [did],
+  )
+  const getSnapshot = useCallback(() => {
+    if (!did) return undefined
+    return account.get([did, 'isBetaUser'])
+  }, [did])
+  return useSyncExternalStore(subscribe, getSnapshot)
+}
+
+/**
  * Analytics context provider. Decorates the parent analytics context with
  * additional metadata. Nesting should be done carefully and sparingly.
  */
@@ -163,16 +214,29 @@ export function AnalyticsContext({
       )
     }
   }
-  const sessionId = useSessionId()
+  // Device identity is initialized before mount and stays stable across sessions.
+  const deviceId = getDeviceId() ?? 'unknown'
+  // only IP based, never GPS
   const geolocation = useGeolocationServiceResponse()
   const parentContext = useContext(Context)
+  /*
+   * `isBetaUser` is account-specific, so it's cached per account. Read it
+   * scoped to the did for this render's session (from the `metadata` prop when
+   * set, otherwise inherited from the parent context). Without a did (e.g.
+   * logged out, or the top-level context above the session provider) there's
+   * no value, so beta-gated features are never evaluated for an ineligible or
+   * absent account.
+   */
+  const did = metadata?.session?.did ?? parentContext.metadata.session?.did
+  const isBetaUser = useAccountIsBetaUser(did)
   const childContext = useMemo(() => {
     const combinedMetadata = {
       ...parentContext.metadata,
       ...metadata,
       base: {
         ...parentContext.metadata.base,
-        sessionId,
+        deviceId,
+        isBetaUser,
       },
       geolocation,
     }
@@ -191,7 +255,7 @@ export function AnalyticsContext({
       },
     }
     return context
-  }, [sessionId, geolocation, parentContext, metadata])
+  }, [parentContext, metadata, deviceId, isBetaUser, geolocation])
   return <Context.Provider value={childContext}>{children}</Context.Provider>
 }
 
@@ -282,6 +346,7 @@ export function AnalyticsFeaturesContext({
         ? sessionMetadataForResult(parentContext, result.experimentResult)
         : undefined,
     )
+    recordFeatureFlagEvaluation(feature, result.value)
   })
   setAttributes(parentContext.metadata)
 
@@ -290,6 +355,7 @@ export function AnalyticsFeaturesContext({
       ...parentContext,
       features: {
         enabled: feats.isOn.bind(feats),
+        getValue: feats.getFeatureValue.bind(feats),
         ...Features,
       },
     }

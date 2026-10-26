@@ -17,13 +17,18 @@ type MetricFn = <E extends keyof Metrics>(event: E, payload: Metrics[E]) => void
 const COMPRESS_ENGINE =
   Platform.OS === 'web'
     ? 'web:mediabunny@1.25.3'
-    : 'native:react-native-compressor@1.13.0'
+    : 'native:@bsky.app/video-compressor@0.2.0'
 
 type Phase = 'compress' | 'upload' | 'processing'
 
 function errorClass(e: unknown): string {
   if (e instanceof Error) return e.name || 'Error'
   return 'Unknown'
+}
+
+function errorMessage(e: unknown): string {
+  const message = e instanceof Error ? e.message : String(e)
+  return message.slice(0, 256)
 }
 
 export type VideoTelemetry = {
@@ -208,6 +213,7 @@ export function createVideoTelemetry({
         uploadId,
         engine,
         errorClass: errorClass(e),
+        errorMessage: errorMessage(e),
         elapsedMs: Date.now() - phaseStartedAt,
       })
       endTxn('error')

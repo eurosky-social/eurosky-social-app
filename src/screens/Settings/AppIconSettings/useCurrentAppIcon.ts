@@ -20,7 +20,6 @@ export function useCurrentAppIcon() {
   return useMemo(() => {
     return (
       appIconSets.defaults.find(i => i.id === currentAppIcon) ??
-      appIconSets.core.find(i => i.id === currentAppIcon) ??
       appIconSets.defaults[0]
     )
   }, [appIconSets, currentAppIcon])

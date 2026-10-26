@@ -1,13 +1,15 @@
 import {Suspense, useRef, useState} from 'react'
 import {View} from 'react-native'
-import type ViewShot from 'react-native-view-shot'
-import {requestPermissionsAsync, saveToLibraryAsync} from 'expo-media-library'
+import {type ViewShotRef} from 'react-native-view-shot'
 import * as Sharing from 'expo-sharing'
-import {type AppBskyGraphDefs, AppBskyGraphStarterpack} from '@atproto/api'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
+import {
+  requestPhotoSavePermission,
+  savePhotoToLibrary,
+} from '#/lib/media/photo-library'
 import {logger} from '#/logger'
 import {atoms as a, useBreakpoints} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
@@ -21,6 +23,7 @@ import {QrCode} from '#/components/StarterPack/QrCode'
 import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
 import {IS_NATIVE, IS_WEB} from '#/env'
+import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 
 export function QrCodeDialog({
@@ -28,7 +31,7 @@ export function QrCodeDialog({
   link,
   control,
 }: {
-  starterPack: AppBskyGraphDefs.StarterPackView
+  starterPack: app.bsky.graph.defs.StarterPackView
   link?: string
   control: DialogControlProps
 }) {
@@ -38,7 +41,7 @@ export function QrCodeDialog({
   const [isSaveProcessing, setIsSaveProcessing] = useState(false)
   const [isCopyProcessing, setIsCopyProcessing] = useState(false)
 
-  const ref = useRef<ViewShot>(null)
+  const ref = useRef<ViewShotRef>(null)
 
   const getCanvas = (base64: string): Promise<HTMLCanvasElement> => {
     return new Promise(resolve => {
@@ -59,11 +62,7 @@ export function QrCodeDialog({
   const onSavePress = async () => {
     ref.current?.capture?.().then(async (uri: string) => {
       if (IS_NATIVE) {
-        // Write-only permission - saving the QR image does not require read
-        // access to the user's photo library.
-        const res = await requestPermissionsAsync(true)
-
-        if (!res.granted) {
+        if (!(await requestPhotoSavePermission())) {
           Toast.show(
             _(
               msg`You must grant access to your photo library to save a QR code`,
@@ -74,9 +73,7 @@ export function QrCodeDialog({
 
         // Incase of a FS failure, don't crash the app
         try {
-          // saveToLibraryAsync writes without reading the asset back, so it
-          // works with the add-only permission on iOS (APP-2374)
-          await saveToLibraryAsync(`file://${uri}`)
+          await savePhotoToLibrary(uri)
         } catch (e: unknown) {
           Toast.show(_(msg`An error occurred while saving the QR code!`), {
             type: 'error',
@@ -87,12 +84,7 @@ export function QrCodeDialog({
       } else {
         setIsSaveProcessing(true)
 
-        if (
-          !bsky.validate(
-            starterPack.record,
-            AppBskyGraphStarterpack.validateRecord,
-          )
-        ) {
+        if (!bsky.matches(app.bsky.graph.starterpack, starterPack.record)) {
           return
         }
 
@@ -166,7 +158,7 @@ export function QrCodeDialog({
     <Dialog.Outer control={control} nativeOptions={{preventExpansion: true}}>
       <Dialog.Handle />
       <Dialog.ScrollableInner
-        label={_(msg`Create a QR code for a starter pack`)}>
+        label={_(msg`Create a QR code for a Starter Pack`)}>
         <View style={[a.flex_1, a.align_center, a.gap_5xl]}>
           <Suspense fallback={<Loading />}>
             {!link ? (

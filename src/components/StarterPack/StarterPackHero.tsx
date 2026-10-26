@@ -1,16 +1,16 @@
 import {useState} from 'react'
 import {type LayoutChangeEvent, View} from 'react-native'
 import {Image} from 'expo-image'
-import {AppBskyGraphStarterpack} from '@atproto/api'
 import {Trans} from '@lingui/react/macro'
 import {useQuery} from '@tanstack/react-query'
 
 import {STALE} from '#/state/queries/index'
-import {useAgent} from '#/state/session'
+import {useAppviewClient} from '#/state/session'
 import {Logotype} from '#/view/icons/Logotype'
 import {atoms as a, useTheme} from '#/alf'
 import {LinearGradientBackground} from '#/components/LinearGradientBackground'
 import {Text} from '#/components/Typography'
+import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 
 // Mirrors bskyogcard/src/components/StarterPack.tsx, which renders the remote
@@ -38,7 +38,7 @@ export function StarterPackHero({
   starterPack: bsky.starterPack.AnyStarterPackView
 }) {
   const t = useTheme()
-  const agent = useAgent()
+  const appviewClient = useAppviewClient()
   const [width, setWidth] = useState(0)
 
   // The avatar sample only exists on the full StarterPackView; a post/feed
@@ -52,10 +52,10 @@ export function StarterPackHero({
   const {data: fetched} = useQuery({
     queryKey: ['starterPackHero', starterPack.uri],
     queryFn: async () => {
-      const res = await agent.app.bsky.graph.getStarterPack({
+      const data = await appviewClient.call(app.bsky.graph.getStarterPack, {
         starterPack: starterPack.uri,
       })
-      return res.data.starterPack
+      return data.starterPack
     },
     enabled: !hasSample,
     staleTime: STALE.MINUTES.FIVE,
@@ -63,12 +63,7 @@ export function StarterPackHero({
 
   const view = fetched ?? starterPack
 
-  if (
-    !bsky.dangerousIsType<AppBskyGraphStarterpack.Record>(
-      view.record,
-      AppBskyGraphStarterpack.isRecord,
-    )
-  ) {
+  if (!bsky.isType(app.bsky.graph.starterpack, view.record)) {
     return null
   }
 

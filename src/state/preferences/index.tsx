@@ -4,7 +4,7 @@ import {Provider as DisableHapticsProvider} from './disable-haptics'
 import {Provider as ExternalEmbedsProvider} from './external-embeds-prefs'
 import {Provider as HiddenPostsProvider} from './hidden-posts'
 import {Provider as InAppBrowserProvider} from './in-app-browser'
-import {Provider as KawaiiProvider} from './kawaii'
+import {Provider as InterfaceStyleProvider} from './interface-style'
 import {Provider as LanguagesProvider} from './languages'
 import {Provider as LargeAltBadgeProvider} from './large-alt-badge'
 import {Provider as PetCompanionProvider} from './pet-companion'
@@ -24,6 +24,7 @@ export {
   useSetExternalEmbedPref,
 } from './external-embeds-prefs'
 export {useHiddenPosts, useHiddenPostsApi} from './hidden-posts'
+export {useInterfaceStyle, useSetInterfaceStyle} from './interface-style'
 export {useLabelDefinitions} from './label-defs'
 export {useLanguagePrefs, useLanguagePrefsApi} from './languages'
 export {usePetCompanion, useSetPetCompanion} from './pet-companion'
@@ -48,13 +49,13 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
                     <UsedStarterPacksProvider>
                       <SubtitlesProvider>
                         <TrendingSettingsProvider>
-                          <KawaiiProvider>
-                            <PetCompanionProvider>
-                              <TranslationProviderProvider>
+                          <PetCompanionProvider>
+                            <TranslationProviderProvider>
+                              <InterfaceStyleProvider>
                                 {children}
-                              </TranslationProviderProvider>
-                            </PetCompanionProvider>
-                          </KawaiiProvider>
+                              </InterfaceStyleProvider>
+                            </TranslationProviderProvider>
+                          </PetCompanionProvider>
                         </TrendingSettingsProvider>
                       </SubtitlesProvider>
                     </UsedStarterPacksProvider>

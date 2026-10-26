@@ -2,7 +2,7 @@ import Intents
 import UIKit
 import UserNotifications
 
-let APP_GROUP = "group.app.bsky"
+let APP_GROUP = "group.social.mu.app"
 typealias ContentHandler = (UNNotificationContent) -> Void
 
 // This extension allows us to do some processing of the received notification
@@ -165,10 +165,11 @@ class NotificationService: UNNotificationServiceExtension {
   }
 
   func downloadAvatarImage(from urlString: String) -> INImage? {
+    // SiriKit cannot persist the CDN's default WebP avatar format.
     let thumbnailUrlString = urlString.replacingOccurrences(
       of: "/img/avatar/",
       with: "/img/avatar_thumbnail/"
-    )
+    ) + "@jpeg"
 
     guard let url = URL(string: thumbnailUrlString) else { return nil }
 

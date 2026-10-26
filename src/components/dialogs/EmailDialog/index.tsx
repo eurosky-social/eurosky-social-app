@@ -1,12 +1,14 @@
 import {useCallback, useState} from 'react'
 import {useLingui} from '@lingui/react/macro'
 
+import {useSession} from '#/state/session'
 import {web} from '#/alf'
 import * as Dialog from '#/components/Dialog'
 import {type StatefulControl} from '#/components/dialogs/Context'
 import {useGlobalDialogsControlContext} from '#/components/dialogs/Context'
 import {useAccountEmailState} from '#/components/dialogs/EmailDialog/data/useAccountEmailState'
 import {Manage2FA} from '#/components/dialogs/EmailDialog/screens/Manage2FA'
+import {OAuthPasswordRequired} from '#/components/dialogs/EmailDialog/screens/OAuthPasswordRequired'
 import {Update} from '#/components/dialogs/EmailDialog/screens/Update'
 import {VerificationReminder} from '#/components/dialogs/EmailDialog/screens/VerificationReminder'
 import {Verify} from '#/components/dialogs/EmailDialog/screens/Verify'
@@ -47,12 +49,18 @@ export function EmailDialog() {
 
 function Inner({control}: {control: StatefulControl<Screen>}) {
   const [screen, showScreen] = useState(() => control.value)
+  const {currentAccount} = useSession()
+  const isOauthSession = currentAccount?.isOauthSession === true
 
   if (!screen) return null
 
   switch (screen.id) {
     case ScreenID.Update: {
-      return <Update config={screen} showScreen={showScreen} />
+      return isOauthSession ? (
+        <OAuthPasswordRequired action="changeEmail" />
+      ) : (
+        <Update config={screen} showScreen={showScreen} />
+      )
     }
     case ScreenID.Verify: {
       return <Verify config={screen} showScreen={showScreen} />
@@ -61,7 +69,11 @@ function Inner({control}: {control: StatefulControl<Screen>}) {
       return <VerificationReminder config={screen} showScreen={showScreen} />
     }
     case ScreenID.Manage2FA: {
-      return <Manage2FA config={screen} showScreen={showScreen} />
+      return isOauthSession ? (
+        <OAuthPasswordRequired action="manageEmail2FA" />
+      ) : (
+        <Manage2FA config={screen} showScreen={showScreen} />
+      )
     }
     default: {
       return null

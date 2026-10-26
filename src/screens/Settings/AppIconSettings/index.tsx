@@ -15,11 +15,10 @@ import {atoms as a, useTheme} from '#/alf'
 import * as Toggle from '#/components/forms/Toggle'
 import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
-import {IS_ANDROID, IS_INTERNAL} from '#/env'
+import {IS_ANDROID} from '#/env'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'AppIconSettings'>
 export function AppIconSettingsScreen({}: Props) {
-  const t = useTheme()
   const {_} = useLingui()
   const sets = useAppIconSets()
   const [currentAppIcon, setCurrentAppIcon] = useState(() =>
@@ -28,9 +27,7 @@ export function AppIconSettingsScreen({}: Props) {
 
   const onSetAppIcon = (icon: DynamicAppIcon.IconName) => {
     if (IS_ANDROID) {
-      const next =
-        sets.defaults.find(i => i.id === icon) ??
-        sets.core.find(i => i.id === icon)
+      const next = sets.defaults.find(i => i.id === icon)
       Alert.alert(
         next
           ? _(msg`Change app icon to "${next.name}"`)
@@ -83,35 +80,6 @@ export function AppIconSettingsScreen({}: Props) {
             </Row>
           ))}
         </Group>
-
-        {IS_INTERNAL && (
-          <>
-            <Text
-              style={[
-                a.text_md,
-                a.mt_xl,
-                a.mb_sm,
-                a.font_semi_bold,
-                t.atoms.text_contrast_medium,
-              ]}>
-              <Trans>Bluesky+</Trans>
-            </Text>
-            <Group
-              label={_(msg`Bluesky+ icons`)}
-              value={currentAppIcon}
-              onChange={onSetAppIcon}>
-              {sets.core.map((icon, i) => (
-                <Row
-                  key={icon.id}
-                  icon={icon}
-                  isEnd={i === sets.core.length - 1}>
-                  <AppIcon icon={icon} key={icon.id} size={40} />
-                  <RowText>{icon.name}</RowText>
-                </Row>
-              ))}
-            </Group>
-          </>
-        )}
       </Layout.Content>
     </Layout.Screen>
   )
@@ -126,11 +94,7 @@ function setAppIcon(icon: DynamicAppIcon.IconName) {
 }
 
 function getAppIconName(icon: string | false): DynamicAppIcon.IconName {
-  if (!icon || icon === 'DEFAULT') {
-    return 'default_light'
-  } else {
-    return icon
-  }
+  return icon === 'default_dark' ? 'default_dark' : 'default_light'
 }
 
 function Group({

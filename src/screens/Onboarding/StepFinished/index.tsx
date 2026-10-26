@@ -1,33 +1,22 @@
 import {useCallback, useState} from 'react'
 import {View} from 'react-native'
-import {
-  type AppBskyActorDefs,
-  type AppBskyActorProfile,
-  type AppBskyGraphDefs,
-  AppBskyGraphStarterpack,
-  type Un$Typed,
-} from '@atproto/api'
-import {TID} from '@atproto/common-web'
+import {type Un$Typed} from '@atproto/lex'
+import {type AtUriString, toDatetimeString} from '@atproto/syntax'
+import {setInterestsPref, upsertProfile} from '@bsky/sdk'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
 
 import {uploadBlob} from '#/lib/api'
-import {
-  BSKY_APP_ACCOUNT_DID,
-  DISCOVER_SAVED_FEED,
-  TIMELINE_SAVED_FEED,
-  VIDEO_SAVED_FEED,
-} from '#/lib/constants'
+import {BSKY_APP_ACCOUNT_DID} from '#/lib/constants'
 import {useRequestNotificationsPermission} from '#/lib/notifications/notifications'
 import {logger} from '#/logger'
 import {useSetHasCheckedForStarterPack} from '#/state/preferences/used-starter-packs'
 import {getAllListMembers} from '#/state/queries/list-members'
 import {preferencesQueryKey} from '#/state/queries/preferences'
 import {RQKEY as profileRQKey} from '#/state/queries/profile'
-import {useAgent} from '#/state/session'
-import {getPdsAgent} from '#/state/session/pds-agent'
+import {useAppviewClient, usePdsClient} from '#/state/session'
 import {useOnboardingDispatch} from '#/state/shell'
 import {
   useActiveStarterPack,
@@ -50,6 +39,8 @@ import {ArrowRight_Stroke2_Corner0_Rounded as ArrowRight} from '#/components/ico
 import {Loader} from '#/components/Loader'
 import {useAnalytics} from '#/analytics'
 import {IS_WEB} from '#/env'
+import {saveOnboardingFeeds} from '#/features/muForYouFeed/preferences'
+import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {ValuePropositionPager} from './ValuePropositionPager'
 
@@ -59,7 +50,8 @@ export function StepFinished() {
   const onboardDispatch = useOnboardingDispatch()
   const [saving, setSaving] = useState(false)
   const queryClient = useQueryClient()
-  const agent = useAgent()
+  const pdsClient = usePdsClient()
+  const appviewClient = useAppviewClient()
   const requestNotificationsPermission = useRequestNotificationsPermission()
   const activeStarterPack = useActiveStarterPack()
   const setActiveStarterPack = useSetActiveStarterPack()
@@ -69,100 +61,87 @@ export function StepFinished() {
   const finishOnboarding = useCallback(async () => {
     setSaving(true)
 
-    let starterPack: AppBskyGraphDefs.StarterPackView | undefined
-    let listItems: AppBskyGraphDefs.ListItemView[] | undefined
+    let starterPack: app.bsky.graph.defs.StarterPackView | undefined
+    let listItems: app.bsky.graph.defs.ListItemView[] | undefined
 
     if (activeStarterPack?.uri) {
       try {
-        const spRes = await agent.app.bsky.graph.getStarterPack({
-          starterPack: activeStarterPack.uri,
+        const spRes = await appviewClient.call(app.bsky.graph.getStarterPack, {
+          starterPack: activeStarterPack.uri as AtUriString,
         })
-        starterPack = spRes.data.starterPack
+        starterPack = spRes.starterPack
       } catch (e) {
-        logger.error('Failed to fetch starter pack', {safeMessage: e})
+        logger.error('Failed to fetch Starter Pack', {safeMessage: e})
         // don't tell the user, just get them through onboarding.
       }
+      const starterPackList = starterPack?.list
       try {
-        if (starterPack?.list) {
-          listItems = await getAllListMembers(agent, starterPack.list.uri)
+        if (starterPackList) {
+          listItems = await getAllListMembers(
+            appviewClient,
+            starterPackList.uri,
+          )
         }
       } catch (e) {
-        logger.error('Failed to fetch starter pack list items', {
+        logger.error('Failed to fetch Starter Pack list items', {
           safeMessage: e,
         })
         // don't tell the user, just get them through onboarding.
       }
     }
 
+    /*
+     * Hoisted above the `try`: React Compiler cannot lower these inside one, and
+     * `listItems` is already settled by the earlier try/catch.
+     */
+    const followDids = [
+      BSKY_APP_ACCOUNT_DID,
+      ...(listItems?.map(i => i.subject.did) ?? []),
+    ]
+    const starterPackRef = starterPack
+      ? {uri: starterPack.uri, cid: starterPack.cid}
+      : undefined
+
     try {
       const {interestsStepResults, profileStepResults} = state
       const {selectedInterests} = interestsStepResults
 
-      await Promise.all([
-        bulkWriteFollows(
-          agent,
-          [BSKY_APP_ACCOUNT_DID, ...(listItems?.map(i => i.subject.did) ?? [])],
-          starterPack
-            ? {uri: starterPack.uri, cid: starterPack.cid}
-            : undefined,
-        ),
-        // Like the picker-account interest post for each selected interest, to
-        // seed the fu feed's personalization. Interest posts are discovered
-        // at runtime (see euroskyInterestPosts); this is a no-op when the picker
-        // account is unset/unreachable. Errors are swallowed by the surrounding
-        // try/catch so this never blocks onboarding.
+      // Wait for feed preferences even when another onboarding task fails.
+      const results = await Promise.allSettled([
+        bulkWriteFollows(pdsClient, appviewClient, followDids, starterPackRef),
+        /*
+         * Like the picker-account interest post for each selected interest to
+         * seed the fu feed. This is a no-op when the picker is unset/unreachable
+         * (see euroskyInterestPosts). Failures are logged without blocking
+         * onboarding or preventing the feed preferences from being saved.
+         */
         (async () => {
-          const refs = await interestPostRefsFor(agent, selectedInterests)
-          await bulkWriteLikes(agent, refs)
+          const refs = await interestPostRefsFor(
+            appviewClient,
+            selectedInterests,
+          )
+          await bulkWriteLikes(pdsClient, refs)
         })(),
         (async () => {
           // Interests need to get saved first, then we can write the feeds to prefs
-          await getPdsAgent(agent).setInterestsPref({tags: selectedInterests})
+          await pdsClient.call(setInterestsPref, {tags: selectedInterests})
 
-          // Default feeds that every user should have pinned when landing in the app
-          const feedsToSave: AppBskyActorDefs.SavedFeed[] = [
-            {
-              ...DISCOVER_SAVED_FEED,
-              id: TID.nextStr(),
-            },
-            {
-              ...TIMELINE_SAVED_FEED,
-              id: TID.nextStr(),
-            },
-            {
-              ...VIDEO_SAVED_FEED,
-              id: TID.nextStr(),
-            },
-          ]
-
-          // Any starter pack feeds will be pinned _after_ the defaults
-          if (starterPack && starterPack.feeds?.length) {
-            feedsToSave.push(
-              ...starterPack.feeds.map(f => ({
-                type: 'feed',
-                value: f.uri,
-                pinned: true,
-                id: TID.nextStr(),
-              })),
-            )
-          }
-
-          await getPdsAgent(agent).overwriteSavedFeeds(feedsToSave)
+          await saveOnboardingFeeds(pdsClient, starterPack?.feeds)
         })(),
         (async () => {
           const {imageUri, imageMime} = profileStepResults
           const blobPromise =
             imageUri && imageMime
-              ? uploadBlob(agent, imageUri, imageMime)
+              ? uploadBlob(pdsClient, imageUri, imageMime)
               : undefined
 
-          await agent.upsertProfile(async existing => {
-            let next: Un$Typed<AppBskyActorProfile.Record> = existing ?? {}
+          await pdsClient.call(upsertProfile, async existing => {
+            let next: Un$Typed<app.bsky.actor.profile.Main> = existing ?? {}
 
             if (blobPromise) {
               const res = await blobPromise
-              if (res.data.blob) {
-                next.avatar = res.data.blob
+              if (res.blob) {
+                next.avatar = res.blob
               }
             }
 
@@ -176,7 +155,7 @@ export function StepFinished() {
             next.displayName = ''
 
             if (!next.createdAt) {
-              next.createdAt = new Date().toISOString()
+              next.createdAt = toDatetimeString(new Date())
             }
             return next
           })
@@ -191,6 +170,11 @@ export function StepFinished() {
         })(),
         requestNotificationsPermission('AfterOnboarding'),
       ])
+      for (const result of results) {
+        if (result.status === 'rejected') {
+          logger.error('onboarding: save failed', {safeMessage: result.reason})
+        }
+      }
     } catch (e: any) {
       logger.info(`onboarding: bulk save failed`)
       logger.error(e)
@@ -203,7 +187,7 @@ export function StepFinished() {
         queryKey: preferencesQueryKey,
       }),
       queryClient.invalidateQueries({
-        queryKey: profileRQKey(agent.session?.did ?? ''),
+        queryKey: profileRQKey(pdsClient.did ?? ''),
       }),
     ]).catch(e => {
       logger.error(e)
@@ -220,10 +204,7 @@ export function StepFinished() {
       usedStarterPack: Boolean(starterPack),
       starterPackName:
         starterPack &&
-        bsky.dangerousIsType<AppBskyGraphStarterpack.Record>(
-          starterPack.record,
-          AppBskyGraphStarterpack.isRecord,
-        )
+        bsky.isType(app.bsky.graph.starterpack, starterPack.record)
           ? starterPack.record.name
           : undefined,
       starterPackCreator: starterPack?.creator.did,
@@ -241,7 +222,8 @@ export function StepFinished() {
   }, [
     ax,
     queryClient,
-    agent,
+    pdsClient,
+    appviewClient,
     dispatch,
     onboardDispatch,
     activeStarterPack,

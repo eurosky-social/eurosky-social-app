@@ -15,7 +15,7 @@
 // looping hold state (SitIdle / Sleeping). Attack, Hurt and Die are defined
 // but unused, like the fox's Run.
 
-import {type ImageSourcePropType} from 'react-native'
+import {type ImageRequireSource} from 'react-native'
 import {type MessageDescriptor} from '@lingui/core'
 import {msg} from '@lingui/core/macro'
 
@@ -79,7 +79,7 @@ function makeDog(spec: {
   variants?: readonly string[]
   variantLabels?: Record<string, MessageDescriptor>
   defaultVariant?: string
-  sheets: Record<string, ImageSourcePropType>
+  sheets: Record<string, ImageRequireSource>
 }): Species {
   const rows = spec.rows ?? ROWS
   const clips: Record<string, PetClip> = {}

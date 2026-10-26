@@ -6,6 +6,7 @@ import {Trans} from '@lingui/react/macro'
 
 import {type ThreadItem} from '#/state/queries/usePostThread'
 import {
+  getReplyLineColor,
   LINEAR_AVI_WIDTH,
   OUTER_SPACE,
   REPLY_LINE_WIDTH,
@@ -77,7 +78,7 @@ export const ThreadItemReadMoreUp = memo(function ThreadItemReadMoreUp({
                   {
                     height: OUTER_SPACE / 2,
                     width: REPLY_LINE_WIDTH,
-                    backgroundColor: t.atoms.border_contrast_low.borderColor,
+                    backgroundColor: getReplyLineColor(t),
                   },
                 ]}
               />

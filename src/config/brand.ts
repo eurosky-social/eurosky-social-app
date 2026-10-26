@@ -19,6 +19,15 @@
  */
 import brand from '#/config/brand.json'
 
+const appViewUrlOverride = process.env.EXPO_PUBLIC_APPVIEW_URL as
+  string | undefined
+const appViewDidOverride = process.env.EXPO_PUBLIC_APPVIEW_DID as
+  string | undefined
+const decorationEnabledOverride = process.env.EXPO_PUBLIC_DECO_ENABLED as
+  string | undefined
+const decorationListUrisOverride = process.env
+  .EXPO_PUBLIC_DECO_SUBSCRIBER_LIST_URIS as string | undefined
+
 export const BRAND = {
   /** Display name used in page/tab titles and in-app brand text. */
   name: brand.name,
@@ -31,8 +40,36 @@ export const BRAND = {
     hosts: brand.hosts,
   },
   links: brand.links,
-  services: brand.services,
+  services: {
+    ...brand.services,
+    /*
+     * A self-hosted AppView commonly exposes one origin for both direct and
+     * public reads. Keep the two brand defaults distinct, but let a deployment
+     * move every AppView read with one URL override.
+     */
+    publicApi: appViewUrlOverride || brand.services.publicApi,
+    appView: appViewUrlOverride || brand.services.appView,
+    appViewDid: appViewDidOverride || brand.services.appViewDid,
+  },
   verification: brand.verification,
+  decorations: {
+    enabled:
+      decorationEnabledOverride === undefined
+        ? brand.decorations.enabled
+        : decorationEnabledOverride === 'true',
+    subscriberListUris: decorationListUrisOverride
+      ? decorationListUrisOverride
+          .split(',')
+          .map((uri: string) => uri.trim())
+          .filter(Boolean)
+      : brand.decorations.subscriberListUris,
+    serviceUrl:
+      process.env.EXPO_PUBLIC_DECO_SERVICE_URL || brand.decorations.serviceUrl,
+    serviceDid:
+      process.env.EXPO_PUBLIC_DECO_SERVICE_DID || brand.decorations.serviceDid,
+    manageUrl:
+      process.env.EXPO_PUBLIC_DECO_MANAGE_URL || brand.decorations.manageUrl,
+  },
   ageAssurance: {
     serviceUrl:
       process.env.EXPO_PUBLIC_AGE_SERVICE_URL || brand.ageAssurance.serviceUrl,

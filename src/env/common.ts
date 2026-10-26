@@ -1,7 +1,8 @@
-import {type Did} from '@atproto/api'
+import {type DidString} from '@atproto/syntax'
 
 import packageJson from '#/../package.json'
 import {BRAND} from '#/config/brand'
+import {OAUTH_SIGNUP_PDS_HOST} from '#/config/oauth'
 
 /**
  * The semver version of the app, as defined in `package.json.`
@@ -15,11 +16,7 @@ export const RELEASE_VERSION: string =
  * The env the app is running in e.g. development, testflight, production, e2e
  */
 export const ENV: string = process.env.EXPO_PUBLIC_ENV as
-  | 'production'
-  | 'testflight'
-  | 'development'
-  | 'e2e'
-  | (string & {})
+  'production' | 'testflight' | 'development' | 'e2e' | (string & {})
 
 /**
  * Indicates whether the app is running in TestFlight
@@ -63,10 +60,7 @@ export const BUNDLE_DATE: number =
  * The log level for the app.
  */
 export const LOG_LEVEL = (process.env.EXPO_PUBLIC_LOG_LEVEL || 'info') as
-  | 'debug'
-  | 'info'
-  | 'warn'
-  | 'error'
+  'debug' | 'info' | 'warn' | 'error'
 
 /**
  * Enable debug logs for specific logger instances
@@ -79,14 +73,57 @@ export const LOG_DEBUG: string = process.env.EXPO_PUBLIC_LOG_DEBUG || ''
  * switching the appview is a single edit there; override per-deploy with
  * EXPO_PUBLIC_BLUESKY_PROXY_DID if it must differ from the brand default.
  */
-export const BLUESKY_PROXY_DID: Did =
+export const BLUESKY_PROXY_DID: DidString =
   process.env.EXPO_PUBLIC_BLUESKY_PROXY_DID || BRAND.services.appViewDid
+
+/**
+ * Percentage (0-100) of eligible read-only Bluesky AppView calls also sent to
+ * the candidate AppView. OAuth/DPoP calls are excluded because their proofs
+ * cannot be safely replayed. Invalid values disable shadowing; out-of-range
+ * values are clamped so rollout configuration cannot amplify traffic above
+ * 100%.
+ */
+const requestedAppViewShadowPercentage = Number(
+  process.env.EXPO_PUBLIC_APPVIEW_SHADOW_PERCENTAGE,
+)
+export const APPVIEW_SHADOW_PERCENTAGE: number = Number.isFinite(
+  requestedAppViewShadowPercentage,
+)
+  ? Math.min(100, Math.max(0, requestedAppViewShadowPercentage))
+  : 0
+
+/** Candidate AppView used for sampled shadow reads. */
+export const APPVIEW_SHADOW_URL: string =
+  process.env.EXPO_PUBLIC_APPVIEW_SHADOW_URL || 'https://api.eurosky.network'
+export const APPVIEW_SHADOW_DID: string =
+  process.env.EXPO_PUBLIC_APPVIEW_SHADOW_DID || 'did:web:api.eurosky.network'
 
 /**
  * The DID of the chat service to proxy to
  */
-export const CHAT_PROXY_DID: Did =
+export const CHAT_PROXY_DID: DidString =
   process.env.EXPO_PUBLIC_CHAT_PROXY_DID || 'did:web:api.bsky.chat'
+
+/**
+ * Service whose `/xrpc/_health` decides whether the app considers itself
+ * online (see lib/react-query.tsx). This gates TanStack Query's global
+ * `onlineManager`, so it must point at a service we operate.
+ *
+ * It previously used the Bluesky public AppView. That made an AppView outage
+ * fatal to the whole app: one failed request flipped `onlineManager` offline,
+ * which pauses every query - including authed ones bound for our own AppView -
+ * and recovery was gated on a probe against the very service that was down.
+ * Defaults to the signup PDS because it is first-party and always reachable
+ * when the network is. Override per-deploy with EXPO_PUBLIC_HEALTH_PROBE_SERVICE.
+ */
+export const HEALTH_PROBE_SERVICE: string =
+  process.env.EXPO_PUBLIC_HEALTH_PROBE_SERVICE || OAUTH_SIGNUP_PDS_HOST
+
+/**
+ * The DID of the moderation service to proxy requests to.
+ */
+export const MOD_PROXY_DID: DidString | undefined =
+  process.env.EXPO_PUBLIC_MOD_PROXY_DID
 
 /**
  * Metrics API host
@@ -136,6 +173,16 @@ export const PLAUSIBLE_DEBUG: boolean =
  * Sentry DSN for telemetry
  */
 export const SENTRY_DSN: string | undefined = process.env.EXPO_PUBLIC_SENTRY_DSN
+
+/**
+ * Sentry release name. Sentry only compares releases by version when they're
+ * named `package@version` - a bare version gets ordered by when its release
+ * record was created, which makes "resolved in release" regress on events
+ * from older builds. The package matches the native SDK's default release
+ * name. Source map uploads must use the same name, see `SENTRY_RELEASE` in
+ * the CI workflows, `Dockerfile` and `scripts/post-web-build.js`.
+ */
+export const SENTRY_RELEASE = `xyz.blueskyweb.app@${RELEASE_VERSION}`
 
 /**
  * Bitdrift API key. If undefined, Bitdrift should be disabled.
@@ -197,10 +244,10 @@ export const ENABLE_LIVE_EVENTS =
 export const ENABLE_APP_CONFIG =
   process.env.EXPO_PUBLIC_ENABLE_APP_CONFIG !== 'false'
 /**
- * Gates the product-analytics metrics client (the `ax.metric()` pipeline that
- * POSTs to `${METRICS_API_HOST}/t`). Disabling stops all event reporting,
- * including GrowthBook `experiment:viewed`/`feature:viewed` exposures. GrowthBook
- * flag *fetching* is unaffected - the SDK pulls gates directly, separate from
- * this client - so feature gating keeps working.
+ * Gates the web product-analytics metrics client (the `ax.metric()` pipeline
+ * that POSTs to `${METRICS_API_HOST}/t`). Native product analytics are always
+ * disabled, regardless of this value. Disabling this client also stops its
+ * GrowthBook `experiment:viewed`/`feature:viewed` exposures. GrowthBook flag
+ * fetching, Plausible, and feed feedback are independent and unaffected.
  */
 export const ENABLE_METRICS = process.env.EXPO_PUBLIC_ENABLE_METRICS !== 'false'

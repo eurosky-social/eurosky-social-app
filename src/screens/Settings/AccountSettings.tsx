@@ -1,7 +1,5 @@
 import {useEffect} from 'react'
-import {msg} from '@lingui/core/macro'
-import {useLingui} from '@lingui/react'
-import {Trans} from '@lingui/react/macro'
+import {Trans, useLingui} from '@lingui/react/macro'
 import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 
 import {type CommonNavigatorParams} from '#/lib/routes/types'
@@ -20,7 +18,7 @@ import {
 } from '#/components/dialogs/EmailDialog'
 import {At_Stroke2_Corner2_Rounded as AtIcon} from '#/components/icons/At'
 import {BirthdayCake_Stroke2_Corner2_Rounded as BirthdayCakeIcon} from '#/components/icons/BirthdayCake'
-import {Bot_Stroke as RobotIcon} from '#/components/icons/Bot'
+import {Bot_Stroke2_Corner0_Rounded as RobotIcon} from '#/components/icons/Bot'
 import {Car_Stroke2_Corner2_Rounded as CarIcon} from '#/components/icons/Car'
 import {Envelope_Stroke2_Corner2_Rounded as EnvelopeIcon} from '#/components/icons/Envelope'
 import {Freeze_Stroke2_Corner2_Rounded as FreezeIcon} from '#/components/icons/Freeze'
@@ -36,16 +34,10 @@ import {DeactivateAccountDialog} from './components/DeactivateAccountDialog'
 import {DeleteAccountDialog} from './components/DeleteAccountDialog'
 import {ExportCarDialog} from './components/ExportCarDialog'
 
-/**
- * mu fork: account deactivation and deletion are temporarily hidden during the
- * beta. Flip to `true` to restore both the menu items and their dialogs.
- */
-const SHOW_ACCOUNT_DELETION: boolean = false
-
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'AccountSettings'>
 export function AccountSettingsScreen({}: Props) {
   const t = useTheme()
-  const {_} = useLingui()
+  const {t: l} = useLingui()
   const {currentAccount} = useSession()
   const {data: profile} = useProfileQuery({did: currentAccount?.did})
   const emailDialogControl = useEmailDialogControl()
@@ -64,12 +56,11 @@ export function AccountSettingsScreen({}: Props) {
   useEffect(() => {
     if (consumePendingHandleStepUp()) {
       changeHandleControl.open()
-      toast.show(
-        _(msg`Your session is upgraded. You can now change your handle.`),
-        {type: 'success'},
-      )
+      toast.show(l`Your session is upgraded. You can now change your handle.`, {
+        type: 'success',
+      })
     }
-  }, [changeHandleControl, _])
+  }, [changeHandleControl, l])
 
   return (
     <Layout.Screen>
@@ -107,7 +98,7 @@ export function AccountSettingsScreen({}: Props) {
           </SettingsList.Item>
           {currentAccount && !currentAccount.emailConfirmed && (
             <SettingsList.PressableItem
-              label={_(msg`Verify your email`)}
+              label={l`Verify your email`}
               onPress={() =>
                 emailDialogControl.open({
                   id: EmailDialogScreenID.Verify,
@@ -133,7 +124,7 @@ export function AccountSettingsScreen({}: Props) {
             </SettingsList.PressableItem>
           )}
           <SettingsList.PressableItem
-            label={_(msg`Update email`)}
+            label={l`Update email`}
             onPress={() =>
               emailDialogControl.open({
                 id: EmailDialogScreenID.Update,
@@ -147,7 +138,7 @@ export function AccountSettingsScreen({}: Props) {
           </SettingsList.PressableItem>
           <SettingsList.Divider />
           <SettingsList.PressableItem
-            label={_(msg`Password`)}
+            label={l`Password`}
             onPress={() => changePasswordControl.open()}>
             <SettingsList.ItemIcon icon={LockIcon} />
             <SettingsList.ItemText>
@@ -156,8 +147,8 @@ export function AccountSettingsScreen({}: Props) {
             <SettingsList.Chevron />
           </SettingsList.PressableItem>
           <SettingsList.PressableItem
-            label={_(msg`Handle`)}
-            accessibilityHint={_(msg`Opens change handle dialog`)}
+            label={l`Handle`}
+            accessibilityHint={l`Opens change handle dialog`}
             onPress={() => changeHandleControl.open()}>
             <SettingsList.ItemIcon icon={AtIcon} />
             <SettingsList.ItemText>
@@ -171,27 +162,27 @@ export function AccountSettingsScreen({}: Props) {
               <Trans>Birthday</Trans>
             </SettingsList.ItemText>
             <SettingsList.BadgeButton
-              label={_(msg`Edit`)}
+              label={l`Edit`}
               onPress={() => birthdayControl.open()}
             />
           </SettingsList.Item>
           <AgeAssuranceAccountCard style={[a.px_xl, a.pt_xs, a.pb_md]} />
           <SettingsList.LinkItem
             to="/settings/automation-label"
-            label={_(msg`Automation label`)}>
+            label={l`Automation label`}>
             <SettingsList.ItemIcon icon={RobotIcon} />
             <SettingsList.ItemText>
               <Trans>Automation label</Trans>
             </SettingsList.ItemText>
             {profile && (
               <SettingsList.BadgeText>
-                {isBotAccount(profile) ? _(msg`On`) : _(msg`Off`)}
+                {isBotAccount(profile) ? l`On` : l`Off`}
               </SettingsList.BadgeText>
             )}
           </SettingsList.LinkItem>
           <SettingsList.Divider />
           <SettingsList.PressableItem
-            label={_(msg`Export my data`)}
+            label={l`Export my data`}
             onPress={() => exportCarControl.open()}>
             <SettingsList.ItemIcon icon={CarIcon} />
             <SettingsList.ItemText>
@@ -199,46 +190,37 @@ export function AccountSettingsScreen({}: Props) {
             </SettingsList.ItemText>
             <SettingsList.Chevron />
           </SettingsList.PressableItem>
-          {SHOW_ACCOUNT_DELETION && (
-            <>
-              <SettingsList.PressableItem
-                label={_(msg`Deactivate account`)}
-                onPress={() => deactivateAccountControl.open()}
-                destructive>
-                <SettingsList.ItemIcon icon={FreezeIcon} />
-                <SettingsList.ItemText>
-                  <Trans>Deactivate account</Trans>
-                </SettingsList.ItemText>
-                <SettingsList.Chevron />
-              </SettingsList.PressableItem>
-              <SettingsList.PressableItem
-                label={_(msg`Delete account`)}
-                onPress={() => deleteAccountControl.open()}
-                destructive>
-                <SettingsList.ItemIcon icon={Trash_Stroke2_Corner2_Rounded} />
-                <SettingsList.ItemText>
-                  <Trans>Delete account</Trans>
-                </SettingsList.ItemText>
-                <SettingsList.Chevron />
-              </SettingsList.PressableItem>
-            </>
-          )}
+          <SettingsList.PressableItem
+            label={l`Deactivate account`}
+            onPress={() => deactivateAccountControl.open()}
+            destructive>
+            <SettingsList.ItemIcon icon={FreezeIcon} />
+            <SettingsList.ItemText>
+              <Trans>Deactivate account</Trans>
+            </SettingsList.ItemText>
+            <SettingsList.Chevron />
+          </SettingsList.PressableItem>
+          <SettingsList.PressableItem
+            label={l`Delete account`}
+            onPress={() => deleteAccountControl.open()}
+            destructive>
+            <SettingsList.ItemIcon icon={Trash_Stroke2_Corner2_Rounded} />
+            <SettingsList.ItemText>
+              <Trans>Delete account</Trans>
+            </SettingsList.ItemText>
+            <SettingsList.Chevron />
+          </SettingsList.PressableItem>
         </SettingsList.Container>
       </Layout.Content>
-
       <BirthDateSettingsDialog control={birthdayControl} />
       <ChangeHandleDialog control={changeHandleControl} />
       <ChangePasswordDialog control={changePasswordControl} />
       <ExportCarDialog control={exportCarControl} />
-      {SHOW_ACCOUNT_DELETION && (
-        <>
-          <DeactivateAccountDialog control={deactivateAccountControl} />
-          <DeleteAccountDialog
-            control={deleteAccountControl}
-            deactivateDialogControl={deactivateAccountControl}
-          />
-        </>
-      )}
+      <DeactivateAccountDialog control={deactivateAccountControl} />
+      <DeleteAccountDialog
+        control={deleteAccountControl}
+        deactivateDialogControl={deactivateAccountControl}
+      />
     </Layout.Screen>
   )
 }

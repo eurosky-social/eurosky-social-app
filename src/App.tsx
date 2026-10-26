@@ -10,8 +10,9 @@ import {
 import * as ScreenOrientation from 'expo-screen-orientation'
 import * as SplashScreen from 'expo-splash-screen'
 import * as SystemUI from 'expo-system-ui'
+import {BottomSheetProvider} from '@bsky.app/bottom-sheet'
+import {BackgroundNotificationPreferencesProvider} from '@bsky.app/expo-background-notification-handler/src/BackgroundNotificationHandlerProvider'
 import {useLingui} from '@lingui/react/macro'
-import * as Sentry from '@sentry/react-native'
 
 import {Provider as HideBottomBarBorderProvider} from '#/lib/hooks/useHideBottomBarBorder'
 import {QueryProvider} from '#/lib/react-query'
@@ -19,6 +20,8 @@ import {ThemeProvider} from '#/lib/ThemeContext'
 import {Provider as TranslateOnDeviceProvider} from '#/lib/translation'
 import I18nProvider from '#/locale/i18nProvider'
 import {logger} from '#/logger'
+import {Sentry} from '#/logger/sentry/lib'
+import {identifyDevice} from '#/logger/sentry/user'
 import {Provider as A11yProvider} from '#/state/a11y'
 import {
   prefetchAppConfig,
@@ -33,6 +36,7 @@ import {Provider as HomeBadgeProvider} from '#/state/home-badge'
 import {MessagesProvider} from '#/state/messages'
 import {init as initPersistedState} from '#/state/persisted'
 import {Provider as PrefsStateProvider} from '#/state/preferences'
+import {BetaUserStorageSync} from '#/state/preferences/beta-user-sync'
 import {Provider as LabelDefsProvider} from '#/state/preferences/label-defs'
 import {Provider as ModerationOptsProvider} from '#/state/preferences/moderation-opts'
 import {Provider as UnreadNotifsProvider} from '#/state/queries/notifications/unread'
@@ -76,29 +80,27 @@ import {
   features,
   setupDeviceId,
 } from '#/analytics'
+import {getDeviceId} from '#/analytics/identifiers'
 import {IS_ANDROID, IS_IOS} from '#/env'
+import {HalloweenProvider} from '#/features/halloween/context'
 import {
   prefetchLiveEvents,
   Provider as LiveEventsProvider,
 } from '#/features/liveEvents/context'
 import * as Geo from '#/geolocation'
 import {Splash} from '#/Splash'
-import {BottomSheetProvider} from '../modules/bottom-sheet'
-import {BackgroundNotificationPreferencesProvider} from '../modules/expo-background-notification-handler/src/BackgroundNotificationHandlerProvider'
+
+void identifyDevice(getDeviceId(), setupDeviceId)
 
 void SplashScreen.preventAutoHideAsync()
 if (IS_IOS) {
   void SystemUI.setBackgroundColorAsync('black')
 }
 if (IS_ANDROID) {
-  // iOS is handled by the config plugin -sfn
-  ScreenOrientation.lockAsync(
-    ScreenOrientation.OrientationLock.PORTRAIT_UP,
-  ).catch(error =>
-    logger.debug('Could not lock orientation', {safeMessage: error}),
+  void ScreenOrientation.unlockAsync().catch(error =>
+    logger.debug('Could not unlock orientation', {safeMessage: error}),
   )
 }
-
 /**
  * Begin geolocation ASAP
  */
@@ -111,8 +113,8 @@ function InnerApp() {
   const [isReady, setIsReady] = useState(false)
   const {currentAccount} = useSession()
   const {resumeSession} = useSessionApi()
-  const theme = useColorModeTheme()
-  const themesOverride = useThemesOverride() // Eurosky: per-user accent
+  const themesOverride = useThemesOverride()
+  const theme = useColorModeTheme(themesOverride)
   const {t: l} = useLingui()
   const hasCheckedLanding = useLandingEntry()
 
@@ -127,9 +129,8 @@ function InnerApp() {
         }
       } catch (e) {
         logger.warn(`session: resume failed`, {message: e})
-      } finally {
-        setIsReady(true)
       }
+      setIsReady(true)
     }
     const account = readLastActiveAccount()
     void onLaunch(account)
@@ -154,6 +155,7 @@ function InnerApp() {
                 key={currentAccount?.did}>
                 <AnalyticsFeaturesContext>
                   <QueryProvider currentDid={currentAccount?.did}>
+                    <BetaUserStorageSync />
                     <PolicyUpdateOverlayProvider>
                       <LiveEventsProvider>
                         <AgeAssuranceV2Provider>
@@ -249,7 +251,9 @@ function App() {
                                 <LandingProvider>
                                   <SafeAreaProvider
                                     initialMetrics={initialWindowMetrics}>
-                                    <InnerApp />
+                                    <HalloweenProvider>
+                                      <InnerApp />
+                                    </HalloweenProvider>
                                   </SafeAreaProvider>
                                 </LandingProvider>
                               </BottomSheetProvider>

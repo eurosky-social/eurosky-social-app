@@ -1,20 +1,17 @@
-import {
-  AppBskyUnspeccedDefs,
-  type AppBskyUnspeccedGetPostThreadV2,
-} from '@atproto/api'
-
 import {SELF_THREAD_CHAIN_MAX_FETCHES} from '#/state/queries/usePostThread/const'
+import {app} from '#/lexicons'
+import * as bsky from '#/types/bsky'
 
-type RawThreadItem = AppBskyUnspeccedGetPostThreadV2.ThreadItem
+type RawThreadItem = app.bsky.unspecced.getPostThreadV2.ThreadItem
 
 function isOpChainPost(
   item: RawThreadItem,
   did: string,
 ): item is RawThreadItem & {
-  value: AppBskyUnspeccedDefs.ThreadItemPost
+  value: app.bsky.unspecced.defs.ThreadItemPost
 } {
   return (
-    AppBskyUnspeccedDefs.isThreadItemPost(item.value) &&
+    bsky.isType(app.bsky.unspecced.defs.threadItemPost, item.value) &&
     item.value.opThread &&
     item.value.post.author.did === did
   )
@@ -78,7 +75,10 @@ export async function extendSelfThreadChain({
   fetchBelow: (anchorUri: string) => Promise<RawThreadItem[]>
 }): Promise<RawThreadItem[]> {
   const anchor = thread.find(item => item.depth === 0)
-  if (!anchor || !AppBskyUnspeccedDefs.isThreadItemPost(anchor.value)) {
+  if (
+    !anchor ||
+    !bsky.isType(app.bsky.unspecced.defs.threadItemPost, anchor.value)
+  ) {
     return thread
   }
   const did = anchor.value.post.author.did
@@ -93,7 +93,7 @@ export async function extendSelfThreadChain({
   for (let i = 0; i < maxFetches && tipMaybeTruncated; i++) {
     const tip = result[tipIndex]
     const tipValue = tip.value
-    if (!AppBskyUnspeccedDefs.isThreadItemPost(tipValue)) break
+    if (!bsky.isType(app.bsky.unspecced.defs.threadItemPost, tipValue)) break
     if (tipValue.moreReplies === 0 && (tipValue.post.replyCount ?? 0) === 0) {
       // the tip has no replies at all, so there is nothing to extend
       break

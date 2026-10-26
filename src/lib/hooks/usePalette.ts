@@ -1,6 +1,7 @@
 import {useMemo} from 'react'
 import {type TextStyle, type ViewStyle} from 'react-native'
 
+import {useInterfaceStyle} from '#/state/preferences'
 import {
   type PaletteColor,
   type PaletteColorName,
@@ -24,8 +25,13 @@ export interface UsePaletteValue {
  */
 export function usePalette(color: PaletteColorName): UsePaletteValue {
   const theme = useTheme()
+  const {borders} = useInterfaceStyle()
   return useMemo(() => {
-    const palette = theme.palette[color]
+    const themePalette = theme.palette[color]
+    const palette =
+      borders === 'hidden'
+        ? {...themePalette, border: 'transparent'}
+        : themePalette
     return {
       colors: palette,
       view: {
@@ -53,5 +59,5 @@ export function usePalette(color: PaletteColorName): UsePaletteValue {
         color: palette.link,
       },
     }
-  }, [theme, color])
+  }, [theme, color, borders])
 }

@@ -4,8 +4,8 @@ import './style.css'
 import {Fragment, useEffect, useState} from 'react'
 import {KeyboardProvider as KeyboardControllerProvider} from 'react-native-keyboard-controller'
 import {SafeAreaProvider} from 'react-native-safe-area-context'
+import {BackgroundNotificationPreferencesProvider} from '@bsky.app/expo-background-notification-handler/src/BackgroundNotificationHandlerProvider'
 import {useLingui} from '@lingui/react/macro'
-import * as Sentry from '@sentry/react-native'
 
 import {Provider as HotkeysProvider} from '#/lib/hotkeys'
 import {QueryProvider} from '#/lib/react-query'
@@ -13,6 +13,8 @@ import {ThemeProvider} from '#/lib/ThemeContext'
 import {Provider as TranslateOnDeviceProvider} from '#/lib/translation'
 import I18nProvider from '#/locale/i18nProvider'
 import {logger} from '#/logger'
+import {Sentry} from '#/logger/sentry/lib'
+import {identifyDevice} from '#/logger/sentry/user'
 import {Provider as A11yProvider} from '#/state/a11y'
 import {
   prefetchAppConfig,
@@ -26,6 +28,7 @@ import {Provider as HomeBadgeProvider} from '#/state/home-badge'
 import {MessagesProvider} from '#/state/messages'
 import {init as initPersistedState} from '#/state/persisted'
 import {Provider as PrefsStateProvider} from '#/state/preferences'
+import {BetaUserStorageSync} from '#/state/preferences/beta-user-sync'
 import {Provider as LabelDefsProvider} from '#/state/preferences/label-defs'
 import {Provider as ModerationOptsProvider} from '#/state/preferences/moderation-opts'
 import {Provider as UnreadNotifsProvider} from '#/state/queries/notifications/unread'
@@ -76,17 +79,21 @@ import {
   features,
   setupDeviceId,
 } from '#/analytics'
+import {getDeviceId} from '#/analytics/identifiers'
+import {useSessionActivity} from '#/analytics/useSessionActivity'
+import {HalloweenProvider} from '#/features/halloween/context'
+import {KeyboardShortcuts} from '#/features/keyboardShortcuts'
 import {
   prefetchLiveEvents,
   Provider as LiveEventsProvider,
 } from '#/features/liveEvents/context'
 import * as Geo from '#/geolocation'
 import {Splash} from '#/Splash'
-import {BackgroundNotificationPreferencesProvider} from '../modules/expo-background-notification-handler/src/BackgroundNotificationHandlerProvider'
 import {Provider as HideBottomBarBorderProvider} from './lib/hooks/useHideBottomBarBorder'
 
 // OAuth loopback dev fix - run before anything reads the origin.
 maybeRedirectLoopbackHost()
+void identifyDevice(getDeviceId(), setupDeviceId)
 
 /**
  * Begin geolocation ASAP
@@ -101,8 +108,8 @@ function InnerApp() {
   const {currentAccount} = useSession()
   const {resumeSession, login} = useSessionApi()
   const onboardingDispatch = useOnboardingDispatch()
-  const theme = useColorModeTheme()
-  const themesOverride = useThemesOverride() // Eurosky: per-user accent
+  const themesOverride = useThemesOverride()
+  const theme = useColorModeTheme(themesOverride)
   const {t: l} = useLingui()
   const hasCheckedLanding = useLandingEntry()
 
@@ -112,23 +119,20 @@ function InnerApp() {
       try {
         // Finish an OAuth sign-in if we returned to the site root with
         // callback params; otherwise resume the stored session as usual.
-        if (
-          await tryFinishWebOAuthSignIn(login, () =>
-            onboardingDispatch({type: 'start'}),
-          )
-        ) {
-          return
-        }
-        if (account) {
-          await resumeSession(account)
-        } else {
-          await features.init
+        const handledOAuth = await tryFinishWebOAuthSignIn(login, () =>
+          onboardingDispatch({type: 'start'}),
+        )
+        if (!handledOAuth) {
+          if (account) {
+            await resumeSession(account)
+          } else {
+            await features.init
+          }
         }
       } catch (e) {
         logger.warn('session: resumeSession failed', {message: e})
-      } finally {
-        setIsReady(true)
       }
+      setIsReady(true)
     }
     const account = readLastActiveAccount()
     void onLaunch(account)
@@ -154,6 +158,7 @@ function InnerApp() {
                   key={currentAccount?.did}>
                   <AnalyticsFeaturesContext>
                     <QueryProvider currentDid={currentAccount?.did}>
+                      <BetaUserStorageSync />
                       <PolicyUpdateOverlayProvider>
                         <LiveEventsProvider>
                           <AgeAssuranceV2Provider>
@@ -177,6 +182,7 @@ function InnerApp() {
                                                             <IntentDialogProvider>
                                                               <TranslateOnDeviceProvider>
                                                                 <HotkeysProvider>
+                                                                  <KeyboardShortcuts />
                                                                   <Shell />
                                                                   <ToastOutlet />
                                                                 </HotkeysProvider>
@@ -214,6 +220,7 @@ function InnerApp() {
 }
 
 function App() {
+  useSessionActivity()
   const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
@@ -245,7 +252,9 @@ function App() {
                           <LightboxStateProvider>
                             <PortalProvider>
                               <LandingProvider>
-                                <InnerApp />
+                                <HalloweenProvider>
+                                  <InnerApp />
+                                </HalloweenProvider>
                               </LandingProvider>
                             </PortalProvider>
                           </LightboxStateProvider>

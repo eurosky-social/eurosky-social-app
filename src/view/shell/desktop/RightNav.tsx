@@ -1,42 +1,111 @@
-import {View} from 'react-native'
+import {ScrollView, View} from 'react-native'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
-import {useKawaiiMode} from '#/state/preferences/kawaii'
 import {useSession} from '#/state/session'
 import {DesktopFeeds} from '#/view/shell/desktop/Feeds'
 import {DesktopSearch} from '#/view/shell/desktop/Search'
 import {
   atoms as a,
+  tokens,
   useGutters,
   useLayoutBreakpoints,
   useTheme,
   web,
 } from '#/alf'
 import {AppLanguageDropdown} from '#/components/AppLanguageDropdown'
-import {ButtonText} from '#/components/Button'
+import {ButtonIcon, ButtonText} from '#/components/Button'
+import {Message_Stroke2_Corner0_Rounded as Message} from '#/components/icons/Message'
 import {CENTER_COLUMN_OFFSET} from '#/components/Layout'
 import {InlineLinkText, Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
+import {FrontpageRightRail} from '#/features/frontpages/components/FrontpageRightRail'
+import {NewsroomRightRail as LegacyFrontpageRightRail} from '#/features/frontpages/legacy/NewsroomRightRail'
+import {NewsArticleRightRail} from '#/features/news/article/NewsArticleRightRail'
+import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
+import {NewsFeedRightRail as LegacyNewsFeedRightRail} from '#/features/newsFeed/legacy/NewsFeedRightRail'
 
 export function DesktopRightNav({routeName}: {routeName: string}) {
   const t = useTheme()
   const {_} = useLingui()
   const {hasSession} = useSession()
-  const kawaii = useKawaiiMode()
   const gutters = useGutters(['base', 0, 'base', 'wide'])
   const isSearchScreen = routeName === 'Search'
   const isMessagesRelatedScreen = routeName.startsWith('Messages')
   const {rightNavVisible, centerColumnOffset, leftNavMinimal} =
     useLayoutBreakpoints()
 
-  if (!rightNavVisible || isMessagesRelatedScreen) {
+  /*
+   * The news hub pages lay themselves out across the center and right
+   * columns, so the shell leaves the right column to them. The news feed
+   * keeps a right column but draws it itself (see `NewsFeedRailColumn`).
+   */
+  const isNewsExplore =
+    NEWS_V2_ENABLED &&
+    (routeName === 'NewsExplore' ||
+      routeName === 'OutletDirectory' ||
+      routeName === 'NewsFeed' ||
+      routeName === 'NewsSettings')
+
+  if (!rightNavVisible || isMessagesRelatedScreen || isNewsExplore) {
     return null
   }
 
   const width = centerColumnOffset ? 250 : 300
+
+  // The news surfaces swap the default search/feeds column for their own
+  // rails, each cross-linking the other.
+  const railContent =
+    routeName === 'Frontpage' ? (
+      NEWS_V2_ENABLED ? (
+        <FrontpageRightRail />
+      ) : (
+        <LegacyFrontpageRightRail />
+      )
+    ) : !NEWS_V2_ENABLED ? (
+      routeName === 'NewsFeed' ? (
+        <LegacyNewsFeedRightRail />
+      ) : null
+    ) : routeName === 'NewsArticle' ? (
+      <NewsArticleRightRail />
+    ) : null
+
+  if (railContent) {
+    return (
+      <View
+        style={[
+          {
+            // The rail's modules carry their own px_lg edge padding and 2xl
+            // top padding (they are shared with the Explore screen), so back
+            // those out of the shell gutters to keep the rail's content
+            // aligned with the other right columns.
+            paddingTop: 0,
+            paddingBottom: gutters.paddingBottom,
+            paddingLeft: gutters.paddingLeft - tokens.space.lg,
+          },
+          a.pr_2xs,
+          web({
+            position: 'fixed',
+            left: '50%',
+            transform: [
+              {
+                translateX:
+                  300 + (centerColumnOffset ? CENTER_COLUMN_OFFSET : 0),
+              },
+              ...a.scrollbar_offset.transform,
+            ],
+            width: width + gutters.paddingLeft + 2,
+            maxHeight: '100vh',
+          }),
+        ]}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {railContent}
+        </ScrollView>
+      </View>
+    )
+  }
 
   return (
     <View
@@ -64,17 +133,33 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
 
       {hasSession && <DesktopFeeds />}
 
-      <Link
-        to="https://whydonate.com/fundraising/the-next-era-of-social-media"
-        label={_(msg`Donate`)}
-        color="secondary"
-        size="small"
-        variant="solid"
-        style={[a.self_start]}>
-        <ButtonText>
-          <Trans>Donate</Trans>
-        </ButtonText>
-      </Link>
+      <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
+        <Link
+          to={BRAND.links.donate}
+          label={_(msg`Donate`)}
+          color="secondary"
+          size="small"
+          variant="outline"
+          style={{backgroundColor: 'transparent'}}>
+          <ButtonText>
+            <Trans>Donate</Trans>
+          </ButtonText>
+        </Link>
+        {hasSession && (
+          <Link
+            to={BRAND.links.feedback}
+            label={_(msg`Send feedback`)}
+            color="secondary"
+            size="small"
+            variant="outline"
+            style={{backgroundColor: 'transparent'}}>
+            <ButtonIcon icon={Message} position="left" />
+            <ButtonText>
+              <Trans>Feedback</Trans>
+            </ButtonText>
+          </Link>
+        )}
+      </View>
 
       <Text style={[a.leading_snug, t.atoms.text_contrast_low]}>
         <InlineLinkText
@@ -91,19 +176,6 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
           {_(msg`Terms`)}
         </InlineLinkText>
       </Text>
-
-      {kawaii && (
-        <Text style={[t.atoms.text_contrast_medium, {marginTop: 12}]}>
-          <Trans>
-            Logo by{' '}
-            <InlineLinkText
-              label={_(msg`Logo by @sawaratsuki.bsky.social`)}
-              to="/profile/sawaratsuki.bsky.social">
-              @sawaratsuki.bsky.social
-            </InlineLinkText>
-          </Trans>
-        </Text>
-      )}
 
       {!hasSession && leftNavMinimal && (
         <View style={[a.w_full, {height: 32}]}>

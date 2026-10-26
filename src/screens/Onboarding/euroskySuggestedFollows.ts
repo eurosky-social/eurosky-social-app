@@ -1,13 +1,16 @@
 import {useMemo} from 'react'
-import {type AppBskyActorDefs, type AtpAgent} from '@atproto/api'
+import {type Client} from '@atproto/lex'
+import {type AtIdentifierString, type AtUriString} from '@atproto/syntax'
 import {useQuery} from '@tanstack/react-query'
+import chunk from 'lodash.chunk'
 
 import {useLanguagePrefs} from '#/state/preferences'
 import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
-import {useAgent} from '#/state/session'
+import {useAppviewClient} from '#/state/session'
 import {selectPacksForInterest} from '#/screens/Onboarding/euroskyCuratedPacks'
 import {useSuggestedOnboardingUsers as useBlueskySuggestedOnboardingUsers} from '#/screens/Search/util/useSuggestedOnboardingUsers'
+import {app} from '#/lexicons'
 
 /**
  * Eurosky fork: curated onboarding follow suggestions, layered on top of
@@ -43,36 +46,49 @@ const euroskySuggestedFollowsQueryKeyRoot = 'eurosky-suggested-follows'
  * profiles. allSettled throughout so one unavailable pack/list never drops the
  * rest.
  */
-async function fetchPackMembers(agent: AtpAgent, packUris: string[]) {
+async function fetchPackMembers(client: Client, packUris: string[]) {
   const packs = await Promise.allSettled(
     packUris.map(uri =>
-      agent.app.bsky.graph.getStarterPack({starterPack: uri}),
+      client.call(app.bsky.graph.getStarterPack, {
+        starterPack: uri as AtUriString,
+      }),
     ),
   )
   const listUris = packs.flatMap(r =>
-    r.status === 'fulfilled' && r.value.data.starterPack.list
-      ? [r.value.data.starterPack.list.uri]
+    r.status === 'fulfilled' && r.value.starterPack.list
+      ? [r.value.starterPack.list.uri]
       : [],
   )
   const lists = await Promise.allSettled(
     listUris.map(uri =>
-      agent.app.bsky.graph.getList({list: uri, limit: MEMBERS_PER_PACK}),
+      client.call(app.bsky.graph.getList, {
+        list: uri,
+        limit: MEMBERS_PER_PACK,
+      }),
     ),
   )
 
+  const memberDids: string[] = []
   const seen = new Set<string>()
-  const members: AppBskyActorDefs.ProfileView[] = []
   for (const r of lists) {
     if (r.status !== 'fulfilled') continue
-    for (const item of r.value.data.items) {
-      const profile = item.subject
-      if (seen.has(profile.did)) continue
-      seen.add(profile.did)
-      members.push(profile)
-      if (members.length >= MEMBERS_TOTAL) return members
+    for (const item of r.value.items) {
+      if (seen.has(item.subject.did)) continue
+      seen.add(item.subject.did)
+      memberDids.push(item.subject.did)
+      if (memberDids.length >= MEMBERS_TOTAL) break
     }
+    if (memberDids.length >= MEMBERS_TOTAL) break
   }
-  return members
+
+  const profiles = await Promise.all(
+    chunk(memberDids, 25).map(actors =>
+      client.call(app.bsky.actor.getProfiles, {
+        actors: actors as AtIdentifierString[],
+      }),
+    ),
+  )
+  return profiles.flatMap(result => result.profiles)
 }
 
 export function useEuroskySuggestedOnboardingUsers(props: {
@@ -80,7 +96,7 @@ export function useEuroskySuggestedOnboardingUsers(props: {
   search?: boolean
   overrideInterests: string[]
 }) {
-  const agent = useAgent()
+  const appviewClient = useAppviewClient()
   const {category = null} = props
   // Filter by the app/UI language the user explicitly set, NOT contentLanguages
   // (which defaults from the device locale and can include languages the user
@@ -113,8 +129,10 @@ export function useEuroskySuggestedOnboardingUsers(props: {
     ),
     enabled: hasOursSource,
     queryFn: async () => {
-      if (usePacks) return await fetchPackMembers(agent, packUris)
-      const {data} = await agent.getProfiles({actors: handles})
+      if (usePacks) return await fetchPackMembers(appviewClient, packUris)
+      const data = await appviewClient.call(app.bsky.actor.getProfiles, {
+        actors: handles as AtIdentifierString[],
+      })
       return data.profiles
     },
   })

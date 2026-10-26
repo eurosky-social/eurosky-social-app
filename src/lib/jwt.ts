@@ -25,7 +25,7 @@ export function isJwtExpired(token: string) {
 export function isAppPassword(token: string) {
   try {
     const payload = jwtDecode(token)
-    // @ts-ignore
+    // @ts-expect-error
     return payload.scope === 'com.atproto.appPass'
   } catch {
     // OAuth / DPoP access tokens are not app-password JWTs and may not be

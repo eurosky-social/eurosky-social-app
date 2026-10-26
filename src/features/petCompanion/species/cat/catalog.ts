@@ -10,12 +10,7 @@ import {type PetClip, type Species} from '../../types'
 import {CAT_SHEETS} from './assets'
 
 export type CatVariant =
-  | 'cream'
-  | 'black'
-  | 'grey'
-  | 'grey-white'
-  | 'orange'
-  | 'white'
+  'cream' | 'black' | 'grey' | 'grey-white' | 'orange' | 'white'
 
 const VARIANTS: readonly CatVariant[] = [
   'cream',

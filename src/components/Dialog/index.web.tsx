@@ -4,6 +4,7 @@ import {
   useContext,
   useImperativeHandle,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import {
@@ -12,18 +13,22 @@ import {
   type GestureResponderEvent,
   type LayoutChangeEvent,
   Pressable,
+  type ScrollView,
   type StyleProp,
   View,
   type ViewStyle,
 } from 'react-native'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
-import {DismissableLayer, FocusGuards, FocusScope} from 'radix-ui/internal'
+import * as DismissableLayer from '@radix-ui/react-dismissable-layer'
+import * as FocusGuards from '@radix-ui/react-focus-guards'
+import * as FocusScope from '@radix-ui/react-focus-scope'
 import {RemoveScrollBar} from 'react-remove-scroll-bar'
 
 import {logger} from '#/logger'
 import {useA11y} from '#/state/a11y'
 import {useDialogStateControlContext} from '#/state/dialogs'
+import {type ListMethods} from '#/view/com/util/List'
 import {atoms as a, flatten, useBreakpoints, useTheme, web} from '#/alf'
 import {Button, ButtonIcon} from '#/components/Button'
 import {Context} from '#/components/Dialog/context'
@@ -50,6 +55,7 @@ const preventDefault = (e: any) => e.preventDefault()
 export function Outer({
   children,
   control,
+  onOpen,
   onClose,
   webOptions,
 }: React.PropsWithChildren<DialogOuterProps>) {
@@ -59,9 +65,10 @@ export function Outer({
   const {setDialogIsOpen} = useDialogStateControlContext()
 
   const open = useCallback(() => {
+    onOpen?.()
     setDialogIsOpen(control.id, true)
     setIsOpen(true)
-  }, [setIsOpen, setDialogIsOpen, control.id])
+  }, [setIsOpen, setDialogIsOpen, control.id, onOpen])
 
   const close = useCallback<DialogControlProps['close']>(
     cb => {
@@ -69,12 +76,18 @@ export function Outer({
       setIsOpen(false)
 
       try {
-        if (cb && typeof cb === 'function') {
-          // This timeout ensures that the callback runs at the same time as it would on native. I.e.
-          // console.log('Step 1') -> close(() => console.log('Step 3')) -> console.log('Step 2')
-          // This should always output 'Step 1', 'Step 2', 'Step 3', but without the timeout it would output
-          // 'Step 1', 'Step 3', 'Step 2'.
-          setTimeout(cb)
+        /*
+         * Nested rather than `&&`: React Compiler cannot lower a logical
+         * expression in a test position inside a `try`.
+         */
+        if (cb) {
+          if (typeof cb === 'function') {
+            // This timeout ensures that the callback runs at the same time as it would on native. I.e.
+            // console.log('Step 1') -> close(() => console.log('Step 3')) -> console.log('Step 2')
+            // This should always output 'Step 1', 'Step 2', 'Step 3', but without the timeout it would output
+            // 'Step 1', 'Step 3', 'Step 2'.
+            setTimeout(cb)
+          }
         }
       } catch (e: any) {
         logger.error(`Dialog closeCallback failed`, {
@@ -87,8 +100,19 @@ export function Outer({
     [control.id, onClose, setDialogIsOpen],
   )
 
+  /*
+   * When a press starts inside the dialog and ends on the backdrop, such as
+   * a drag to select text in a field, the browser fires the click on their
+   * common ancestor, which is outside the dialog. Only a press that started
+   * where it ended counts as a background press.
+   */
+  const pressStartTarget = useRef<unknown>(null)
+
   const handleBackgroundPress = useCallback(
     async (e: GestureResponderEvent) => {
+      const startTarget = pressStartTarget.current
+      pressStartTarget.current = null
+      if (startTarget && startTarget !== e.target) return
       webOptions?.onBackgroundPress ? webOptions.onBackgroundPress(e) : close()
     },
     [webOptions, close],
@@ -107,11 +131,15 @@ export function Outer({
     () => ({
       close,
       isNativeDialog: false,
+      presentationBottomOffset: 0,
+      isNativePopover: false,
       nativeSnapPoint: 0,
       disableDrag: false,
       setDisableDrag: () => {},
       isWithinDialog: true,
       isHeightConstrained: false,
+      shouldMeasureContentHeight: false,
+      setDesiredContentHeight: () => {},
     }),
     [close],
   )
@@ -125,6 +153,9 @@ export function Outer({
             <Pressable
               accessibilityHint={undefined}
               accessibilityLabel={_(msg`Close active dialog`)}
+              onPointerDown={e => {
+                pressStartTarget.current = e.target
+              }}
               onPress={handleBackgroundPress}>
               <View
                 style={[
@@ -163,6 +194,9 @@ export function Outer({
   )
 }
 
+/**
+ * @deprecated use `Dialog.ScrollableInner` instead
+ */
 export function Inner({
   children,
   style,
@@ -186,7 +220,6 @@ export function Inner({
         aria-label={label}
         aria-labelledby={accessibilityLabelledBy}
         aria-describedby={accessibilityDescribedBy}
-        // @ts-expect-error web only -prf
         onClick={stopPropagation}
         onStartShouldSetResponder={_ => true}
         onTouchEnd={stopPropagation}
@@ -224,11 +257,23 @@ export function Inner({
   )
 }
 
-export const ScrollableInner = Inner
+/*
+ * There is no inner ScrollView on web - the ref is accepted for parity with
+ * the native variant and never attached, so native-only scrolling code in
+ * shared callers stays a no-op here.
+ */
+export function ScrollableInner({
+  ref: _ref,
+  ...props
+}: DialogInnerProps & {
+  ref?: React.Ref<React.ComponentRef<typeof ScrollView>>
+}) {
+  return <Inner {...props} />
+}
 
 export const InnerFlatList = forwardRef<
-  FlatList,
-  FlatListProps<any> & {label: string} & {
+  ListMethods,
+  FlatListProps<any> & {label?: string} & {
     webInnerStyle?: StyleProp<ViewStyle>
     webInnerContentContainerStyle?: StyleProp<ViewStyle>
     footer?: React.ReactNode
@@ -247,7 +292,11 @@ export const InnerFlatList = forwardRef<
   const {gtMobile} = useBreakpoints()
   return (
     <Inner
-      label={label}
+      /*
+       * Most shared callers cannot pass a label since the native variant has
+       * no such prop; aria-label is simply absent for them, as before.
+       */
+      label={label as string}
       style={[
         a.overflow_hidden,
         a.px_0,
@@ -256,7 +305,13 @@ export const InnerFlatList = forwardRef<
       ]}
       contentContainerStyle={[a.h_full, a.px_0, webInnerContentContainerStyle]}>
       <FlatList
-        ref={ref}
+        /*
+         * The FlatList instance satisfies the (web) ListMethods interface
+         * shared callers hold their refs as, except scrollToTop, which no
+         * platform-agnostic caller can use since the native ListMethods
+         * (FlatList) lacks it too.
+         */
+        ref={ref as React.Ref<FlatList>}
         style={[a.h_full, gtMobile ? a.px_2xl : a.px_xl, style]}
         {...props}
       />
@@ -321,7 +376,11 @@ export function Close() {
   )
 }
 
-export function Handle() {
+/*
+ * The drag handle only exists on the native bottom sheet; props are accepted
+ * for parity with the native variant.
+ */
+export function Handle(_props: {difference?: boolean; fill?: string}) {
   return null
 }
 

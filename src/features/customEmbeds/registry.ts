@@ -1,8 +1,7 @@
-import {type AppBskyEmbedExternal} from '@atproto/api'
-
 import {atmoRsvpHandler} from '#/features/customEmbeds/atmoRsvp'
 import {tangledStringHandler} from '#/features/customEmbeds/tangledString'
 import {type CustomEmbedHandler} from '#/features/customEmbeds/types'
+import {type app} from '#/lexicons'
 
 /**
  * Ordered list of custom embed handlers. To add a new custom embed, implement a
@@ -13,7 +12,7 @@ import {type CustomEmbedHandler} from '#/features/customEmbeds/types'
 const handlers: CustomEmbedHandler[] = [atmoRsvpHandler, tangledStringHandler]
 
 export function matchCustomEmbed(
-  view: AppBskyEmbedExternal.ViewExternal,
+  view: app.bsky.embed.external.ViewExternal,
 ): CustomEmbedHandler | null {
   return handlers.find(handler => handler.match(view)) ?? null
 }

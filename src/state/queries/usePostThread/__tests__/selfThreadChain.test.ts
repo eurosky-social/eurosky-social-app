@@ -1,11 +1,8 @@
-import {
-  AppBskyUnspeccedDefs,
-  type AppBskyUnspeccedGetPostThreadV2,
-} from '@atproto/api'
-
+import {app} from '#/lexicons'
+import * as bsky from '#/types/bsky'
 import {extendSelfThreadChain} from '../selfThreadChain'
 
-type RawThreadItem = AppBskyUnspeccedGetPostThreadV2.ThreadItem
+type RawThreadItem = app.bsky.unspecced.getPostThreadV2.ThreadItem
 
 const OP_DID = 'did:plc:op'
 
@@ -90,7 +87,7 @@ describe('extendSelfThreadChain', () => {
     expect(depths(result)).toEqual([0, 1, 2, 3, 4, 5])
     // the old tip's continuation is now hydrated, so moreReplies drops by one
     const tipValue = result[3].value
-    if (!AppBskyUnspeccedDefs.isThreadItemPost(tipValue)) {
+    if (!bsky.isType(app.bsky.unspecced.defs.threadItemPost, tipValue)) {
       throw new Error('expected tip to be a post')
     }
     expect(tipValue.moreReplies).toBe(1)
