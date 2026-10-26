@@ -53,7 +53,9 @@ fitted how" - narrowed by filter:
   offers no picker and reads `rss` instead, the client-side clustering of the
   registered publishers' feeds.
 - A country, the Netherlands included, adds `country=` (ISO codes, `gb` for the
-  UK): the threads its outlets covered, sorted by how many of them did.
+  UK): the threads its outlets covered, sorted by `burst` like the world.
+  (`sort=here`, most of the country's outlets first, has no sense of age: a
+  big story of last week led the Netherlands.)
 - A province adds its label value as the `category`, so the server does the
   filtering.
 
@@ -184,7 +186,7 @@ and, outside this directory:
    not.
 5. The location picker passes a province to
    `/api/threads?category=nl-utrecht`, and another country to
-   `/api/threads?country=fr&sort=here`, so the filtering is server-side. Its
+   `/api/threads?country=fr`, so the filtering is server-side. Its
    locations are the regions picked in the news settings (see the news
    README, "Locations").
 6. Each event arrives with its first posts and nothing renders them yet - this
