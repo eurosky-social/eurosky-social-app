@@ -33,6 +33,7 @@ import {
   type DutchThreadViewParams,
   dutchThreadViewParams,
   encodeDutchThreadView,
+  languagesForPlaces,
 } from './view'
 
 /**
@@ -101,9 +102,10 @@ export type DutchThreadFilter = {
  * neither clusters nor searches for posts itself. One read per filter, run
  * side by side; the results come back in the filters' order.
  *
- * Sorted by `burst`, the service's own ranking of what is news now, unless a
- * country is asked for, where `here` puts the threads its outlets covered most
- * first.
+ * Sorted by `burst`, the service's own ranking of what is news now, which
+ * favours the last day's news. A country view too: `here` (most of the
+ * country's outlets first) has no sense of age, so a big story of last week
+ * led it.
  */
 export function useDutchThreadsQueries({
   scope = DUTCH_WORLD_SCOPE,
@@ -117,7 +119,8 @@ export function useDutchThreadsQueries({
   filters: DutchThreadFilter[]
   /**
    * ISO language codes: threads with an article in one, each showing only
-   * those articles and with its lead in one of them as `leadIn`.
+   * those articles and with its lead in one of them as `leadIn`. A filter
+   * narrowed to a country or province adds that country's own languages.
    */
   languages?: string[]
   limit?: number
@@ -125,7 +128,7 @@ export function useDutchThreadsQueries({
 }) {
   const pdsClient = useMaybePdsClient()
   const views = filters.map(filter => ({
-    languages,
+    languages: languagesForPlaces(languages, filter),
     countries: filter.countries,
     outlets: filter.outlets,
     boost: filter.boost,
@@ -139,7 +142,7 @@ export function useDutchThreadsQueries({
         theme: filter.theme,
         category: filter.category,
         ...viewParams,
-        sort: (viewParams.country ? 'here' : 'burst') as DutchThreadSort,
+        sort: 'burst' as DutchThreadSort,
         limit,
       }
       return {
