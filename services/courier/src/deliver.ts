@@ -1,9 +1,7 @@
-import {timestampDate} from '@bufbuild/protobuf/wkt'
 import {type Logger} from 'pino'
 
 import {type ApnsRequest} from './apns.ts'
 import {type FcmRequest} from './fcm.ts'
-import {type Notification} from './gen/courier_pb.js'
 import {type Metrics} from './metrics.ts'
 import {
   apnsPayload,
@@ -13,33 +11,28 @@ import {
   fcmData,
   fcmSilentData,
 } from './payload.ts'
-import {type Device, type SendResult, type TokenStore} from './types.ts'
+import {type Job, type SendResult, type Store} from './types.ts'
 
 export type Senders = {
   apns?: {send(request: ApnsRequest): Promise<SendResult>; close(): void}
   fcm?: {send(request: FcmRequest): Promise<SendResult>}
 }
 
-export type Send = {device: Device; notification: Notification}
+export type Outcome =
+  | {kind: 'sent' | 'invalid_token' | 'unconfigured' | 'expired'}
+  | {kind: 'retry' | 'failed'; reason: string}
 
 /**
- * Pauses before the second and third attempt of a send that failed in a way
- * worth retrying.
- */
-const DEFAULT_RETRY_DELAYS_MS = [1_000, 5_000]
-
-/**
- * Delivers one notification to one device: builds the platform payload,
- * retries passing failures and forgets tokens Apple or Google call dead.
+ * Makes one attempt at one job: builds the platform payload, sends it, and
+ * forgets tokens Apple or Google call dead. Whether and when to try again is
+ * the worker's call.
  */
 export class Deliverer {
   private senders: Senders
-  private store: TokenStore
+  private store: Store
   private metrics: Metrics
   private logger: Logger
   private generic: Copy
-  private ttlSeconds: number
-  private retryDelaysMs: number[]
 
   constructor({
     senders,
@@ -47,83 +40,43 @@ export class Deliverer {
     metrics,
     logger,
     generic,
-    ttlSeconds,
-    retryDelaysMs = DEFAULT_RETRY_DELAYS_MS,
   }: {
     senders: Senders
-    store: TokenStore
+    store: Store
     metrics: Metrics
     logger: Logger
     generic: Copy
-    ttlSeconds: number
-    retryDelaysMs?: number[]
   }) {
     this.senders = senders
     this.store = store
     this.metrics = metrics
     this.logger = logger
     this.generic = generic
-    this.ttlSeconds = ttlSeconds
-    this.retryDelaysMs = retryDelaysMs
   }
 
-  async deliver({device, notification}: Send): Promise<void> {
-    const platform = device.platform
-    const kind = notification.clientControlled ? 'silent' : 'alert'
-    const createdAt = notification.timestamp
-      ? timestampDate(notification.timestamp).getTime()
-      : Date.now()
-    const expiration = Math.floor(createdAt / 1000) + this.ttlSeconds
-    // Drops stale ones, e.g. from a long AppView retry or indexer backfill.
-    if (expiration <= Date.now() / 1000) {
-      this.metrics.deliveries.inc({platform, kind, outcome: 'expired'})
-      return
-    }
+  async deliver(job: Job): Promise<Outcome> {
+    if (job.expiresAt.getTime() <= Date.now()) return {kind: 'expired'}
+    const send = this.sendFor(job)
+    if (!send) return {kind: 'unconfigured'}
 
-    const send = this.sendFor(device, notification, expiration)
-    if (!send) {
-      this.metrics.deliveries.inc({platform, kind, outcome: 'unconfigured'})
-      return
+    const result = await send()
+    if (result.ok) return {kind: 'sent'}
+    if (result.invalidToken) {
+      await this.prune(job, result.reason, result.invalidSince)
+      return {kind: 'invalid_token'}
     }
-
-    for (let attempt = 0; ; attempt++) {
-      const result = await send()
-      if (result.ok) {
-        this.metrics.deliveries.inc({platform, kind, outcome: 'sent'})
-        return
-      }
-      if (result.invalidToken) {
-        this.metrics.deliveries.inc({platform, kind, outcome: 'invalid_token'})
-        await this.prune(device, result.reason, result.invalidSince)
-        return
-      }
-      const delay = this.retryDelaysMs[attempt]
-      if (!result.retryable || delay === undefined) {
-        this.metrics.deliveries.inc({platform, kind, outcome: 'failed'})
-        this.logger.warn(
-          {
-            platform,
-            did: device.did,
-            notificationId: notification.id,
-            reason: result.reason,
-            attempts: attempt + 1,
-          },
-          'push not delivered',
-        )
-        return
-      }
-      await new Promise(resolve => setTimeout(resolve, delay))
-    }
+    return {kind: result.retryable ? 'retry' : 'failed', reason: result.reason}
   }
 
-  private sendFor(
-    device: Device,
-    notification: Notification,
-    expiration: number,
-  ): (() => Promise<SendResult>) | undefined {
+  private sendFor({
+    device,
+    notification,
+    expiresAt,
+  }: Job): (() => Promise<SendResult>) | undefined {
     const {apns, fcm} = this.senders
     const silent = notification.clientControlled
     const copy = displayCopy(notification, device.ageRestricted, this.generic)
+    const expiration = Math.floor(expiresAt.getTime() / 1000)
     if (device.platform === 'ios' && apns) {
       const payload = silent
         ? apnsSilentPayload(notification)
@@ -157,7 +110,7 @@ export class Deliverer {
   }
 
   private async prune(
-    device: Device,
+    {device}: Job,
     reason: string,
     invalidSince: Date | undefined,
   ): Promise<void> {

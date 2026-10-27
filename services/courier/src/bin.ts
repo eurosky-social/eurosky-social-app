@@ -3,14 +3,14 @@ import {pino} from 'pino'
 import {ApnsClient} from './apns.ts'
 import {Courier} from './app.ts'
 import {readConfig} from './config.ts'
-import {PgTokenStore} from './db.ts'
+import {PgStore} from './db.ts'
 import {FcmClient} from './fcm.ts'
 
 const logger = pino({level: process.env.LOG_LEVEL ?? 'info'})
 
 async function main() {
   const config = readConfig()
-  const store = new PgTokenStore(config.databaseUrl)
+  const store = new PgStore(config.databaseUrl)
   await store.migrate()
   const courier = new Courier({
     config,

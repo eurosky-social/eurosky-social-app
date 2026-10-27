@@ -19,7 +19,7 @@ import {
   eventually,
   FakeSenders,
   IOS_TOKEN,
-  MemoryTokenStore,
+  MemoryStore,
   silentLogger,
 } from './testing.ts'
 
@@ -59,22 +59,24 @@ afterEach(async () => {
 async function start({
   config = {},
   senders = new FakeSenders(),
-  store = new MemoryTokenStore(),
+  store = new MemoryStore(),
   key = API_KEY,
   useBinaryFormat = true,
+  worker = {},
 }: {
   config?: Partial<CourierOptions['config']>
   senders?: Senders
-  store?: MemoryTokenStore
+  store?: MemoryStore
   key?: string
   useBinaryFormat?: boolean
+  worker?: CourierOptions['worker']
 } = {}) {
   const courier = new Courier({
     config: {...baseConfig, ...config},
     store,
     senders,
     logger: silentLogger,
-    retryDelaysMs: [1, 1],
+    worker: {pollMs: 5, leaseMs: 200, retryDelayMs: () => 1, ...worker},
   })
   running = courier
   const {port} = await courier.listen()
@@ -405,8 +407,49 @@ describe('pushNotifications', () => {
     )
   })
 
+  it('delivers a push accepted before a crash after the restart', async () => {
+    const store = new MemoryStore()
+    const stuck: Senders = {
+      apns: {send: () => new Promise(() => {}), close: () => {}},
+    }
+    const first = await start({store, senders: stuck, worker: {leaseMs: 50}})
+    await first.client.registerDeviceToken(registration())
+    await first.client.pushNotifications({
+      notifications: [bridgeNotification()],
+    })
+    await eventually(() => store.jobs[0]?.attempts === 1)
+    // The process dies mid-send: nothing finishes the job.
+    running = undefined
+    await first.courier.close(10)
+
+    const senders = new FakeSenders()
+    await start({store, senders, worker: {leaseMs: 50}})
+    await eventually(() => senders.apnsRequests.length === 1)
+    await eventually(() => store.jobs.length === 0)
+  })
+
+  it('keeps recognising a retried batch after a restart', async () => {
+    const store = new MemoryStore()
+    const senders = new FakeSenders()
+    const first = await start({store, senders})
+    await first.client.registerDeviceToken(registration())
+    await first.client.pushNotifications({
+      notifications: [bridgeNotification()],
+    })
+    await eventually(() => senders.apnsRequests.length === 1)
+    running = undefined
+    await first.courier.close(100)
+
+    const second = await start({store, senders})
+    await second.client.pushNotifications({
+      notifications: [bridgeNotification()],
+    })
+    await new Promise(resolve => setTimeout(resolve, 30))
+    assert.equal(senders.apnsRequests.length, 1)
+  })
+
   it('fails the call when the database is down, so the AppView retries', async () => {
-    const store = new MemoryTokenStore()
+    const store = new MemoryStore()
     const {client} = await start({store})
     store.failing = true
     await assert.rejects(
@@ -433,7 +476,7 @@ describe('pushNotifications', () => {
 
 describe('operations', () => {
   it('reports health from the database', async () => {
-    const store = new MemoryTokenStore()
+    const store = new MemoryStore()
     const {baseUrl} = await start({store})
     assert.equal((await fetch(`${baseUrl}/_health`)).status, 200)
     store.failing = true
@@ -452,7 +495,7 @@ describe('operations', () => {
 
   it('closes its senders and the store on shutdown', async () => {
     const senders = new FakeSenders()
-    const store = new MemoryTokenStore()
+    const store = new MemoryStore()
     const {courier} = await start({senders, store})
     running = undefined
     await courier.close(100)

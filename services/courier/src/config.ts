@@ -62,6 +62,11 @@ export type Config = {
    */
   ttlSeconds: number
   sendConcurrency: number
+  /**
+   * Queued sends (kept in Postgres) beyond which new batches are refused, so
+   * a long Apple or Google outage backs up into the AppView's own retry queue
+   * instead of growing this one without limit.
+   */
   maxQueuedSends: number
   apns?: ApnsConfig
   fcm?: FcmConfig
@@ -94,7 +99,7 @@ export function readConfig(env: Env = process.env): Config {
       env.COURIER_GENERIC_MESSAGE ?? 'You have a new notification',
     ttlSeconds: int(env, 'COURIER_TTL_SECONDS', 24 * 60 * 60),
     sendConcurrency: int(env, 'COURIER_SEND_CONCURRENCY', 64),
-    maxQueuedSends: int(env, 'COURIER_MAX_QUEUED_SENDS', 20_000),
+    maxQueuedSends: int(env, 'COURIER_MAX_QUEUED_SENDS', 100_000),
     apns: readApns(env),
     fcm: readFcm(env),
   }

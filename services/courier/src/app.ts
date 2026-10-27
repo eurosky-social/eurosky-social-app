@@ -13,23 +13,30 @@ import {
   connectNodeAdapter,
   type ConnectNodeAdapterOptions,
 } from '@connectrpc/connect-node'
+import {timestampDate} from '@bufbuild/protobuf/wkt'
 import {type Logger} from 'pino'
 
 import {type Config} from './config.ts'
-import {Deliverer, type Send, type Senders} from './deliver.ts'
-import {Dispatcher} from './dispatcher.ts'
-import {AppPlatform, type Notification, Service} from './gen/courier_pb.js'
+import {Deliverer, type Senders} from './deliver.ts'
+import {AppPlatform, Service} from './gen/courier_pb.js'
 import {createMetrics, type Metrics} from './metrics.ts'
-import {RecentIds} from './recentIds.ts'
-import {type Platform, type TokenStore} from './types.ts'
+import {type Incoming, type Platform, type Store} from './types.ts'
+import {Worker} from './worker.ts'
 
 export type CourierOptions = {
   config: Omit<Config, 'databaseUrl' | 'apns' | 'fcm'>
-  store: TokenStore
+  store: Store
   senders: Senders
   logger: Logger
   defaultMetrics?: boolean
-  retryDelaysMs?: number[]
+  /**
+   * Overrides for tests; see Worker.
+   */
+  worker?: {
+    pollMs?: number
+    leaseMs?: number
+    retryDelayMs?: (attempts: number) => number
+  }
 }
 
 const DID = /^did:[a-z]+:[a-zA-Z0-9._:%-]{1,2000}$/
@@ -38,6 +45,10 @@ const TOKEN_FORMATS: Record<Platform, RegExp> = {
   android: /^[A-Za-z0-9_:-]{32,4096}$/,
 }
 const DRAIN_TIMEOUT_MS = 10_000
+/**
+ * The AppView retries a batch for up to a day, so ids are remembered that long.
+ */
+const RECEIPT_TTL_MS = 24 * 60 * 60 * 1000
 
 type FallbackHandler = NonNullable<ConnectNodeAdapterOptions['fallback']>
 type NodeServerRequest = Parameters<FallbackHandler>[0]
@@ -51,11 +62,7 @@ type NodeServerResponse = Parameters<FallbackHandler>[1]
 export class Courier {
   readonly metrics: Metrics
   private options: CourierOptions
-  private dispatcher: Dispatcher<Send>
-  private recentIds = new RecentIds({
-    maxSize: 200_000,
-    ttlMs: 24 * 60 * 60 * 1000,
-  })
+  private worker: Worker
   private server?: http.Server | http2.Http2Server
   private sockets = new Set<Socket>()
 
@@ -73,14 +80,15 @@ export class Courier {
         title: options.config.genericTitle,
         message: options.config.genericMessage,
       },
-      ttlSeconds: options.config.ttlSeconds,
-      retryDelaysMs: options.retryDelaysMs,
     })
-    this.dispatcher = new Dispatcher({
+    this.worker = new Worker({
+      store: options.store,
+      deliverer,
+      metrics: this.metrics,
+      logger: options.logger,
       concurrency: options.config.sendConcurrency,
-      maxQueued: options.config.maxQueuedSends,
-      work: send => deliverer.deliver(send),
-      onError: err => options.logger.error({err}, 'delivery crashed'),
+      receiptTtlMs: RECEIPT_TTL_MS,
+      ...options.worker,
     })
   }
 
@@ -113,19 +121,22 @@ export class Courier {
         resolve()
       })
     })
+    // Also picks up jobs left from before a restart.
+    this.worker.start()
     return server.address() as AddressInfo
   }
 
   /**
-   * Stops taking requests, gives queued sends a moment to finish, then
-   * releases connections, senders and the store.
+   * Stops taking requests and claiming jobs, gives sends in flight a moment
+   * to finish, then releases connections, senders and the store. Queued jobs
+   * stay in the store for the next start.
    */
   async close(drainTimeoutMs = DRAIN_TIMEOUT_MS): Promise<void> {
     const server = this.server
     const closed = server
       ? new Promise<void>(resolve => server.close(() => resolve()))
       : Promise.resolve()
-    await this.dispatcher.drain(drainTimeoutMs)
+    await this.worker.stop(drainTimeoutMs)
     for (const socket of this.sockets) socket.destroy()
     await closed
     this.options.senders.apns?.close()
@@ -182,41 +193,39 @@ export class Courier {
       },
 
       pushNotifications: async req => {
-        const fresh: Notification[] = []
-        const batchIds = new Set<string>()
+        const now = Date.now()
+        const incoming: Incoming[] = []
         for (const notification of req.notifications) {
-          const {id} = notification
-          if (id && (batchIds.has(id) || this.recentIds.has(id))) {
-            metrics.notifications.inc({outcome: 'duplicate'})
-          } else if (DID.test(notification.recipientDid)) {
-            if (id) batchIds.add(id)
-            fresh.push(notification)
-          } else {
+          if (!DID.test(notification.recipientDid)) {
             metrics.notifications.inc({outcome: 'invalid'})
+            continue
           }
+          const createdAt = notification.timestamp
+            ? timestampDate(notification.timestamp).getTime()
+            : now
+          const expiresAt = new Date(createdAt + config.ttlSeconds * 1000)
+          // Stale, e.g. after a long AppView retry or an indexer backfill.
+          if (expiresAt.getTime() <= now) {
+            metrics.notifications.inc({outcome: 'expired'})
+            continue
+          }
+          incoming.push({notification, expiresAt})
         }
-        if (fresh.length === 0) return {}
+        if (incoming.length === 0) return {}
 
-        const devices = await store.devicesFor([
-          ...new Set(fresh.map(n => n.recipientDid)),
-        ])
-        const sends: Send[] = fresh.flatMap(notification =>
-          devices
-            .filter(device => device.did === notification.recipientDid)
-            .map(device => ({device, notification})),
-        )
-        if (!this.dispatcher.tryEnqueue(sends)) {
-          metrics.notifications.inc({outcome: 'over_capacity'}, fresh.length)
+        // Saved before answering: once accepted, a push survives a restart.
+        const result = await store.enqueue(incoming, config.maxQueuedSends)
+        if (result.full) {
+          metrics.notifications.inc({outcome: 'over_capacity'}, incoming.length)
           logger.warn(
-            {notifications: fresh.length, sends: sends.length},
+            {notifications: incoming.length},
             'send queue full, AppView will retry',
           )
           throw new ConnectError('send queue full', Code.ResourceExhausted)
         }
-        for (const notification of fresh) {
-          if (notification.id) this.recentIds.add(notification.id)
-        }
-        metrics.notifications.inc({outcome: 'accepted'}, fresh.length)
+        metrics.notifications.inc({outcome: 'accepted'}, result.accepted)
+        metrics.notifications.inc({outcome: 'duplicate'}, result.duplicates)
+        if (result.jobs > 0) this.worker.wake()
         return {}
       },
     })
@@ -240,7 +249,7 @@ export class Courier {
       return
     }
     if (req.method === 'GET' && path === '/metrics') {
-      this.metrics.queueDepth.set(this.dispatcher.size)
+      this.metrics.queueDepth.set(await this.options.store.queueDepth())
       res.statusCode = 200
       res.setHeader('content-type', this.metrics.registry.contentType)
       res.end(await this.metrics.registry.metrics())

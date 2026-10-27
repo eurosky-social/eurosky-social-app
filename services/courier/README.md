@@ -25,6 +25,28 @@ mutes, thread mutes, takedowns and the user's notification settings, writes
 the text, and retries a batch for up to a day when Courier does not answer.
 Courier only stores tokens and delivers.
 
+## The send queue
+
+Courier saves every accepted send in Postgres (`push_job`) before it answers
+the AppView, so a crash or restart loses nothing:
+
+1. `PushNotifications` records the notification ids (`notification_receipt`),
+   looks up the recipients' devices and queues one job per device, all in one
+   transaction. Only then does the AppView hear "accepted".
+2. A worker claims due jobs (`for update skip locked`, so several instances
+   never share one) up to `COURIER_SEND_CONCURRENCY`. Claiming moves the job's
+   next attempt 60 s ahead: if the process dies mid-send, the job comes due
+   again and is sent after the restart. Apple or Google may then get it
+   twice; that is the price of not losing it.
+3. A sent job is deleted. A passing failure (rate limit, outage, dropped
+   connection) is rescheduled 5 s, 20 s, 80 s, ... up to 30 min later, until
+   the job expires. Anything else is logged, counted and deleted.
+
+The AppView's push bridge saves a batch only when handing it over fails, and
+it receives new notifications through Postgres `LISTEN`, so notifications
+created while its dataplane restarts are not pushed. That gap is in the
+AppView, not here.
+
 ## What it sends
 
 iOS (APNs alert push, priority 10):
@@ -65,16 +87,15 @@ Behaviour worth knowing:
   badge. iOS delivers background pushes best-effort: not to a force-quit app,
   and throttled when frequent.
 - **Retries from the AppView** reuse notification ids; ids seen in the last
-  day are not pushed again.
+  day are not pushed again, also across restarts.
 - **Stale notifications** older than `COURIER_TTL_SECONDS` are dropped, so a
   long AppView retry or an indexer backfill does not flood phones.
 - **Dead tokens** (APNs `Unregistered`/`BadDeviceToken`, FCM `UNREGISTERED`)
   are deleted for every account on that device. A token the app registered
   again after Apple's verdict is kept.
-- **A full send queue** answers `ResourceExhausted`. The AppView keeps the
-  batch in its own retry queue instead of Courier growing without limit.
-- **Passing failures** (rate limits, outages) are retried twice, after 1 s and
-  5 s. Everything else is logged and counted.
+- **A full send queue** (`COURIER_MAX_QUEUED_SENDS`) answers
+  `ResourceExhausted`. The AppView keeps the batch in its own retry queue
+  instead of Courier growing without limit during a long outage.
 
 ## Configuration
 
@@ -94,7 +115,7 @@ multi-line keys never pass through an env file.
 | `COURIER_FCM_SERVICE_ACCOUNT_FILE` | – | Service account JSON; enables Android |
 | `COURIER_TTL_SECONDS` | `86400` | Delivery window and staleness cut-off |
 | `COURIER_SEND_CONCURRENCY` | `64` | Parallel sends |
-| `COURIER_MAX_QUEUED_SENDS` | `20000` | Queue limit before refusing batches |
+| `COURIER_MAX_QUEUED_SENDS` | `100000` | Queued sends before batches are refused |
 | `LOG_LEVEL` | `info` | pino level |
 
 At least one of APNs and FCM must be configured.
@@ -134,7 +155,7 @@ Operations endpoints (no API key, so keep the listener on loopback):
 
 - `GET /_health` – `200` when Postgres answers, else `503`
 - `GET /metrics` – Prometheus: `courier_notifications_total{outcome}`,
-  `courier_deliveries_total{platform,outcome}`,
+  `courier_deliveries_total{platform,kind,outcome}` (outcome `retry` = rescheduled),
   `courier_registrations_total{platform}`,
   `courier_tokens_pruned_total{platform}`, `courier_send_queue_depth`, plus
   Node process metrics

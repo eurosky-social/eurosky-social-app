@@ -3,10 +3,18 @@ import {timestampFromDate} from '@bufbuild/protobuf/wkt'
 import {pino} from 'pino'
 
 import {type ApnsRequest} from './apns.ts'
+import {acceptOnce} from './db.ts'
 import {type Senders} from './deliver.ts'
 import {type FcmRequest} from './fcm.ts'
 import {type Notification, NotificationSchema} from './gen/courier_pb.js'
-import {type Device, type SendResult, type TokenStore} from './types.ts'
+import {
+  type Device,
+  type EnqueueResult,
+  type Incoming,
+  type Job,
+  type SendResult,
+  type Store,
+} from './types.ts'
 
 export const silentLogger = pino({level: 'silent'})
 
@@ -39,10 +47,17 @@ export function bridgeNotification(
   })
 }
 
-export class MemoryTokenStore implements TokenStore {
+/**
+ * The Postgres store's behaviour in memory: registrations, receipts and the
+ * send queue with leases.
+ */
+export class MemoryStore implements Store {
   devices: (Device & {updatedAt: Date})[] = []
+  jobs: (Job & {nextAttemptAt: number; lastError?: string})[] = []
+  receipts = new Map<string, number>()
   closed = false
   failing = false
+  private nextJobId = 1
 
   async register(device: Device): Promise<void> {
     this.check()
@@ -78,6 +93,90 @@ export class MemoryTokenStore implements TokenStore {
       d => d.token !== token || (invalidSince && d.updatedAt > invalidSince),
     )
     return before - this.devices.length
+  }
+
+  async enqueue(
+    incoming: Incoming[],
+    maxQueued: number,
+  ): Promise<EnqueueResult> {
+    this.check()
+    const fresh = new Set(
+      incoming
+        .map(i => i.notification.id)
+        .filter(id => id && !this.receipts.has(id)),
+    )
+    const accepted = acceptOnce(incoming, fresh)
+    const jobs = accepted.flatMap(item =>
+      this.devices
+        .filter(d => d.did === item.notification.recipientDid)
+        .map(({updatedAt: _, ...device}) => ({item, device})),
+    )
+    if (jobs.length > 0 && this.jobs.length + jobs.length > maxQueued) {
+      return {full: true}
+    }
+    const now = Date.now()
+    for (const {notification} of accepted) {
+      if (notification.id) this.receipts.set(notification.id, now)
+    }
+    for (const {item, device} of jobs) {
+      this.jobs.push({
+        id: String(this.nextJobId++),
+        device,
+        notification: item.notification,
+        attempts: 0,
+        expiresAt: item.expiresAt,
+        nextAttemptAt: now,
+      })
+    }
+    return {
+      full: false,
+      accepted: accepted.length,
+      duplicates: incoming.length - accepted.length,
+      jobs: jobs.length,
+    }
+  }
+
+  async claim(limit: number, leaseMs: number): Promise<Job[]> {
+    this.check()
+    const now = Date.now()
+    const due = this.jobs
+      .filter(j => j.nextAttemptAt <= now)
+      .sort((a, b) => a.nextAttemptAt - b.nextAttemptAt)
+      .slice(0, Math.max(0, limit))
+    return due.map(job => {
+      job.nextAttemptAt = now + leaseMs
+      job.attempts++
+      const {nextAttemptAt: _, lastError: __, ...claimed} = job
+      return claimed
+    })
+  }
+
+  async complete(jobId: string): Promise<void> {
+    this.check()
+    this.jobs = this.jobs.filter(j => j.id !== jobId)
+  }
+
+  async retryAt(jobId: string, at: Date, error: string): Promise<void> {
+    this.check()
+    const job = this.jobs.find(j => j.id === jobId)
+    if (job) {
+      job.nextAttemptAt = at.getTime()
+      job.lastError = error
+    }
+  }
+
+  async queueDepth(): Promise<number> {
+    this.check()
+    return this.jobs.length
+  }
+
+  async cleanUp(receiptTtlMs: number): Promise<void> {
+    this.check()
+    const now = Date.now()
+    this.jobs = this.jobs.filter(j => j.expiresAt.getTime() > now)
+    for (const [id, receivedAt] of this.receipts) {
+      if (receivedAt < now - receiptTtlMs) this.receipts.delete(id)
+    }
   }
 
   async ping(): Promise<void> {

@@ -39,7 +39,7 @@ export function createMetrics({defaultMetrics}: {defaultMetrics: boolean}) {
     }),
     queueDepth: new Gauge({
       name: 'courier_send_queue_depth',
-      help: 'Sends waiting or in flight',
+      help: 'Queued sends: waiting, in flight or scheduled for a retry',
       registers,
     }),
   }
