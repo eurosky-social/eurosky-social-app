@@ -32,6 +32,7 @@ during an upstream sync.
 The Central icon system glyphs inherited from the upstream Bluesky repository have been removed
 from `assets/icons/`, `bskyembed/assets/`, and the app's icon components. Do not restore those
 files during an upstream sync unless you hold an appropriate license from Iconists.
+Upstream's native icon fonts must also be rebuilt from the replacement SVGs, never copied as-is.
 
 The replacement UI icon system is generated from MIT-licensed Phosphor Icons. Its source,
 generation commands, and notice are described in [Section 6](#6-third-party-assets-you-may-redistribute)
@@ -59,10 +60,13 @@ sign-in buttons, store badges, and links to third-party applications. We are nei
 nor withholding permission, because it is not ours to give. Your use of them rests on your own
 nominative-use basis or on permission from the mark owner.
 
-- `assets/icons/apple_logo.svg` — Apple Inc.
-- `assets/icons/android_logo.svg` — Google LLC
-- `assets/icons/community/` — Leaflet, Offprint, pckt (`pckt.svg`, `pckt-full.svg`),
-  Standard.site, Germ Network (`germ_logo.webp`), and 40verse (`40verse.svg`)
+- `assets/icons/brands/AppleLogo.svg` — Apple Inc.
+- `assets/icons/brands/AndroidLogo.svg` — Google LLC
+- `assets/icons/community/` — third-party services and support providers; rights holders are
+  listed in [`assets/icons/community/README.md`](./assets/icons/community/README.md).
+- `assets/icons/custom/FortyVerse.svg` — 40verse
+- `assets/nano-icons/` — generated fonts inherit the rights and restrictions of their source
+  artwork, including the Apple, Android, and community service marks above.
 
 Apple's and Google's marks in particular carry their own brand guidelines governing size,
 spacing, and permitted contexts. If you ship a sign-in button or a store badge, follow theirs,
@@ -78,7 +82,7 @@ Keep the applicable notices with redistributed copies.
 | Inter typeface | `assets/fonts/inter/`, `bskyogcard/src/assets/fonts/Inter-*.ttf` | The Inter Project Authors | SIL Open Font License 1.1 | [`OFL.txt`](./assets/fonts/inter/OFL.txt) |
 | Noto Sans families (OG card service) | Downloaded by `bskyogcard/scripts/install-fonts.ts` | Adobe, Google LLC, and The Noto Project Authors | SIL Open Font License 1.1 | [`README.md`](./bskyogcard/src/assets/fonts/README.md) |
 | country-flag-icons | `assets/icons/flags/` | @catamphetamine | MIT | [`LICENSE`](./assets/icons/flags/LICENSE) |
-| Phosphor UI icons | `src/components/icons/`<br>`bskyembed/src/icons/Phosphor.tsx` | Phosphor Icons | MIT | [`NOTICE.md`](./NOTICE.md) |
+| Phosphor UI icons | `assets/icons/ui/`, Phosphor replacements in `assets/icons/brands/`, and their generated components/fonts<br>`bskyembed/src/icons/Phosphor.tsx` | Phosphor Icons | MIT | [`NOTICE.md`](./NOTICE.md) |
 | Material Icons | `bskyweb/static/media/MaterialIcons.*.ttf` | Google, Inc. | Apache License 2.0 | [`NOTICE.md`](./NOTICE.md) |
 
 Build output under `bskyweb/static/media/` also contains compiled Inter files. They are the same
@@ -118,6 +122,11 @@ does not grant permission to reuse or redistribute it independently.
 
 Forks must obtain their own applicable license from ToffeeCraft or replace/remove the pet artwork.
 See [`assets/pets/README.md`](./assets/pets/README.md).
+
+The seasonal ghost in `assets/pets/halloween/` is also paid, license-restricted
+artwork, supplied from `HorrorUltimateEdition/GhostPaid/`. It is not MIT-licensed
+or licensed to downstream users through this repository. See its
+[`provenance and packing notes`](./assets/pets/halloween/README.md).
 
 ## 9. Mu brand assets
 

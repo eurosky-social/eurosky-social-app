@@ -3,7 +3,7 @@ import {type Service} from '@atproto/lex'
 import {api} from '@bsky/sdk'
 
 import {BRAND} from '#/config/brand'
-import {BLUESKY_PROXY_DID, CHAT_PROXY_DID, IS_DEV} from '#/env'
+import {BLUESKY_PROXY_DID, CHAT_PROXY_DID, IS_DEV, MOD_PROXY_DID} from '#/env'
 import {type app} from '#/lexicons'
 
 export const LOCAL_DEV_SERVICE =
@@ -27,7 +27,8 @@ export const EMBED_SCRIPT = `${EMBED_SERVICE}/static/embed.js`
 export const CDN_SERVICE = BRAND.services.cdn
 export const OG_CARD_SERVICE = BRAND.services.ogCard
 export const BSKY_DOWNLOAD_URL = BRAND.links.download
-export const STARTER_PACK_MAX_SIZE = 150
+export const STARTER_PACK_DEFAULT_SIZE = 150
+export const STARTER_PACK_MAX_SIZE = 500
 export const CARD_ASPECT_RATIO = 1200 / 630
 
 // HACK
@@ -91,6 +92,9 @@ export const MAX_ALT_TEXT = 2000
 
 export const MAX_REPORT_REASON_GRAPHEME_LENGTH = 2000
 
+/** Moderation inbox badges display 99+ at or above this unread count. */
+export const UNREAD_NOTIFICATION_CAP = 100
+
 export function IS_TEST_USER(handle?: string) {
   return handle && handle?.endsWith('.test')
 }
@@ -136,6 +140,16 @@ export function LINK_META_PROXY(_serviceUrl: string) {
   }
 
   return PROD_LINK_META_PROXY
+}
+
+export const STAGING_LINK_FAVICON_PROXY =
+  'https://cardyb.staging.bsky.dev/v1/favicon?url='
+
+export const PROD_LINK_FAVICON_PROXY = 'https://cardyb.bsky.app/v1/favicon?url='
+
+/** Serves a page's favicon as a PNG, at most 64px. */
+export function LINK_FAVICON_PROXY() {
+  return IS_DEV ? STAGING_LINK_FAVICON_PROXY : PROD_LINK_FAVICON_PROXY
 }
 
 export const STATUS_PAGE_URL = BRAND.links.statusPage
@@ -309,7 +323,8 @@ export const CONSTELLATION_SERVICE = 'https://constellation.microcosm.blue'
 export const SLINGSHOT_SERVICE = 'https://slingshot.microcosm.blue'
 export const PUBLIC_STAGING_APPVIEW_DID = 'did:web:api.staging.bsky.dev'
 
-export const DEV_ENV_APPVIEW = `http://localhost:2584` // always the same
+export const DEV_ENV_APPVIEW =
+  process.env.EXPO_PUBLIC_DEV_ENV_APPVIEW_URL || 'http://localhost:2584'
 
 // temp hack for e2e - esb
 export const BLUESKY_PROXY_HEADER = {
@@ -335,16 +350,16 @@ export const BLUESKY_PROXY_HEADER = {
 export const CHAT_PROXY_SERVICE: Service = `${CHAT_PROXY_DID}#bsky_chat`
 
 /**
- * Bluesky's own moderation service, in the `did#service_id` form a lex client's
- * per-call `service` option takes. Passing it emits `atproto-proxy: <this
- * value>` on that one request, routing a `com.atproto.moderation.*` call to
- * Bluesky's labeler.
+ * Moderation service, in the `did#service_id` form a lex client's per-call
+ * `service` option takes. Passing it emits `atproto-proxy: <this value>` on that
+ * one request. The DID defaults to Bluesky's labeler but can be overridden for
+ * local Ozone development.
  *
  * Reports and appeals aimed at a DIFFERENT labeler build their own value from
  * that labeler's creator did instead, so this is a per-call option rather than a
  * client-level one like {@link CHAT_PROXY_SERVICE}.
  */
-export const MOD_PROXY_SERVICE: Service = `${api.moderation.did}#atproto_labeler`
+export const MOD_PROXY_SERVICE: Service = `${MOD_PROXY_DID || api.moderation.did}#atproto_labeler`
 
 /**
  * The notification service's proxy target, in the `did#service_id` form a lex

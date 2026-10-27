@@ -87,7 +87,7 @@ type PrimaryRamp = Pick<
  *
  * !! SYNC: ALF derives the page background from this ramp (light = contrast_0,
  * dark = contrast_1000, dim = subdued contrast_1000). The static <style> blocks
- * in web/index.html + bskyweb/templates/base.html hardcode the same body
+ * in public/index.html + bskyweb/templates/base.html hardcode the same body
  * backgrounds (they can't import TS) - they are regenerated from the same JSON
  * by `pnpm brand:sync-web`, so edit brand.json and re-run that, never
  * the HTML by hand.

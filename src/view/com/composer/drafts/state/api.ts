@@ -108,6 +108,12 @@ async function postDraftToServerPost(
     text: post.richtext.text,
   }
 
+  if (post.halloweenCostumeNumber !== undefined) {
+    Object.assign(draftPost, {
+      halloweenCostumeNumber: post.halloweenCostumeNumber,
+    })
+  }
+
   // Add labels if present
   if (post.labels.length > 0) {
     draftPost.labels = {
@@ -630,7 +636,17 @@ export async function draftToComposerPosts(
         }
       }
 
+      const costumeNumber =
+        'halloweenCostumeNumber' in post
+          ? post.halloweenCostumeNumber
+          : undefined
       return {
+        halloweenCostumeNumber:
+          typeof costumeNumber === 'number' &&
+          Number.isSafeInteger(costumeNumber) &&
+          costumeNumber > 0
+            ? costumeNumber
+            : undefined,
         id: `draft-post-${index}`,
         richtext,
         shortenedGraphemeLength: shortenLinks(richtext).graphemeLength,

@@ -122,7 +122,7 @@ function DialogInner({
           </TextField.LabelText>
           <ClearableInput
             label={l`Location`}
-            defaultValue={location}
+            value={location}
             placeholder={l({
               message: 'Amsterdam',
               comment:

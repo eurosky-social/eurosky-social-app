@@ -78,10 +78,10 @@ pnpm brand:gen-raster --compose  # else compose defaults from your mark
 ```
 
 `gen-raster` is optional; the normal `pnpm brand` path does not overwrite the
-app-icon master or `web/og-image.jpg`. It uses the project-installed
+app-icon master or `public/og-image.jpg`. It uses the project-installed
 `@resvg/resvg-js`, with `rsvg-convert` or ImageMagick as fallbacks. It is
 **non-destructive**: it only writes an output when its SVG source exists
-(`icon.svg` → icon master + favicons; `og.svg` → `web/og-image.jpg`), or composes
+(`icon.svg` → icon master + favicons; `og.svg` → `public/og-image.jpg`), or composes
 a default under `--compose`. A brand with hand-designed raster art can omit
 those SVG sources.
 

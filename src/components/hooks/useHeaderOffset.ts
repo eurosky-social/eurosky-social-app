@@ -5,7 +5,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context'
 
 import {useShellLayout} from '#/state/shell/shell-layout'
 import {useBreakpoints} from '#/alf'
-import {IS_LIQUID_GLASS, IS_PARTNER_PREVIEW} from '#/env'
+import {IS_LIQUID_GLASS, IS_PARTNER_PREVIEW, IS_WEB} from '#/env'
 
 export function useHeaderOffset() {
   const {gtMobile} = useBreakpoints()
@@ -25,7 +25,7 @@ export function useHeaderOffset() {
       }
     },
   )
-  if (gtMobile) {
+  if (gtMobile && IS_WEB) {
     return 0
   }
   if (IS_PARTNER_PREVIEW && measuredHeight > 0) {

@@ -6,7 +6,7 @@ const VIEWBOX_WIDTH = 498.09
 const VIEWBOX_HEIGHT = 251.8
 
 /**
- * The 40verse logo (source: assets/icons/community/40verse.svg). The mark is
+ * The 40verse logo (source: assets/icons/custom/FortyVerse.svg). The mark is
  * about twice as wide as it is tall, so unlike the square icon template,
  * `size` sets the height and the width follows the aspect ratio.
  */

@@ -120,6 +120,12 @@ export const HEALTH_PROBE_SERVICE: string =
   process.env.EXPO_PUBLIC_HEALTH_PROBE_SERVICE || OAUTH_SIGNUP_PDS_HOST
 
 /**
+ * The DID of the moderation service to proxy requests to.
+ */
+export const MOD_PROXY_DID: DidString | undefined =
+  process.env.EXPO_PUBLIC_MOD_PROXY_DID
+
+/**
  * Metrics API host
  */
 export const METRICS_API_HOST: string =
@@ -167,6 +173,16 @@ export const PLAUSIBLE_DEBUG: boolean =
  * Sentry DSN for telemetry
  */
 export const SENTRY_DSN: string | undefined = process.env.EXPO_PUBLIC_SENTRY_DSN
+
+/**
+ * Sentry release name. Sentry only compares releases by version when they're
+ * named `package@version` - a bare version gets ordered by when its release
+ * record was created, which makes "resolved in release" regress on events
+ * from older builds. The package matches the native SDK's default release
+ * name. Source map uploads must use the same name, see `SENTRY_RELEASE` in
+ * the CI workflows, `Dockerfile` and `scripts/post-web-build.js`.
+ */
+export const SENTRY_RELEASE = `xyz.blueskyweb.app@${RELEASE_VERSION}`
 
 /**
  * Bitdrift API key. If undefined, Bitdrift should be disabled.

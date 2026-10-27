@@ -4,6 +4,7 @@ import {
   useContext,
   useImperativeHandle,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import {
@@ -19,7 +20,9 @@ import {
 } from 'react-native'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
-import {DismissableLayer, FocusGuards, FocusScope} from 'radix-ui/internal'
+import * as DismissableLayer from '@radix-ui/react-dismissable-layer'
+import * as FocusGuards from '@radix-ui/react-focus-guards'
+import * as FocusScope from '@radix-ui/react-focus-scope'
 import {RemoveScrollBar} from 'react-remove-scroll-bar'
 
 import {logger} from '#/logger'
@@ -97,8 +100,19 @@ export function Outer({
     [control.id, onClose, setDialogIsOpen],
   )
 
+  /*
+   * When a press starts inside the dialog and ends on the backdrop, such as
+   * a drag to select text in a field, the browser fires the click on their
+   * common ancestor, which is outside the dialog. Only a press that started
+   * where it ended counts as a background press.
+   */
+  const pressStartTarget = useRef<unknown>(null)
+
   const handleBackgroundPress = useCallback(
     async (e: GestureResponderEvent) => {
+      const startTarget = pressStartTarget.current
+      pressStartTarget.current = null
+      if (startTarget && startTarget !== e.target) return
       webOptions?.onBackgroundPress ? webOptions.onBackgroundPress(e) : close()
     },
     [webOptions, close],
@@ -117,11 +131,15 @@ export function Outer({
     () => ({
       close,
       isNativeDialog: false,
+      presentationBottomOffset: 0,
+      isNativePopover: false,
       nativeSnapPoint: 0,
       disableDrag: false,
       setDisableDrag: () => {},
       isWithinDialog: true,
       isHeightConstrained: false,
+      shouldMeasureContentHeight: false,
+      setDesiredContentHeight: () => {},
     }),
     [close],
   )
@@ -135,6 +153,9 @@ export function Outer({
             <Pressable
               accessibilityHint={undefined}
               accessibilityLabel={_(msg`Close active dialog`)}
+              onPointerDown={e => {
+                pressStartTarget.current = e.target
+              }}
               onPress={handleBackgroundPress}>
               <View
                 style={[

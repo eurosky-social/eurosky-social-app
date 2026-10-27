@@ -1,17 +1,21 @@
 import {useLayoutEffect} from 'react'
 import {type ColorSchemeName, useColorScheme} from 'react-native'
-import {type ThemeName} from '@bsky.app/alf'
+import {type Theme, type ThemeName} from '@bsky.app/alf'
 
 import {useThemePrefs} from '#/state/shell'
-import {dark, dim, light} from '#/alf/themes'
+import {themes} from '#/alf/themes'
 import {IS_WEB} from '#/env'
+import {useHalloween} from '#/features/halloween/context'
 
-export function useColorModeTheme(): ThemeName {
+export function useColorModeTheme(
+  themesOverride?: Partial<typeof themes>,
+): ThemeName {
   const theme = useThemeName()
+  const resolvedTheme = themesOverride?.[theme] ?? themes[theme]
 
   useLayoutEffect(() => {
-    updateDocument(theme)
-  }, [theme])
+    syncDocumentTheme(theme, resolvedTheme)
+  }, [theme, resolvedTheme])
 
   return theme
 }
@@ -19,8 +23,11 @@ export function useColorModeTheme(): ThemeName {
 export function useThemeName(): ThemeName {
   const colorScheme = useColorScheme()
   const {colorMode, darkTheme} = useThemePrefs()
+  const {isActive: halloweenActive} = useHalloween()
 
-  return getThemeName(colorScheme, colorMode, darkTheme)
+  return halloweenActive
+    ? 'dark'
+    : getThemeName(colorScheme, colorMode, darkTheme)
 }
 
 function getThemeName(
@@ -38,7 +45,8 @@ function getThemeName(
   }
 }
 
-function updateDocument(theme: ThemeName) {
+/** Match page chrome and CSS-only surfaces to the resolved runtime palette. */
+export function syncDocumentTheme(theme: ThemeName, resolvedTheme: Theme) {
   if (IS_WEB && typeof window !== 'undefined') {
     const html = window.document.documentElement
     const meta = window.document.querySelector('meta[name="theme-color"]')
@@ -46,19 +54,31 @@ function updateDocument(theme: ThemeName) {
     // remove any other color mode classes
     html.className = html.className.replace(/(theme)--\w+/g, '')
     html.classList.add(`theme--${theme}`)
-    // set color to 'theme-color' meta tag
-    meta?.setAttribute('content', getBackgroundColor(theme))
+    /* Runtime overrides also cover browser chrome, overscroll, and form CSS. */
+    const background = resolvedTheme.atoms.bg.backgroundColor
+    meta?.setAttribute('content', background)
+    for (const element of [
+      html,
+      window.document.body,
+      window.document.getElementById('root'),
+    ]) {
+      if (!element) continue
+      element.style.backgroundColor = background
+      element.style.setProperty('--background', background)
+      element.style.setProperty('--text', resolvedTheme.atoms.text.color)
+      element.style.setProperty(
+        '--backgroundLight',
+        theme === 'light'
+          ? resolvedTheme.palette.contrast_25
+          : theme === 'dim'
+            ? resolvedTheme.palette.contrast_100
+            : resolvedTheme.palette.contrast_50,
+      )
+    }
     window.localStorage.setItem('ALF_THEME', theme)
   }
 }
 
 export function getBackgroundColor(theme: ThemeName): string {
-  switch (theme) {
-    case 'light':
-      return light.atoms.bg.backgroundColor
-    case 'dark':
-      return dark.atoms.bg.backgroundColor
-    case 'dim':
-      return dim.atoms.bg.backgroundColor
-  }
+  return themes[theme].atoms.bg.backgroundColor
 }

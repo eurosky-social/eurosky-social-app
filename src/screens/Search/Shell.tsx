@@ -210,6 +210,14 @@ export function SearchScreenShell({
     },
     [accountHistory, setAccountHistory],
   )
+  const clearAllHistory = useCallback(() => {
+    ax.metric('search:recent:clearAll', {
+      termCount: termHistory.length,
+      profileCount: accountHistory.length,
+    })
+    setTermHistory([])
+    setAccountHistory([])
+  }, [ax, termHistory, accountHistory, setTermHistory, setAccountHistory])
 
   const showFilters = Boolean((query || hasFilters) && !showAutocomplete)
 
@@ -575,7 +583,7 @@ export function SearchScreenShell({
           )}
           <View style={[a.px_lg, a.pt_sm, a.pb_sm, a.overflow_hidden]}>
             <View style={[a.gap_sm]}>
-              {query && !showAutocomplete && (
+              {!!query && !showAutocomplete && (
                 <DetectedLanguagesAdmonition
                   query={query}
                   filters={filters}
@@ -689,6 +697,7 @@ export function SearchScreenShell({
                 onProfileClick={handleProfileClick}
                 onRemoveItemClick={deleteSearchHistoryItem}
                 onRemoveProfileClick={deleteProfileHistoryItem}
+                onClearAll={clearAllHistory}
               />
             )}
           </Animated.View>

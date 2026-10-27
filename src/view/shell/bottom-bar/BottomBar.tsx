@@ -18,6 +18,7 @@ import {clamp} from '#/lib/numbers'
 import {getTabState, TabState} from '#/lib/routes/helpers'
 import {type SharedNavTab, TAB_TO_NAV_ITEM} from '#/lib/routes/tab-to-nav-item'
 import {emitSoftReset} from '#/state/events'
+import {useHomeBadge} from '#/state/home-badge'
 import {useUnreadMessageCount} from '#/state/queries/messages/list-conversations'
 import {useUpdateAllRead} from '#/state/queries/messages/update-all-read'
 import {useUnreadNotifications} from '#/state/queries/notifications/unread'
@@ -55,6 +56,7 @@ import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useAgeAssurance} from '#/ageAssurance'
 import {useAnalytics} from '#/analytics'
+import {isFollowingV2HomeDotEnabled} from '#/features/followingV2/eligibility'
 import {useActorStatus} from '#/features/liveNow'
 import {useDemoMode} from '#/storage/hooks/demo-mode'
 import {styles} from './BottomBarStyles'
@@ -70,6 +72,7 @@ export function BottomBar({navigation}: BottomTabBarProps) {
     useNavigationTabState()
   const numUnreadNotifications = useUnreadNotifications()
   const numUnreadMessages = useUnreadMessageCount()
+  const hasHomeBadge = useHomeBadge()
   const aa = useAgeAssurance()
   const footerMinimalShellTransform = useMinimalShellFooterTransform()
   const {data: profile} = useProfileQuery({did: currentAccount?.did})
@@ -78,7 +81,7 @@ export function BottomBar({navigation}: BottomTabBarProps) {
   const dedupe = useDedupe()
   const accountSwitchControl = useDialogControl()
   const messagesMenuControl = Menu.useMenuControl()
-  const playHaptic = useHaptics()
+  const haptics = useHaptics()
   const hideBorder = useHideBottomBarBorder()
   const iconWidth = 28
 
@@ -142,15 +145,15 @@ export function BottomBar({navigation}: BottomTabBarProps) {
   }, [onPressTab])
 
   const onLongPressProfile = useCallback(() => {
-    playHaptic()
+    haptics.longPress()
     accountSwitchControl.open()
-  }, [accountSwitchControl, playHaptic])
+  }, [accountSwitchControl, haptics])
 
   const onLongPressMessages = useCallback(() => {
     if (aa.flags.chatDisabled) return
-    playHaptic()
+    haptics.longPress()
     messagesMenuControl.open()
-  }, [aa.flags.chatDisabled, messagesMenuControl, playHaptic])
+  }, [aa.flags.chatDisabled, messagesMenuControl, haptics])
 
   const [demoMode] = useDemoMode()
   const {isActive: live} = useActorStatus(profile)
@@ -190,6 +193,7 @@ export function BottomBar({navigation}: BottomTabBarProps) {
                   />
                 )
               }
+              hasNew={hasHomeBadge && isFollowingV2HomeDotEnabled(ax)}
               onPress={onPressHome}
               accessibilityRole="tab"
               accessibilityLabel={l`Home`}

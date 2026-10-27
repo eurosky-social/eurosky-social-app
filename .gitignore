@@ -107,6 +107,7 @@ stats.json
 # environment variables
 .env
 .env.*
+!/.env.e2e
 # Cloudflare Worker local dev secrets (services/*/cloudflare/.dev.vars)
 .dev.vars
 .dev.vars.*
