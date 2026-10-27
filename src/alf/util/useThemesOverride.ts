@@ -5,6 +5,8 @@ import {useInterfaceStyle} from '#/state/preferences'
 import {useThemePrefs} from '#/state/shell'
 import {buildThemes} from '#/alf/themes'
 import {type AccentKey, ACCENTS, DEFAULT_ACCENT} from '#/config/brand-theme'
+import {useHalloween} from '#/features/halloween/context'
+import {halloweenThemes} from '#/features/halloween/themes'
 
 function withoutBorders(theme: Theme): Theme {
   const transparentBorder = {borderColor: 'transparent'}
@@ -42,19 +44,22 @@ export function useThemesOverride():
   ReturnType<typeof buildThemes> | undefined {
   const {accentColor} = useThemePrefs()
   const {borders} = useInterfaceStyle()
+  const {isActive: halloweenActive} = useHalloween()
   return useMemo(() => {
     const hasCustomAccent =
       !!accentColor && accentColor in ACCENTS && accentColor !== DEFAULT_ACCENT
 
     const hideBorders = borders === 'hidden'
 
-    if (!hasCustomAccent && !hideBorders) {
+    if (!hasCustomAccent && !hideBorders && !halloweenActive) {
       return undefined
     }
 
-    const resolvedThemes = buildThemes(
-      hasCustomAccent ? (accentColor as AccentKey) : DEFAULT_ACCENT,
-    )
+    const resolvedThemes = halloweenActive
+      ? halloweenThemes
+      : buildThemes(
+          hasCustomAccent ? (accentColor as AccentKey) : DEFAULT_ACCENT,
+        )
     return applyInterfaceStyle(resolvedThemes, {borders})
-  }, [accentColor, borders])
+  }, [accentColor, borders, halloweenActive])
 }

@@ -1,40 +1,63 @@
 # Icon system
 
-Mu uses [Phosphor Icons](https://phosphoricons.com/) for its general UI and semantic glyphs.
-Phosphor is MIT licensed; attribution and the full license are in [`NOTICE.md`](../NOTICE.md)
-and [`licenses/PHOSPHOR-MIT.txt`](../licenses/PHOSPHOR-MIT.txt).
+Mu uses MIT-licensed [Phosphor Icons](https://phosphoricons.com/) with upstream's SVG-driven
+component generator and `react-native-nano-icons` rendering. Attribution and the full license
+are in [`NOTICE.md`](../NOTICE.md) and [`licenses/PHOSPHOR-MIT.txt`](../licenses/PHOSPHOR-MIT.txt).
+Do not restore Central/Iconists artwork or upstream's prebuilt icon fonts during a sync.
+
+## Adding or changing an icon
+
+1. Add its export name, Phosphor slug, and weight to `scripts/phosphor-icons.json`. Compatibility
+   exports introduced upstream are mapped in `scripts/phosphor-upstream-icons.json`; these infer
+   `fill` from `Filled` in the name and otherwise use `regular`.
+2. Run `pnpm icons:import-phosphor` to import SVGs and update the standalone embed wrappers.
+3. Run `pnpm icons:generate` to generate app components and rebuild the native icon fonts.
+4. Run `pnpm icons:check`, `pnpm icons:test`, typecheck, and lint.
+5. Include the SVGs, generated components, glyphmaps, and fonts in the same change.
+
+The importer normalizes Phosphor's 256-unit artwork into upstream's 24-unit viewBox (64 for
+`Large` exports). The long export names are compatibility names, not descriptions of Phosphor's
+source geometry. Bare compatibility names such as `VerifiedCheck` live in the `brands/` lane,
+which permits names without UI style tokens. Existing imports are preserved through generated
+aliases; new imports should use the canonical module emitted by codegen.
+
+The generated SVGs, components, embed wrappers, and fonts must not be edited directly. The
+importer rejects unreviewed additions to `ui/` and `brands/` so an upstream sync cannot silently
+restore restricted artwork. Other source lanes, including temporary SVG-only icons, use
+upstream's generator directly. See
+[`scripts/icons/README.md`](../scripts/icons/README.md) for source lanes, naming rules, fallback
+behavior, compatibility aliases, and temporary SVG-only icons for OTA updates.
+
+## Rendering
+
+- **iOS and Android:** supported icons render as glyphs in the rebuilt native fonts. Gradients,
+  SVG refs, and other unsupported props fall back to SVG without changing the component API.
+- **Web:** icons remain SVGs.
+- **Standalone embeds:** use the generated Phosphor Preact wrappers, not the native fonts.
+
+Adding or changing a font glyph requires a new native build. Do not ship a new glyph only through
+an OTA update. Upstream's `assets/icons/tmp/` workflow supports new SVG-only icons until the next
+native release.
 
 ## Weights
 
-Use one Phosphor family for both inactive and active states:
+- `regular`: default outlines and inactive navigation.
+- `bold`: emphasized outlines, such as selected Feeds and Lists.
+- `fill`: selected navigation, active toggles, and solid controls such as Play and Pause.
 
-- `regular` is the default for outline icons, including inactive navigation.
-- `bold` is reserved for explicitly emphasized glyphs. Feeds and Lists use it for their selected
-  navigation state because their open glyphs do not benefit from a fill treatment.
-- `fill` indicates other selected navigation, active toggles, and intentionally solid controls
-  such as Play and Pause.
+Use matching Phosphor variants rather than filling an outline from another icon family.
 
-Do not simulate a filled state by applying a fill to an outline from another icon family. Add the
-matching Phosphor fill asset instead.
+## Branding and third-party marks
 
-## Generated components
+Mu's themed brand logos, splash artwork, favicons, and external assets remain managed by
+`assets/brand/`, the `brand:*` commands, and `BrandLogo`. They are not replaced by this pipeline.
+Country flags and third-party service marks retain their own licensing notices. Native fonts
+containing service marks carry the same restrictions as those source marks.
 
-The generated files under `src/components/icons/` and `bskyembed/src/icons/Phosphor.tsx` must not
-be edited directly. Their source of truth is:
+## Seasonal exception
 
-- `scripts/phosphor-icons.json` — app and embed mappings
-- `@phosphor-icons/core` — pinned SVG source package
-- `scripts/gen-phosphor-icons.mjs` — generator
-
-The existing long export names are compatibility names retained to avoid unrelated call-site
-churn. They no longer describe the upstream icon source. New component files and exports should
-use canonical Phosphor names.
-
-To add or change an icon:
-
-1. Add its component/export, Phosphor slug, and weight to `scripts/phosphor-icons.json`.
-2. Run `pnpm icons:generate`.
-3. Run `pnpm icons:check`, typecheck, and lint.
-
-Brand logos, country flags, and third-party service marks are separate asset categories and are
-not generated by this system.
+Halloween uses the explicitly chosen Lucide `candy` SVG at
+`src/features/halloween/CandyIcon.tsx`, with attribution in `NOTICE.md`. It uses
+our existing SVG helper and the supplied 1.5 stroke width on web and native.
+Both states retain the outline; only a toggled-on candy is colored. This is not
+part of the generated Phosphor catalog and does not add a Lucide dependency.

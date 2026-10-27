@@ -34,6 +34,44 @@ export type DutchThreadViewParams = {
   articles: 'matching'
 }
 
+/**
+ * The languages each country's outlets mostly write in. Read in the reader's
+ * languages alone, a country is only what its outlets publish in those: in
+ * English, the Netherlands was a handful of week-old stories.
+ */
+const COUNTRY_LANGUAGES: Record<string, string[]> = {
+  be: ['nl', 'fr'],
+  de: ['de'],
+  dk: ['da'],
+  es: ['es'],
+  fr: ['fr'],
+  gb: ['en'],
+  nl: ['nl'],
+}
+
+/**
+ * The reader's languages, then those of the places a read is narrowed to: its
+ * countries, and a province's country, the prefix of its label value
+ * (`nl-utrecht`). The reader's come first, so a story still leads in one of
+ * them where it can. No languages is no language filter, and stays so.
+ */
+export function languagesForPlaces(
+  languages: string[] | undefined,
+  places: {countries?: string[]; category?: string},
+): string[] | undefined {
+  if (!languages?.length) return languages
+  const countries = [
+    ...(places.countries ?? []),
+    ...(places.category ? [places.category.split('-')[0]] : []),
+  ]
+  return [
+    ...new Set([
+      ...languages,
+      ...countries.flatMap(country => COUNTRY_LANGUAGES[country] ?? []),
+    ]),
+  ]
+}
+
 export function dutchThreadViewParams(
   view: DutchThreadView,
 ): DutchThreadViewParams {

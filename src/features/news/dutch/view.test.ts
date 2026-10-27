@@ -4,7 +4,39 @@ import {
   decodeDutchThreadView,
   dutchThreadViewParams,
   encodeDutchThreadView,
+  languagesForPlaces,
 } from './view'
+
+describe('languagesForPlaces', () => {
+  it('adds a country’s own languages after the reader’s', () => {
+    expect(languagesForPlaces(['en'], {countries: ['nl']})).toEqual([
+      'en',
+      'nl',
+    ])
+    expect(languagesForPlaces(['nl', 'en'], {countries: ['be']})).toEqual([
+      'nl',
+      'en',
+      'fr',
+    ])
+  })
+
+  it('adds a province’s country’s languages', () => {
+    expect(languagesForPlaces(['en'], {category: 'nl-utrecht'})).toEqual([
+      'en',
+      'nl',
+    ])
+  })
+
+  it('adds nothing for the world or an unknown place', () => {
+    expect(languagesForPlaces(['en'], {})).toEqual(['en'])
+    expect(languagesForPlaces(['en'], {countries: ['xx']})).toEqual(['en'])
+  })
+
+  it('keeps no language filter as none', () => {
+    expect(languagesForPlaces(undefined, {countries: ['nl']})).toBeUndefined()
+    expect(languagesForPlaces([], {countries: ['nl']})).toEqual([])
+  })
+})
 
 describe('dutchThreadViewParams', () => {
   it('sends every language in the reader’s order, and the sets sorted', () => {

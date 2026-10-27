@@ -30,7 +30,7 @@ stages:
 
 deploy-oso-bunny:
   stage: deploy
-  image: node:24.19.0-bookworm
+  image: node:24.22.1-bookworm
   # Never run two deploys at once; GitLab queues the next one behind this.
   resource_group: deploy-oso-bunny
   interruptible: true
@@ -42,12 +42,10 @@ deploy-oso-bunny:
     # keep between runs. Set through the environment: `pnpm config set
     # --global` fails in CI because pnpm's global bin dir is not on PATH.
     pnpm_config_store_dir: ${CI_PROJECT_DIR}/.pnpm-store
-    # The webpack build was OOM-killed (exit 137). Cap the V8 heap so an
-    # overrun fails as a readable "heap out of memory" instead of a SIGKILL,
-    # and cap Terser's workers (it otherwise spawns one per host CPU; see
-    # webpack.config.js). Keep the heap below the runner's memory limit.
+    # The old webpack build was OOM-killed (exit 137). Cap the V8 heap so an
+    # overrun fails as a readable "heap out of memory" instead of a SIGKILL.
+    # Keep the heap below the runner's memory limit.
     NODE_OPTIONS: --max-old-space-size=4096
-    TERSER_PARALLEL: '2'
   cache:
     key:
       files:

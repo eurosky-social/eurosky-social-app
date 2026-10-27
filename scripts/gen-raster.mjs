@@ -50,7 +50,7 @@ const OUT_DIR = outIdx >= 0 ? path.resolve(argv[outIdx + 1]) : null
 
 // Outputs (relative to ROOT, or redirected into --out as basenames).
 const ICON_MASTER = 'assets/app-icons/ios_icon_default_next.png'
-const OG_IMAGE = 'web/og-image.jpg'
+const OG_IMAGE = 'public/og-image.jpg'
 const ICON_SIZE = 1024
 const OG_W = 2400
 const OG_H = 1600

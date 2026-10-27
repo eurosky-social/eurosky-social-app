@@ -82,8 +82,8 @@ jobs:
             exit 1
           fi
       # web_build.sh loads the environment's .env files and runs the brand's
-      # build: frozen install (CI=true) -> intl:build -> build-web -> static
-      # path rewrite -> robots.txt.
+      # build: frozen install (CI=true) -> intl:build -> build-web ->
+      # robots.txt.
       - name: Build web
         id: build
         run: bash ./scripts/web_build.sh "$DEPLOY_ENV"

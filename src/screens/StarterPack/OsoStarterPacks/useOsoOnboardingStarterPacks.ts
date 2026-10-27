@@ -47,7 +47,10 @@ export function useOsoOnboardingSuggestedStarterPacks(props: {
   }
 
   return {
-    data: oso.isLoading ? undefined : {starterPacks: oso.starterPacks},
+    // Oso's own packs are not recommendations, so they carry no recId.
+    data: oso.isLoading
+      ? undefined
+      : {starterPacks: oso.starterPacks, recId: undefined},
     isLoading: oso.isLoading,
     isError: IS_PARTNER_PREVIEW && !!oso.error,
     isRefetching: oso.isRefetching,

@@ -30,7 +30,6 @@ import {isThreadChildAt, isThreadParentAt} from '#/view/com/posts/PostFeed'
 import {PostFeedItem} from '#/view/com/posts/PostFeedItem'
 import {ViewFullThread} from '#/view/com/posts/ViewFullThread'
 import {List} from '#/view/com/util/List'
-import {FeedFeedLoadingPlaceholder} from '#/view/com/util/LoadingPlaceholder'
 import {LoadMoreRetryBtn} from '#/view/com/util/LoadMoreRetryBtn'
 import {StarterPackCardSkeleton} from '#/screens/Search/components/StarterPackCard'
 import {ExploreTrendingTopics} from '#/screens/Search/modules/ExploreTrendingTopics'
@@ -41,6 +40,7 @@ import {atoms as a, native, platform, useTheme} from '#/alf'
 import {Admonition} from '#/components/Admonition'
 import {Button} from '#/components/Button'
 import * as FeedCard from '#/components/FeedCard'
+import {FeedCardListSkeleton} from '#/components/FeedCardSkeleton'
 import {ChevronBottom_Stroke2_Corner0_Rounded as ChevronDownIcon} from '#/components/icons/Chevron'
 import {CircleInfo_Stroke2_Corner0_Rounded as CircleInfo} from '#/components/icons/CircleInfo'
 import {
@@ -157,6 +157,10 @@ type ExploreScreenItems =
       type: 'feed'
       key: string
       feed: app.bsky.feed.defs.GeneratorView
+      recommendation?: {
+        recId?: string
+        position: number
+      }
     }
   | {
       type: 'loadMore'
@@ -183,6 +187,10 @@ type ExploreScreenItems =
       type: 'starterPack'
       key: string
       view: app.bsky.graph.defs.StarterPackView
+      recommendation: {
+        recId?: string
+        position: number
+      }
     }
   | {
       type: 'starterPackSkeleton'
@@ -293,6 +301,7 @@ export function Explore({
     useGetSuggestedFeedsQuery({
       enabled: useFullExperience,
     })
+  const [feedPreviewsEnabled, setFeedPreviewsEnabled] = useState(false)
   const {
     data: feedPreviewSlices,
     query: {
@@ -302,7 +311,10 @@ export function Explore({
       hasNextPage: hasNextPageFeedPreviews,
       error: feedPreviewSlicesError,
     },
-  } = useFeedPreviews(suggestedFeeds?.feeds ?? [], useFullExperience)
+  } = useFeedPreviews(
+    suggestedFeeds?.feeds.map(({feed}) => feed) ?? [],
+    useFullExperience && feedPreviewsEnabled,
+  )
 
   const qc = useQueryClient()
   const [isPTR, setIsPTR] = useState(false)
@@ -462,13 +474,17 @@ export function Explore({
       if (suggestedFeeds && preferences) {
         let seen = new Set()
         const feedItems: ExploreScreenItems[] = []
-        for (const feed of suggestedFeeds.feeds) {
+        for (const {feed, position} of suggestedFeeds.feeds) {
           if (!seen.has(feed.uri)) {
             seen.add(feed.uri)
             feedItems.push({
               type: 'feed',
               key: feed.uri,
               feed,
+              recommendation: {
+                recId: suggestedFeeds.recId,
+                position,
+              },
             })
           }
         }
@@ -498,17 +514,6 @@ export function Explore({
               i.push(...feedItems.slice(0, 6))
             } else {
               i.push(...feedItems)
-            }
-
-            for (const [index, item] of feedItems.entries()) {
-              if (item.type !== 'feed') {
-                continue
-              }
-              // don't log the ones we've already sent
-              if (hasPressedLoadMoreFeeds && index < 6) {
-                continue
-              }
-              ax.metric('feed:suggestion:seen', {feedUrl: item.feed.uri})
             }
           }
           if (!hasPressedLoadMoreFeeds) {
@@ -832,12 +837,31 @@ export function Explore({
               <FeedCard.Default
                 view={item.feed}
                 onPress={() => {
-                  if (!useFullExperience) {
-                    return
-                  }
+                  if (!item.recommendation) return
                   ax.metric('feed:suggestion:press', {
                     feedUrl: item.feed.uri,
+                    logContext: 'Explore',
+                    recId: item.recommendation.recId,
+                    position: item.recommendation.position,
                   })
+                }}
+                onSavedFeedChange={action => {
+                  if (!item.recommendation?.recId) return
+                  const payload = {
+                    feedUrl: item.feed.uri,
+                    logContext: 'Explore' as const,
+                    recId: item.recommendation.recId,
+                    position: item.recommendation.position,
+                  }
+                  if (action === 'save') {
+                    ax.metric('feed:save', payload)
+                  } else if (action === 'unsave') {
+                    ax.metric('feed:unsave', payload)
+                  } else if (action === 'pin') {
+                    ax.metric('feed:pin', payload)
+                  } else {
+                    ax.metric('feed:unpin', payload)
+                  }
                 }}
               />
             </View>
@@ -889,7 +913,7 @@ export function Explore({
           )
         }
         case 'feedPlaceholder': {
-          return <FeedFeedLoadingPlaceholder />
+          return <FeedCardListSkeleton />
         }
         case 'error':
         case 'preview:error': {
@@ -1054,6 +1078,8 @@ export function Explore({
   // track headers and report module viewability
   const alreadyReportedRef = useRef<Map<string, string>>(new Map())
   const seenProfilesRef = useRef<Set<string>>(new Set())
+  const seenFeedsRef = useRef<Set<string>>(new Set())
+  const seenStarterPacksRef = useRef<Set<string>>(new Set())
   const onItemSeen = useCallback(
     (item: ExploreScreenItems) => {
       let module: Metrics['explore:module:seen']['module']
@@ -1077,8 +1103,33 @@ export function Explore({
         }
       } else if (item.type === 'feed') {
         module = 'suggestedFeeds'
+        if (item.recommendation) {
+          const key = `${item.recommendation.recId ?? 'legacy'}:${item.feed.uri}`
+          if (!seenFeedsRef.current.has(key)) {
+            seenFeedsRef.current.add(key)
+            ax.metric('feed:suggestion:seen', {
+              feedUrl: item.feed.uri,
+              logContext: 'Explore',
+              recId: item.recommendation.recId,
+              position: item.recommendation.position,
+            })
+          }
+        }
       } else if (item.type === 'starterPack') {
         module = 'suggestedStarterPacks'
+        const key = `${item.recommendation.recId ?? 'legacy'}:${item.view.uri}`
+        if (
+          item.recommendation.recId &&
+          !seenStarterPacksRef.current.has(key)
+        ) {
+          seenStarterPacksRef.current.add(key)
+          ax.metric('starterPack:suggestion:seen', {
+            logContext: 'Explore',
+            starterPack: item.view.uri,
+            recId: item.recommendation.recId,
+            position: item.recommendation.position,
+          })
+        }
       } else if (item.type === 'preview:sliceItem') {
         module = `feed:feedgen|${item.feed.uri}`
       } else {
@@ -1093,6 +1144,11 @@ export function Explore({
   )
 
   const handleOnEndReached = () => {
+    if (!useFullExperience) return
+    if (!feedPreviewsEnabled) {
+      setFeedPreviewsEnabled(true)
+      return
+    }
     void onLoadMoreFeedPreviews()
   }
 

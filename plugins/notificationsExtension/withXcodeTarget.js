@@ -54,7 +54,9 @@ const withXcodeTarget = (
           buildSettingsObj.PRODUCT_BUNDLE_IDENTIFIER = `"${config.ios?.bundleIdentifier}.${extensionName}"`
           buildSettingsObj.SWIFT_EMIT_LOC_STRINGS = 'YES'
           buildSettingsObj.SWIFT_VERSION = '5.0'
-          buildSettingsObj.TARGETED_DEVICE_FAMILY = `"1,2"`
+          buildSettingsObj.TARGETED_DEVICE_FAMILY = config.ios?.supportsTablet
+            ? `"1,2"`
+            : `"1"`
           buildSettingsObj.DEVELOPMENT_TEAM = developmentTeam
         }
       }

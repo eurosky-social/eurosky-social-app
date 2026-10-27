@@ -7,9 +7,8 @@ import {
   View,
 } from 'react-native'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
-import {msg, plural} from '@lingui/core/macro'
-import {useLingui} from '@lingui/react'
-import {Plural, Trans} from '@lingui/react/macro'
+import {plural} from '@lingui/core/macro'
+import {Plural, Trans, useLingui} from '@lingui/react/macro'
 import {StackActions, useNavigation} from '@react-navigation/native'
 
 import {type PressableScale} from '#/lib/custom-animations/PressableScale'
@@ -18,7 +17,6 @@ import {getTabState, TabState} from '#/lib/routes/helpers'
 import {type SharedNavTab, TAB_TO_NAV_ITEM} from '#/lib/routes/tab-to-nav-item'
 import {type NavigationProp} from '#/lib/routes/types'
 import {sanitizeHandle} from '#/lib/strings/handles'
-import {colors} from '#/lib/styles'
 import {emitSoftReset} from '#/state/events'
 import {useUnreadNotifications} from '#/state/queries/notifications/unread'
 import {useProfileQuery} from '#/state/queries/profile'
@@ -31,13 +29,13 @@ import {atoms as a, tokens, useTheme, web} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {useDialogControl} from '#/components/Dialog'
 import {Divider} from '#/components/Divider'
-import {ArrowShareRight_Stroke2_Corner2_Rounded as ArrowShareRight} from '#/components/icons/ArrowShareRight'
+import {ArrowShareRight_Stroke2_Corner2_Rounded as ArrowShareRightIcon} from '#/components/icons/Arrow'
 import {
-  Bell_Filled_Corner0_Rounded as BellFilled,
-  Bell_Stroke2_Corner0_Rounded as Bell,
+  Bell_Filled_Corner0_Rounded as BellFilledIcon,
+  Bell_Stroke2_Corner0_Rounded as BellIcon,
 } from '#/components/icons/Bell'
 import {CalendarDays_Stroke2_Corner0_Rounded as Calendar} from '#/components/icons/CalendarDays'
-import {Message_Stroke2_Corner0_Rounded as Message} from '#/components/icons/Message'
+import {Message_Stroke2_Corner0_Rounded as MessageIcon} from '#/components/icons/Message'
 import {
   createOsoNavIconsFrom,
   OsoChatActiveIcon,
@@ -61,6 +59,14 @@ import {useActorStatus} from '#/features/liveNow'
 import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
 
 const iconWidth = 26
+/*
+ * Oso's drawer only links Settings among the tablet sidebar's secondary tabs;
+ * Feeds, Lists and Saved are not in its menu.
+ */
+type SecondarySidebarTab = 'Settings'
+const SECONDARY_TAB_ROUTES: Record<SecondarySidebarTab, 'SettingsTab'> = {
+  Settings: 'SettingsTab',
+}
 
 let DrawerProfileCard = ({
   account,
@@ -71,7 +77,7 @@ let DrawerProfileCard = ({
   onPressProfile: () => void
   onPressShare?: () => void
 }): React.ReactNode => {
-  const {_, i18n} = useLingui()
+  const {t: l, i18n} = useLingui()
   const t = useTheme()
   const {data: profile} = useProfileQuery({did: account.did})
   const {isActive: live} = useActorStatus(profile)
@@ -79,8 +85,8 @@ let DrawerProfileCard = ({
   return (
     <TouchableOpacity
       testID="profileCardButton"
-      accessibilityLabel={_(msg`Profile`)}
-      accessibilityHint={_(msg`Navigates to your profile`)}
+      accessibilityLabel={l`Profile`}
+      accessibilityHint={l`Navigates to your profile`}
       onPress={onPressProfile}
       style={[a.gap_sm, a.pr_lg]}>
       <UserAvatar
@@ -109,10 +115,8 @@ let DrawerProfileCard = ({
           {onPressShare && (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={_(msg`Invite friends`)}
-              accessibilityHint={_(
-                msg`Opens the invite friends sheet to share your profile`,
-              )}
+              accessibilityLabel={l`Invite friends`}
+              accessibilityHint={l`Opens the invite friends sheet to share your profile`}
               onPress={onPressShare}
               hitSlop={8}
               style={({pressed}) => [
@@ -127,7 +131,7 @@ let DrawerProfileCard = ({
                   opacity: pressed ? 0.7 : 1,
                 },
               ]}>
-              <ArrowShareRight
+              <ArrowShareRightIcon
                 width={16}
                 height={16}
                 fill={t.palette.primary_500}
@@ -248,6 +252,32 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
     onPressTab('MyProfile', 'drawerHeader')
   }, [onPressTab])
 
+  const navigateToSecondaryTab = useCallback(
+    (tab: SecondarySidebarTab) => {
+      const state = navigation.getState()
+      const tabState = getTabState(state, tab)
+      const routeName = SECONDARY_TAB_ROUTES[tab]
+      if (tabState === TabState.InsideAtRoot) {
+        emitSoftReset()
+      } else if (tabState === TabState.Inside) {
+        const target = state.routes.find(route => route.name === routeName)
+          ?.state?.key
+        if (target) {
+          navigation.dispatch({
+            ...StackActions.popToTop(),
+            target,
+          })
+        } else {
+          navigation.reset({index: 0, routes: [{name: routeName}]})
+        }
+      } else {
+        navigation.navigate(routeName)
+      }
+      setDrawerOpen(false)
+    },
+    [navigation, setDrawerOpen],
+  )
+
   const onPressNews = useCallback(() => {
     ax.metric('nav:click', {item: 'news', surface: 'drawer'})
     navigation.navigate(NEWS_V2_ENABLED ? 'NewsExplore' : 'NewsFeed')
@@ -262,16 +292,17 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
 
   const onPressSettings = useCallback(() => {
     ax.metric('nav:click', {item: 'settings', surface: 'drawer'})
-    navigation.navigate('Settings')
-    setDrawerOpen(false)
-  }, [navigation, setDrawerOpen, ax])
+    if (IS_WEB) navigation.navigate('Settings')
+    else navigateToSecondaryTab('Settings')
+    if (IS_WEB) setDrawerOpen(false)
+  }, [navigation, navigateToSecondaryTab, setDrawerOpen, ax])
 
   const onPressFeedback = useCallback(() => {
-    Linking.openURL(BRAND.links.feedback)
+    void Linking.openURL(BRAND.links.feedback)
   }, [])
 
   const onPressDonate = useCallback(() => {
-    Linking.openURL(BRAND.links.donate)
+    void Linking.openURL(BRAND.links.donate)
   }, [])
 
   // rendering
@@ -367,7 +398,7 @@ let DrawerFooter = ({
   onPressDonate: () => void
   hasSession: boolean
 }): React.ReactNode => {
-  const {_} = useLingui()
+  const {t: l} = useLingui()
   const insets = useSafeAreaInsets()
   return (
     <View
@@ -385,7 +416,7 @@ let DrawerFooter = ({
         },
       ]}>
       <Button
-        label={_(msg`Donate`)}
+        label={l`Donate`}
         size="small"
         variant="outline"
         color="secondary"
@@ -399,7 +430,7 @@ let DrawerFooter = ({
       </Button>
       {hasSession && (
         <Button
-          label={_(msg`Send feedback`)}
+          label={l`Send feedback`}
           size="small"
           variant="outline"
           color="secondary"
@@ -407,7 +438,7 @@ let DrawerFooter = ({
           style={{
             backgroundColor: 'transparent',
           }}>
-          <ButtonIcon icon={Message} position="left" />
+          <ButtonIcon icon={MessageIcon} position="left" />
           <ButtonText>
             <Trans>Feedback</Trans>
           </ButtonText>
@@ -435,7 +466,7 @@ let SearchMenuItem = ({
   isActive: boolean
   onPress: () => void
 }): React.ReactNode => {
-  const {_} = useLingui()
+  const {t: l} = useLingui()
   const t = useTheme()
   return (
     <MenuItem
@@ -446,7 +477,7 @@ let SearchMenuItem = ({
           <OsoExploreIcon style={[t.atoms.text]} width={iconWidth} />
         )
       }
-      label={_(msg`Explore`)}
+      label={l`Explore`}
       bold={isActive}
       onPress={onPress}
     />
@@ -461,7 +492,7 @@ let ChatMenuItem = ({
   isActive: boolean
   onPress: () => void
 }): React.ReactNode => {
-  const {_} = useLingui()
+  const {t: l} = useLingui()
   const t = useTheme()
   return (
     <MenuItem
@@ -472,7 +503,7 @@ let ChatMenuItem = ({
           <OsoChatIcon style={[t.atoms.text]} width={iconWidth} />
         )
       }
-      label={_(msg`Chat`)}
+      label={l`Chat`}
       bold={isActive}
       onPress={onPress}
     />
@@ -487,28 +518,26 @@ let NotificationsMenuItem = ({
   isActive: boolean
   onPress: () => void
 }): React.ReactNode => {
-  const {_} = useLingui()
+  const {t: l} = useLingui()
   const t = useTheme()
   const numUnreadNotifications = useUnreadNotifications()
   return (
     <MenuItem
       icon={
         isActive ? (
-          <BellFilled style={[t.atoms.text]} width={iconWidth} />
+          <BellFilledIcon style={[t.atoms.text]} width={iconWidth} />
         ) : (
-          <Bell style={[t.atoms.text]} width={iconWidth} />
+          <BellIcon style={[t.atoms.text]} width={iconWidth} />
         )
       }
-      label={_(msg`Notifications`)}
+      label={l`Notifications`}
       accessibilityHint={
         numUnreadNotifications === ''
           ? ''
-          : _(
-              plural(numUnreadNotifications ?? 0, {
-                one: '# unread item',
-                other: '# unread items',
-              }),
-            )
+          : plural(numUnreadNotifications ?? 0, {
+              one: '# unread item',
+              other: '# unread items',
+            })
       }
       count={numUnreadNotifications}
       bold={isActive}
@@ -525,7 +554,7 @@ let FeedsMenuItem = ({
   isActive: boolean
   onPress: () => void
 }): React.ReactNode => {
-  const {_} = useLingui()
+  const {t: l} = useLingui()
   const t = useTheme()
   return (
     <MenuItem
@@ -536,7 +565,7 @@ let FeedsMenuItem = ({
           <OsoFeedsIcon width={iconWidth} style={[t.atoms.text]} />
         )
       }
-      label={_(msg`Feeds`)}
+      label={l`Feeds`}
       bold={isActive}
       onPress={onPress}
     />
@@ -545,13 +574,13 @@ let FeedsMenuItem = ({
 FeedsMenuItem = memo(FeedsMenuItem)
 
 let NewsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
-  const {_} = useLingui()
+  const {t: l} = useLingui()
   const t = useTheme()
 
   return (
     <MenuItem
       icon={<OsoNewsIcon style={[t.atoms.text]} width={iconWidth} />}
-      label={_(msg`News`)}
+      label={l`News`}
       onPress={onPress}
     />
   )
@@ -559,13 +588,13 @@ let NewsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
 NewsMenuItem = memo(NewsMenuItem)
 
 let EventsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
-  const {_} = useLingui()
+  const {t: l} = useLingui()
   const t = useTheme()
 
   return (
     <MenuItem
       icon={<OsoEventsIcon style={[t.atoms.text]} width={iconWidth} />}
-      label={_(msg`Events`)}
+      label={l`Events`}
       onPress={onPress}
     />
   )
@@ -573,12 +602,12 @@ let EventsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
 EventsMenuItem = memo(EventsMenuItem)
 
 let SettingsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
-  const {_} = useLingui()
+  const {t: l} = useLingui()
   const t = useTheme()
   return (
     <MenuItem
       icon={<OsoSettingsIcon style={[t.atoms.text]} width={iconWidth} />}
-      label={_(msg`Settings`)}
+      label={l`Settings`}
       onPress={onPress}
     />
   )
@@ -631,7 +660,7 @@ function MenuItem({icon, label, count, bold, onPress}: MenuItemProps) {
                       a.font_semi_bold,
                       {
                         fontVariant: ['tabular-nums'],
-                        color: colors.white,
+                        color: t.palette.white,
                       },
                     ]}
                     numberOfLines={1}>
@@ -658,46 +687,43 @@ function MenuItem({icon, label, count, bold, onPress}: MenuItemProps) {
 }
 
 function ExtraLinks({hasSession}: {hasSession: boolean}) {
-  const {_} = useLingui()
+  const {t: l} = useLingui()
 
   if (IS_PARTNER_PREVIEW) {
     return (
       <View style={[a.flex_col, a.gap_md, a.flex_wrap]}>
-        <InlineLinkText
-          style={[a.text_md]}
-          to={BRAND.links.faq}
-          label={_(msg`FAQ`)}>
+        <InlineLinkText style={[a.text_md]} to={BRAND.links.faq} label={l`FAQ`}>
           <Trans>FAQ</Trans>
         </InlineLinkText>
         <InlineLinkText
           style={[a.text_md]}
           to={BRAND.links.privacy}
-          label={_(msg`Privacy`)}>
+          label={l`Privacy`}>
           <Trans>Privacy</Trans>
         </InlineLinkText>
         <InlineLinkText
           style={[a.text_md]}
           to={BRAND.links.tos}
-          label={_(msg`Terms`)}>
+          label={l`Terms`}>
           <Trans>Terms</Trans>
         </InlineLinkText>
         <InlineLinkText
           style={[a.text_md]}
           to={BRAND.links.community}
-          label={_(msg`Guidelines`)}>
+          label={l`Guidelines`}>
           <Trans>Guidelines</Trans>
         </InlineLinkText>
         <InlineLinkText
           style={[a.text_md]}
           to={BRAND.links.copyright}
-          label={_(msg`Copyright`)}>
+          label={l`Copyright`}>
           <Trans>Copyright</Trans>
         </InlineLinkText>
         <InlineLinkText
           disableMismatchWarning
           style={[a.text_md]}
           to={BRAND.links.donate}
-          label={_(msg`Donate`)}>
+          label={l`Donate`}>
           <Trans>Donate</Trans>
         </InlineLinkText>
         {hasSession && (
@@ -705,7 +731,7 @@ function ExtraLinks({hasSession}: {hasSession: boolean}) {
             disableMismatchWarning
             style={[a.text_md]}
             to={BRAND.links.feedback}
-            label={_(msg`Send feedback`)}>
+            label={l`Send feedback`}>
             <Trans>Feedback</Trans>
           </InlineLinkText>
         )}
@@ -717,14 +743,14 @@ function ExtraLinks({hasSession}: {hasSession: boolean}) {
     <View style={[a.flex_col, a.gap_md, a.flex_wrap]}>
       <InlineLinkText
         style={[a.text_md]}
-        label={_(msg`Terms of Service`)}
+        label={l`Terms of Service`}
         to={BRAND.links.tos}>
         <Trans>Terms of Service</Trans>
       </InlineLinkText>
       <InlineLinkText
         style={[a.text_md]}
         to={BRAND.links.privacy}
-        label={_(msg`Privacy Policy`)}>
+        label={l`Privacy Policy`}>
         <Trans>Privacy Policy</Trans>
       </InlineLinkText>
     </View>
