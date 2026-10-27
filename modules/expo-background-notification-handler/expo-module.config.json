@@ -1,7 +1,8 @@
 {
   "platforms": ["ios", "android"],
   "ios": {
-    "modules": ["ExpoBackgroundNotificationHandlerModule"]
+    "modules": ["ExpoBackgroundNotificationHandlerModule"],
+    "appDelegateSubscribers": ["MarkReadAppDelegateSubscriber"]
   },
   "android": {
     "modules": ["expo.modules.backgroundnotificationhandler.ExpoBackgroundNotificationHandlerModule"]

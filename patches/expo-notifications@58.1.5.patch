@@ -132,7 +132,7 @@ index 769b5522b9e20caba4b4bebd50a7817759be1eff..e8b52fb4d095e65a897714923c43165f
      builder.setContentText(content.text)
      builder.setSubText(content.subText)
 diff --git a/android/src/main/java/expo/modules/notifications/service/delegates/FirebaseMessagingDelegate.kt b/android/src/main/java/expo/modules/notifications/service/delegates/FirebaseMessagingDelegate.kt
-index eecdae82e99d2997687e3f3e199c94c3aeffbfe0..216891213fb2eac5a9a382b4f075eadccdcfeb5a 100644
+index eecdae82e99d2997687e3f3e199c94c3aeffbfe0..c6620dd8f5424d9a2f5bbd94cee38d253176727a 100644
 --- a/android/src/main/java/expo/modules/notifications/service/delegates/FirebaseMessagingDelegate.kt
 +++ b/android/src/main/java/expo/modules/notifications/service/delegates/FirebaseMessagingDelegate.kt
 @@ -3,6 +3,9 @@ package expo.modules.notifications.service.delegates
@@ -154,7 +154,7 @@ index eecdae82e99d2997687e3f3e199c94c3aeffbfe0..216891213fb2eac5a9a382b4f075eadc
    companion object {
      // Unfortunately we cannot save state between instances of a service other way
      // than by static properties.
-@@ -109,8 +112,19 @@ open class FirebaseMessagingDelegate(protected val context: Context) : FirebaseM
+@@ -109,8 +112,32 @@ open class FirebaseMessagingDelegate(protected val context: Context) : FirebaseM
      DebugLogging.logRemoteMessage("FirebaseMessagingDelegate.onMessageReceived: message", remoteMessage)
      val notification = createNotification(remoteMessage)
      DebugLogging.logNotification("FirebaseMessagingDelegate.onMessageReceived: notification", notification)
@@ -173,6 +173,19 @@ index eecdae82e99d2997687e3f3e199c94c3aeffbfe0..216891213fb2eac5a9a382b4f075eadc
 +
 +  override fun showMessage(remoteMessage: RemoteMessage) {
 +    NotificationsService.receive(context, createNotification(remoteMessage))
++  }
++
++  override fun dismissReadNotifications(recipientDid: String) {
++    // Expo's presentation delegate also removes group summaries left without members.
++    val presentation = ExpoPresentationDelegate(context)
++    val read =
++      presentation
++        .getAllPresentedNotifications()
++        .filter { BackgroundNotificationHandler.isClearedByMarkRead(it.notificationRequest.content.body, recipientDid) }
++        .map { it.notificationRequest.identifier }
++    if (read.isNotEmpty()) {
++      presentation.dismissNotifications(read)
++    }
    }
  
    protected fun createNotification(remoteMessage: RemoteMessage): Notification {

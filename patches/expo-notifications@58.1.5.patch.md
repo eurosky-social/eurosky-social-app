@@ -20,3 +20,11 @@ patch only added the write, which would misalign every field when a scheduled no
 back from SharedPreferences (the only place `NotificationContent` goes through Java serialization;
 the app does not schedule local notifications, so this was latent). `mChannelId` is always null for
 `NotificationContent`; it exists to satisfy `INotificationContent.channelId`.
+
+### "Mark read" sync
+
+`FirebaseMessagingDelegate` also implements `dismissReadNotifications`, which the background
+handler calls for the courier's silent `mark-read-generic` push (an account's notifications were
+read on another device). It dismisses the matching shown notifications through
+`ExpoPresentationDelegate`, so group summaries left without members are removed too, and so the
+dismissals take the same process-wide presentation lock as Expo's own.
