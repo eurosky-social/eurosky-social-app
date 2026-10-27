@@ -33,6 +33,7 @@ import {
   type DutchThreadViewParams,
   dutchThreadViewParams,
   encodeDutchThreadView,
+  languagesForPlaces,
 } from './view'
 
 /**
@@ -118,7 +119,8 @@ export function useDutchThreadsQueries({
   filters: DutchThreadFilter[]
   /**
    * ISO language codes: threads with an article in one, each showing only
-   * those articles and with its lead in one of them as `leadIn`.
+   * those articles and with its lead in one of them as `leadIn`. A filter
+   * narrowed to a country or province adds that country's own languages.
    */
   languages?: string[]
   limit?: number
@@ -126,7 +128,7 @@ export function useDutchThreadsQueries({
 }) {
   const pdsClient = useMaybePdsClient()
   const views = filters.map(filter => ({
-    languages,
+    languages: languagesForPlaces(languages, filter),
     countries: filter.countries,
     outlets: filter.outlets,
     boost: filter.boost,
