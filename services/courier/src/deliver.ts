@@ -5,7 +5,14 @@ import {type ApnsRequest} from './apns.ts'
 import {type FcmRequest} from './fcm.ts'
 import {type Notification} from './gen/courier_pb.js'
 import {type Metrics} from './metrics.ts'
-import {apnsPayload, type Copy, displayCopy, fcmData} from './payload.ts'
+import {
+  apnsPayload,
+  apnsSilentPayload,
+  type Copy,
+  displayCopy,
+  fcmData,
+  fcmSilentData,
+} from './payload.ts'
 import {type Device, type SendResult, type TokenStore} from './types.ts'
 
 export type Senders = {
@@ -62,36 +69,37 @@ export class Deliverer {
 
   async deliver({device, notification}: Send): Promise<void> {
     const platform = device.platform
+    const kind = notification.clientControlled ? 'silent' : 'alert'
     const createdAt = notification.timestamp
       ? timestampDate(notification.timestamp).getTime()
       : Date.now()
     const expiration = Math.floor(createdAt / 1000) + this.ttlSeconds
     // Drops stale ones, e.g. from a long AppView retry or indexer backfill.
     if (expiration <= Date.now() / 1000) {
-      this.metrics.deliveries.inc({platform, outcome: 'expired'})
+      this.metrics.deliveries.inc({platform, kind, outcome: 'expired'})
       return
     }
 
     const send = this.sendFor(device, notification, expiration)
     if (!send) {
-      this.metrics.deliveries.inc({platform, outcome: 'unconfigured'})
+      this.metrics.deliveries.inc({platform, kind, outcome: 'unconfigured'})
       return
     }
 
     for (let attempt = 0; ; attempt++) {
       const result = await send()
       if (result.ok) {
-        this.metrics.deliveries.inc({platform, outcome: 'sent'})
+        this.metrics.deliveries.inc({platform, kind, outcome: 'sent'})
         return
       }
       if (result.invalidToken) {
-        this.metrics.deliveries.inc({platform, outcome: 'invalid_token'})
+        this.metrics.deliveries.inc({platform, kind, outcome: 'invalid_token'})
         await this.prune(device, result.reason, result.invalidSince)
         return
       }
       const delay = this.retryDelaysMs[attempt]
       if (!result.retryable || delay === undefined) {
-        this.metrics.deliveries.inc({platform, outcome: 'failed'})
+        this.metrics.deliveries.inc({platform, kind, outcome: 'failed'})
         this.logger.warn(
           {
             platform,
@@ -113,22 +121,37 @@ export class Deliverer {
     notification: Notification,
     expiration: number,
   ): (() => Promise<SendResult>) | undefined {
-    const copy = displayCopy(notification, device.ageRestricted, this.generic)
     const {apns, fcm} = this.senders
+    const silent = notification.clientControlled
+    const copy = displayCopy(notification, device.ageRestricted, this.generic)
     if (device.platform === 'ios' && apns) {
-      const payload = apnsPayload(notification, copy)
+      const payload = silent
+        ? apnsSilentPayload(notification)
+        : apnsPayload(notification, copy)
       return () =>
         apns.send({
           token: device.token,
           topic: device.appId,
+          pushType: silent ? 'background' : 'alert',
           expiration,
           payload,
         })
     }
     if (device.platform === 'android' && fcm) {
-      const data = fcmData(notification, copy)
+      const data = silent
+        ? fcmSilentData(notification)
+        : fcmData(notification, copy)
       const ttlSeconds = Math.max(1, expiration - Math.floor(Date.now() / 1000))
-      return () => fcm.send({token: device.token, data, ttlSeconds})
+      return () =>
+        fcm.send({
+          token: device.token,
+          data,
+          priority: silent ? 'NORMAL' : 'HIGH',
+          collapseKey: silent
+            ? notification.collapseKey || undefined
+            : undefined,
+          ttlSeconds,
+        })
     }
     return undefined
   }

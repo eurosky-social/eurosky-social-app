@@ -26,6 +26,11 @@ const DEAD_TOKEN_REASONS = new Set([
 export type ApnsRequest = {
   token: string
   /**
+   * `background` wakes the app without showing anything; Apple requires
+   * priority 5 for it.
+   */
+  pushType: 'alert' | 'background'
+  /**
    * The app's bundle identifier.
    */
   topic: string
@@ -39,8 +44,8 @@ export type ApnsRequest = {
 type RawResponse = {status: number; reason: string; timestamp?: number}
 
 /**
- * Sends alert pushes over one long-lived HTTP/2 connection, reconnecting on
- * the next send after Apple closes it.
+ * Sends pushes over one long-lived HTTP/2 connection, reconnecting on the
+ * next send after Apple closes it.
  */
 export class ApnsClient {
   private origin: string
@@ -123,8 +128,8 @@ export class ApnsClient {
           ':path': `/3/device/${request.token}`,
           authorization: `bearer ${jwt}`,
           'apns-topic': request.topic,
-          'apns-push-type': 'alert',
-          'apns-priority': '10',
+          'apns-push-type': request.pushType,
+          'apns-priority': request.pushType === 'background' ? '5' : '10',
           'apns-expiration': String(request.expiration),
           'content-type': 'application/json',
         })

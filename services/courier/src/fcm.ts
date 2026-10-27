@@ -19,6 +19,14 @@ export type FcmRequest = {
    * FCM data values must all be strings.
    */
   data: Record<string, string>
+  /**
+   * `HIGH` wakes a dozing device for something the user should see now.
+   */
+  priority: 'HIGH' | 'NORMAL'
+  /**
+   * While the device is offline, Google keeps only the newest message per key.
+   */
+  collapseKey?: string
   ttlSeconds: number
 }
 
@@ -151,7 +159,11 @@ export class FcmClient {
             message: {
               token: request.token,
               data: request.data,
-              android: {priority: 'HIGH', ttl: `${request.ttlSeconds}s`},
+              android: {
+                priority: request.priority,
+                ttl: `${request.ttlSeconds}s`,
+                ...(request.collapseKey && {collapse_key: request.collapseKey}),
+              },
             },
           }),
           signal: AbortSignal.timeout(this.timeoutMs),

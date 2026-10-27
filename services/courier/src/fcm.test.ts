@@ -77,6 +77,7 @@ function request(overrides: Partial<FcmRequest> = {}): FcmRequest {
   return {
     token: ANDROID_TOKEN,
     data: {title: 't', message: 'm', reason: 'like', body: '{}'},
+    priority: 'HIGH',
     ttlSeconds: 3600,
     ...overrides,
   }
@@ -152,6 +153,21 @@ describe('FcmClient', () => {
         data: request().data,
         android: {priority: 'HIGH', ttl: '3600s'},
       },
+    })
+  })
+
+  it('sends a silent message at normal priority with its collapse key', async () => {
+    await client.send(
+      request({
+        data: {reason: 'mark-read-generic', body: '{}'},
+        priority: 'NORMAL',
+        collapseKey: 'mark-read-generic',
+      }),
+    )
+    assert.deepEqual(google.state.sends[0]?.body.message.android, {
+      priority: 'NORMAL',
+      ttl: '3600s',
+      collapse_key: 'mark-read-generic',
     })
   })
 

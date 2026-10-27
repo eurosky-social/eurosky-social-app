@@ -21,8 +21,8 @@ export function createMetrics({defaultMetrics}: {defaultMetrics: boolean}) {
     }),
     deliveries: new Counter({
       name: 'courier_deliveries_total',
-      help: 'Sends to individual devices, by platform and result',
-      labelNames: ['platform', 'outcome'] as const,
+      help: 'Sends to individual devices, by platform, kind (alert or silent) and result',
+      labelNames: ['platform', 'kind', 'outcome'] as const,
       registers,
     }),
     registrations: new Counter({

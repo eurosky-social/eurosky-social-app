@@ -58,8 +58,12 @@ Behaviour worth knowing:
   registers) get `COURIER_GENERIC_TITLE` / `COURIER_GENERIC_MESSAGE` instead of
   names and post text. Tapping still opens the right screen.
 - **Client-controlled pushes** (the AppView's "mark read" sync after
-  `updateSeen`) are skipped: they carry no text, mu has no handler for them,
-  and Android would show them as blank notifications.
+  `updateSeen`) go out silently, with `recipientDid` added: an APNs
+  background push (`content-available`, priority 5) and an FCM data message
+  without `title`/`message` at normal priority, collapsed by its key while the
+  device is offline. The app clears that account's notifications and the
+  badge. iOS delivers background pushes best-effort: not to a force-quit app,
+  and throttled when frequent.
 - **Retries from the AppView** reuse notification ids; ids seen in the last
   day are not pushed again.
 - **Stale notifications** older than `COURIER_TTL_SECONDS` are dropped, so a

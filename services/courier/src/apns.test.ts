@@ -45,6 +45,7 @@ function request(overrides: Partial<ApnsRequest> = {}): ApnsRequest {
   return {
     token: IOS_TOKEN,
     topic: 'social.mu.app',
+    pushType: 'alert',
     expiration: 1_900_000_000,
     payload: {aps: {alert: {title: 't', body: 'b'}}, reason: 'like'},
     ...overrides,
@@ -119,6 +120,18 @@ describe('ApnsClient', () => {
     assert.deepEqual(header, {alg: 'ES256', kid: 'KEY123'})
     assert.equal(claims.iss, 'TEAM456')
     assert.ok(Math.abs(claims.iat - Date.now() / 1000) < 5)
+  })
+
+  it('sends a background push at the priority Apple requires', async () => {
+    await client.send(
+      request({
+        pushType: 'background',
+        payload: {aps: {'content-available': 1}},
+      }),
+    )
+    const [sent] = apple.received
+    assert.equal(sent?.headers['apns-push-type'], 'background')
+    assert.equal(sent?.headers['apns-priority'], '5')
   })
 
   it('reuses the provider token and the connection', async () => {

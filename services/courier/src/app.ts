@@ -186,14 +186,7 @@ export class Courier {
         const batchIds = new Set<string>()
         for (const notification of req.notifications) {
           const {id} = notification
-          if (notification.clientControlled) {
-            /*
-             * Client-controlled pushes (the AppView's "mark read" sync) carry
-             * no text. mu has no handler for them, and Android would show
-             * them as blank notifications.
-             */
-            metrics.notifications.inc({outcome: 'client_controlled'})
-          } else if (id && (batchIds.has(id) || this.recentIds.has(id))) {
+          if (id && (batchIds.has(id) || this.recentIds.has(id))) {
             metrics.notifications.inc({outcome: 'duplicate'})
           } else if (DID.test(notification.recipientDid)) {
             if (id) batchIds.add(id)

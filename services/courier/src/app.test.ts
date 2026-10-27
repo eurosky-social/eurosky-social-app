@@ -195,6 +195,7 @@ describe('pushNotifications', () => {
     const [apns] = senders.apnsRequests
     assert.equal(apns?.token, IOS_TOKEN)
     assert.equal(apns?.topic, 'social.mu.app')
+    assert.equal(apns?.pushType, 'alert')
     assert.deepEqual(apns?.payload.aps, {
       alert: {title: 'Alice', body: 'replied: nice photo'},
       'mutable-content': 1,
@@ -204,6 +205,7 @@ describe('pushNotifications', () => {
 
     const [fcm] = senders.fcmRequests
     assert.equal(fcm?.token, ANDROID_TOKEN)
+    assert.equal(fcm?.priority, 'HIGH')
     assert.equal(fcm?.data.reason, 'reply')
     assert.deepEqual(JSON.parse(fcm!.data.body!), notification.additional)
   })
@@ -242,9 +244,10 @@ describe('pushNotifications', () => {
     assert.equal(senders.apnsRequests.length, 1)
   })
 
-  it('skips client-controlled pushes', async () => {
+  it('sends the "mark read" sync silently to every device', async () => {
     const senders = new FakeSenders()
     const {client} = await start({senders})
+    await client.registerDeviceToken(registration())
     await client.registerDeviceToken(
       registration({token: ANDROID_TOKEN, platform: AppPlatform.ANDROID}),
     )
@@ -255,12 +258,23 @@ describe('pushNotifications', () => {
           clientControlled: true,
           title: '',
           message: '',
+          collapseKey: 'mark-read-generic',
           additional: {reason: 'mark-read-generic'},
         }),
       ],
     })
-    await new Promise(resolve => setTimeout(resolve, 20))
-    assert.equal(senders.fcmRequests.length, 0)
+    await eventually(
+      () =>
+        senders.apnsRequests.length === 1 && senders.fcmRequests.length === 1,
+    )
+    const [apns] = senders.apnsRequests
+    assert.equal(apns?.pushType, 'background')
+    assert.deepEqual(apns?.payload.aps, {'content-available': 1})
+    assert.equal(apns?.payload.recipientDid, 'did:plc:recipient')
+    const [fcm] = senders.fcmRequests
+    assert.equal(fcm?.priority, 'NORMAL')
+    assert.equal(fcm?.collapseKey, 'mark-read-generic')
+    assert.equal(fcm?.data.title, undefined)
   })
 
   it('shows generic text to age-restricted accounts until lifted', async () => {

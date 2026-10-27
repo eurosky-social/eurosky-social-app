@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict'
 import {describe, it} from 'node:test'
 
-import {apnsPayload, displayCopy, fcmData} from './payload.ts'
+import {
+  apnsPayload,
+  apnsSilentPayload,
+  displayCopy,
+  fcmData,
+  fcmSilentData,
+} from './payload.ts'
 import {bridgeNotification} from './testing.ts'
 
 const generic = {title: 'mu', message: 'You have a new notification'}
@@ -90,5 +96,39 @@ describe('fcmData', () => {
     for (const value of Object.values(data)) {
       assert.equal(typeof value, 'string')
     }
+  })
+})
+
+/**
+ * What the AppView sends from updateSeen: no text, only a reason.
+ */
+const markRead = bridgeNotification({
+  id: 'seen',
+  clientControlled: true,
+  title: '',
+  message: '',
+  collapseKey: 'mark-read-generic',
+  additional: {reason: 'mark-read-generic'},
+})
+
+describe('silent payloads', () => {
+  it('wake the iOS app without showing anything', () => {
+    assert.deepEqual(apnsSilentPayload(markRead), {
+      aps: {'content-available': 1},
+      reason: 'mark-read-generic',
+      recipientDid: 'did:plc:recipient',
+    })
+  })
+
+  it('give Android nothing to show but tell it the account', () => {
+    const data = fcmSilentData(markRead)
+    assert.equal(data.title, undefined)
+    assert.equal(data.message, undefined)
+    assert.equal(data.reason, 'mark-read-generic')
+    assert.equal(data.recipientDid, 'did:plc:recipient')
+    assert.deepEqual(JSON.parse(data.body!), {
+      reason: 'mark-read-generic',
+      recipientDid: 'did:plc:recipient',
+    })
   })
 })

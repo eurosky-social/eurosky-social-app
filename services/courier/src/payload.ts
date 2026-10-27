@@ -54,3 +54,38 @@ export function fcmData(
   if (typeof additional.reason === 'string') data.reason = additional.reason
   return data
 }
+
+/**
+ * The AppView's fields plus the recipient. Client-controlled pushes (the
+ * "mark read" sync) carry only a reason, but the app needs to know which
+ * account they are for.
+ */
+function silentFields(notification: Notification): Record<string, unknown> {
+  return {recipientDid: notification.recipientDid, ...notification.additional}
+}
+
+/**
+ * A background push: no alert, sound or badge, so iOS wakes the app instead
+ * of showing anything, and the app decides what to do.
+ */
+export function apnsSilentPayload(
+  notification: Notification,
+): Record<string, unknown> {
+  return {...silentFields(notification), aps: {'content-available': 1}}
+}
+
+/**
+ * A data message without `title` or `message`, which the Android app never
+ * shows.
+ */
+export function fcmSilentData(
+  notification: Notification,
+): Record<string, string> {
+  const fields = silentFields(notification)
+  const data: Record<string, string> = {
+    recipientDid: notification.recipientDid,
+    body: JSON.stringify(fields),
+  }
+  if (typeof fields.reason === 'string') data.reason = fields.reason
+  return data
+}
