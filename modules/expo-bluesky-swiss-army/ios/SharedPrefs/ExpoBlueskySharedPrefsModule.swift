@@ -2,7 +2,7 @@ import Foundation
 import ExpoModulesCore
 
 public class ExpoBlueskySharedPrefsModule: Module {
-  let defaults = UserDefaults(suiteName: "group.social.eurosky.app")
+  let defaults = UserDefaults(suiteName: "group.social.mu.app")
 
   func getDefaults(_ info: String = "(no info)") -> UserDefaults? {
     guard let defaults = self.defaults else {
