@@ -3,39 +3,38 @@ import {Platform} from 'react-native'
 import * as Notifications from 'expo-notifications'
 import {getBadgeCountAsync, setBadgeCountAsync} from 'expo-notifications'
 import {type Client} from '@atproto/lex'
-import {type DidString} from '@atproto/syntax'
 import BackgroundNotificationHandler from '@bsky.app/expo-background-notification-handler'
 import debounce from 'lodash.debounce'
 
 import {
-  NOTIF_SERVICE,
-  PUBLIC_APPVIEW_DID,
-  PUBLIC_STAGING_APPVIEW_DID,
-} from '#/lib/constants'
+  registerPushWithAppView,
+  unregisterPushForAccount,
+} from '#/lib/notifications/pushAppView'
 import {logger as notyLogger} from '#/lib/notifications/util'
 import {isNetworkError} from '#/lib/strings/errors'
 import {type SessionAccount, usePdsClient, useSession} from '#/state/session'
 import {useAgeAssurance} from '#/ageAssurance'
 import {useAnalytics} from '#/analytics'
 import {IS_DEV, IS_NATIVE} from '#/env'
-import {app} from '#/lexicons'
 
 /**
- * A resumed single-use account client paired with the account's service origin
- * and handle. Produced by `createTemporaryClientsAndResume` (session util) and
- * consumed by {@link unregisterPushToken}, which needs the service host to pick
- * the appview DID and the handle for a debug log line without reaching into the
- * session internals.
+ * A resumed single-use account client paired with the account's DID, service
+ * origin and handle. Produced by `createTemporaryClientsAndResume` (session
+ * util) and consumed by {@link unregisterPushToken}, which needs the DID and
+ * service host to find the AppView the token was registered with, and the
+ * handle for a debug log line, without reaching into the session internals.
  */
 export type TemporaryPushClient = {
   client: Client
+  did: string
   service: string
   handle: string
 }
 
 /**
  * @private
- * Registers the device's push notification token with the Bluesky server.
+ * Registers the device's push notification token with the account's AppView
+ * (see `registerPushWithAppView`).
  */
 async function _registerPushToken({
   client,
@@ -51,20 +50,16 @@ async function _registerPushToken({
   }
 }) {
   try {
-    const payload: app.bsky.notification.registerPush.$InputBody = {
-      serviceDid: (currentAccount.service?.includes('staging')
-        ? PUBLIC_STAGING_APPVIEW_DID
-        : PUBLIC_APPVIEW_DID) as DidString,
+    notyLogger.debug(`registerPushToken: registering`, {
       platform: Platform.OS,
       token: token.data,
-      appId: 'social.mu.app',
+    })
+
+    await registerPushWithAppView({
+      client,
+      account: currentAccount,
+      token: token.data,
       ageRestricted: extra.ageRestricted ?? false,
-    }
-
-    notyLogger.debug(`registerPushToken: registering`, {...payload})
-
-    await client.call(app.bsky.notification.registerPush, payload, {
-      service: NOTIF_SERVICE,
     })
 
     notyLogger.debug(`registerPushToken: success`)
@@ -351,21 +346,12 @@ export async function unregisterPushToken(clients: TemporaryPushClient[]) {
   try {
     const token = await getPushToken()
     if (token) {
-      for (const {client, service, handle} of clients) {
-        await client.call(
-          app.bsky.notification.unregisterPush,
-          {
-            serviceDid: (service.includes('staging')
-              ? PUBLIC_STAGING_APPVIEW_DID
-              : PUBLIC_APPVIEW_DID) as DidString,
-            platform: Platform.OS,
-            token: token.data,
-            appId: 'social.mu.app',
-          },
-          {
-            service: NOTIF_SERVICE,
-          },
-        )
+      for (const {client, did, service, handle} of clients) {
+        await unregisterPushForAccount({
+          client,
+          account: {did, service},
+          token: token.data,
+        })
         notyLogger.debug(`Push token unregistered for ${handle}`)
       }
     } else {
