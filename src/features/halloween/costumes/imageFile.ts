@@ -1,17 +1,19 @@
-import * as FileSystem from 'expo-file-system/legacy'
-import {toBase64} from '@atproto/lex'
+import {File, Paths} from 'expo-file-system'
 import {nanoid} from 'nanoid/non-secure'
 
 /** Retain until the collection prompt closes or the composer takes ownership. */
 export async function createCostumeImageFile(bytes: Uint8Array) {
-  const uri = `${FileSystem.cacheDirectory}costume-${nanoid()}.png`
-  await FileSystem.writeAsStringAsync(uri, toBase64(bytes), {
-    encoding: FileSystem.EncodingType.Base64,
-  })
-  return {
-    uri,
-    dispose: () => {
-      void FileSystem.deleteAsync(uri, {idempotent: true})
-    },
+  /* Use the current scoped filesystem API, not legacy iOS path permissions. */
+  const file = new File(Paths.cache, `costume-${nanoid()}.png`)
+  const dispose = () => {
+    if (file.exists) file.delete()
   }
+  file.create({intermediates: true})
+  try {
+    await file.write(bytes)
+  } catch (error) {
+    dispose()
+    throw error
+  }
+  return {uri: file.uri, dispose}
 }
