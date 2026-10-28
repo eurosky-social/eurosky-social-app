@@ -1,5 +1,11 @@
+import {type Service} from '@atproto/lex'
 import {type DidString, isValidDid} from '@atproto/syntax'
 
+import {
+  BLUESKY_APPVIEW,
+  BLUESKY_APPVIEW_DID,
+  DEV_ENV_APPVIEW,
+} from '#/lib/constants'
 import {BRAND} from '#/config/brand'
 import {BLUESKY_PROXY_DID} from '#/env'
 import {device} from '#/storage'
@@ -193,6 +199,28 @@ export function getPublicAppViewUrl(defaultUrl: string): string {
 /** Resolve the AppView DID for flows that authenticate directly to it. */
 export function getAppViewDid(defaultDid: string): DidString {
   return (readAppViewOverride()?.did ?? defaultDid) as DidString
+}
+
+/**
+ * Resolve the AppView for KWS age assurance. Unlike the helpers above, this
+ * ignores the AppView preference: KWS results only exist on Bluesky's AppView,
+ * and only it implements `app.bsky.ageassurance.begin`, so other AppViews (e.g.
+ * Eurosky) would report verified users as unverified and fail to start KWS. A
+ * local dev env (BLUESKY_PROXY_DID overridden) keeps targeting the local
+ * AppView.
+ */
+export function getAgeAssuranceAppView(): {
+  url: string
+  did: DidString
+  service: Service
+} {
+  const isDevEnv = BLUESKY_PROXY_DID !== BRAND.services.appViewDid
+  const did = isDevEnv ? BLUESKY_PROXY_DID : BLUESKY_APPVIEW_DID
+  return {
+    url: isDevEnv ? DEV_ENV_APPVIEW : BLUESKY_APPVIEW,
+    did,
+    service: `${did}#bsky_appview`,
+  }
 }
 
 export function getAppViewOptionId(

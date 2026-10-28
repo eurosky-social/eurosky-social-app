@@ -4,6 +4,7 @@ import {BRAND} from '#/config/brand'
 import {device} from '#/storage'
 import {
   appViewUrlToDid,
+  getAgeAssuranceAppView,
   getAppViewDid,
   getAppViewProxyService,
   getConfiguredAppView,
@@ -98,5 +99,18 @@ describe('AppView configuration', () => {
     expect(getPublicAppViewUrl('https://public.default')).toBe(
       'https://api.example.com',
     )
+  })
+
+  it('keeps KWS age assurance on Bluesky when another AppView is selected', () => {
+    device.set(['appViewOverride'], {
+      url: 'https://api.eurosky.network',
+      did: 'did:web:api.eurosky.network',
+    })
+
+    expect(getAgeAssuranceAppView()).toEqual({
+      url: 'https://api.bsky.app',
+      did: 'did:web:api.bsky.app',
+      service: 'did:web:api.bsky.app#bsky_appview',
+    })
   })
 })
