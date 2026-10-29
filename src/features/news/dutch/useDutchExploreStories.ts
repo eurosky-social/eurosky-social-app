@@ -9,6 +9,7 @@ import {
   useDutchThemesQuery,
   useDutchThreadsQueries,
 } from './queries'
+import {type DutchThreadSort} from './types'
 
 /**
  * The labeler's threads in the shape the spread renders, alongside the
@@ -28,6 +29,7 @@ export function useDutchExploreStories({
   scope,
   filters,
   languages,
+  sort,
   enabled = true,
 }: {
   scope?: string
@@ -41,6 +43,8 @@ export function useDutchExploreStories({
    * only those articles shown.
    */
   languages?: string[]
+  /** How the service ranks each read; its own `burst` by default. */
+  sort?: DutchThreadSort
   enabled?: boolean
 }): {
   stories: DutchExploreStory[]
@@ -54,7 +58,7 @@ export function useDutchExploreStories({
     views,
     isLoading: storiesLoading,
     error,
-  } = useDutchThreadsQueries({scope, filters, languages, enabled})
+  } = useDutchThreadsQueries({scope, filters, languages, sort, enabled})
   /* The sections are every theme: a page of several reads spans them all. */
   const {themes, isLoading: themesLoading} = useDutchThemesQuery({
     scope,

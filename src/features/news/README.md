@@ -34,6 +34,10 @@ and by whom".
 - The lead is the story the most outlets are running (ties by recency), and
   it is the only story whose Atmosphere pull is looked up - one search, rather
   than one per article on the page.
+- A sort picker in the filter bar switches between **Top** (the order above,
+  or the labeler's `burst` ranking) and **Latest** (newest lead first, and
+  from the labeler its `latest` threads). See `explore/sort.ts`. Latest skips
+  the settings boost below, and like the location it is not saved.
 
 The page opens straight on the news, laid out as a broadsheet rather than a
 grid of cards: a filter bar - the location picker (see "Locations") followed

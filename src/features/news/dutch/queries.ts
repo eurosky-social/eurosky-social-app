@@ -102,15 +102,16 @@ export type DutchThreadFilter = {
  * neither clusters nor searches for posts itself. One read per filter, run
  * side by side; the results come back in the filters' order.
  *
- * Sorted by `burst`, the service's own ranking of what is news now, which
- * favours the last day's news. A country view too: `here` (most of the
- * country's outlets first) has no sense of age, so a big story of last week
- * led it.
+ * Sorted by `burst` by default, the service's own ranking of what is news
+ * now, which favours the last day's news. A country view too: `here` (most of
+ * the country's outlets first) has no sense of age, so a big story of last
+ * week led it.
  */
 export function useDutchThreadsQueries({
   scope = DUTCH_WORLD_SCOPE,
   filters,
   languages,
+  sort = 'burst',
   limit = THREADS_LIMIT,
   enabled = true,
 }: {
@@ -123,6 +124,8 @@ export function useDutchThreadsQueries({
    * narrowed to a country or province adds that country's own languages.
    */
   languages?: string[]
+  /** `burst` for what is news now, `latest` for the newest threads. */
+  sort?: DutchThreadSort
   limit?: number
   enabled?: boolean
 }) {
@@ -142,7 +145,7 @@ export function useDutchThreadsQueries({
         theme: filter.theme,
         category: filter.category,
         ...viewParams,
-        sort: 'burst' as DutchThreadSort,
+        sort,
         limit,
       }
       return {

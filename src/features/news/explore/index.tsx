@@ -52,10 +52,12 @@ import {
 import {ExploreSectionChips} from './components/ExploreSectionChips'
 import {ExploreSectionFront} from './components/ExploreSectionFront'
 import {ExploreSkeleton} from './components/ExploreSkeleton'
+import {ExploreSortPicker} from './components/ExploreSortPicker'
 import {BandRule, ColumnRule} from './components/Rules'
 import {filtersForInterest, SUB_LOCATIONS} from './interests'
 import {pickerRegions, sourceForRegion, WORLD_REGION} from './locations'
 import {type ExploreSection} from './sections'
+import {type ExploreSort} from './sort'
 import {useExploreSource} from './useExploreSource'
 
 /** Above this spread width a band of departments runs three across, not two. */
@@ -126,6 +128,7 @@ export function NewsExploreScreen(
    */
   const regions = pickerRegions(prefs?.regions ?? [])
   const [regionId, setRegionId] = useState(WORLD_REGION)
+  const [sort, setSort] = useState<ExploreSort>('top')
   const location = regions.some(region => region.id === regionId)
     ? regionId
     : WORLD_REGION
@@ -143,6 +146,7 @@ export function NewsExploreScreen(
         }
       : (sourceForRegion(location) ?? {source: 'rss' as const})),
     languages: contentLanguages,
+    sort,
   })
   const {sections, isError} = source
   const isLoading =
@@ -151,9 +155,10 @@ export function NewsExploreScreen(
    * With no interests, the news feed's topics, regions and accounts move
    * matching stories up the page rather than filtering the rest out. An
    * interest filters and boosts on the service, so it is left in its order.
+   * Latest is newest first whatever the reader follows, so it is not boosted.
    */
   const stories =
-    interests.length > 0
+    interests.length > 0 || sort === 'latest'
       ? source.stories
       : boostStories(source.stories, interestsFromPrefs(prefs))
   const profiles = useFrontpageProfilesQuery()
@@ -200,6 +205,11 @@ export function NewsExploreScreen(
 
   function onSelectSubLocation(next: string | undefined) {
     setSubLocationId(next)
+    scrollToTop()
+  }
+
+  function onSelectSort(next: ExploreSort) {
+    setSort(next)
     scrollToTop()
   }
 
@@ -272,8 +282,8 @@ export function NewsExploreScreen(
                 selectedId={focused?.section.id}
                 onSelect={onSelectSection}
                 leading={
-                  interest ? (
-                    <>
+                  <>
+                    {interest ? (
                       <PickerGroup>
                         <ExploreInterestPicker
                           interests={interests}
@@ -293,21 +303,22 @@ export function NewsExploreScreen(
                           </Fragment>
                         ))}
                       </PickerGroup>
-                      <LocationPickerRule />
-                    </>
-                  ) : (
-                    /* Without the labeler the world is all there is. */
-                    regions.length > 1 && (
-                      <>
+                    ) : (
+                      /* Without the labeler the world is all there is. */
+                      regions.length > 1 && (
                         <ExploreLocationPicker
                           regions={regions}
                           selected={location}
                           onSelect={onSelectLocation}
                         />
-                        <LocationPickerRule />
-                      </>
-                    )
-                  )
+                      )
+                    )}
+                    <ExploreSortPicker
+                      selected={sort}
+                      onSelect={onSelectSort}
+                    />
+                    <LocationPickerRule />
+                  </>
                 }
               />
             </View>
