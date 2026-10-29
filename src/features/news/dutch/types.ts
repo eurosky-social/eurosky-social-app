@@ -197,6 +197,17 @@ export interface DutchOutletsResponse {
   outlets: DutchOutletListing[]
 }
 
+/**
+ * `/api/outlets/{ref}`: one outlet, by slug or DID. Without the article count,
+ * and without `themes`, which only the list tallies.
+ */
+export interface DutchOutletResponse {
+  outlet: DutchOutletDetail
+}
+
+/** An outlet as `/api/outlets/{ref}` answers it, or as the list does. */
+export type DutchOutletDetail = Omit<DutchOutletListing, 'articles'>
+
 /** One of an outlet's own articles, with the story it is in, if any yet. */
 export interface DutchOutletArticle extends DutchArticle {
   /** The thread of the scope's active fit it is in; null until it is placed. */

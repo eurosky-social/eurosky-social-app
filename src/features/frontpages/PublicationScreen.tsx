@@ -21,6 +21,7 @@ import {
 } from '#/features/news/explore/components/ExploreColumn'
 import {getPublisherName} from '#/features/news/publishers'
 import {EditorialFrontpage} from './editorial'
+import {EditorialFrontpageSkeleton} from './editorial/Skeleton'
 import {type Frontpage} from './frontpages'
 import {findPublicationPreview} from './preview'
 
@@ -42,11 +43,7 @@ export function PublicationScreen({
   const opts = useModerationOpts()
   const query = useProfileQuery({did: publication.did})
   if (publication.did && (query.isLoading || !opts))
-    return (
-      <PublicationStatus name={publication.name}>
-        <Loader size="xl" />
-      </PublicationStatus>
-    )
+    return <PublicationLoading name={publication.name} view={view} />
   if (publication.did && !query.data)
     return (
       <PublicationStatus name={publication.name}>
@@ -198,6 +195,36 @@ export function PublicationConversation({
       renderEmptyState={empty}
       ListHeaderComponent={inline ? <>{inline}</> : undefined}
     />
+  )
+}
+
+/**
+ * A publication still resolving. The spread is sketched in place, so the page
+ * keeps its width and shape; the conversation is a feed, so it keeps a spinner.
+ */
+export function PublicationLoading({
+  name,
+  view,
+}: {
+  name?: string
+  view?: 'conversation'
+}) {
+  if (view === 'conversation')
+    return (
+      <PublicationStatus name={name}>
+        <Loader size="xl" />
+      </PublicationStatus>
+    )
+  return (
+    <Layout.Screen testID="publicationLoading" noCenterBorders>
+      {IS_WEB ? (
+        <EditorialFrontpageSkeleton />
+      ) : (
+        <Layout.Content>
+          <EditorialFrontpageSkeleton />
+        </Layout.Content>
+      )}
+    </Layout.Screen>
   )
 }
 

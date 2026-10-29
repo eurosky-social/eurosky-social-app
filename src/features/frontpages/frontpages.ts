@@ -1,4 +1,9 @@
-import {type AtIdentifierString} from '@atproto/syntax'
+import {XrpcResponseError} from '@atproto/lex'
+import {
+  type AtIdentifierString,
+  isValidDid,
+  isValidHandle,
+} from '@atproto/syntax'
 import {useQueries, useQuery} from '@tanstack/react-query'
 import chunk from 'lodash.chunk'
 
@@ -7,18 +12,26 @@ import {profilesQueryKey, useProfileQuery} from '#/state/queries/profile'
 import {createQueryKey} from '#/state/queries/util'
 import {useAppviewClient} from '#/state/session'
 import {resolveDidAndPds} from '#/state/session/resolve-pds'
-import {useDutchOutletsQuery} from '#/features/news/dutch/queries'
-import {type DutchOutletListing} from '#/features/news/dutch/types'
+import {
+  useDutchOutletQuery,
+  useDutchOutletsQuery,
+} from '#/features/news/dutch/queries'
+import {type DutchOutletDetail} from '#/features/news/dutch/types'
 import {PUBLISHERS} from '#/features/news/publishers'
 import {app} from '#/lexicons'
+import {findPublicationPreview} from './preview'
 
 /**
  * A frontpage: one of the news aggregator's outlets, as its page and every link
- * to it see it. The aggregator's outlet list is the list of frontpages, so a
- * frontpage exists for every outlet it reads and for nothing else.
+ * to it see it, or an account opened by its DID or handle. The aggregator's
+ * outlet list is what links into frontpages: directory, chips, profile
+ * shortcuts.
  */
 export interface Frontpage {
-  /** The aggregator's slug: what the page is addressed by. */
+  /**
+   * What the page is addressed by: the aggregator's slug, or the DID or handle
+   * of a page opened by its account (see `useFrontpage`).
+   */
   slug: string
   /** Its Bluesky account, where it has one: profile, follow, conversation. */
   did?: string
@@ -71,7 +84,7 @@ const EXTRAS = new Map(
   ]),
 )
 
-export function frontpageFromOutlet(outlet: DutchOutletListing): Frontpage {
+export function frontpageFromOutlet(outlet: DutchOutletDetail): Frontpage {
   const extras = outlet.did ? EXTRAS.get(outlet.did) : undefined
   const reporterDids = [
     ...new Set([
@@ -88,6 +101,86 @@ export function frontpageFromOutlet(outlet: DutchOutletListing): Frontpage {
     themes: outlet.themes ?? {},
     accent: extras?.accent,
     reporterDids,
+  }
+}
+
+/**
+ * The frontpage an account runs, from its profile alone. Its brand extras
+ * still come from `publishers.ts`; the aggregator's domains, themes and filed
+ * reporters are not known without it.
+ */
+export function frontpageFromProfile(
+  profile: {did: string; handle: string; displayName?: string},
+  address: string,
+): Frontpage {
+  const extras = EXTRAS.get(profile.did)
+  return {
+    slug: address,
+    did: profile.did,
+    name: profile.displayName || profile.handle,
+    country: null,
+    domains: [],
+    themes: {},
+    accent: extras?.accent,
+    reporterDids: (extras?.reporterDids ?? []).filter(
+      did => did !== profile.did,
+    ),
+  }
+}
+
+/**
+ * Whether a page address names an account - its DID or handle - rather than
+ * an aggregator slug. Slugs are kebab-case, never valid handles: those need a
+ * dot.
+ */
+export function isAccountAddress(ref: string): boolean {
+  return isValidDid(ref) || isValidHandle(ref)
+}
+
+/**
+ * The frontpage a page address opens. A DID or handle opens its account's
+ * frontpage from the profile alone, without waiting on the aggregator; only a
+ * slug is looked up there, as that one outlet.
+ */
+export function useFrontpage(name: string | undefined): {
+  frontpage: Frontpage | undefined
+  isLoading: boolean
+  isError: boolean
+  refetch: () => Promise<unknown>
+} {
+  const preview = findPublicationPreview(name)
+  const byAccount = !preview && !!name && isAccountAddress(name)
+  const registry = useDutchOutletQuery({
+    ref: name && !preview && !byAccount ? name : undefined,
+  })
+  const account = useProfileQuery({did: byAccount ? name : undefined})
+  if (preview)
+    return {
+      frontpage: preview,
+      isLoading: false,
+      isError: false,
+      refetch: async () => {},
+    }
+  if (byAccount) {
+    /* An account that does not exist has no frontpage; that is no error. */
+    const missing =
+      account.error instanceof XrpcResponseError && account.error.status === 400
+    return {
+      frontpage: account.data
+        ? frontpageFromProfile(account.data, name)
+        : undefined,
+      isLoading: account.isLoading,
+      isError: account.isError && !missing,
+      refetch: account.refetch,
+    }
+  }
+  return {
+    frontpage: registry.outlet
+      ? frontpageFromOutlet(registry.outlet)
+      : undefined,
+    isLoading: registry.isLoading,
+    isError: registry.isError,
+    refetch: registry.refetch,
   }
 }
 

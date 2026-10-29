@@ -261,7 +261,7 @@ export function HeaderStandardButtons({
 
   const isMe = currentAccount?.did === profile.did
 
-  const frontpagePath = useProfileFrontpagePath(profile.did)
+  const frontpagePath = useProfileFrontpagePath(profile)
 
   const onPressFollow = () => {
     haptics.confirm()
