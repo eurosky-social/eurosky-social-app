@@ -47,7 +47,7 @@ movement timers. Opt-out/expiry restores the saved companion. See
 
 ## Public avatar costumes
 
-The own-profile **Draw costume** / **Edit costume** button opens the authenticated
+The own-profile **Costume** button opens the authenticated
 `/halloween/costume` screen during the shared date window, even with the Halloween
 theme disabled. Direct links cannot publish outside the window; an already-open
 studio retains its draft but disables publication at expiry. Saving changes the
