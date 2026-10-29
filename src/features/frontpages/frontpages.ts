@@ -44,16 +44,18 @@ export interface Frontpage {
  * where it is not configured or the reader is signed out: there are no
  * frontpages without it.
  */
-export function useFrontpages(): {
+export function useFrontpages({enabled = true}: {enabled?: boolean} = {}): {
   frontpages: Frontpage[] | undefined
   isLoading: boolean
   isError: boolean
+  refetch: () => Promise<unknown>
 } {
-  const {outlets, isLoading, isError} = useDutchOutletsQuery()
+  const {outlets, isLoading, isError, refetch} = useDutchOutletsQuery({enabled})
   return {
     frontpages: outlets?.map(frontpageFromOutlet),
     isLoading,
     isError,
+    refetch,
   }
 }
 
