@@ -39,6 +39,7 @@ import {NotificationsScreen as LegacyNotificationsScreen} from '#/view/screens/N
 import {PageList} from '#/screens/Notifications/components/PageList'
 import * as Pager from '#/screens/Notifications/components/PagerView'
 import {TabPills} from '#/screens/Notifications/components/TabPills'
+import {NOTIFICATIONS_V2_ENABLED} from '#/screens/Notifications/config'
 import {
   type RefreshReason,
   useReturnToScreen,
@@ -66,9 +67,10 @@ type Props = NativeStackScreenProps<
 
 export function NotificationsScreen(props: Props) {
   const ax = useAnalytics()
-  // Dev and TestFlight builds always get it, so it's dogfooded before rollout
+  // The build-level switch takes precedence over internal and remote rollouts.
   const isNewNotificationsEnabled =
-    IS_INTERNAL || ax.features.enabled(ax.features.NotificationsV2Enable)
+    NOTIFICATIONS_V2_ENABLED &&
+    (IS_INTERNAL || ax.features.enabled(ax.features.NotificationsV2Enable))
 
   if (isNewNotificationsEnabled) {
     return <NewNotificationsScreen {...props} />

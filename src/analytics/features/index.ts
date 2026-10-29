@@ -4,6 +4,7 @@ import {type I18n} from '@lingui/core'
 import {msg} from '@lingui/core/macro'
 
 import {Logger} from '#/logger'
+import {NOTIFICATIONS_V2_ENABLED} from '#/screens/Notifications/config'
 import {readFeatureBootstrap} from '#/analytics/features/bootstrap'
 import {createGrowthBook, refreshGrowthBook} from '#/analytics/features/client'
 import {Features} from '#/analytics/features/types'
@@ -126,6 +127,7 @@ export function getFeatureDescription(feature: Features, i18n: I18n) {
         ),
       }
     case Features.NotificationsV2Enable:
+      if (!NOTIFICATIONS_V2_ENABLED) return null
       return {
         key: feature,
         name: i18n._(
