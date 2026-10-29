@@ -4,6 +4,7 @@ import {useDutchExploreStories} from '../dutch/useDutchExploreStories'
 import {type ExploreSourceId, type ExploreStory} from './cluster'
 import {EXPLORE_SECTION_OTHER, EXPLORE_SECTIONS} from './sections'
 import {type ExploreSection} from './sections'
+import {dutchThreadSort, type ExploreSort, sortStories} from './sort'
 import {useExploreStories} from './useExploreStories'
 
 /** One read of the whole scope. */
@@ -22,6 +23,7 @@ export function useExploreSource({
   scope,
   filters = EVERYTHING,
   languages,
+  sort = 'top',
 }: {
   source: ExploreSourceId
   /** For the Dutch source: which of the labeler's scopes to read. */
@@ -37,6 +39,11 @@ export function useExploreSource({
    * so the RSS source ignores them.
    */
   languages?: string[]
+  /**
+   * The stories' order. For the Dutch source it also picks which threads are
+   * read: `latest` asks the service for its newest rather than its top ones.
+   */
+  sort?: ExploreSort
 }): {
   stories: ExploreStory[]
   /** In page order, ending with the catch-all the page files leftovers under. */
@@ -50,13 +57,14 @@ export function useExploreSource({
     scope,
     filters,
     languages,
+    sort: dutchThreadSort(sort),
     enabled: dutchActive,
   })
   const rss = useExploreStories({enabled: source === 'rss'})
 
   if (source === 'dutch') {
     return {
-      stories: dutch.stories,
+      stories: sortStories(dutch.stories, sort),
       sections: [...dutch.sections, EXPLORE_SECTION_OTHER],
       isLoading: dutchActive && dutch.isLoading,
       isError: dutchActive && dutch.isError,
@@ -64,7 +72,7 @@ export function useExploreSource({
   }
 
   return {
-    stories: rss.stories,
+    stories: sortStories(rss.stories, sort),
     sections: [...EXPLORE_SECTIONS, EXPLORE_SECTION_OTHER],
     isLoading: rss.isLoading,
     /* Feeds that fail contribute nothing rather than failing the page. */
