@@ -2,7 +2,9 @@ import {ScrollView, View} from 'react-native'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
+import {useNavigationState} from '@react-navigation/native'
 
+import {getCurrentRoute} from '#/lib/routes/helpers'
 import {useSession} from '#/state/session'
 import {DesktopFeeds} from '#/view/shell/desktop/Feeds'
 import {DesktopSearch} from '#/view/shell/desktop/Search'
@@ -32,6 +34,13 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
   const {_} = useLingui()
   const {hasSession} = useSession()
   const gutters = useGutters(['base', 0, 'base', 'wide'])
+  const frontpageView = useNavigationState(state =>
+    state
+      ? (getCurrentRoute(state).params as {view?: string} | undefined)?.view
+      : undefined,
+  )
+  const isPublicationSpread =
+    routeName === 'Frontpage' && frontpageView !== 'conversation'
   const isSearchScreen = routeName === 'Search'
   const isMessagesRelatedScreen = routeName.startsWith('Messages')
   const {rightNavVisible, centerColumnOffset, leftNavMinimal} =
@@ -49,7 +58,12 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
       routeName === 'NewsFeed' ||
       routeName === 'NewsSettings')
 
-  if (!rightNavVisible || isMessagesRelatedScreen || isNewsExplore) {
+  if (
+    !rightNavVisible ||
+    isMessagesRelatedScreen ||
+    isNewsExplore ||
+    isPublicationSpread
+  ) {
     return null
   }
 

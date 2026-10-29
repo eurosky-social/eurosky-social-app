@@ -27,7 +27,7 @@ export type CommonNavigatorParams = {
   Lists: undefined
   NewsFeed: undefined
   NewsSettings: undefined
-  Frontpage: {name?: string}
+  Frontpage: {name?: string; view?: 'conversation'}
   NewsExplore: undefined
   OutletDirectory: undefined
   NewsArticle: {
@@ -122,7 +122,7 @@ export type CommonNavigatorParams = {
   LegacyNotificationSettings: undefined
   Feeds: undefined
   Start: {name: string; rkey: string}
-  StarterPack: {name: string; rkey: string; new?: boolean}
+  StarterPack: {name: string; rkey: string; new?: boolean; view?: 'posts'}
   StarterPackShort: {code: string}
   StarterPackWizard: {
     fromDialog?: boolean
