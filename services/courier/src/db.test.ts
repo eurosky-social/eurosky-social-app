@@ -147,6 +147,7 @@ describe(
           full: false,
           accepted: 1,
           duplicates: 0,
+          noDevice: 0,
           jobs: 2,
         })
         assert.equal(await store.queueDepth(), 2)
@@ -175,21 +176,29 @@ describe(
           full: false,
           accepted: 2,
           duplicates: 2,
+          noDevice: 0,
           jobs: 2,
         })
         assert.equal(await store.queueDepth(), 3)
       })
 
-      it('remembers ids even for recipients without devices', async () => {
-        assert.deepEqual(await store.enqueue([incoming('n1')], 100), {
-          full: false,
-          accepted: 1,
-          duplicates: 0,
-          jobs: 0,
-        })
+      it('writes nothing for recipients without devices', async () => {
         await store.register(iphone)
-        const again = await store.enqueue([incoming('n1')], 100)
-        assert.equal(again.full === false && again.duplicates, 1)
+        assert.deepEqual(
+          await store.enqueue(
+            [incoming('n1', 'did:plc:bob'), incoming('n2')],
+            100,
+          ),
+          {full: false, accepted: 1, duplicates: 0, noDevice: 1, jobs: 1},
+        )
+        assert.deepEqual(
+          await store.enqueue([incoming('n3', 'did:plc:bob')], 100),
+          {full: false, accepted: 0, duplicates: 0, noDevice: 1, jobs: 0},
+        )
+        const {rows} = await admin.query(
+          'select id from notification_receipt order by id',
+        )
+        assert.deepEqual(rows, [{id: 'n2'}])
       })
 
       it('refuses a batch past the limit and records nothing of it', async () => {

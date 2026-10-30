@@ -3,7 +3,7 @@ import {timestampFromDate} from '@bufbuild/protobuf/wkt'
 import {pino} from 'pino'
 
 import {type ApnsRequest} from './apns.ts'
-import {acceptOnce} from './db.ts'
+import {acceptOnce, groupByDid} from './db.ts'
 import {type Senders} from './deliver.ts'
 import {type FcmRequest} from './fcm.ts'
 import {type Notification, NotificationSchema} from './gen/courier_pb.js'
@@ -100,16 +100,23 @@ export class MemoryStore implements Store {
     maxQueued: number,
   ): Promise<EnqueueResult> {
     this.check()
+    const devicesByDid = groupByDid(
+      await this.devicesFor(incoming.map(i => i.notification.recipientDid)),
+    )
+    const withDevices = incoming.filter(i =>
+      devicesByDid.has(i.notification.recipientDid),
+    )
     const fresh = new Set(
-      incoming
+      withDevices
         .map(i => i.notification.id)
         .filter(id => id && !this.receipts.has(id)),
     )
-    const accepted = acceptOnce(incoming, fresh)
+    const accepted = acceptOnce(withDevices, fresh)
     const jobs = accepted.flatMap(item =>
-      this.devices
-        .filter(d => d.did === item.notification.recipientDid)
-        .map(({updatedAt: _, ...device}) => ({item, device})),
+      (devicesByDid.get(item.notification.recipientDid) ?? []).map(device => ({
+        item,
+        device,
+      })),
     )
     if (jobs.length > 0 && this.jobs.length + jobs.length > maxQueued) {
       return {full: true}
@@ -131,7 +138,8 @@ export class MemoryStore implements Store {
     return {
       full: false,
       accepted: accepted.length,
-      duplicates: incoming.length - accepted.length,
+      duplicates: withDevices.length - accepted.length,
+      noDevice: incoming.length - withDevices.length,
       jobs: jobs.length,
     }
   }

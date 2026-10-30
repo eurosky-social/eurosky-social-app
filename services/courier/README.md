@@ -30,9 +30,12 @@ Courier only stores tokens and delivers.
 Courier saves every accepted send in Postgres (`push_job`) before it answers
 the AppView, so a crash or restart loses nothing:
 
-1. `PushNotifications` records the notification ids (`notification_receipt`),
-   looks up the recipients' devices and queues one job per device, all in one
-   transaction. Only then does the AppView hear "accepted".
+1. `PushNotifications` looks up the recipients' devices first: the AppView
+   sends the notifications of the whole network, and those for accounts
+   without a device are dropped without writing anything. For the rest it
+   records the notification ids (`notification_receipt`) and queues one job
+   per device, in one transaction. Only then does the AppView hear
+   "accepted".
 2. A worker claims due jobs (`for update skip locked`, so several instances
    never share one) up to `COURIER_SEND_CONCURRENCY`. Claiming moves the job's
    next attempt 60 s ahead: if the process dies mid-send, the job comes due

@@ -486,10 +486,19 @@ describe('operations', () => {
   it('exposes delivery metrics', async () => {
     const {client, baseUrl} = await start()
     await client.registerDeviceToken(registration())
-    await client.pushNotifications({notifications: [bridgeNotification()]})
+    await client.pushNotifications({
+      notifications: [
+        bridgeNotification(),
+        bridgeNotification({id: 'n2', recipientDid: 'did:plc:nodevice'}),
+      ],
+    })
     const metrics = await (await fetch(`${baseUrl}/metrics`)).text()
     assert.match(metrics, /courier_registrations_total\{platform="ios"\} 1/)
     assert.match(metrics, /courier_notifications_total\{outcome="accepted"\} 1/)
+    assert.match(
+      metrics,
+      /courier_notifications_total\{outcome="no_device"\} 1/,
+    )
     assert.match(metrics, /courier_send_queue_depth/)
   })
 

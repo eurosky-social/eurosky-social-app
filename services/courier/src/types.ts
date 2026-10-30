@@ -36,7 +36,16 @@ export type Job = {
 
 export type EnqueueResult =
   | {full: true}
-  | {full: false; accepted: number; duplicates: number; jobs: number}
+  | {
+      full: false
+      accepted: number
+      duplicates: number
+      /**
+       * Notifications for accounts without a device here, dropped unrecorded.
+       */
+      noDevice: number
+      jobs: number
+    }
 
 /**
  * Persistence for device registrations and the send queue.
@@ -56,8 +65,8 @@ export type Store = {
   /**
    * Queues one job per device of each recipient, all or nothing. Notification
    * ids received before are skipped, so a batch the AppView retries is not
-   * pushed twice. Nothing is recorded when the jobs would take the queue past
-   * `maxQueued`.
+   * pushed twice. Only notifications for accounts with a device are recorded,
+   * and nothing is when the jobs would take the queue past `maxQueued`.
    */
   enqueue(incoming: Incoming[], maxQueued: number): Promise<EnqueueResult>
   /**

@@ -225,6 +225,7 @@ export class Courier {
         }
         metrics.notifications.inc({outcome: 'accepted'}, result.accepted)
         metrics.notifications.inc({outcome: 'duplicate'}, result.duplicates)
+        metrics.notifications.inc({outcome: 'no_device'}, result.noDevice)
         if (result.jobs > 0) this.worker.wake()
         return {}
       },

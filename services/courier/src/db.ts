@@ -172,8 +172,30 @@ export class PgStore implements Store {
     incoming: Incoming[],
     maxQueued: number,
   ): Promise<EnqueueResult> {
+    /*
+     * The AppView sends the notifications of the whole network, almost all of
+     * them for accounts without a device here. Those are dropped before
+     * anything is written, so they cost one read and no transaction.
+     */
+    const devicesByDid = groupByDid(
+      await this.devicesFor([
+        ...new Set(incoming.map(i => i.notification.recipientDid)),
+      ]),
+    )
+    const withDevices = incoming.filter(i =>
+      devicesByDid.has(i.notification.recipientDid),
+    )
+    const noDevice = incoming.length - withDevices.length
+    if (withDevices.length === 0) {
+      return {full: false, accepted: 0, duplicates: 0, noDevice, jobs: 0}
+    }
     try {
-      return await this.enqueueInTransaction(incoming, maxQueued)
+      const queued = await this.enqueueInTransaction(
+        withDevices,
+        devicesByDid,
+        maxQueued,
+      )
+      return {full: false, ...queued, noDevice}
     } catch (err) {
       if (err instanceof QueueFull) return {full: true}
       throw err
@@ -182,8 +204,9 @@ export class PgStore implements Store {
 
   private enqueueInTransaction(
     incoming: Incoming[],
+    devicesByDid: ReadonlyMap<string, Device[]>,
     maxQueued: number,
-  ): Promise<EnqueueResult> {
+  ) {
     return this.transaction(async client => {
       const ids = [
         ...new Set(incoming.map(i => i.notification.id).filter(Boolean)),
@@ -200,17 +223,10 @@ export class PgStore implements Store {
       const accepted = acceptOnce(incoming, new Set(fresh.map(r => r.id)))
       const duplicates = incoming.length - accepted.length
 
-      const {rows: deviceRows} = accepted.length
-        ? await client.query<DeviceRow>(
-            `select did, token, app_id, platform, age_restricted
-             from device_token where did = any($1::text[])`,
-            [[...new Set(accepted.map(i => i.notification.recipientDid))]],
-          )
-        : {rows: []}
       const jobs = accepted.flatMap(item =>
-        deviceRows
-          .filter(row => row.did === item.notification.recipientDid)
-          .map(row => ({item, device: toDevice(row)})),
+        (devicesByDid.get(item.notification.recipientDid) ?? []).map(
+          device => ({item, device}),
+        ),
       )
 
       if (jobs.length > 0) {
@@ -241,12 +257,7 @@ export class PgStore implements Store {
           ],
         )
       }
-      return {
-        full: false,
-        accepted: accepted.length,
-        duplicates,
-        jobs: jobs.length,
-      }
+      return {accepted: accepted.length, duplicates, jobs: jobs.length}
     })
   }
 
@@ -349,6 +360,17 @@ export function acceptOnce(
     taken.add(id)
     return true
   })
+}
+
+/**
+ * Devices keyed by account; an account without devices has no entry.
+ */
+export function groupByDid(devices: Device[]): Map<string, Device[]> {
+  const byDid = new Map<string, Device[]>()
+  for (const device of devices) {
+    byDid.set(device.did, [...(byDid.get(device.did) ?? []), device])
+  }
+  return byDid
 }
 
 function toDevice(row: DeviceRow): Device {
