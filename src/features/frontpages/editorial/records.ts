@@ -7,7 +7,11 @@ import {
   type Curation,
   curationRecordSchema,
   defaultCuration,
+  fromLegacyRecord,
+  fromSlotsRecord,
   FRONTPAGE_COLLECTION,
+  legacyRecordSchema,
+  slotsRecordSchema,
 } from './curation'
 
 export type CurationSnapshot = {curation: Curation; cid: l.CidString | null}
@@ -19,7 +23,7 @@ export class CurationConflictError extends Error {
   }
 }
 
-/** Absence means latest-first. Network failures or invalid layouts must not undo hidden posts. */
+/** Absence means the default page. Network failures or invalid layouts are errors, not the default page. Every record shape is read; the current one is written. */
 export async function readCuration(
   client: Client,
   did: DidString,
@@ -35,16 +39,25 @@ export async function readCuration(
       {service: null},
     )
     if (!result.cid) throw new Error('The front page record has no CID.')
-    const record = curationRecordSchema(did).parse(result.value)
+    const value = result.value as {version?: unknown}
+    if (value?.version === 1)
+      return {
+        cid: result.cid,
+        curation: fromLegacyRecord(legacyRecordSchema(did).parse(value)),
+      }
+    if (value?.version === 2)
+      return {
+        cid: result.cid,
+        curation: fromSlotsRecord(slotsRecordSchema(did).parse(value)),
+      }
+    const record = curationRecordSchema(did).parse(value)
     return {
       cid: result.cid,
       curation: {
-        leadPost: record.leadPost,
+        cover: record.cover,
+        sections: record.sections,
         sizes: record.sizes,
         starterPackViews: record.starterPackViews,
-        order: record.order,
-        hidden: record.hidden,
-        includeLatest: record.includeLatest,
       },
     }
   } catch (error) {
@@ -65,7 +78,7 @@ export async function saveCuration(
     throw new Error('Only the profile owner can edit this front page.')
   const record = curationRecordSchema(did).parse({
     $type: FRONTPAGE_COLLECTION,
-    version: 1,
+    version: 3,
     ...curation,
     updatedAt: new Date().toISOString(),
   })

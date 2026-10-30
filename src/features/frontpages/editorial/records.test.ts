@@ -7,7 +7,7 @@ import {
 import {describe, expect, it, jest} from '@jest/globals'
 
 import {com} from '#/lexicons'
-import {defaultCuration, FRONTPAGE_COLLECTION, setLeadPost} from './curation'
+import {defaultCuration, FRONTPAGE_COLLECTION, placeStory} from './curation'
 import {CurationConflictError, readCuration, saveCuration} from './records'
 
 const DID = 'did:plc:y57igqldvutzs7gpmmrrqbw7'
@@ -26,7 +26,7 @@ function responseError(method: Procedure | Query, error: string) {
 function record() {
   return {
     $type: FRONTPAGE_COLLECTION,
-    version: 1,
+    version: 3,
     ...defaultCuration(),
     updatedAt: '2026-10-28T12:00:00Z',
   }
@@ -38,7 +38,11 @@ describe('public front-page records', () => {
     call.mockResolvedValueOnce({cid: CID, value: record()})
     expect(await readCuration(client, DID)).toEqual({
       cid: CID,
-      curation: {...defaultCuration(), leadPost: undefined},
+      curation: {
+        ...defaultCuration(),
+        sizes: undefined,
+        starterPackViews: undefined,
+      },
     })
     expect(call).toHaveBeenCalledWith(
       com.atproto.repo.getRecord,
@@ -52,8 +56,7 @@ describe('public front-page records', () => {
     const pack =
       'at://did:plc:inz4fkbbp7ms3ixufw6xuvdi/app.bsky.graph.starterpack/demo'
     const curation = {
-      ...defaultCuration(),
-      order: [pack],
+      ...placeStory(defaultCuration(), pack, 'main', 0),
       starterPackViews: [{uri: pack, view: 'posts' as const}],
     }
     call.mockResolvedValueOnce({cid: CID})
@@ -73,7 +76,60 @@ describe('public front-page records', () => {
       {service: null},
     )
     call.mockResolvedValueOnce({cid: CID, value: {...record(), ...curation}})
-    expect((await readCuration(client, DID)).curation).toEqual(curation)
+    expect((await readCuration(client, DID)).curation).toEqual({
+      ...curation,
+      sizes: undefined,
+    })
+  })
+
+  it('reads a second-shape record as pinned-first sections', async () => {
+    const {client, call} = mockClient()
+    const post = `at://${DID}/app.bsky.feed.post/a`
+    call.mockResolvedValueOnce({
+      cid: CID,
+      value: {
+        $type: FRONTPAGE_COLLECTION,
+        version: 2,
+        cover: true,
+        sections: [{id: 'main', fill: true, slots: [null, post, null]}],
+        hidden: [],
+        updatedAt: '2026-10-29T12:00:00Z',
+      },
+    })
+    expect((await readCuration(client, DID)).curation.sections).toEqual([
+      {
+        id: 'main',
+        kind: undefined,
+        title: undefined,
+        description: undefined,
+        fill: 'own',
+        pinned: [post],
+        length: 3,
+      },
+    ])
+  })
+
+  it('reads a first-shape record as sections', async () => {
+    const {client, call} = mockClient()
+    call.mockResolvedValueOnce({
+      cid: CID,
+      value: {
+        $type: FRONTPAGE_COLLECTION,
+        version: 1,
+        order: [`at://${DID}/app.bsky.feed.post/a`],
+        hidden: [],
+        includeLatest: false,
+        updatedAt: '2026-07-15T12:00:00Z',
+      },
+    })
+    expect((await readCuration(client, DID)).curation.sections).toEqual([
+      {
+        id: 'main',
+        fill: 'none',
+        pinned: [`at://${DID}/app.bsky.feed.post/a`],
+        length: 1,
+      },
+    ])
   })
 
   it('only falls back to latest-first when the record does not exist', async () => {
@@ -113,9 +169,11 @@ describe('public front-page records', () => {
     async cid => {
       const {client, call} = mockClient()
       call.mockResolvedValueOnce({cid: 'bafyreinew'})
-      const curation = setLeadPost(
+      const curation = placeStory(
         defaultCuration(),
         `at://${DID}/app.bsky.feed.post/lead`,
+        'main',
+        0,
       )
       expect(
         await saveCuration(
@@ -132,7 +190,10 @@ describe('public front-page records', () => {
           collection: FRONTPAGE_COLLECTION,
           rkey: 'self',
           swapRecord: cid,
-          record: expect.objectContaining({leadPost: curation.leadPost}),
+          record: expect.objectContaining({
+            version: 3,
+            sections: curation.sections,
+          }),
         }),
         {service: null},
       )
@@ -162,10 +223,12 @@ describe('public front-page records', () => {
         client,
         DID,
         {cid: CID, curation: defaultCuration()},
-        {
-          ...defaultCuration(),
-          order: ['at://did:plc:visitor/app.bsky.feed.post/other'],
-        },
+        placeStory(
+          defaultCuration(),
+          'at://did:plc:visitor/app.bsky.feed.post/other',
+          'main',
+          0,
+        ),
       ),
     ).rejects.toThrow()
     expect(call).not.toHaveBeenCalled()
