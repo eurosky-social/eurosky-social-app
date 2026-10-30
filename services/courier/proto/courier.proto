@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package courier;
+option go_package = "./;courier";
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+//
+// Messages
+//
+
+// Ping
+message PingRequest {}
+message PingResponse {}
+
+// Notifications
+
+enum AppPlatform {
+  APP_PLATFORM_UNSPECIFIED = 0;
+  APP_PLATFORM_IOS = 1;
+  APP_PLATFORM_ANDROID = 2;
+  APP_PLATFORM_WEB = 3;
+}
+
+message Notification {
+  string id = 1;
+  string recipient_did = 2;
+  string title = 3;
+  string message = 4;
+  string collapse_key = 5;
+  bool always_deliver = 6;
+  google.protobuf.Timestamp timestamp = 7;
+  google.protobuf.Struct additional = 8;
+  bool client_controlled = 9;
+  // Maps to iOS's `thread-id`: https://developer.apple.com/documentation/usernotifications/generating-a-remote-notification.
+  string thread_id = 10;
+}
+
+message PushNotificationsRequest {
+  repeated Notification notifications = 1;
+}
+
+message PushNotificationsResponse {}
+
+message RegisterDeviceTokenRequest {
+  string did = 1;
+  string token = 2;
+  string app_id = 3;
+  AppPlatform platform = 4;
+  bool age_restricted = 5;
+}
+
+message RegisterDeviceTokenResponse {}
+
+message UnregisterDeviceTokenRequest {
+  string did = 1;
+  string token = 2;
+  string app_id = 3;
+  AppPlatform platform = 4;
+}
+
+message UnregisterDeviceTokenResponse {}
+
+message SetAgeRestrictedRequest {
+  string did = 1;
+  bool age_restricted = 2;
+}
+
+message SetAgeRestrictedResponse {}
+
+service Service {
+  rpc Ping(PingRequest) returns (PingResponse);
+
+  // Push notifications.
+
+  rpc PushNotifications(PushNotificationsRequest) returns (PushNotificationsResponse);
+
+  // Device token management.
+
+  rpc RegisterDeviceToken(RegisterDeviceTokenRequest) returns (RegisterDeviceTokenResponse);
+  rpc UnregisterDeviceToken(UnregisterDeviceTokenRequest) returns (UnregisterDeviceTokenResponse);
+  rpc SetAgeRestricted(SetAgeRestrictedRequest) returns (SetAgeRestrictedResponse);
+}
