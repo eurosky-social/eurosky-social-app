@@ -30,10 +30,9 @@ import {ExploreLiveSportsWidget} from '#/features/liveSports/components/ExploreL
 import {readableAccent} from '#/features/news/accent'
 import {app} from '#/lexicons'
 import {
-  findFrontpage,
   type Frontpage,
+  useFrontpage,
   useFrontpageReporters,
-  useFrontpages,
 } from '../frontpages'
 
 /** How many reporters the collapsed module previews. */
@@ -64,8 +63,7 @@ export function FrontpageRightRail({
     if (route.name !== 'Frontpage') return undefined
     return (route.params as {name?: string} | undefined)?.name
   })
-  const {frontpages} = useFrontpages()
-  const frontpage = findFrontpage(frontpages, routeParamName)
+  const {frontpage} = useFrontpage(routeParamName)
 
   return (
     <View>

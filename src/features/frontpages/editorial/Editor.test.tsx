@@ -31,6 +31,7 @@ jest.mock('./moderation', () => ({}))
 
 const onSave = jest.fn()
 const onCancel = jest.fn()
+const onPreview = jest.fn()
 
 function renderToolbar(
   overrides: Partial<React.ComponentProps<typeof EditorToolbar>> = {},
@@ -38,8 +39,10 @@ function renderToolbar(
   return render(
     <EditorToolbar
       canPublish
-      includeLatest
-      onIncludeLatest={jest.fn()}
+      onPreview={onPreview}
+      cover={false}
+      hasBanner
+      onCover={jest.fn()}
       onSave={onSave}
       onCancel={onCancel}
       onReload={jest.fn()}
@@ -78,3 +81,13 @@ it.each([{dirty: false}, {saving: true}, {conflict: true}])(
     expect(onSave).not.toHaveBeenCalled()
   },
 )
+
+it('switches to a preview and back, still offering to publish', () => {
+  renderToolbar()
+  fireEvent.press(screen.getByTestId('previewFrontpage'))
+  expect(onPreview).toHaveBeenCalledWith(true)
+  renderToolbar({previewing: true})
+  expect(screen.getAllByTestId('publishFrontpage').length).toBeGreaterThan(0)
+  fireEvent.press(screen.getByTestId('exitFrontpagePreview'))
+  expect(onPreview).toHaveBeenCalledWith(false)
+})
