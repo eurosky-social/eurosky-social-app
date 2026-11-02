@@ -6,12 +6,12 @@ import {
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
 import {useProfileQuery} from '#/state/queries/profile'
-import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
 import {type Frontpage} from '../frontpages'
 import {findPublicationPreview} from '../preview'
 import {
   PublicationConversation,
+  PublicationLoading,
   PublicationScreen,
   PublicationStatus,
 } from '../PublicationScreen'
@@ -47,12 +47,7 @@ export function NewsroomScreen({route, navigation}: Props) {
       navigation.setParams({name: publication.slug})
   }, [name, publication, navigation])
 
-  if (lookUpHandle && named.isLoading)
-    return (
-      <PublicationStatus>
-        <Loader size="xl" />
-      </PublicationStatus>
-    )
+  if (lookUpHandle && named.isLoading) return <PublicationLoading view={view} />
   if (!publication)
     return (
       <PublicationStatus>

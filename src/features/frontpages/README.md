@@ -8,9 +8,15 @@ remain separate, unchanged surfaces.
 ## Routes and publisher lookup
 
 - `/frontpage/:name` and the `/newsroom/:name` alias open a publication.
-- With news v2 enabled, `FrontpageScreen.tsx` resolves the aggregator's
-  `/api/outlets` entries by slug, DID or live account handle. `/frontpage`
-  opens the outlet directory. Unregistered accounts do not become publications.
+- With news v2 enabled, `useFrontpage` in `frontpages.ts` resolves the
+  address. A DID or handle opens that account's frontpage straight from its
+  profile, without calling `/api/outlets`, so any account can be opened as a
+  publication. Such a page has no aggregator domains, themes or filed
+  reporters; its reporters are the `publishers.ts` extras plus its verified
+  journalists. A slug is looked up as that one outlet, `/api/outlets/{slug}`,
+  rather than in the whole `/api/outlets` list; a page opened from the
+  directory starts from the list it already loaded.
+  `/frontpage` opens the outlet directory.
 - With news v2 disabled, `legacy/NewsroomScreen.tsx` resolves the original
   publisher registry by ID, DID or handle. `/frontpage` opens its default
   publication. Its news-organization switcher appears above the selected
@@ -19,8 +25,10 @@ remain separate, unchanged surfaces.
   WIRED-seeded test account. It works with either news version without creating
   a synthetic aggregator outlet or replacing the account's profile.
 
-`useProfileFrontpagePath.ts` keeps profile shortcuts tied to the appropriate
-registry. News v2's domain-matched post chips and outlet directory still link
+`useProfileFrontpagePath.ts` gives every profile a **Frontpage** shortcut
+with news v2 (temporarily, like editing): an outlet's opens its slug, looked up
+by DID through `/api/outlets/{did}`, and any other account's opens its handle.
+Without news v2 it stays limited to the original publisher registry. News v2's domain-matched post chips and outlet directory still link
 into these routes. Handles resolve to the canonical publication slug/ID.
 
 ## Publication page

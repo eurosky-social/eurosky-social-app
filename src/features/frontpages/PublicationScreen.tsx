@@ -6,11 +6,9 @@ import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {type FeedDescriptor} from '#/state/queries/post-feed'
 import {useProfileQuery} from '#/state/queries/profile'
 import {PostFeed} from '#/view/com/posts/PostFeed'
-import {atoms as a, useLayoutBreakpoints, useTheme} from '#/alf'
+import {atoms as a, useLayoutBreakpoints} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
-import {ChevronRight_Stroke2_Corner0_Rounded as ChevronRight} from '#/components/icons/Chevron'
 import * as Layout from '#/components/Layout'
-import {Link} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import {ScreenHider} from '#/components/moderation/ScreenHider'
 import {Text} from '#/components/Typography'
@@ -21,6 +19,7 @@ import {
 } from '#/features/news/explore/components/ExploreColumn'
 import {getPublisherName} from '#/features/news/publishers'
 import {EditorialFrontpage} from './editorial'
+import {EditorialFrontpageSkeleton} from './editorial/Skeleton'
 import {type Frontpage} from './frontpages'
 import {findPublicationPreview} from './preview'
 
@@ -42,11 +41,7 @@ export function PublicationScreen({
   const opts = useModerationOpts()
   const query = useProfileQuery({did: publication.did})
   if (publication.did && (query.isLoading || !opts))
-    return (
-      <PublicationStatus name={publication.name}>
-        <Loader size="xl" />
-      </PublicationStatus>
-    )
+    return <PublicationLoading name={publication.name} view={view} />
   if (publication.did && !query.data)
     return (
       <PublicationStatus name={publication.name}>
@@ -107,7 +102,6 @@ export function PublicationScreen({
         moderationOpts={opts}
         publicationName={title}
         intro={intro}
-        outro={<ConversationLink name={publication.slug} title={title} />}
       />
     )
     return (
@@ -126,35 +120,8 @@ export function PublicationScreen({
           <Layout.Header.BackButton />
         </View>
         {accountless}
-        <ConversationLink name={publication.slug} title={title} />
       </ExploreColumn>
     </Layout.Screen>
-  )
-}
-
-function ConversationLink({name, title}: {name: string; title: string}) {
-  const {t: l} = useLingui()
-  const t = useTheme()
-  return (
-    <Link
-      testID="publicationConversationLink"
-      to={{screen: 'Frontpage', params: {name, view: 'conversation'}}}
-      label={l`From ${title} and its reporters`}
-      style={[
-        a.w_full,
-        a.flex_row,
-        a.align_center,
-        a.justify_between,
-        a.gap_md,
-        a.border_t,
-        a.py_xl,
-        t.atoms.border_contrast_low,
-      ]}>
-      <Text emoji style={[a.flex_1, a.text_md, a.font_semi_bold]}>
-        <Trans>From {title} and its reporters</Trans>
-      </Text>
-      <ChevronRight size="sm" fill={t.atoms.text_contrast_medium.color} />
-    </Link>
   )
 }
 
@@ -198,6 +165,36 @@ export function PublicationConversation({
       renderEmptyState={empty}
       ListHeaderComponent={inline ? <>{inline}</> : undefined}
     />
+  )
+}
+
+/**
+ * A publication still resolving. The spread is sketched in place, so the page
+ * keeps its width and shape; the conversation is a feed, so it keeps a spinner.
+ */
+export function PublicationLoading({
+  name,
+  view,
+}: {
+  name?: string
+  view?: 'conversation'
+}) {
+  if (view === 'conversation')
+    return (
+      <PublicationStatus name={name}>
+        <Loader size="xl" />
+      </PublicationStatus>
+    )
+  return (
+    <Layout.Screen testID="publicationLoading" noCenterBorders>
+      {IS_WEB ? (
+        <EditorialFrontpageSkeleton />
+      ) : (
+        <Layout.Content>
+          <EditorialFrontpageSkeleton />
+        </Layout.Content>
+      )}
+    </Layout.Screen>
   )
 }
 

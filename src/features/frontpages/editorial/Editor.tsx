@@ -1,24 +1,28 @@
 import {View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
-import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import * as Toggle from '#/components/forms/Toggle'
 import {Bubble_Stroke2_Corner2_Rounded as PostsIcon} from '#/components/icons/Bubble'
 import {Group3_Stroke2_Corner0_Rounded as PeopleIcon} from '#/components/icons/Group3'
+import {
+  Pin_Filled_Corner0_Rounded as PinnedIcon,
+  Pin_Stroke2_Corner0_Rounded as PinIcon,
+} from '#/components/icons/Pin'
 import {TimesLarge_Stroke2_Corner0_Rounded as Close} from '#/components/icons/Times'
 import * as Menu from '#/components/Menu'
-import {ContentHider} from '#/components/moderation/ContentHider'
 import {Text} from '#/components/Typography'
 import {type EditorialArticle} from './articles'
 import {type ArticleSize, type StarterPackViewMode} from './curation'
-import {articleModeration} from './moderation'
 
 export function EditorToolbar({
   canPublish,
-  includeLatest,
-  onIncludeLatest,
+  previewing = false,
+  onPreview,
+  cover,
+  hasBanner,
+  onCover,
   onSave,
   onCancel,
   onReload,
@@ -28,8 +32,13 @@ export function EditorToolbar({
   conflict,
 }: {
   canPublish: boolean
-  includeLatest: boolean
-  onIncludeLatest: (value: boolean) => void
+  /** Whether the draft shows as readers will see it, without editing controls. */
+  previewing?: boolean
+  onPreview: (previewing: boolean) => void
+  cover: boolean
+  /** Whether the account has a banner to fill the cover with. */
+  hasBanner: boolean
+  onCover: (value: boolean) => void
   onSave: () => void
   onCancel: () => void
   onReload: () => void
@@ -40,6 +49,57 @@ export function EditorToolbar({
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
+  const publishButton = canPublish && (
+    <Button
+      testID="publishFrontpage"
+      label={l`Publish changes`}
+      color="primary"
+      size="small"
+      disabled={saving || !dirty || conflict}
+      onPress={onSave}>
+      <ButtonText>
+        {saving ? <Trans>Publishing…</Trans> : <Trans>Publish changes</Trans>}
+      </ButtonText>
+    </Button>
+  )
+  if (previewing)
+    return (
+      <View
+        testID="frontpageEditor"
+        style={[
+          a.flex_row,
+          a.flex_wrap,
+          a.align_center,
+          a.justify_between,
+          a.gap_md,
+          a.py_lg,
+          a.border_b,
+          t.atoms.border_contrast_low,
+        ]}>
+        <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+          {dirty ? (
+            <Trans>
+              Preview – this is how readers will see the page once you publish.
+            </Trans>
+          ) : (
+            <Trans>Preview – this is how readers see the page.</Trans>
+          )}
+        </Text>
+        <View style={[a.flex_row, a.gap_sm]}>
+          <Button
+            testID="exitFrontpagePreview"
+            label={l`Back to editing`}
+            color="secondary"
+            size="small"
+            onPress={() => onPreview(false)}>
+            <ButtonText>
+              <Trans>Back to editing</Trans>
+            </ButtonText>
+          </Button>
+          {publishButton}
+        </View>
+      </View>
+    )
   return (
     <View
       testID="frontpageEditor"
@@ -71,36 +131,43 @@ export function EditorToolbar({
               {canPublish ? <Trans>Cancel</Trans> : <Trans>Discard</Trans>}
             </ButtonText>
           </Button>
-          {canPublish && (
-            <Button
-              testID="publishFrontpage"
-              label={l`Publish changes`}
-              color="primary"
-              size="small"
-              disabled={saving || !dirty || conflict}
-              onPress={onSave}>
-              <ButtonText>
-                {saving ? (
-                  <Trans>Publishing…</Trans>
-                ) : (
-                  <Trans>Publish changes</Trans>
-                )}
-              </ButtonText>
-            </Button>
-          )}
+          <Button
+            testID="previewFrontpage"
+            label={l`Preview the front page as readers will see it`}
+            color="secondary"
+            size="small"
+            onPress={() => onPreview(true)}>
+            <ButtonText>
+              <Trans>Preview</Trans>
+            </ButtonText>
+          </Button>
+          {publishButton}
         </View>
       </View>
-      <Toggle.Item
-        name="includeLatest"
-        label={l`Include new posts automatically`}
-        value={includeLatest}
-        onChange={onIncludeLatest}
-        disabled={saving}>
-        <Toggle.Checkbox />
-        <Toggle.LabelText>
-          <Trans>Include new posts automatically</Trans>
-        </Toggle.LabelText>
-      </Toggle.Item>
+      <Text style={[a.text_xs, t.atoms.text_contrast_medium]}>
+        <Trans>
+          Grey stories fill sections automatically with the newest posts. Pin or
+          drag one to keep it in place.
+        </Trans>
+      </Text>
+      <View style={[a.gap_xs]}>
+        <Toggle.Item
+          name="cover"
+          label={l`Show cover photo at the top`}
+          value={cover && hasBanner}
+          onChange={onCover}
+          disabled={saving || !hasBanner}>
+          <Toggle.Checkbox />
+          <Toggle.LabelText>
+            <Trans>Show cover photo at the top</Trans>
+          </Toggle.LabelText>
+        </Toggle.Item>
+        {!hasBanner && (
+          <Text style={[a.text_xs, t.atoms.text_contrast_medium]}>
+            <Trans>Add a banner to the profile to use it as the cover.</Trans>
+          </Text>
+        )}
+      </View>
       {!!error && (
         <Text
           accessibilityRole="alert"
@@ -129,18 +196,20 @@ export function ArticleControls({
   size,
   lead,
   disabled,
-  onHide,
+  onRemove,
   onSize,
   extraControls,
 }: {
   extraControls?: React.ReactNode
   article: Pick<EditorialArticle, 'title'>
   dragHandle: React.ReactNode
-  size: ArticleSize
+  /** Omitted for a slot with no size of its own, like a section header. */
+  size?: ArticleSize
   lead: boolean
   disabled: boolean
-  onHide: () => void
-  onSize: (size: ArticleSize) => void
+  /** Removes a feed or starter pack; posts are pinned or unpinned instead. */
+  onRemove?: () => void
+  onSize?: (size: ArticleSize) => void
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
@@ -156,30 +225,124 @@ export function ArticleControls({
       ]}>
       <View style={[a.flex_row, a.gap_xs]}>
         {dragHandle}
-        <ArticleSizePicker
-          size={size}
-          lead={lead}
-          disabled={disabled}
-          onChange={onSize}
-        />
+        {size && onSize && (
+          <ArticleSizePicker
+            size={size}
+            lead={lead}
+            disabled={disabled}
+            onChange={onSize}
+          />
+        )}
         {extraControls}
       </View>
+      {onRemove && (
+        <Button
+          testID="removeFrontpageSlot"
+          label={l`Remove ${article.title} from the front page`}
+          size="small"
+          shape="round"
+          color="secondary"
+          style={[
+            t.atoms.bg,
+            a.border,
+            t.atoms.border_contrast_low,
+            {width: 36, height: 36, marginLeft: 'auto'},
+          ]}
+          disabled={disabled}
+          onPress={onRemove}>
+          <ButtonIcon icon={Close} />
+        </Button>
+      )}
+    </View>
+  )
+}
+
+/**
+ * Whether a story is pinned in its section or fills it automatically, with the
+ * action that changes it. Pinning moves it to the end of the section's pinned
+ * stories; unpinning returns it to the automatic ones.
+ */
+export function PinToggle({
+  pinned,
+  canPin = true,
+  title,
+  disabled,
+  onChange,
+}: {
+  pinned: boolean
+  /** False for another account's post from a feed: a layout pins only the account's own posts. */
+  canPin?: boolean
+  title: string
+  disabled: boolean
+  onChange: (pinned: boolean) => void
+}) {
+  const t = useTheme()
+  const {t: l} = useLingui()
+  if (pinned)
+    return (
       <Button
-        testID="hideFrontpageStory"
-        label={l`Hide ${article.title} from the front page`}
+        testID="unpinFrontpageStory"
+        label={l`Unpin ${title} so it fills automatically`}
         size="small"
-        shape="round"
-        color="secondary"
-        style={[
-          t.atoms.bg,
-          a.border,
-          t.atoms.border_contrast_low,
-          {width: 36, height: 36, marginLeft: 'auto'},
-        ]}
+        color="primary_subtle"
         disabled={disabled}
-        onPress={onHide}>
-        <ButtonIcon icon={Close} />
+        style={[{height: 36}]}
+        onPress={() => onChange(false)}>
+        <ButtonIcon icon={PinnedIcon} />
+        <ButtonText>
+          <Trans comment="A story pinned to its place on the front page; pressing unpins it">
+            Pinned
+          </Trans>
+        </ButtonText>
       </Button>
+    )
+  return (
+    <View
+      testID="automaticStory"
+      style={[a.flex_row, a.align_center, a.gap_xs]}>
+      <View
+        style={[
+          a.justify_center,
+          a.px_sm,
+          a.rounded_full,
+          a.border,
+          t.atoms.bg,
+          t.atoms.border_contrast_low,
+          {height: 36},
+        ]}>
+        <Text
+          style={[a.text_xs, a.font_semi_bold, t.atoms.text_contrast_medium]}>
+          {canPin ? (
+            <Trans comment="An automatically included story on the front page editor">
+              Automatic
+            </Trans>
+          ) : (
+            <Trans comment="A story filled in from a feed, which cannot be pinned because another account posted it">
+              From a feed
+            </Trans>
+          )}
+        </Text>
+      </View>
+      {canPin && (
+        <Button
+          testID="pinFrontpageStory"
+          label={l`Pin ${title} here`}
+          size="small"
+          color="secondary"
+          disabled={disabled}
+          style={[
+            t.atoms.bg,
+            a.border,
+            t.atoms.border_contrast_low,
+            {height: 36},
+          ]}
+          onPress={() => onChange(true)}>
+          <ButtonIcon icon={PinIcon} />
+          <ButtonText>
+            <Trans>Pin</Trans>
+          </ButtonText>
+        </Button>
+      )}
     </View>
   )
 }
@@ -294,62 +457,5 @@ function ArticleSizePicker({
         </Menu.Group>
       </Menu.Outer>
     </Menu.Root>
-  )
-}
-
-export function UnshownPosts({
-  posts,
-  disabled,
-  onShow,
-}: {
-  posts: {uri: string; article?: EditorialArticle}[]
-  disabled: boolean
-  onShow: (uri: string) => void
-}) {
-  const t = useTheme()
-  const {t: l} = useLingui()
-  const moderationOpts = useModerationOpts()
-  if (!posts.length) return null
-  return (
-    <View
-      testID="unshownPosts"
-      style={[a.py_xl, a.gap_md, a.border_t, t.atoms.border_contrast_low]}>
-      <Text style={[a.text_lg, a.font_semi_bold]}>
-        <Trans>Not on the front page</Trans>
-      </Text>
-      <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
-        <Trans>These posts stay on your standard profile.</Trans>
-      </Text>
-      {posts.map(({uri, article}) => (
-        <ContentHider
-          key={uri}
-          modui={
-            article ? articleModeration(article, moderationOpts) : undefined
-          }>
-          <View
-            style={[
-              a.flex_row,
-              a.align_center,
-              a.justify_between,
-              a.gap_md,
-              a.py_sm,
-            ]}>
-            <Text emoji style={[a.flex_1, a.text_sm]} numberOfLines={2}>
-              {article?.title || l`Unavailable post`}
-            </Text>
-            <Button
-              label={l`Show ${article?.title || l`post`} on the front page`}
-              size="small"
-              color="secondary"
-              disabled={disabled}
-              onPress={() => onShow(uri)}>
-              <ButtonText>
-                <Trans>Show</Trans>
-              </ButtonText>
-            </Button>
-          </View>
-        </ContentHider>
-      ))}
-    </View>
   )
 }

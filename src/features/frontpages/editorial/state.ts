@@ -130,3 +130,62 @@ export function useEditorialPostsQuery(
     refetch: () => Promise.all(queries.map(query => query.refetch())),
   }
 }
+
+/**
+ * The posts of the feeds sections fill from, a page each, as stories in the
+ * feed's order. Replies and reposts are left out, as on the account's own
+ * posts, and so is anything the reader's moderation filters.
+ */
+export function useFillFeedsQuery(feeds: string[], enabled: boolean) {
+  const client = useAppviewClient()
+  const {currentAccount} = useSession()
+  const moderationOpts = useModerationOpts()
+  const queries = useQueries({
+    queries: feeds.map(feed => ({
+      queryKey: createQueryKey('editorialFillFeed', {
+        feed,
+        viewer: currentAccount?.did,
+      }),
+      staleTime: STALE.MINUTES.FIVE,
+      enabled: enabled && !!moderationOpts,
+      queryFn: async () =>
+        (
+          await client.call(app.bsky.feed.getFeed, {
+            feed: feed as AtUriString,
+            limit: 100,
+          })
+        ).feed,
+    })),
+  })
+  const stories: Record<string, ReturnType<typeof articleFromPost>[]> = {}
+  feeds.forEach((feed, index) => {
+    const seen = new Set<string>()
+    stories[feed] = (queries[index]?.data ?? []).flatMap(view => {
+      const {post} = view
+      if (
+        !moderationOpts ||
+        seen.has(post.uri) ||
+        view.reason?.$type === 'app.bsky.feed.defs#reasonRepost' ||
+        !bsky.matches(app.bsky.feed.post, post.record) ||
+        post.record.reply
+      )
+        return []
+      seen.add(post.uri)
+      const moderation = moderatePost(post, moderationOpts)
+      if (moderation.ui('contentList').filter) return []
+      return [
+        articleFromPost({
+          _reactKey: post.uri,
+          uri: post.uri,
+          post,
+          record: post.record,
+          moderation,
+        }),
+      ]
+    })
+  })
+  return {
+    stories,
+    isPending: queries.some(query => query.isPending),
+  }
+}
