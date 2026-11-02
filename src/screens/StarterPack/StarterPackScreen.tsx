@@ -223,6 +223,9 @@ function StarterPackScreenLoaded({
     <>
       <PagerWithHeader
         items={tabs}
+        initialPage={
+          routeParams.view === 'posts' && showPostsTab ? tabs.length - 1 : 0
+        }
         isHeaderReady={true}
         renderHeader={() => (
           <Header
