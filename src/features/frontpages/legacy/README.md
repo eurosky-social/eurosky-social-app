@@ -1,7 +1,10 @@
-# Legacy newsroom pages
+# Original newsroom adapter
 
-The newsroom publisher page, its rail, masthead, link chip, publisher registry
-and queries as they shipped before the news hub, served while
-`NEWS_V2_ENABLED` is off (see `src/features/newsFeed/README.md`). Frozen copies
-- fix bugs here only if production needs them, and delete this directory with
-the flag once the hub ships everywhere.
+With `NEWS_V2_ENABLED` off, `NewsroomScreen.tsx` resolves publications from
+`publishers.ts` and renders the same `../PublicationScreen.tsx` editorial detail
+page as news v2. The publisher switcher stays above the selected masthead.
+
+The original registry, post link chip, reporter conversation and contextual rail
+remain here. The superseded RSS detail renderer, masthead and their private
+queries were removed; shared news RSS, explore and article functionality remains.
+See [the frontpages README](../README.md) for routes and the shared renderer.

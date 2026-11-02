@@ -1,6 +1,6 @@
 import {type Client} from '@atproto/lex'
 import {useLingui} from '@lingui/react/macro'
-import {useQueries, useQuery} from '@tanstack/react-query'
+import {useQueries, useQuery, useQueryClient} from '@tanstack/react-query'
 import {jwtDecode} from 'jwt-decode'
 
 import {logger} from '#/logger'
@@ -20,6 +20,9 @@ import {
   type DutchCategoriesResponse,
   type DutchCategory,
   type DutchOutletArticlesResponse,
+  type DutchOutletDetail,
+  type DutchOutletListing,
+  type DutchOutletResponse,
   type DutchOutletsResponse,
   type DutchTheme,
   type DutchThemesResponse,
@@ -60,6 +63,9 @@ export const createDutchThreadQueryKey = (args: {
 
 export const createDutchOutletsQueryKey = () =>
   createQueryKey('dutchOutlets', {})
+
+export const createDutchOutletQueryKey = (args: {ref: string}) =>
+  createQueryKey('dutchOutlet', args)
 
 export const createDutchOutletArticlesQueryKey = (args: {
   slug: string
@@ -312,6 +318,68 @@ export function useDutchOutletsQuery({
   }
 }
 
+/**
+ * One outlet, by slug or DID: what its frontpage and its account's profile
+ * shortcut need, without reading the whole list, which is slow to answer. Null where the service has no such outlet. Starts from the list
+ * when that is already loaded, so a page opened from the directory does not
+ * wait on a read of its own.
+ */
+export function useDutchOutletQuery({
+  ref,
+  enabled = true,
+}: {
+  ref?: string
+  enabled?: boolean
+}) {
+  const pdsClient = useMaybePdsClient()
+  const queryClient = useQueryClient()
+  const query = useQuery<DutchOutletDetail | null>({
+    queryKey: createDutchOutletQueryKey({ref: ref ?? ''}),
+    /* Outlets are added by hand, on the order of days. */
+    staleTime: STALE.HOURS.ONE,
+    enabled: enabled && !!ref && IS_DUTCH_API_CONFIGURED && !!pdsClient,
+    initialData: () =>
+      queryClient
+        .getQueryData<DutchOutletListing[]>(createDutchOutletsQueryKey())
+        ?.find(outlet => outlet.slug === ref || outlet.did === ref),
+    initialDataUpdatedAt: () =>
+      queryClient.getQueryState(createDutchOutletsQueryKey())?.dataUpdatedAt,
+    async queryFn() {
+      try {
+        const data = await fetchDutchApi<DutchOutletResponse>(
+          pdsClient!,
+          buildDutchApiUrl(`/api/outlets/${encodeURIComponent(ref!)}`),
+        )
+        /*
+         * Cached under its other name too, so the frontpage a profile links
+         * to by slug opens without asking again.
+         */
+        for (const name of [data.outlet.slug, data.outlet.did]) {
+          if (name && name !== ref) {
+            queryClient.setQueryData(
+              createDutchOutletQueryKey({ref: name}),
+              data.outlet,
+            )
+          }
+        }
+        return data.outlet
+      } catch (error) {
+        if (error instanceof DutchApiError && error.status === 404) return null
+        logger.error('dutchOutlet: failed to load', {safeMessage: error})
+        throw error
+      }
+    },
+  })
+
+  return {
+    /** Undefined until loaded, null where there is no such outlet. */
+    outlet: query.data,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    refetch: query.refetch,
+  }
+}
+
 /** How many of an outlet's articles its frontpage shows. */
 export const OUTLET_ARTICLES_LIMIT = 20
 
@@ -465,6 +533,15 @@ function tokenLifetimeMs(bearerToken: string): number {
  * following it would only surface later as a parse or CORS failure. See
  * ./README.md "Access".
  */
+/** A non-OK answer from the Dutch API, by status, for callers that tell them apart. */
+class DutchApiError extends Error {
+  status: number
+  constructor(status: number, url: string) {
+    super(`Dutch API ${status} for ${url}`)
+    this.status = status
+  }
+}
+
 async function fetchDutchApi<T>(client: Client, url: string): Promise<T> {
   let res = await requestDutchApi(client, url)
   if (res.status === 401) {
@@ -488,7 +565,7 @@ async function fetchDutchApi<T>(client: Client, url: string): Promise<T> {
   }
 
   if (!res.ok) {
-    throw new Error(`Dutch API ${res.status} for ${url}`)
+    throw new DutchApiError(res.status, url)
   }
 
   const contentType = res.headers.get('content-type') ?? ''

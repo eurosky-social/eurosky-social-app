@@ -105,4 +105,10 @@ let config = getSentryExpoConfig(import.meta.dirname, {
 
 config = getBundleModeMetroConfig(config)
 
+/*
+ * Worklets emit files into this checkout's node_modules. A transform cached by
+ * another worktree can reference a generated file that does not exist here.
+ */
+config.cacheVersion = `${config.cacheVersion}:${import.meta.dirname}`
+
 export default config
