@@ -23,7 +23,9 @@ import {IS_WEB} from '#/env'
 import {useNewsFeedPrefsQuery} from '#/features/newsFeed/state/prefs'
 import {DUTCH_WORLD_SCOPE, IS_DUTCH_API_CONFIGURED} from '../dutch/config'
 import {useDutchOutletsQuery} from '../dutch/queries'
+import {NewsHubTabs} from '../hub/NewsHubTabs'
 import {useCollapsingTitle} from '../hub/useCollapsingTitle'
+import {FeaturedOutletsBand} from '../outlets/components/FeaturedOutletsBand'
 import {useArticleOutletProfilesQuery} from '../queries'
 import {boostStories, interestsFromPrefs} from './boost'
 import {type ExploreStory, groupStoriesBySection} from './cluster'
@@ -263,6 +265,10 @@ export function NewsExploreScreen(
                 </Link>
               )}
             </ExploreHeaderOuter>
+            <ExploreColumn
+              style={[a.border_b, t.atoms.bg, t.atoms.border_contrast_low]}>
+              <NewsHubTabs active="news" />
+            </ExploreColumn>
           </View>
           <ExploreColumn style={[t.atoms.bg]}>
             {/* Location and departments as one filter bar, straight under the
@@ -362,6 +368,7 @@ export function NewsExploreScreen(
                   <BandRule />
                 </>
               )}
+              <FeaturedOutletsBand wide={wide} />
               {bands.map(band => (
                 <Fragment key={bandKey(band)}>
                   {band.kind === 'columns' ? (

@@ -25,6 +25,7 @@ export const router = new Router<AllNavigatableRoutes>({
    */
   NewsExplore: ['/news/explore', '/newsroom/explore'],
   NewsArticle: ['/news/article', '/newsroom/article'],
+  NewsOutlets: '/news/outlets',
   OutletDirectory: ['/outlets', '/newsrooms'],
   Frontpage: ['/frontpage/:name', '/frontpage', '/newsroom/:name', '/newsroom'],
   // moderation

@@ -29,6 +29,7 @@ export type CommonNavigatorParams = {
   NewsSettings: undefined
   Frontpage: {name?: string; view?: 'conversation'}
   NewsExplore: undefined
+  NewsOutlets: undefined
   OutletDirectory: undefined
   NewsArticle: {
     url: string
