@@ -24,7 +24,7 @@ import {useNewsFeedPrefsQuery} from '#/features/newsFeed/state/prefs'
 import {DUTCH_WORLD_SCOPE, IS_DUTCH_API_CONFIGURED} from '../dutch/config'
 import {useDutchOutletsQuery} from '../dutch/queries'
 import {useCollapsingTitle} from '../hub/useCollapsingTitle'
-import {useFrontpageProfilesQuery} from '../queries'
+import {useArticleOutletProfilesQuery} from '../queries'
 import {boostStories, interestsFromPrefs} from './boost'
 import {type ExploreStory, groupStoriesBySection} from './cluster'
 import {
@@ -156,7 +156,9 @@ export function NewsExploreScreen(
     interests.length > 0
       ? source.stories
       : boostStories(source.stories, interestsFromPrefs(prefs))
-  const profiles = useFrontpageProfilesQuery()
+  const profiles = useArticleOutletProfilesQuery(
+    stories.flatMap(story => story.coverage),
+  )
   const [sectionId, setSectionId] = useState<string | undefined>()
   const [leadBandCount, setLeadBandCount] = useState(LEAD_BAND_DEFAULT_STORIES)
   const scrollRef = useRef<Animated.ScrollView>(null)
