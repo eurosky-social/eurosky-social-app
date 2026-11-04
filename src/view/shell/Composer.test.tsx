@@ -34,9 +34,6 @@ jest.mock('#/components/Tooltip', () => ({
   SheetCompatProvider:
     jest.requireActual<typeof import('react-native')>('react-native').View,
 }))
-jest.mock('react-native-edge-to-edge', () => ({
-  SystemBars: {pushStackEntry: jest.fn(), popStackEntry: jest.fn()},
-}))
 jest.mock('react-native-reanimated', () => {
   const {View} =
     jest.requireActual<typeof import('react-native')>('react-native')

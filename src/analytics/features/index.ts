@@ -26,9 +26,8 @@ const VALUES: Readonly<Record<Features, unknown>> = Object.freeze({
   [Features.FollowingV2Enable]: false,
   [Features.OnboardingInterestsRequiredEnable]: false,
   [Features.ModerationInboxEnable]: false,
-  [Features.AtmosphereExploreEnable]: false,
+  [Features.AtmosphereScreenEnable]: false,
   [Features.NotificationsV2Enable]: NOTIFICATIONS_V2_ENABLED,
-  [Features.ProfileLinksEnable]: true,
   [Features.StarterPacksConfig]: Object.freeze({limit: 150}),
   [Features.TrendingDiscoverValues]: Object.freeze({
     topics: 5,
