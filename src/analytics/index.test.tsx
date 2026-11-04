@@ -6,12 +6,10 @@ import {
   type AnalyticsBaseContextType,
   AnalyticsContext,
   type AnalyticsContextType,
-  AnalyticsFeaturesContext,
-  type Features,
   useAnalytics,
   useAnalyticsBase,
 } from '#/analytics'
-import {features, setAttributes} from '#/analytics/features'
+import {Features, features} from '#/analytics/features'
 import {getDeviceId, getSessionId} from '#/analytics/identifiers'
 import {
   type MergeableMetadata,
@@ -23,7 +21,7 @@ import {MetricsClient} from '#/analytics/metrics/client'
 import {recordSessionActivity} from '#/analytics/useSessionActivity/index.web'
 import {useMeta} from '#/analytics/utils'
 import {useGeolocationServiceResponse} from '#/geolocation/service'
-import {account, device} from '#/storage'
+import {device} from '#/storage'
 
 jest.mock('#/lib/appState', () => ({
   onAppStateChange: jest.fn(() => ({remove: jest.fn()})),
@@ -38,21 +36,6 @@ jest.mock('#/env', () => ({
 }))
 jest.mock('#/logger/transports/sentry', () => ({sentryTransport: jest.fn()}))
 jest.mock('#/logger/transports/console', () => ({consoleTransport: jest.fn()}))
-jest.mock('#/logger/sentry/featureFlags', () => ({
-  recordFeatureFlagEvaluation: jest.fn(),
-}))
-jest.mock('#/analytics/features/bootstrap', () => ({
-  readFeatureBootstrap: () => ({features: {}}),
-}))
-jest.mock('#/analytics/features/client', () => {
-  const {GrowthBook} = jest.requireActual<
-    typeof import('@growthbook/growthbook')
-  >('@growthbook/growthbook')
-  return {
-    createGrowthBook: () => new GrowthBook(),
-    refreshGrowthBook: () => Promise.resolve(),
-  }
-})
 jest.mock('#/analytics/metrics', () => ({metrics: {track: jest.fn()}}))
 jest.mock('#/analytics/identifiers/device', () => ({
   getDeviceId: jest.fn(),
@@ -68,7 +51,6 @@ let baseAx: AnalyticsBaseContextType
 let ax: AnalyticsContextType
 let childLogger: AnalyticsContextType['logger']
 let renderCount: number
-let featureNumber = 0
 
 function CaptureBase({index}: {index: number}) {
   baseAx = useAnalyticsBase()
@@ -91,9 +73,7 @@ function Tree({session, preferences}: MergeableMetadata) {
         <CaptureBase index={1} />
         <AnalyticsContext metadata={useMeta({preferences})}>
           <CaptureBase index={2} />
-          <AnalyticsFeaturesContext>
-            <CaptureAnalytics />
-          </AnalyticsFeaturesContext>
+          <CaptureAnalytics />
         </AnalyticsContext>
       </AnalyticsContext>
     </AnalyticsContext>
@@ -109,18 +89,13 @@ beforeEach(() => {
   contexts = []
   renderCount = 0
   device.set(['analyticsSession'], {id: 'session-a', lastEventAt: Date.now()})
-  account.set(['did:plc:a', 'isBetaUser'], true)
-  account.set(['did:plc:b', 'isBetaUser'], false)
   jest.mocked(useGeolocationServiceResponse).mockReturnValue({
     countryCode: 'US',
     regionCode: 'WI',
     city: 'Madison',
   })
-  features.setDeferredTrackingCalls([])
-  features.setFeatures({})
 })
 afterEach(() => {
-  features.setRenderer(null)
   jest.restoreAllMocks()
   jest.clearAllTimers()
   jest.useRealTimers()
@@ -135,38 +110,6 @@ function rotateSession() {
 
 function lastMetricMetadata() {
   return jest.mocked(metrics.track).mock.calls.at(-1)![2] as MetricMetadata
-}
-
-/** Unique keys avoid the SDK's exposure deduplication between test cases. */
-function installFeature(hashAttribute: 'did' | 'deviceId' = 'deviceId') {
-  const feature = `test-feature-${++featureNumber}` as Features
-  features.setFeatures({
-    [feature]: {
-      defaultValue: false,
-      rules: [
-        {
-          key: feature,
-          hashAttribute,
-          variations: [true, true],
-        },
-      ],
-    },
-  })
-  return feature
-}
-
-function expectExposures(did = 'did:plc:a') {
-  const calls = jest.mocked(metrics.track).mock.calls
-  expect(calls.map(([event]) => event)).toEqual([
-    'experiment:viewed',
-    'feature:viewed',
-  ])
-  for (const [, , metadata] of calls) {
-    expect(metadata).toMatchObject({
-      base: {deviceId: ax.metadata.base.deviceId, sessionId: getSessionId()},
-      session: {did},
-    })
-  }
 }
 
 it('inherits device identity without session state or rerenders on rotation', () => {
@@ -198,12 +141,9 @@ it('inherits device identity without session state or rerenders on rotation', ()
   expect(contexts[1].session?.did).toBe('did:plc:a')
   expect(contexts[1].preferences).toBeUndefined()
   expect(ax.metadata).toMatchObject({
-    base: {isBetaUser: true},
     session: {did: 'did:plc:a'},
     preferences: {appLanguage: 'en', contentLanguages: ['en']},
   })
-  // Analytics session IDs never participate in feature evaluation.
-  expect(features.getAttributes()).not.toHaveProperty('sessionId')
   expect(metrics.track).not.toHaveBeenCalled()
 })
 
@@ -241,7 +181,6 @@ it('updates inherited account, preferences, and geolocation', () => {
   )
 
   expect(ax.metadata).toMatchObject({
-    base: {isBetaUser: false},
     session: {did: 'did:plc:b'},
     preferences: {appLanguage: 'fr'},
     geolocation: {countryCode: 'CA'},
@@ -258,12 +197,6 @@ it('updates inherited account, preferences, and geolocation', () => {
     countryCode: 'CA',
     deviceId: ax.metadata.base.deviceId,
     sessionId: getSessionId(),
-  })
-  expect(features.getAttributes()).toMatchObject({
-    did: 'did:plc:b',
-    isBetaUser: false,
-    appLanguage: 'fr',
-    countryCode: 'CA',
   })
 })
 
@@ -419,16 +352,14 @@ it('keeps passive metrics, logs, evaluations, flushes and retries separate from 
     .mockRejectedValueOnce(new TypeError('Failed to fetch'))
     .mockResolvedValue({ok: true} as Response)
   render(<Tree />)
-  const feature = installFeature()
   jest.setSystemTime(lastEventAt + 30 * 60_000)
   ax.metric('state:foreground', {})
   ax.logger.info('passive work')
   const previousLog = getEntries()[0]
-  ax.features.enabled(feature)
+  ax.features.enabled(Features.PostGalleryEmbedEnable)
   const previousMetric = lastMetricMetadata()
   client.flush()
   await Promise.resolve()
-  // Only the metrics client's lifecycle callback retries the failed batch.
   const retry = jest.mocked(onAppStateChange).mock.calls.at(-1)![0]
   retry('active')
   await Promise.resolve()
@@ -450,75 +381,7 @@ it('keeps passive metrics, logs, evaluations, flushes and retries separate from 
   )
 })
 
-describe.each(['did', 'deviceId'] as const)(
-  'features bucketed on %s',
-  hashAttribute => {
-    it.each([
-      'enabled',
-      'getValue',
-      'directEnabled',
-      'directEvaluation',
-    ] as const)(
-      'uses context identity for %s without rereading device identity or updating attributes',
-      method => {
-        render(<Tree session={{did: 'did:plc:a', isBskyPds: true}} />)
-        const originalContext = ax
-        const {enabled, getValue} = ax.features
-        const capturedEvaluate = {
-          enabled,
-          getValue: (feature: Features) => getValue(feature, false),
-          directEnabled: features.isOn.bind(features),
-          directEvaluation: (feature: Features) =>
-            features.evalFeature(feature).value,
-        }[method]
-        const feature = installFeature(hashAttribute)
-        act(() => rotateSession())
-        jest.mocked(getDeviceId).mockClear()
-        const updateAttributes = jest.spyOn(features, 'updateAttributes')
-
-        expect(capturedEvaluate(feature)).toBe(true)
-        expect(ax).toBe(originalContext)
-        expect(features.getAttributes()).toMatchObject({
-          deviceId: 'device-a',
-          did: 'did:plc:a',
-          isBetaUser: true,
-          countryCode: 'US',
-        })
-        expect(features.getAttributes()).not.toHaveProperty('sessionId')
-        expectExposures()
-        expect(features.getAllResults().get(feature)?.result).toMatchObject({
-          hashAttribute,
-          hashValue: hashAttribute === 'did' ? 'did:plc:a' : 'device-a',
-        })
-        expect(capturedEvaluate(feature)).toBe(true)
-        expect(updateAttributes).not.toHaveBeenCalled()
-        expect(getDeviceId).not.toHaveBeenCalled()
-      },
-    )
-  },
-)
-
-it('keeps feature attributes unchanged on rotation while exposures use the reporting session', () => {
-  render(<Tree session={{did: 'did:plc:a', isBskyPds: true}} />)
-  const feature = installFeature()
-  const attributes = features.getAttributes()
-  expect(attributes).not.toHaveProperty('sessionId')
-  const updateAttributes = jest.spyOn(features, 'updateAttributes')
-  const setFeatureAttributes = jest.spyOn(features, 'setAttributes')
-
-  act(() => rotateSession())
-  expect(getSessionId()).not.toBe('session-a')
-  expect(ax.features.enabled(feature)).toBe(true)
-  expectExposures()
-  expect(ax.features.getValue(feature, false)).toBe(true)
-  expect(features.isOn(feature)).toBe(true)
-  expect(features.evalFeature(feature).value).toBe(true)
-  expect(features.getAttributes()).toEqual(attributes)
-  expect(updateAttributes).not.toHaveBeenCalled()
-  expect(setFeatureAttributes).not.toHaveBeenCalled()
-})
-
-it('uses the initialized device ID when contexts mount instead of an import-time unknown', () => {
+it('uses the initialized device ID when contexts mount', () => {
   jest.mocked(getDeviceId).mockReturnValue('initialized-device')
   render(<Tree session={{did: 'did:plc:a', isBskyPds: true}} />)
   expect(contexts.map(metadata => metadata.base.deviceId)).toEqual([
@@ -531,95 +394,24 @@ it('uses the initialized device ID when contexts mount instead of an import-time
   childLogger.info('initialized device')
   expect(getEntries()[0].metadata.__metadata__).toMatchObject({
     deviceId: 'initialized-device',
+    sessionId: getSessionId(),
   })
-  const feature = installFeature('deviceId')
-  jest.mocked(metrics.track).mockClear()
-  expect(ax.features.enabled(feature)).toBe(true)
-  expect(features.getAttributes().deviceId).toBe('initialized-device')
-  expectExposures()
 })
 
-it('uses context device identity when setting attributes triggers synchronous evaluations', () => {
-  render(<Tree session={{did: 'did:plc:a', isBskyPds: true}} />)
-  const metadata = ax.metadata
-  const feature = installFeature('deviceId')
-  act(() => rotateSession())
-  jest.mocked(getDeviceId).mockClear()
-  features.setRenderer(() => {
-    features.evalFeature(feature)
-  })
-
-  setAttributes(metadata)
-
-  expect(features.getAttributes()).toMatchObject({deviceId: 'device-a'})
-  expect(features.getAttributes()).not.toHaveProperty('sessionId')
-  expect(features.getAllResults().get(feature)?.result.hashValue).toBe(
-    'device-a',
+it('keeps feature evaluation local across session and account changes without exposures', () => {
+  const fetchMock = jest.spyOn(global, 'fetch')
+  const view = render(<Tree session={{did: 'did:plc:a', isBskyPds: true}} />)
+  const initialFeatures = ax.features
+  expect(initialFeatures).toBe(features)
+  expect(ax.features.enabled(Features.PostGalleryEmbedEnable)).toBe(false)
+  expect(ax.features.getValue(Features.StarterPacksConfig, {limit: 1})).toEqual(
+    {limit: 150},
   )
-  expectExposures()
-  expect(getDeviceId).not.toHaveBeenCalled()
-})
-
-it('registers current-account callbacks before provider attribute updates evaluate gates', () => {
-  function AccountTree({did}: {did: string}) {
-    return <Tree key={did} session={{did, isBskyPds: did === 'did:plc:a'}} />
-  }
-  const view = render(<AccountTree did="did:plc:a" />)
-  const feature = installFeature('did')
   act(() => rotateSession())
-  features.setRenderer(() => {
-    features.evalFeature(feature)
-  })
-
-  view.rerender(<AccountTree did="did:plc:b" />)
-
-  expectExposures('did:plc:b')
-  expect(lastMetricMetadata().session?.isBskyPds).toBe(false)
-  expect(features.getAllResults().get(feature)?.result.hashValue).toBe(
-    'did:plc:b',
-  )
+  view.rerender(<Tree session={{did: 'did:plc:b', isBskyPds: false}} />)
+  expect(ax.features).toBe(initialFeatures)
+  expect(ax.features.enabled(Features.PostGalleryEmbedEnable)).toBe(false)
+  expect(metrics.track).not.toHaveBeenCalled()
+  expect(fetchMock).not.toHaveBeenCalled()
+  expect(ax.metadata.base).not.toHaveProperty('isBetaUser')
 })
-
-it('attributes both exposures to the bucketed did rather than the ambient account', () => {
-  render(<Tree session={{did: 'did:plc:a', isBskyPds: true}} />)
-  const feature = installFeature('did')
-  setAttributes({
-    ...ax.metadata,
-    session: {did: 'did:plc:b', isBskyPds: false},
-  })
-
-  expect(ax.features.enabled(feature)).toBe(true)
-
-  expectExposures('did:plc:b')
-  expect(ax.metadata.session?.did).toBe('did:plc:a')
-})
-
-it.each(['did', 'deviceId'] as const)(
-  'preserves did attribution and uses the reporting session for deferred experiments bucketed on %s',
-  hashAttribute => {
-    render(<Tree session={{did: 'did:plc:a', isBskyPds: true}} />)
-    const feature = installFeature(hashAttribute)
-    // Replay an actual result after the account and analytics session change.
-    const result = features.evalFeature(feature)
-    const originalMetadata = lastMetricMetadata()
-    features.setDeferredTrackingCalls([
-      {experiment: result.experiment!, result: result.experimentResult!},
-    ])
-    jest.mocked(metrics.track).mockClear()
-    act(() => rotateSession())
-    expect(getSessionId()).not.toBe(originalMetadata.base.sessionId)
-
-    render(<Tree session={{did: 'did:plc:b', isBskyPds: false}} />)
-
-    expect(metrics.track).toHaveBeenCalledTimes(1)
-    expect(lastMetricMetadata().base).toMatchObject({
-      deviceId: 'device-a',
-      sessionId: getSessionId(),
-    })
-    expect(originalMetadata.base.sessionId).toBe('session-a')
-    expect(lastMetricMetadata().session).toEqual({
-      did: hashAttribute === 'did' ? 'did:plc:a' : 'did:plc:b',
-      isBskyPds: false,
-    })
-  },
-)

@@ -58,7 +58,7 @@ import * as Layout from '#/components/Layout'
 import {Link} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import {type Metrics, useAnalytics} from '#/analytics'
-import {IS_INTERNAL, IS_LIQUID_GLASS, IS_WEB} from '#/env'
+import {IS_LIQUID_GLASS, IS_WEB} from '#/env'
 
 type Props = NativeStackScreenProps<
   NotificationsTabNavigatorParams,
@@ -66,13 +66,7 @@ type Props = NativeStackScreenProps<
 >
 
 export function NotificationsScreen(props: Props) {
-  const ax = useAnalytics()
-  // The build-level switch takes precedence over internal and remote rollouts.
-  const isNewNotificationsEnabled =
-    NOTIFICATIONS_V2_ENABLED &&
-    (IS_INTERNAL || ax.features.enabled(ax.features.NotificationsV2Enable))
-
-  if (isNewNotificationsEnabled) {
+  if (NOTIFICATIONS_V2_ENABLED) {
     return <NewNotificationsScreen {...props} />
   }
 

@@ -361,12 +361,6 @@ importers:
       '@formatjs/intl-pluralrules':
         specifier: ^6.3.9
         version: 6.3.9
-      '@growthbook/growthbook':
-        specifier: ^1.6.5
-        version: 1.6.5
-      '@growthbook/growthbook-react':
-        specifier: ^1.6.5
-        version: 1.6.5(react@19.3.0)
       '@ipld/dag-cbor':
         specifier: ^9.2.7
         version: 9.2.7
@@ -2531,16 +2525,6 @@ packages:
 
   '@formatjs/intl-supportedvaluesof@2.3.7':
     resolution: {integrity: sha512-ZTXEKijV5H08z19odngZPsXlmGndfukHuVnjd9qyER77XSk/yJwDMiSjoJYY5C5WxFs2UN4s/EMtu75e6Tp3ug==}
-
-  '@growthbook/growthbook-react@1.6.5':
-    resolution: {integrity: sha512-afi/RUbwazVNKv2acn6wDQz4BJNRAEpwIuHfggQup2/aE5PLAxy3+95gjjRMgCcPR0Pf3sFmhYGvOmxLD0ZRbQ==}
-    engines: {node: '>=10'}
-    peerDependencies:
-      react: ^16.8.0-0 || ^17.0.0-0 || ^18.0.0-0 || ^19.0.0-0
-
-  '@growthbook/growthbook@1.6.5':
-    resolution: {integrity: sha512-mUaMsgeUTpRIUOTn33EUXHRK6j7pxBjwqH4WpQyq+pukjd1AIzWlEa6w7i6bInJUcweGgP2beXZmaP6b6UPn7A==}
-    engines: {node: '>=10'}
 
   '@humanwhocodes/config-array@0.13.0':
     resolution: {integrity: sha512-DZLEEqFWQFiyK6h5YIeynKx7JlvCYWL0cImfSRXZ9l4Sg2efkFGTuFf6vzXjK1cq6IYkU+Eg/JizXw+TD2vRNw==}
@@ -5940,10 +5924,6 @@ packages:
   doctrine@3.0.0:
     resolution: {integrity: sha512-yS+Q5i3hBf7GBkd4KG8a7eBNNWNGLTaEwwYWUijIYM7zrlYDM0BFXHjjPWlWZ1Rg7UaddZeIDmi9jF3HmqiQ2w==}
     engines: {node: '>=6.0.0'}
-
-  dom-mutator@0.6.0:
-    resolution: {integrity: sha512-iCt9o0aYfXMUkz/43ZOAUFQYotjGB+GNbYJiJdz4TgXkyToXbbRy5S6FbTp72lRBtfpUMwEc1KmpFEU4CZeoNg==}
-    engines: {node: '>=10'}
 
   dom-serializer@2.0.0:
     resolution: {integrity: sha512-wIkAryiqt/nV5EQKqQpo3SToSOV9J0DnbJqwK7Wv/Trc92zIAYZ4FlMu+JPFW1DfGFt81ZTCGgDEabffXeLyJg==}
@@ -12274,15 +12254,6 @@ snapshots:
     dependencies:
       '@formatjs/fast-memoize': 3.1.5
 
-  '@growthbook/growthbook-react@1.6.5(react@19.3.0)':
-    dependencies:
-      '@growthbook/growthbook': 1.6.5
-      react: 19.3.0
-
-  '@growthbook/growthbook@1.6.5':
-    dependencies:
-      dom-mutator: 0.6.0
-
   '@humanwhocodes/config-array@0.13.0(supports-color@8.1.1)':
     dependencies:
       '@humanwhocodes/object-schema': 2.0.3
@@ -15755,8 +15726,6 @@ snapshots:
     dependencies:
       esutils: 2.0.3
     optional: true
-
-  dom-mutator@0.6.0: {}
 
   dom-serializer@2.0.0:
     dependencies:
