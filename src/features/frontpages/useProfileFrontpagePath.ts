@@ -27,12 +27,7 @@ function useAggregatorFrontpagePath(profile: {
 
 /** Without it, a frontpage is one of the publishers registered in the app. */
 function useRegisteredFrontpagePath({did}: {did: string}): string | undefined {
-  const preview = findPublicationPreview(did)
-  return preview
-    ? frontpagePath(preview)
-    : getNewsroomPublisherByDid(did)
-      ? `/frontpage/${did}`
-      : undefined
+  return getNewsroomPublisherByDid(did) ? `/frontpage/${did}` : undefined
 }
 
 /**
