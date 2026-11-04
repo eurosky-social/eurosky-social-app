@@ -1,10 +1,13 @@
 import {View} from 'react-native'
 
+import {isCakeDay} from '#/lib/cake-day'
 import {HITSLOP_20} from '#/lib/constants'
 import {useProfileShadow} from '#/state/cache/profile-shadow'
+import {useTickEveryMinute} from '#/state/shell/tick-every-minute'
 import {atoms as a, useAlf, type ViewStyleProp} from '#/alf'
 import {useNativeFontScale} from '#/alf/util/dimensions'
 import {BotBadge, BotBadgeButton, isBotAccount} from '#/components/BotBadge'
+import {CakeDayBadge} from '#/components/CakeDayBadge'
 import {useSimpleVerificationState} from '#/components/verification'
 import {VerificationCheck} from '#/components/verification/VerificationCheck'
 import {VerificationCheckButton} from '#/components/verification/VerificationCheckButton'
@@ -59,10 +62,13 @@ export function ProfileBadges({
 }) {
   const shadowed = useProfileShadow(profile)
   const verification = useSimpleVerificationState({profile})
+  const tick = useTickEveryMinute(Boolean(shadowed.createdAt))
+  const showCake = isCakeDay(shadowed.createdAt, tick || Date.now())
   const badgeVisibility = [
     verification.showBadge,
     useIsBetaBadgeVisible(profile),
     isBotAccount(shadowed),
+    showCake,
   ]
   const badgeCount = badgeVisibility.filter(Boolean).length
   const nativeScaleMultiplier = useNativeFontScale()
@@ -137,6 +143,13 @@ export function ProfileBadges({
           />
           <BotBadge profile={shadowed} width={botIconWidth} />
         </>
+      )}
+      {showCake && (
+        <CakeDayBadge
+          width={botIconWidth}
+          interactive={interactive}
+          hitSlop={hitSlops[3]}
+        />
       )}
     </View>
   )
