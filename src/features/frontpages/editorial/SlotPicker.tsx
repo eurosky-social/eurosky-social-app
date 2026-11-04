@@ -92,12 +92,22 @@ export function InsertSlotButton({
 export function SlotPicker({
   control,
   did,
-  selected,
+  pinned,
+  automatic,
+  postsOnly = false,
+  onSplit,
   onSelect,
 }: {
   control: Dialog.DialogControlProps
   did: DidString
-  selected: EditorialItem[]
+  /** Pinned on the page already, so not offered again. */
+  pinned: EditorialItem[]
+  /** On the page automatically; picking one pins it at the chosen place. */
+  automatic: string[]
+  /** For a carousel, which holds posts only. */
+  postsOnly?: boolean
+  /** Offered between two stories of a section: ends it there, the stories below moving into a new one. */
+  onSplit?: () => void
   onSelect: (item: EditorialItem) => void
 }) {
   return (
@@ -106,7 +116,10 @@ export function SlotPicker({
       <SlotPickerInner
         control={control}
         did={did}
-        selected={selected}
+        pinned={pinned}
+        automatic={automatic}
+        postsOnly={postsOnly}
+        onSplit={onSplit}
         onSelect={onSelect}
       />
     </Dialog.Outer>
@@ -116,7 +129,10 @@ export function SlotPicker({
 function SlotPickerInner({
   control,
   did,
-  selected,
+  pinned: pinnedSlots,
+  automatic,
+  postsOnly = false,
+  onSplit,
   onSelect,
 }: Parameters<typeof SlotPicker>[0]) {
   const t = useTheme()
@@ -232,8 +248,47 @@ function SlotPickerInner({
         <Text style={[a.text_2xl, a.font_bold]}>
           <Trans>Add to front page</Trans>
         </Text>
+        {onSplit && (
+          <View
+            style={[
+              a.flex_row,
+              a.flex_wrap,
+              a.align_center,
+              a.justify_between,
+              a.gap_md,
+              a.p_md,
+              a.rounded_md,
+              t.atoms.bg_contrast_25,
+            ]}>
+            <Text
+              style={[
+                a.flex_1,
+                a.text_sm,
+                t.atoms.text_contrast_medium,
+                {minWidth: 180},
+              ]}>
+              <Trans>
+                Or end the section here: the stories below move into a new
+                section.
+              </Trans>
+            </Text>
+            <Button
+              testID="splitFrontpageSection"
+              label={l`Split into a new section here`}
+              size="small"
+              color="secondary"
+              onPress={() => control.close(onSplit)}>
+              <ButtonText>
+                <Trans>Split into new section</Trans>
+              </ButtonText>
+            </Button>
+          </View>
+        )}
         <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
-          {(['posts', 'feeds', 'starterPacks'] as const).map(value => (
+          {(postsOnly
+            ? (['posts'] as const)
+            : (['posts', 'feeds', 'starterPacks'] as const)
+          ).map(value => (
             <Button
               key={value}
               label={labels[value]}
@@ -272,7 +327,8 @@ function SlotPickerInner({
                   item.kind === 'feed' &&
                   pinnedUris.includes(item.item.uri)
                 }
-                included={selected.some(
+                automatic={automatic.includes(item.item.uri)}
+                included={pinnedSlots.some(
                   value =>
                     value.item.uri === item.item.uri ||
                     (!!item.url &&
@@ -337,17 +393,26 @@ function SlotPickerInner({
 function PickerRow({
   item,
   included,
+  automatic,
   pinned,
   onSelect,
 }: {
   item: EditorialItem
   included: boolean
+  automatic: boolean
   pinned: boolean
   onSelect: () => void
 }) {
   const opts = useModerationOpts()
   if (!isResourceItem(item))
-    return <PostPickerRow item={item} included={included} onSelect={onSelect} />
+    return (
+      <PostPickerRow
+        item={item}
+        included={included}
+        automatic={automatic}
+        onSelect={onSelect}
+      />
+    )
   const modui = opts ? resourceModeration(item, opts) : undefined
   if (modui?.filter) return null
   return (
@@ -366,10 +431,12 @@ function PickerRow({
 function PostPickerRow({
   item,
   included,
+  automatic,
   onSelect,
 }: {
   item: EditorialArticle
   included: boolean
+  automatic: boolean
   onSelect: () => void
 }) {
   const opts = useModerationOpts()
@@ -382,6 +449,7 @@ function PostPickerRow({
         title={item.title}
         image={item.image}
         included={included}
+        automatic={automatic}
         onSelect={onSelect}
       />
     </ContentHider>
@@ -392,6 +460,7 @@ function PickerRowBody({
   title,
   image,
   included,
+  automatic = false,
   pinned = false,
   onSelect,
 }: {
@@ -399,6 +468,8 @@ function PickerRowBody({
   image?: string
   pinned?: boolean
   included: boolean
+  /** On the page automatically: it can be picked, to pin it here. */
+  automatic?: boolean
   onSelect: () => void
 }) {
   const t = useTheme()
@@ -408,10 +479,18 @@ function PickerRowBody({
       testID="frontpagePickerItem"
       accessibilityRole="button"
       accessibilityLabel={
-        included ? l`${title}, already on the front page` : l`Add ${title}`
+        included
+          ? l`${title}, already pinned on the front page`
+          : automatic
+            ? l`Pin ${title} here`
+            : l`Add ${title}`
       }
       accessibilityHint={
-        included ? undefined : l`Inserts this item at the selected position`
+        included
+          ? undefined
+          : automatic
+            ? l`Pins this automatic story at the selected position`
+            : l`Inserts this item at the selected position`
       }
       disabled={included}
       onPress={onSelect}
@@ -437,9 +516,17 @@ function PickerRowBody({
         <Text emoji style={[a.font_semi_bold]} numberOfLines={2}>
           {title}
         </Text>
-        {(included || pinned) && (
+        {(included || automatic || pinned) && (
           <Text style={[a.text_xs, t.atoms.text_contrast_medium]}>
-            {included ? <Trans>On front page</Trans> : <Trans>Pinned</Trans>}
+            {included ? (
+              <Trans>Pinned on the front page</Trans>
+            ) : automatic ? (
+              <Trans>Automatic on the front page – pick to pin it here</Trans>
+            ) : (
+              <Trans comment="A feed the user has pinned in their own feeds">
+                Pinned
+              </Trans>
+            )}
           </Text>
         )}
       </View>

@@ -8,7 +8,7 @@ import {useLingui} from '@lingui/react/macro'
 import {makeProfileLink} from '#/lib/routes/links'
 import {POST_TOMBSTONE, usePostShadow} from '#/state/cache/post-shadow'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
-import {atoms as a, useBreakpoints, useTheme} from '#/alf'
+import {atoms as a, useBreakpoints, useTheme, web} from '#/alf'
 import {ButtonIcon, ButtonText} from '#/components/Button'
 import {Bubble_Stroke2_Corner2_Rounded as Comment} from '#/components/icons/Bubble'
 import {Heart2_Stroke2_Corner0_Rounded as Like} from '#/components/icons/Heart2'
@@ -34,6 +34,8 @@ export function Article({
   wide = false,
   size,
   controls,
+  muted = false,
+  card = false,
 }: {
   article: EditorialArticle
   lead?: boolean
@@ -41,6 +43,10 @@ export function Article({
   wide?: boolean
   size?: ArticleSize
   controls?: React.ReactNode
+  /** Greyed out, for an automatic story in the editor; its controls are not. */
+  muted?: boolean
+  /** A carousel card: the picture above the headline, whatever the screen. */
+  card?: boolean
 }) {
   const t = useTheme()
   const {gtMobile} = useBreakpoints()
@@ -75,7 +81,8 @@ export function Article({
     ? undefined
     : i18n.date(date, {month: 'short', day: 'numeric'})
   const social = !article.external || !!article.quote
-  const mobileCompact = !gtMobile && !social && !lead && size === 'small'
+  const mobileCompact =
+    !card && !gtMobile && !social && !lead && size === 'small'
   const bodySize = lead || size === 'big' ? 20 : size === 'medium' ? 18 : 16
   const headlineSize = mobileCompact
     ? 18
@@ -100,146 +107,154 @@ export function Article({
             (social || mobileCompact || !article.image) && {paddingTop: 56},
         ]}>
         {controls}
-        {social && !!item.record.text.trim() && (
-          <RichText
-            testID="editorialPostText"
-            value={
-              new RichTextAPI({
-                text: item.record.text,
-                facets: item.record.facets,
-              })
-            }
-            enableTags
-            enableCode
-            authorHandle={post.author.handle}
-            shouldProxyLinks
-            style={[{fontSize: bodySize, lineHeight: bodySize * 1.5}]}
-          />
-        )}
-        {article.media?.type === 'video' ? (
-          <VideoEmbed embed={article.media.view} post={post} />
-        ) : article.media ? (
-          <ImageEmbed
-            embed={article.media}
-            imageLayout="carousel"
-            post={post}
-            viewContext={PostEmbedViewContext.Feed}
-            style={[a.mt_0]}
-          />
-        ) : null}
-        {(!social || !!article.external) && (
-          <Link
-            testID="editorialStoryLink"
-            to={article.url || thread}
-            label={article.title}
-            style={[
-              a.w_full,
-              mobileCompact ? a.flex_row : a.flex_col,
-              mobileCompact ? a.align_center : a.align_start,
-              a.gap_md,
-            ]}>
-            {!article.media && !!article.image && (
-              <Image
-                source={{uri: article.image}}
-                accessibilityLabel={article.imageAlt}
-                accessibilityHint={l`Opens the article`}
-                accessibilityIgnoresInvertColors
-                style={[
-                  mobileCompact
-                    ? {width: 88, height: 72, flexShrink: 0}
-                    : a.w_full,
-                  !mobileCompact && {
-                    aspectRatio:
-                      size === 'big'
-                        ? 16 / 9
-                        : lead || size === 'medium'
-                          ? 3 / 2
-                          : 16 / 10,
-                  },
-                ]}
-                contentFit="cover"
-                transition={150}
-              />
-            )}
-            <Text
-              emoji
-              accessibilityRole="header"
-              numberOfLines={mobileCompact ? 3 : undefined}
+        <View
+          testID={muted ? 'editorialArticleMuted' : undefined}
+          style={[
+            a.gap_md,
+            /* An automatic story in the editor: faded and, on web, grey. */
+            muted && [{opacity: 0.45}, web({filter: 'grayscale(1)'})],
+          ]}>
+          {social && !!item.record.text.trim() && (
+            <RichText
+              testID="editorialPostText"
+              value={
+                new RichTextAPI({
+                  text: item.record.text,
+                  facets: item.record.facets,
+                })
+              }
+              enableTags
+              enableCode
+              authorHandle={post.author.handle}
+              shouldProxyLinks
+              style={[{fontSize: bodySize, lineHeight: bodySize * 1.5}]}
+            />
+          )}
+          {article.media?.type === 'video' ? (
+            <VideoEmbed embed={article.media.view} post={post} />
+          ) : article.media ? (
+            <ImageEmbed
+              embed={article.media}
+              imageLayout="carousel"
+              post={post}
+              viewContext={PostEmbedViewContext.Feed}
+              style={[a.mt_0]}
+            />
+          ) : null}
+          {(!social || !!article.external) && (
+            <Link
+              testID="editorialStoryLink"
+              to={article.url || thread}
+              label={article.title}
               style={[
-                mobileCompact && a.flex_1,
-                a.font_bold,
-                t.atoms.text,
-                {
-                  fontSize: headlineSize,
-                  lineHeight: headlineSize * 1.1,
-                  letterSpacing: -0.7,
-                },
+                a.w_full,
+                mobileCompact ? a.flex_row : a.flex_col,
+                mobileCompact ? a.align_center : a.align_start,
+                a.gap_md,
               ]}>
-              {article.title}
-            </Text>
-            {!compact && !mobileCompact && !!article.description && (
+              {!article.media && !!article.image && (
+                <Image
+                  source={{uri: article.image}}
+                  accessibilityLabel={article.imageAlt}
+                  accessibilityHint={l`Opens the article`}
+                  accessibilityIgnoresInvertColors
+                  style={[
+                    mobileCompact
+                      ? {width: 88, height: 72, flexShrink: 0}
+                      : a.w_full,
+                    !mobileCompact && {
+                      aspectRatio:
+                        size === 'big'
+                          ? 16 / 9
+                          : lead || size === 'medium'
+                            ? 3 / 2
+                            : 16 / 10,
+                    },
+                  ]}
+                  contentFit="cover"
+                  transition={150}
+                />
+              )}
               <Text
                 emoji
-                numberOfLines={lead ? 4 : 3}
+                accessibilityRole="header"
+                numberOfLines={mobileCompact ? 3 : undefined}
                 style={[
-                  a.text_md,
-                  a.leading_relaxed,
-                  t.atoms.text_contrast_medium,
+                  mobileCompact && a.flex_1,
+                  a.font_bold,
+                  t.atoms.text,
+                  {
+                    fontSize: headlineSize,
+                    lineHeight: headlineSize * 1.1,
+                    letterSpacing: -0.7,
+                  },
                 ]}>
-                {article.description}
+                {article.title}
+              </Text>
+              {!compact && !mobileCompact && !!article.description && (
+                <Text
+                  emoji
+                  numberOfLines={lead ? 4 : 3}
+                  style={[
+                    a.text_md,
+                    a.leading_relaxed,
+                    t.atoms.text_contrast_medium,
+                  ]}>
+                  {article.description}
+                </Text>
+              )}
+            </Link>
+          )}
+          {!!article.quote && (
+            <Embed
+              embed={article.quote}
+              post={post}
+              moderation={item.moderation}
+              viewContext={PostEmbedViewContext.Feed}
+              style={[a.mt_0]}
+            />
+          )}
+          <View
+            testID="editorialPostStats"
+            style={[a.flex_row, a.flex_wrap, a.align_center, a.gap_sm]}>
+            {!!published && (
+              <Text
+                testID="editorialPostDate"
+                style={[a.text_xs, t.atoms.text_contrast_medium]}>
+                {published}
               </Text>
             )}
-          </Link>
-        )}
-        {!!article.quote && (
-          <Embed
-            embed={article.quote}
-            post={post}
-            moderation={item.moderation}
-            viewContext={PostEmbedViewContext.Feed}
-            style={[a.mt_0]}
-          />
-        )}
-        <View
-          testID="editorialPostStats"
-          style={[a.flex_row, a.flex_wrap, a.align_center, a.gap_sm]}>
-          {!!published && (
-            <Text
-              testID="editorialPostDate"
-              style={[a.text_xs, t.atoms.text_contrast_medium]}>
-              {published}
-            </Text>
-          )}
-          <Link
-            testID="editorialComments"
-            to={thread}
-            label={commentsLabel}
-            color="secondary"
-            variant="ghost"
-            size="small">
-            <ButtonIcon icon={Comment} />
-            <ButtonText>{formatPostStatCount(commentCount)}</ButtonText>
-          </Link>
-          <Link
-            testID="editorialReposts"
-            to={`${thread}/reposted-by`}
-            label={repostsLabel}
-            color="secondary"
-            variant="ghost"
-            size="small">
-            <ButtonIcon icon={Repost} />
-            <ButtonText>{formatPostStatCount(repostCount)}</ButtonText>
-          </Link>
-          <Link
-            testID="editorialLikes"
-            to={`${thread}/liked-by`}
-            label={likesLabel}
-            color="secondary"
-            variant="ghost"
-            size="small">
-            <ButtonIcon icon={Like} />
-            <ButtonText>{formatPostStatCount(likeCount)}</ButtonText>
-          </Link>
+            <Link
+              testID="editorialComments"
+              to={thread}
+              label={commentsLabel}
+              color="secondary"
+              variant="ghost"
+              size="small">
+              <ButtonIcon icon={Comment} />
+              <ButtonText>{formatPostStatCount(commentCount)}</ButtonText>
+            </Link>
+            <Link
+              testID="editorialReposts"
+              to={`${thread}/reposted-by`}
+              label={repostsLabel}
+              color="secondary"
+              variant="ghost"
+              size="small">
+              <ButtonIcon icon={Repost} />
+              <ButtonText>{formatPostStatCount(repostCount)}</ButtonText>
+            </Link>
+            <Link
+              testID="editorialLikes"
+              to={`${thread}/liked-by`}
+              label={likesLabel}
+              color="secondary"
+              variant="ghost"
+              size="small">
+              <ButtonIcon icon={Like} />
+              <ButtonText>{formatPostStatCount(likeCount)}</ButtonText>
+            </Link>
+          </View>
         </View>
       </View>
     </ContentHider>

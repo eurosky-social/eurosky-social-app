@@ -36,7 +36,6 @@ import {Provider as HomeBadgeProvider} from '#/state/home-badge'
 import {MessagesProvider} from '#/state/messages'
 import {init as initPersistedState} from '#/state/persisted'
 import {Provider as PrefsStateProvider} from '#/state/preferences'
-import {BetaUserStorageSync} from '#/state/preferences/beta-user-sync'
 import {Provider as LabelDefsProvider} from '#/state/preferences/label-defs'
 import {Provider as ModerationOptsProvider} from '#/state/preferences/moderation-opts'
 import {Provider as UnreadNotifsProvider} from '#/state/queries/notifications/unread'
@@ -74,15 +73,9 @@ import {
   prefetchAgeAssuranceConfig,
   Provider as AgeAssuranceV2Provider,
 } from '#/ageAssurance'
-import {
-  AnalyticsContext,
-  AnalyticsFeaturesContext,
-  features,
-  setupDeviceId,
-} from '#/analytics'
+import {AnalyticsContext, setupDeviceId} from '#/analytics'
 import {getDeviceId} from '#/analytics/identifiers'
 import {IS_ANDROID, IS_IOS} from '#/env'
-import {HalloweenProvider} from '#/features/halloween/context'
 import {
   prefetchLiveEvents,
   Provider as LiveEventsProvider,
@@ -124,8 +117,6 @@ function InnerApp() {
       try {
         if (account) {
           await resumeSession(account)
-        } else {
-          await features.init
         }
       } catch (e) {
         logger.warn(`session: resume failed`, {message: e})
@@ -150,12 +141,11 @@ function InnerApp() {
         <ContextMenuProvider>
           <Splash isReady={isReady && hasCheckedLanding}>
             <VideoVolumeProvider>
-              <Fragment
-                // Resets the entire tree below when it changes:
-                key={currentAccount?.did}>
-                <AnalyticsFeaturesContext>
+              <GestureHandlerRootView style={a.h_full}>
+                <Fragment
+                  // Resets the entire tree below when it changes:
+                  key={currentAccount?.did}>
                   <QueryProvider currentDid={currentAccount?.did}>
-                    <BetaUserStorageSync />
                     <PolicyUpdateOverlayProvider>
                       <LiveEventsProvider>
                         <AgeAssuranceV2Provider>
@@ -175,18 +165,14 @@ function InnerApp() {
                                                   <ServiceAccountManager>
                                                     <EmailVerificationProvider>
                                                       <HideBottomBarBorderProvider>
-                                                        <GestureHandlerRootView
-                                                          style={a.h_full}>
-                                                          <GlobalGestureEventsProvider>
-                                                            <IntentDialogProvider>
-                                                              <TranslateOnDeviceProvider>
-                                                                <TestCtrls />
-                                                                <Shell />
-                                                                <ToastOutlet />
-                                                              </TranslateOnDeviceProvider>
-                                                            </IntentDialogProvider>
-                                                          </GlobalGestureEventsProvider>
-                                                        </GestureHandlerRootView>
+                                                        <GlobalGestureEventsProvider>
+                                                          <IntentDialogProvider>
+                                                            <TranslateOnDeviceProvider>
+                                                              <TestCtrls />
+                                                              <Shell />
+                                                            </TranslateOnDeviceProvider>
+                                                          </IntentDialogProvider>
+                                                        </GlobalGestureEventsProvider>
                                                       </HideBottomBarBorderProvider>
                                                     </EmailVerificationProvider>
                                                   </ServiceAccountManager>
@@ -206,8 +192,9 @@ function InnerApp() {
                       </LiveEventsProvider>
                     </PolicyUpdateOverlayProvider>
                   </QueryProvider>
-                </AnalyticsFeaturesContext>
-              </Fragment>
+                </Fragment>
+                <ToastOutlet />
+              </GestureHandlerRootView>
             </VideoVolumeProvider>
           </Splash>
         </ContextMenuProvider>
@@ -251,9 +238,7 @@ function App() {
                                 <LandingProvider>
                                   <SafeAreaProvider
                                     initialMetrics={initialWindowMetrics}>
-                                    <HalloweenProvider>
-                                      <InnerApp />
-                                    </HalloweenProvider>
+                                    <InnerApp />
                                   </SafeAreaProvider>
                                 </LandingProvider>
                               </BottomSheetProvider>

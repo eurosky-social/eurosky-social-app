@@ -12,7 +12,6 @@ import {useSimpleVerificationState} from '#/components/verification'
 import {VerificationCheck} from '#/components/verification/VerificationCheck'
 import {VerificationCheckButton} from '#/components/verification/VerificationCheckButton'
 import type * as bsky from '#/types/bsky'
-import {BetaBadge, BetaBadgeButton, useIsBetaBadgeVisible} from './BetaBadge'
 
 export type Size = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 
@@ -32,31 +31,30 @@ const botIconSizes: Record<Size, number> = {
   xl: 23,
 } as const
 
-const betaIconSizes: Record<Size, number> = {
-  xs: 8,
-  sm: 8,
-  md: 8,
-  lg: 10,
-  xl: 12,
-} as const
-
-const betaBadgePadding: Record<Size, number> = {
-  xs: 1,
-  sm: 2,
-  md: 3,
-  lg: 4,
-  xl: 5,
-} as const
+/*
+ * Inside a Text, the badges sit with their bottom on the baseline on every
+ * platform (iOS needs patches/react-native/inline-view-baseline.patch). They
+ * are a little taller than the cap height of the names they follow, which
+ * leaves them about 0.75pt above its centre on iOS, Android and web (measured
+ * in the Storybook "Profile badges" section), so nudge them down by that.
+ */
+const INLINE_OFFSET = 0.75
 
 export function ProfileBadges({
   profile,
   interactive = false,
+  inline = false,
   size,
   style,
   allowFontScaling = true,
 }: ViewStyleProp & {
   profile: bsky.profile.AnyProfileView
   interactive?: boolean
+  /**
+   * Set when the badges are rendered inside a `Text`, after a name, so that
+   * they're centred on the name's cap height.
+   */
+  inline?: boolean
   size: Size
   allowFontScaling?: boolean
 }) {
@@ -66,7 +64,6 @@ export function ProfileBadges({
   const showCake = isCakeDay(shadowed.createdAt, tick || Date.now())
   const badgeVisibility = [
     verification.showBadge,
-    useIsBetaBadgeVisible(profile),
     isBotAccount(shadowed),
     showCake,
   ]
@@ -87,8 +84,6 @@ export function ProfileBadges({
 
   const verificationIconWidth = verificationIconSizes[size] * scaleMultiplier
   const botIconWidth = botIconSizes[size] * scaleMultiplier
-  const betaIconWidth = betaIconSizes[size] * scaleMultiplier
-  const betaBadgeScaledPadding = betaBadgePadding[size] * scaleMultiplier
 
   const gap = isOnTheSmallSide ? a.gap_2xs : a.gap_xs
   const padding = gap.gap / 2
@@ -108,7 +103,17 @@ export function ProfileBadges({
   }
 
   return (
-    <View style={[a.flex_row, a.align_center, gap, style]}>
+    <View
+      style={[
+        a.flex_row,
+        a.align_center,
+        gap,
+        inline && [
+          a.px_2xs,
+          {transform: [{translateY: INLINE_OFFSET * scaleMultiplier}]},
+        ],
+        style,
+      ]}>
       {interactive ? (
         <>
           <VerificationCheckButton
@@ -116,16 +121,10 @@ export function ProfileBadges({
             width={verificationIconWidth}
             hitSlop={hitSlops[0]}
           />
-          <BetaBadgeButton
-            profile={shadowed}
-            width={betaIconWidth}
-            padding={betaBadgeScaledPadding}
-            hitSlop={hitSlops[1]}
-          />
           <BotBadgeButton
             profile={shadowed}
             width={botIconWidth}
-            hitSlop={hitSlops[2]}
+            hitSlop={hitSlops[1]}
           />
         </>
       ) : (
@@ -136,11 +135,6 @@ export function ProfileBadges({
               width={verificationIconWidth}
             />
           ) : null}
-          <BetaBadge
-            profile={shadowed}
-            width={betaIconWidth}
-            padding={betaBadgeScaledPadding}
-          />
           <BotBadge profile={shadowed} width={botIconWidth} />
         </>
       )}
@@ -148,7 +142,7 @@ export function ProfileBadges({
         <CakeDayBadge
           width={botIconWidth}
           interactive={interactive}
-          hitSlop={hitSlops[3]}
+          hitSlop={hitSlops[2]}
         />
       )}
     </View>

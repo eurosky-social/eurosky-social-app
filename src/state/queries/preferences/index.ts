@@ -14,7 +14,6 @@ import {
   setAdultContentEnabled,
   setContentLabelPref,
   setFeedViewPrefs,
-  setIsBetaUser,
   setThreadViewPrefs,
   setVerificationPrefs,
   updateMutedWord,
@@ -480,21 +479,6 @@ export function useSetActiveProgressGuideMutation() {
       guide: app.bsky.actor.defs.BskyAppProgressGuide | undefined,
     ) => {
       await client.call(setActiveProgressGuide, guide)
-      // triggers a refetch
-      await queryClient.invalidateQueries({
-        queryKey: preferencesQueryKey,
-      })
-    },
-  })
-}
-
-export function useSetIsBetaUserMutation() {
-  const queryClient = useQueryClient()
-  const client = usePdsClient()
-
-  return useMutation({
-    mutationFn: async (isBetaUser: boolean) => {
-      await client.call(setIsBetaUser, isBetaUser)
       // triggers a refetch
       await queryClient.invalidateQueries({
         queryKey: preferencesQueryKey,

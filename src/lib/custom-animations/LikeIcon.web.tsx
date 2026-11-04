@@ -2,7 +2,6 @@ import {useEffect, useRef} from 'react'
 import {View} from 'react-native'
 import {useReducedMotion} from 'react-native-reanimated'
 
-import {type AnimatedLikeIconProps} from '#/lib/custom-animations/LikeIcon.types'
 import {useTheme} from '#/alf'
 import {
   Heart2_Filled_Stroke2_Corner0_Rounded as HeartIconFilled,
@@ -42,13 +41,12 @@ export function AnimatedLikeIcon({
   isLiked,
   big,
   hasBeenToggled,
-  color: colorProp,
-  icons,
-}: AnimatedLikeIconProps) {
+}: {
+  isLiked: boolean
+  big?: boolean
+  hasBeenToggled: boolean
+}) {
   const t = useTheme()
-  const color = colorProp ?? t.palette.pink
-  const FilledIcon = icons?.filled ?? HeartIconFilled
-  const OutlineIcon = icons?.outline ?? HeartIconOutline
   const size = big ? 22 : 18
   const shouldAnimate = !useReducedMotion() && hasBeenToggled
   const prevIsLiked = useRef(isLiked)
@@ -75,10 +73,10 @@ export function AnimatedLikeIcon({
       {isLiked ? (
         // @ts-expect-error is div
         <View ref={likeIconRef}>
-          <FilledIcon style={{color}} width={size} />
+          <HeartIconFilled style={{color: t.palette.pink}} width={size} />
         </View>
       ) : (
-        <OutlineIcon
+        <HeartIconOutline
           style={[{color: t.palette.contrast_500}, {pointerEvents: 'none'}]}
           width={size}
         />
@@ -88,7 +86,7 @@ export function AnimatedLikeIcon({
         ref={circle1Ref}
         style={{
           position: 'absolute',
-          backgroundColor: color,
+          backgroundColor: t.palette.pink,
           top: 0,
           left: 0,
           width: size,

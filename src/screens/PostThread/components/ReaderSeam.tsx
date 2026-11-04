@@ -38,7 +38,6 @@ import {
 import {RepostButton} from '#/components/PostControls/RepostButton'
 import {useFormatPostStatCount} from '#/components/PostControls/util'
 import * as Toast from '#/components/Toast'
-import {useLikePresentation} from '#/features/halloween/useLikePresentation'
 import {type app} from '#/lexicons'
 
 /**
@@ -126,12 +125,6 @@ function ReaderSeamInner({
   const logContext = 'PostThreadItem'
 
   const shadow = postShadow
-  const likePresentation = useLikePresentation({
-    uri: shadow.uri,
-    record: post.value.post.record,
-    isLiked: Boolean(shadow.viewer?.like),
-    likeCount: shadow.likeCount ?? 0,
-  })
   const record = post.value.post.record
   const moderation = post.moderation
 
@@ -271,11 +264,28 @@ function ReaderSeamInner({
           />
           <PostControlButton
             active={Boolean(shadow.viewer?.like)}
-            activeColor={likePresentation.activeColor}
+            activeColor={t.palette.pink}
             onPress={() => requireAuth(() => onPressToggleLike())}
-            label={likePresentation.label}>
+            label={
+              shadow.viewer?.like
+                ? l({
+                    message: `Unlike (${plural(shadow.likeCount ?? 0, {
+                      one: '# like',
+                      other: '# likes',
+                    })})`,
+                    comment:
+                      'Like button, liked state: action followed by total likes.',
+                  })
+                : l({
+                    message: `Like (${plural(shadow.likeCount ?? 0, {
+                      one: '# like',
+                      other: '# likes',
+                    })})`,
+                    comment:
+                      'Like button, unliked state: action followed by total likes.',
+                  })
+            }>
             <AnimatedLikeIcon
-              {...likePresentation.iconProps}
               isLiked={Boolean(shadow.viewer?.like)}
               hasBeenToggled={hasLikeBeenToggled}
             />
