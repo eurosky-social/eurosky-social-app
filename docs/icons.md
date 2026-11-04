@@ -39,6 +39,14 @@ Adding or changing a font glyph requires a new native build. Do not ship a new g
 an OTA update. Upstream's `assets/icons/tmp/` workflow supports new SVG-only icons until the next
 native release.
 
+## Verification marks
+
+`VerifiedCheck` and `VerifierCheck` retain Phosphor's silhouettes, with a white
+backing behind their transparent checkmark cutouts. The importer adds this layer
+so checkmarks stay white on every surface, including profile names in posts and
+trusted-verifier badges. The generated SVGs and native fonts preserve both paint
+roles. `pnpm icons:test` checks their rendered ticks and native glyph layers.
+
 ## Weights
 
 - `regular`: default outlines and inactive navigation.

@@ -29,21 +29,24 @@ it('keeps the normal no-override path when Halloween is off', () => {
   expect(result.current).toBeUndefined()
 })
 
-it('temporarily overrides and then restores the saved custom accent', () => {
-  mockAccent = 'blue'
-  const {result, rerender} = renderHook(useThemesOverride)
-  expect(result.current?.light.palette).toEqual(
-    buildThemes('blue').light.palette,
-  )
-  mockActive = true
-  rerender({})
-  expect(result.current).toBe(halloweenThemes)
-  mockActive = false
-  rerender({})
-  expect(result.current?.light.palette).toEqual(
-    buildThemes('blue').light.palette,
-  )
-})
+it.each(['blue', 'red', 'yellow', 'teal', 'cyan', 'indigo'] as const)(
+  'temporarily overrides and then restores the saved %s accent',
+  accent => {
+    mockAccent = accent
+    const {result, rerender} = renderHook(useThemesOverride)
+    expect(result.current?.light.palette).toEqual(
+      buildThemes(accent).light.palette,
+    )
+    mockActive = true
+    rerender({})
+    expect(result.current).toBe(halloweenThemes)
+    mockActive = false
+    rerender({})
+    expect(result.current?.light.palette).toEqual(
+      buildThemes(accent).light.palette,
+    )
+  },
+)
 
 it('preserves hidden borders in every Halloween variant without mutating palettes', () => {
   mockActive = true
