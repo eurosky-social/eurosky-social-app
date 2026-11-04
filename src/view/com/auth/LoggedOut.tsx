@@ -150,7 +150,7 @@ export function LoggedOut({onDismiss}: {onDismiss?: () => void}) {
               a.absolute,
               {
                 top: insets.top + tokens.space.xl,
-                right: tokens.space.xl,
+                right: insets.right + tokens.space.xl,
                 zIndex: 100,
               },
             ]}

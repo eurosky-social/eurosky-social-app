@@ -10,6 +10,7 @@ import {useCleanError} from '#/lib/hooks/useCleanError'
 import {createLexClient} from '#/lib/lexClient'
 import {isNetworkError, shouldRetryError} from '#/lib/strings/errors'
 import {sanitizeHandle} from '#/lib/strings/handles'
+import {checkAndFormatResetCode} from '#/lib/strings/password'
 import {logger} from '#/logger'
 import {usePdsClient, useSession, useSessionApi} from '#/state/session'
 import {resolveDidServiceEndpoint} from '#/state/session/identity-resolver'
@@ -184,7 +185,8 @@ function DeleteAccountDialogInner({
       if (!currentAccount?.did) {
         throw new Error('Invalid did')
       }
-      const token = confirmCode.replace(WHITESPACE_RE, '')
+      const strippedCode = confirmCode.replace(WHITESPACE_RE, '')
+      const token = checkAndFormatResetCode(strippedCode) || strippedCode
       /*
        * Resolve the configured chat DID and mint authorization while the PDS
        * account still exists, but do not delete the chat account until the PDS
@@ -227,7 +229,7 @@ function DeleteAccountDialogInner({
       } finally {
         control.close(() => {
           toast.show(_(msg`Your account has been deleted, see ya! ✌️`))
-          resetToTab('HomeTab')
+          resetToTab('Home')
           removeAccount(currentAccount)
         })
       }
