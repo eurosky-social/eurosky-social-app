@@ -45,7 +45,10 @@ export function NewsroomScreen({route, navigation}: Props) {
   // lands on the right publisher, including when the screen is already mounted.
   // A DID param matches the registry directly; a handle param resolves through
   // the live profile first (getProfile accepts any actor identifier).
-  const direct = name ? getNewsroomPublisherByDid(name) : undefined
+  const direct = name
+    ? (getNewsroomPublisherByDid(name) ??
+      NEWSROOM_PUBLISHERS.find(publisher => publisher.id === name))
+    : undefined
   const {data: namedProfile, isLoading: isResolvingName} = useProfileQuery({
     did: direct ? undefined : name,
   })
@@ -90,7 +93,7 @@ export function NewsroomScreen({route, navigation}: Props) {
   // "The conversation" merges the publisher account and its reporters,
   // round-robin across their author feeds (see NewsFeedAPI).
   const feed =
-    `newsroom|${getPublisherFeedDids(publisher).join(',')}` as FeedDescriptor
+    `frontpage|${getPublisherFeedDids(publisher).join(',')}` as FeedDescriptor
 
   if (resolvingName) {
     return (

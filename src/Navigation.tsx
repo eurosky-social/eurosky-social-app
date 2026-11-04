@@ -131,7 +131,6 @@ import {AppearanceSettingsScreen} from '#/screens/Settings/AppearanceSettings'
 import {AppIconSettingsScreen} from '#/screens/Settings/AppIconSettings'
 import {AppPasswordsScreen} from '#/screens/Settings/AppPasswords'
 import {AutomationLabelSettingsScreen} from '#/screens/Settings/AutomationLabelSettings'
-import {BetaFeaturesSettingsScreen} from '#/screens/Settings/BetaFeaturesSettings'
 import {ContentAndMediaSettingsScreen} from '#/screens/Settings/ContentAndMediaSettings'
 import {DecorationsSettingsScreen} from '#/screens/Settings/DecorationsSettings'
 import {ExternalMediaPreferencesScreen} from '#/screens/Settings/ExternalMediaPreferences'
@@ -568,14 +567,6 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         getComponent={() => AccountSettingsScreen}
         options={{
           title: title(msg`Account`),
-          requireAuth: true,
-        }}
-      />
-      <Stack.Screen
-        name="BetaFeaturesSettings"
-        getComponent={() => BetaFeaturesSettingsScreen}
-        options={{
-          title: title(msg`Beta features`),
           requireAuth: true,
         }}
       />
@@ -1333,9 +1324,6 @@ function RoutesContainer({children}: React.PropsWithChildren<{}>) {
         }
       })
     }
-
-    // temp, just testing
-    void ax.features.enabled(ax.features.AATest)
   })
 
   return (

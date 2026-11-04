@@ -10,7 +10,6 @@ import {PUBLIC_BSKY_SERVICE} from '#/lib/constants'
 import {canParseUrl} from '#/lib/strings/url-helpers'
 import {logger} from '#/logger'
 import {prefetchAgeAssuranceServerData} from '#/ageAssurance/data'
-import {features} from '#/analytics'
 import {withAppViewShadowFetch} from '#/features/appView/shadow'
 import {
   buildAppviewClient,
@@ -300,7 +299,6 @@ export async function createSessionBundleAndResume(
   storedAccount: SessionAccount,
   onSessionChange: OnSessionChange,
 ): Promise<{account: SessionAccount; bundle: SessionBundle}> {
-  const gates = features.refresh({strategy: 'prefer-low-latency'})
   let bundle!: SessionBundle
   const hooks = makeSessionHooks({
     onSessionChange,
@@ -347,7 +345,7 @@ export async function createSessionBundleAndResume(
   // Preparation may auto-refresh the session while hooks are still disarmed.
   const account = await finishPreparation(
     bundle,
-    Promise.all([gates, aa]),
+    aa,
     () =>
       sessionDataToSessionAccount(
         session.session,
@@ -399,7 +397,6 @@ export async function createSessionBundleAndLogin(
   const earlyAccount = sessionDataToSessionAccountOrThrow(session)
   accountDid = earlyAccount.did
 
-  const gates = features.refresh({strategy: 'prefer-fresh-gates'})
   configureModerationForAccount(bundle, earlyAccount)
   const aa = prefetchAgeAssuranceServerData({
     appviewClient: bundle.appviewClient,
@@ -407,10 +404,8 @@ export async function createSessionBundleAndLogin(
   })
 
   // Preparation may auto-refresh the session while hooks are still disarmed.
-  const account = await finishPreparation(
-    bundle,
-    Promise.all([gates, aa]),
-    () => sessionDataToSessionAccountOrThrow(session),
+  const account = await finishPreparation(bundle, aa, () =>
+    sessionDataToSessionAccountOrThrow(session),
   )
   hooks.arm()
   return {account, bundle}

@@ -16,20 +16,6 @@ export function PassiveAnalytics() {
       } else {
         ax.metric('state:background', {})
       }
-
-      // if (IS_DEV || IS_TESTFLIGHT) {
-      //   const feats = Object.values(Features).reduce(
-      //     (acc, feat) => {
-      //       acc[feat] = features.evalFeature(feat)
-      //       return acc
-      //     },
-      //     {} as Record<Features, any>,
-      //   )
-      //   ax.logger.info('FEATURES', {
-      //     features: feats,
-      //     definitions: features.getFeatures(),
-      //   })
-      // }
     })
     return () => sub.remove()
   }, [ax])

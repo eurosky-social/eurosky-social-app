@@ -20,7 +20,6 @@ import {
   setCreatedAtForDid,
 } from '#/ageAssurance/data'
 import {unsafeGetAndComputeAgeAssurance} from '#/ageAssurance/state'
-import {features} from '#/analytics'
 import {type app} from '#/lexicons'
 import {configureModerationForAccount} from './moderation'
 import {
@@ -84,7 +83,6 @@ export async function createSessionBundleAndCreateAccount(
   const earlyAccount = snapshotNewAccount(session, email)
   accountDid = earlyAccount.did
 
-  const gates = features.refresh({strategy: 'prefer-fresh-gates'})
   configureModerationForAccount(bundle, earlyAccount)
 
   const createdAt = toDatetimeString(new Date())
@@ -131,10 +129,8 @@ export async function createSessionBundleAndCreateAccount(
   }
 
   // Preparation may auto-refresh the session while hooks are still disarmed.
-  const account = await finishPreparation(
-    bundle,
-    Promise.all([gates, aa]),
-    () => snapshotNewAccount(session, email),
+  const account = await finishPreparation(bundle, aa, () =>
+    snapshotNewAccount(session, email),
   )
   hooks.arm()
   return {account, bundle}

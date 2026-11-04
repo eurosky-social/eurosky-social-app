@@ -1,0 +1,57 @@
+{
+  "lexicon": 1,
+  "id": "social.mu.frontpage",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "literal:self",
+      "description": "The account owner's public editorial front page. Posts must belong to this repository; feed and starter-pack references may belong to other creators. This record changes presentation, not the underlying records.",
+      "record": {
+        "type": "object",
+        "required": ["version", "order", "hidden", "includeLatest", "updatedAt"],
+        "properties": {
+          "version": {"type": "integer", "const": 1},
+          "leadPost": {"type": "string", "format": "at-uri"},
+          "starterPackViews": {
+            "type": "array",
+            "maxLength": 100,
+            "items": {"type": "ref", "ref": "#starterPackView"}
+          },
+          "sizes": {
+            "type": "array",
+            "maxLength": 100,
+            "items": {"type": "ref", "ref": "#articleSize"}
+          },
+          "order": {
+            "type": "array",
+            "maxLength": 100,
+            "items": {"type": "string", "format": "at-uri"}
+          },
+          "hidden": {
+            "type": "array",
+            "maxLength": 100,
+            "items": {"type": "string", "format": "at-uri"}
+          },
+          "includeLatest": {"type": "boolean"},
+          "updatedAt": {"type": "string", "format": "datetime"}
+        }
+      }
+    },
+    "starterPackView": {
+      "type": "object",
+      "required": ["uri", "view"],
+      "properties": {
+        "uri": {"type": "string", "format": "at-uri"},
+        "view": {"type": "string", "knownValues": ["people", "posts"]}
+      }
+    },
+    "articleSize": {
+      "type": "object",
+      "required": ["post", "size"],
+      "properties": {
+        "post": {"type": "string", "format": "at-uri"},
+        "size": {"type": "string", "knownValues": ["small", "medium", "big"]}
+      }
+    }
+  }
+}
