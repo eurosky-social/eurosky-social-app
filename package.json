@@ -174,8 +174,6 @@
     "@formatjs/intl-locale": "^5.3.8",
     "@formatjs/intl-numberformat": "^9.3.10",
     "@formatjs/intl-pluralrules": "^6.3.9",
-    "@growthbook/growthbook": "^1.6.5",
-    "@growthbook/growthbook-react": "^1.6.5",
     "@ipld/dag-cbor": "^9.2.7",
     "@lingui/core": "^5.9.2",
     "@lingui/react": "^5.9.2",

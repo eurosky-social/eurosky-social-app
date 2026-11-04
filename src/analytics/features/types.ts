@@ -1,7 +1,4 @@
-/**
- * If a feature is in the beta program, be sure to add a localized description
- * for it via getFeatureDescription().
- */
+/** Feature keys retained for shared components; policy lives in index.ts. */
 export enum Features {
   // core flags
   IsBskyTeam = 'is_bsky_team',
@@ -30,6 +27,4 @@ export enum Features {
   StarterPacksConfig = 'starter_packs:config',
   TrendingDiscoverValues = 'trending_discover:values',
   TrendingExploreTopicsCountValue = 'trending_explore_topics_count:value',
-
-  AATest = 'aa-test',
 }

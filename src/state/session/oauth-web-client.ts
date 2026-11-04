@@ -73,11 +73,10 @@ function isLoopback(): boolean {
   )
 }
 
-// Session lifecycle hooks. @atproto/oauth-client-browser ^0.3 exposes
-// onDelete/onUpdate via constructor SessionHooks. "Telemetry dropped" means
-// Blacksky's bespoke OAuth growthbook telemetry was NOT ported - it does NOT
-// mean this logger is inert: logger.* feeds the live Sentry transport, so we
-// must keep PII (DID/sub) and raw error objects out of it (MED-1).
+/*
+ * Session lifecycle hooks. logger.* feeds the live Sentry transport, so keep
+ * PII (DID/sub) and raw error objects out of it (MED-1).
+ */
 const sessionHooks = {
   onDelete(_sub: string, cause: unknown) {
     logger.warn('oauth: session deleted', describeOAuthError(cause))

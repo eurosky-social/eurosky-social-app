@@ -48,15 +48,6 @@ jest.mock('#/ageAssurance/data', () => ({
   prefetchAgeAssuranceServerData: () => mockPrefetchAgeAssuranceServerData(),
 }))
 /*
- * The factory tail awaits `features.refresh(...)`; stub the analytics module so
- * the factory does not pull GrowthBook (and its native deps) into this
- * lightweight suite.
- */
-jest.mock('#/analytics', () => ({
-  features: {refresh: () => Promise.resolve()},
-}))
-
-/*
  * `configureModerationForAccount` is synchronous (the labeler cache is a local
  * MMKV read), so it is not a prep await - but it still runs inside each factory
  * with the freshly built bundle, before the awaited prep steps. The factory
