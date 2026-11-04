@@ -75,7 +75,6 @@ import {
 import {AnalyticsContext, setupDeviceId} from '#/analytics'
 import {getDeviceId} from '#/analytics/identifiers'
 import {useSessionActivity} from '#/analytics/useSessionActivity'
-import {HalloweenProvider} from '#/features/halloween/context'
 import {KeyboardShortcuts} from '#/features/keyboardShortcuts'
 import {
   prefetchLiveEvents,
@@ -241,9 +240,7 @@ function App() {
                           <LightboxStateProvider>
                             <PortalProvider>
                               <LandingProvider>
-                                <HalloweenProvider>
-                                  <InnerApp />
-                                </HalloweenProvider>
+                                <InnerApp />
                               </LandingProvider>
                             </PortalProvider>
                           </LightboxStateProvider>

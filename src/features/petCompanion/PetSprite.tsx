@@ -19,7 +19,6 @@ export function PetSprite({
   state,
   size = species.size,
   facing = 1,
-  animate = true,
   // Bump to replay a one-shot animation even when `state` is unchanged.
   playToken = 0,
   onAnimationEnd,
@@ -29,8 +28,6 @@ export function PetSprite({
   state: string
   size?: number
   facing?: 1 | -1
-  /** Hold the first frame without scheduling a timer for reduced motion. */
-  animate?: boolean
   playToken?: number
   onAnimationEnd?: () => void
 }) {
@@ -57,8 +54,6 @@ export function PetSprite({
   })
 
   useEffect(() => {
-    if (!animate) return
-
     if (clip.frames <= 1) {
       if (!loop) onEndRef.current?.()
       return
@@ -83,11 +78,11 @@ export function PetSprite({
 
     return () => clearInterval(id)
     // playToken forces a restart for repeated one-shots.
-  }, [state, playToken, clip.frames, clip.fps, loop, animate])
+  }, [state, playToken, clip.frames, clip.fps, loop])
 
   // Frames read left-to-right from (row, col), wrapping at `cols`, so a clip can
   // start mid-row or span rows.
-  const cell = clip.row * cols + (clip.col ?? 0) + (animate ? frameIdx : 0)
+  const cell = clip.row * cols + (clip.col ?? 0) + frameIdx
   const cx = cell % cols
   const cy = Math.floor(cell / cols)
 

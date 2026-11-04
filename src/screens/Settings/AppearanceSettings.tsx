@@ -27,8 +27,6 @@ import {TitleCase_Stroke2_Corner0_Rounded as Aa} from '#/components/icons/TitleC
 import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
 import {ACCENTS, DEFAULT_ACCENT} from '#/config/brand-theme'
-import {HalloweenAppearanceSettings} from '#/features/halloween/AppearanceSettings'
-import {useHalloween} from '#/features/halloween/context'
 import * as SettingsList from './components/SettingsList'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'AppearanceSettings'>
@@ -37,7 +35,6 @@ export function AppearanceSettingsScreen({}: Props) {
   const {fonts} = useAlf()
 
   const {colorMode, darkTheme} = useThemePrefs()
-  const {isActive: halloweenActive} = useHalloween()
   const {setColorMode, setDarkTheme} = useSetThemePrefs()
   const interfaceStyle = useInterfaceStyle()
   const setInterfaceStyle = useSetInterfaceStyle()
@@ -101,12 +98,11 @@ export function AppearanceSettingsScreen({}: Props) {
                   name: 'dark',
                 },
               ]}
-              value={halloweenActive ? 'dark' : colorMode}
-              disabled={halloweenActive}
+              value={colorMode}
               onChange={onChangeAppearance}
             />
 
-            {(halloweenActive || colorMode !== 'light') && (
+            {colorMode !== 'light' && (
               <Animated.View
                 entering={native(FadeInUp)}
                 exiting={native(FadeOutUp)}>
@@ -123,15 +119,13 @@ export function AppearanceSettingsScreen({}: Props) {
                       name: 'dark',
                     },
                   ]}
-                  value={halloweenActive ? 'dark' : (darkTheme ?? 'dim')}
-                  disabled={halloweenActive}
+                  value={darkTheme ?? 'dim'}
                   onChange={onChangeDarkTheme}
                 />
               </Animated.View>
             )}
 
             <AccentColorPicker />
-            <HalloweenAppearanceSettings />
 
             <SettingsList.Divider />
             <SettingsList.Group
@@ -221,7 +215,6 @@ export function AppearanceToggleButtonGroup<T extends string>({
   items,
   value,
   onChange,
-  disabled = false,
 }: {
   title: string
   description?: string
@@ -232,7 +225,6 @@ export function AppearanceToggleButtonGroup<T extends string>({
   }[]
   value: T
   onChange: (value: T) => void
-  disabled?: boolean
 }) {
   const t = useTheme()
   return (
@@ -260,9 +252,7 @@ export function AppearanceToggleButtonGroup<T extends string>({
             <SegmentedControl.Item
               key={item.name}
               label={item.label}
-              value={item.name}
-              disabled={disabled}
-              style={disabled ? {opacity: 0.5} : undefined}>
+              value={item.name}>
               <SegmentedControl.ItemText>
                 {item.label}
               </SegmentedControl.ItemText>
@@ -294,8 +284,7 @@ function AccentColorPicker() {
   }
   const {accentColor} = useThemePrefs()
   const {setAccentColor} = useSetThemePrefs()
-  const {isActive: halloweenActive} = useHalloween()
-  const selected = halloweenActive ? 'orange' : (accentColor ?? DEFAULT_ACCENT)
+  const selected = accentColor ?? DEFAULT_ACCENT
   return (
     <SettingsList.Group contentContainerStyle={[a.gap_sm]} iconInset={false}>
       <SettingsList.ItemIcon icon={ColorPaletteIcon} />
@@ -310,17 +299,9 @@ function AccentColorPicker() {
               testID={`accentColor-${key}`}
               accessibilityLabel={labels[key]}
               accessibilityHint={l`Sets the app accent color`}
-              accessibilityState={{
-                selected: isSelected,
-                disabled: halloweenActive,
-              }}
-              disabled={halloweenActive}
+              accessibilityState={{selected: isSelected}}
               onPress={() => setAccentColor(key)}
-              style={[
-                a.align_center,
-                a.gap_xs,
-                halloweenActive && {opacity: 0.5},
-              ]}>
+              style={[a.align_center, a.gap_xs]}>
               <View
                 style={[
                   a.rounded_full,
