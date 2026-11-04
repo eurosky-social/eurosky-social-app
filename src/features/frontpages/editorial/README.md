@@ -1,8 +1,8 @@
 # Editorial frontpages
 
-The shared account-backed publication detail layout for both the original
-newsrooms and news v2 frontpages. It uses the news explore geometry across the
-center and right columns, with a compact masthead and ruled story columns.
+The account-backed publication detail layout for news v2 frontpages. It uses the
+news explore geometry across the center and right columns, with a compact
+masthead and ruled story columns.
 Small screens stack the spread. Ordinary account profiles remain unchanged.
 
 ## Try it
@@ -11,19 +11,20 @@ Small screens stack the spread. Ordinary account profiles remain unchanged.
 - `/frontpage/wired.com` - WIRED, resolved through the active publication registry.
 - `/newsroom/:name` - the existing alias for the same publication detail page.
 
-`../PublicationScreen.tsx` supplies the account and publication name. The original
-newsroom adapter supplies its organization switcher above the masthead. The name
+`../PublicationScreen.tsx` supplies the account and publication name. With news
+v2 disabled, the original newsroom layout is served instead. The name
 and avatar open the normal profile. Follow appears on the right for other
 accounts. **Edit front page** is temporarily shown for everyone. The masthead has no extra
-News/Conversation/Profile/refresh/menu action strip. A link below the spread
-retains access to the publication/reporters' conversation and contextual rail.
+News/Conversation/Profile/refresh/menu action strip. The publication/reporters'
+conversation and contextual rail remain accessible at `?view=conversation`.
 The full bio, follower counts and normal profile actions remain on the profile.
 
 ## Content
 
-This presents the publication account's **own posts** on its frontpage. Both
-news-version adapters use the same renderer, while keeping their own registry
-lookup. Accountless aggregator outlets retain their existing article renderer. It reads the standard moderated author-feed query/cache, using
+This presents the publication account's **own posts** on its frontpage. The
+editorial renderer is only used with news v2 enabled. Accountless aggregator
+outlets retain their existing article renderer. It reads the standard moderated
+author-feed query/cache, using
 external-link metadata for article headlines and images, or native photos,
 galleries, videos and text when there is no link preview. Photo sets use the
 shared carousel and lightbox; native videos use the shared inline player.
