@@ -83,7 +83,7 @@ function Inner({
           </Text>
           <Text style={[a.text_md, a.leading_snug]}>
             <Trans>
-              Accounts with a scalloped blue check mark{' '}
+              Accounts with a scalloped check mark{' '}
               <RNText>
                 <VerifierCheck width={14} />
               </RNText>{' '}
