@@ -22,9 +22,10 @@
  *              (#f7f7f2) up to ink (#212121); the clean monochrome UI.
  *   ACCENT   - the primary_ ramp. Every themed affordance (buttons, links,
  *              toggles, focus rings, spinners) derives from this. The kit
- *              ships three interchangeable families (pink / blue / orange);
- *              `brand.json#accents` holds them and `#defaultAccent`
- *              picks the one this build ships.
+ *              supplies pink / blue / orange; the picker extends these into
+ *              a full rainbow with Tailwind-inspired families.
+ *              `brand.json#colors.accents` holds them in spectrum order;
+ *              `#colors.defaultAccent` picks the one this build ships.
  *
  * `buildPalettes(accentKey)` composes neutral + a chosen accent at runtime,
  * which is what a per-user accent picker uses; the module-level
@@ -106,9 +107,14 @@ const muNeutralSubdued: ContrastRamp = {
 /**
  * ACCENT families (the primary_ ramp). ALF pins *_500 across its light/dark
  * inversion and uses primary_500 as the solid-button fill / link colour, so
- * each ramp anchors _500 on the family's link/accent tone with the bright tint
- * higher on the ramp. This is the curated set a per-user accent picker chooses
- * from; `DEFAULT_ACCENT` is what this build ships.
+ * each ramp anchors _500 on the family's link/accent tone. All families share
+ * an OKLCH lightness curve: .98/.95/.90/.84/.77/.70/.55/.50/.44/.38/.32/.26/.20
+ * for stops 25 through 975. The .55 anchor balances the picker swatches while
+ * retaining WCAG AA contrast for white button text; _400 supplies brighter
+ * dark-mode links. Chroma is reduced to fit sRGB without shifting lightness
+ * or hue. Yellow stays warm amber and blue stays distinct from cyan.
+ * `brand-theme.test.ts` guards lightness and contrast after hex quantization.
+ * `DEFAULT_ACCENT` is what this build ships.
  */
 export const ACCENTS = brandColors.accents as Record<string, PrimaryRamp>
 export type AccentKey = keyof typeof brandColors.accents

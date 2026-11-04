@@ -28,8 +28,6 @@ import {
 import {isSnoozed, snooze, unsnooze} from '#/components/dialogs/nuxs/snoozing'
 import {type EnabledCheckProps} from '#/components/dialogs/nuxs/utils'
 import {useAnalytics} from '#/analytics'
-import {useHalloween} from '#/features/halloween/context'
-import {HalloweenInvitation} from '#/features/halloween/Invitation'
 import {
   enabled as isMuForYouFeedAnnouncementEnabled,
   MuForYouFeedAnnouncement,
@@ -109,9 +107,6 @@ function Inner({
   const ax = useAnalytics()
   const geolocation = useGeolocation()
   const {nuxs} = useNuxs()
-  const {shouldPrompt, shouldPromptCostume} = useHalloween()
-  const halloweenInvitationPending = shouldPrompt || shouldPromptCostume
-  const [halloweenInvitationOpen, setHalloweenInvitationOpen] = useState(false)
   const [snoozed, setSnoozed] = useState(() => {
     return isSnoozed()
   })
@@ -140,7 +135,6 @@ function Inner({
   }, [resetNuxs])
 
   useEffect(() => {
-    if (halloweenInvitationPending || halloweenInvitationOpen) return
     if (snoozed) return // comment this out to test
     if (!nuxs) return
 
@@ -189,8 +183,6 @@ function Inner({
     }
   }, [
     ax.features,
-    halloweenInvitationPending,
-    halloweenInvitationOpen,
     nuxs,
     snoozed,
     snoozeNuxDialog,
@@ -210,23 +202,6 @@ function Inner({
 
   return (
     <Context.Provider value={ctx}>
-      <HalloweenInvitation
-        canOpen={!activeNux}
-        onOpen={() => setHalloweenInvitationOpen(true)}
-        onClose={() => {
-          setHalloweenInvitationOpen(false)
-          snoozeNuxDialog()
-        }}
-      />
-      <HalloweenInvitation
-        kind="costume"
-        canOpen={!activeNux}
-        onOpen={() => setHalloweenInvitationOpen(true)}
-        onClose={() => {
-          setHalloweenInvitationOpen(false)
-          snoozeNuxDialog()
-        }}
-      />
       {/*For example, activeNux === Nux.NeueTypography && <NeueTypography />*/}
       {activeNux === Nux.MuForYouFeedAnnouncement && (
         <MuForYouFeedAnnouncement />

@@ -3,6 +3,10 @@ import {View} from 'react-native'
 import {useLingui} from '@lingui/react/macro'
 import {useHotkeysContext} from 'react-hotkeys-hook'
 
+import {
+  type CommonNavigationDestination,
+  type FlatNavigatorParams,
+} from '#/lib/routes/types'
 import {emitSoftReset} from '#/state/events'
 import {useSession} from '#/state/session'
 import {atoms as a, useTheme} from '#/alf'
@@ -25,6 +29,21 @@ import {
   setPostSelected,
 } from './postNavigation.web'
 import {useKeyboardShortcutsPreference} from './preferences'
+
+type FlatNavigationDestination = {
+  [Name in keyof FlatNavigatorParams]: {
+    name: Name
+    params?: FlatNavigatorParams[Name]
+  }
+}[keyof FlatNavigatorParams]
+
+/**
+ * Web screens, including the tab roots, share one flat stack, where the common
+ * navigation action navigates to any route.
+ */
+function navigateTo(destination: FlatNavigationDestination) {
+  return navigate(destination as CommonNavigationDestination)
+}
 
 const CHORD_TIMEOUT_MS = 1000
 const APP_CHARACTER_KEYS = new Set([
@@ -217,8 +236,7 @@ export function KeyboardShortcuts() {
     }
 
     const [name, params] = router.matchPath(href)
-    // @ts-expect-error Router.matchPath returns matching name and params as a correlated pair.
-    void navigate(name, params)
+    void navigateTo({name, params} as FlatNavigationDestination)
     clearSelection()
     selectOpenedPost(returnTarget)
     return true
@@ -271,35 +289,38 @@ export function KeyboardShortcuts() {
 
     switch (key) {
       case 'h':
-        void navigate('Home')
+        void navigateTo({name: 'Home'})
         break
       case 'w':
-        void navigate(NEWS_V2_ENABLED ? 'NewsExplore' : 'NewsFeed')
+        void navigateTo({name: NEWS_V2_ENABLED ? 'NewsExplore' : 'NewsFeed'})
         break
       case 'e':
-        void navigate('Search', {})
+        void navigateTo({name: 'Search', params: {}})
         break
       case 'n':
-        void navigate('Notifications')
+        void navigateTo({name: 'Notifications'})
         break
       case 'c':
-        void navigate('Messages', {})
+        void navigateTo({name: 'Messages', params: {}})
         break
       case 'f':
-        void navigate('Feeds')
+        void navigateTo({name: 'Feeds'})
         break
       case 'l':
-        void navigate('Lists')
+        void navigateTo({name: 'Lists'})
         break
       case 'b':
-        void navigate('Bookmarks')
+        void navigateTo({name: 'Bookmarks'})
         break
       case 'p':
         if (!currentAccount) return false
-        void navigate('Profile', {name: currentAccount.handle})
+        void navigateTo({
+          name: 'Profile',
+          params: {name: currentAccount.handle},
+        })
         break
       case 's':
-        void navigate('Settings')
+        void navigateTo({name: 'Settings'})
         break
       default:
         return false

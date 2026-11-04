@@ -99,8 +99,6 @@ module.exports = function (_config) {
           NSUserActivityTypes: ['INSendMessageIntent'],
           NSCameraUsageDescription:
             'Used for profile pictures, posts, and other kinds of content.',
-          NSMicrophoneUsageDescription:
-            'Used for posts and other kinds of content.',
           NSPhotoLibraryAddUsageDescription:
             'Used to save images to your library.',
           NSPhotoLibraryUsageDescription:
@@ -153,7 +151,7 @@ module.exports = function (_config) {
         entitlements: {
           'com.apple.developer.kernel.increased-memory-limit': true,
           'com.apple.developer.kernel.extended-virtual-addressing': true,
-          'com.apple.security.application-groups': 'group.social.mu.app',
+          'com.apple.security.application-groups': ['group.social.mu.app'],
           'com.apple.developer.usernotifications.communication': true,
           // 'com.apple.developer.device-information.user-assigned-device-name': true,
           'com.apple.developer.declared-age-range': true,
@@ -231,6 +229,7 @@ module.exports = function (_config) {
           'android.permission.READ_MEDIA_VISUAL_USER_SELECTED',
           'android.permission.READ_EXTERNAL_STORAGE',
           'android.permission.ACCESS_MEDIA_LOCATION',
+          'android.permission.ACCESS_FINE_LOCATION',
         ],
       },
       web: {
@@ -276,6 +275,19 @@ module.exports = function (_config) {
         'expo-sharing',
         'expo-video',
         [
+          'expo-camera',
+          {
+            microphonePermission: false,
+            recordAudioAndroid: false,
+          },
+        ],
+        [
+          'expo-image-picker',
+          {
+            microphonePermission: false,
+          },
+        ],
+        [
           'expo-localization',
           {
             /*
@@ -287,6 +299,8 @@ module.exports = function (_config) {
           },
         ],
         'expo-web-browser',
+        // Upstream's trending topics widget (expo-widgets, expo-background-task,
+        // withTrendingWidget) is disabled in mu.
         [
           'react-native-nano-icons',
           {
@@ -301,10 +315,13 @@ module.exports = function (_config) {
             })),
           },
         ],
-        [
-          'react-native-edge-to-edge',
-          {android: {enforceNavigationBarContrast: false}},
-        ],
+        /*
+         * Mods run in reverse registration order. Register the system bars
+         * plugin before expo-navigation-bar, which removes
+         * `android:windowLightNavigationBar` when no `style` is set.
+         */
+        './plugins/withAndroidStylesSystemBarsPlugin.js',
+        ['expo-navigation-bar', {enforceContrast: false}],
         /*
          * Expo runs Gradle mods in reverse registration order. Keep Bitdrift
          * before Sentry so its plugins block is prepended after Sentry's apply
@@ -373,6 +390,7 @@ module.exports = function (_config) {
         './plugins/withAndroidNoJitpackPlugin.js',
         './plugins/withAndroidPreparedTextLayoutPlugin.js',
         './plugins/withAndroidComposeVersion.js',
+        './plugins/withIOSWindowingControlStyle.js',
         './plugins/shareExtension/withShareExtensions.js',
         './plugins/notificationsExtension/withNotificationsExtension.js',
         [
@@ -452,7 +470,18 @@ module.exports = function (_config) {
           },
         ],
         ['expo-screen-orientation'],
-        ['expo-location'],
+        [
+          'expo-location',
+          {
+            locationWhenInUsePermission:
+              'mu uses your approximate location via GPS to determine the content and features available in your region.',
+            locationAlwaysAndWhenInUsePermission: false,
+            locationAlwaysPermission: false,
+            motionUsagePermission: false,
+            locationFullAccuracyPermission: false,
+            isIosReducedAccuracyByDefault: true,
+          },
+        ],
         [
           'expo-contacts',
           {

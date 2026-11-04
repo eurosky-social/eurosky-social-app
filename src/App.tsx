@@ -76,7 +76,6 @@ import {
 import {AnalyticsContext, setupDeviceId} from '#/analytics'
 import {getDeviceId} from '#/analytics/identifiers'
 import {IS_ANDROID, IS_IOS} from '#/env'
-import {HalloweenProvider} from '#/features/halloween/context'
 import {
   prefetchLiveEvents,
   Provider as LiveEventsProvider,
@@ -142,61 +141,60 @@ function InnerApp() {
         <ContextMenuProvider>
           <Splash isReady={isReady && hasCheckedLanding}>
             <VideoVolumeProvider>
-              <Fragment
-                // Resets the entire tree below when it changes:
-                key={currentAccount?.did}>
-                <QueryProvider currentDid={currentAccount?.did}>
-                  <PolicyUpdateOverlayProvider>
-                    <LiveEventsProvider>
-                      <AgeAssuranceV2Provider>
-                        <ComposerProvider>
-                          <MessagesProvider>
-                            {/* LabelDefsProvider MUST come before ModerationOptsProvider */}
-                            <LabelDefsProvider>
-                              <ModerationOptsProvider>
-                                <LoggedOutViewProvider>
-                                  <SelectedFeedProvider>
-                                    <HiddenRepliesProvider>
-                                      <HomeBadgeProvider>
-                                        <UnreadNotifsProvider>
-                                          <BackgroundNotificationPreferencesProvider>
-                                            <MutedThreadsProvider>
-                                              <ProgressGuideProvider>
-                                                <ServiceAccountManager>
-                                                  <EmailVerificationProvider>
-                                                    <HideBottomBarBorderProvider>
-                                                      <GestureHandlerRootView
-                                                        style={a.h_full}>
+              <GestureHandlerRootView style={a.h_full}>
+                <Fragment
+                  // Resets the entire tree below when it changes:
+                  key={currentAccount?.did}>
+                  <QueryProvider currentDid={currentAccount?.did}>
+                    <PolicyUpdateOverlayProvider>
+                      <LiveEventsProvider>
+                        <AgeAssuranceV2Provider>
+                          <ComposerProvider>
+                            <MessagesProvider>
+                              {/* LabelDefsProvider MUST come before ModerationOptsProvider */}
+                              <LabelDefsProvider>
+                                <ModerationOptsProvider>
+                                  <LoggedOutViewProvider>
+                                    <SelectedFeedProvider>
+                                      <HiddenRepliesProvider>
+                                        <HomeBadgeProvider>
+                                          <UnreadNotifsProvider>
+                                            <BackgroundNotificationPreferencesProvider>
+                                              <MutedThreadsProvider>
+                                                <ProgressGuideProvider>
+                                                  <ServiceAccountManager>
+                                                    <EmailVerificationProvider>
+                                                      <HideBottomBarBorderProvider>
                                                         <GlobalGestureEventsProvider>
                                                           <IntentDialogProvider>
                                                             <TranslateOnDeviceProvider>
                                                               <TestCtrls />
                                                               <Shell />
-                                                              <ToastOutlet />
                                                             </TranslateOnDeviceProvider>
                                                           </IntentDialogProvider>
                                                         </GlobalGestureEventsProvider>
-                                                      </GestureHandlerRootView>
-                                                    </HideBottomBarBorderProvider>
-                                                  </EmailVerificationProvider>
-                                                </ServiceAccountManager>
-                                              </ProgressGuideProvider>
-                                            </MutedThreadsProvider>
-                                          </BackgroundNotificationPreferencesProvider>
-                                        </UnreadNotifsProvider>
-                                      </HomeBadgeProvider>
-                                    </HiddenRepliesProvider>
-                                  </SelectedFeedProvider>
-                                </LoggedOutViewProvider>
-                              </ModerationOptsProvider>
-                            </LabelDefsProvider>
-                          </MessagesProvider>
-                        </ComposerProvider>
-                      </AgeAssuranceV2Provider>
-                    </LiveEventsProvider>
-                  </PolicyUpdateOverlayProvider>
-                </QueryProvider>
-              </Fragment>
+                                                      </HideBottomBarBorderProvider>
+                                                    </EmailVerificationProvider>
+                                                  </ServiceAccountManager>
+                                                </ProgressGuideProvider>
+                                              </MutedThreadsProvider>
+                                            </BackgroundNotificationPreferencesProvider>
+                                          </UnreadNotifsProvider>
+                                        </HomeBadgeProvider>
+                                      </HiddenRepliesProvider>
+                                    </SelectedFeedProvider>
+                                  </LoggedOutViewProvider>
+                                </ModerationOptsProvider>
+                              </LabelDefsProvider>
+                            </MessagesProvider>
+                          </ComposerProvider>
+                        </AgeAssuranceV2Provider>
+                      </LiveEventsProvider>
+                    </PolicyUpdateOverlayProvider>
+                  </QueryProvider>
+                </Fragment>
+                <ToastOutlet />
+              </GestureHandlerRootView>
             </VideoVolumeProvider>
           </Splash>
         </ContextMenuProvider>
@@ -240,9 +238,7 @@ function App() {
                                 <LandingProvider>
                                   <SafeAreaProvider
                                     initialMetrics={initialWindowMetrics}>
-                                    <HalloweenProvider>
-                                      <InnerApp />
-                                    </HalloweenProvider>
+                                    <InnerApp />
                                   </SafeAreaProvider>
                                 </LandingProvider>
                               </BottomSheetProvider>

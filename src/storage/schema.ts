@@ -72,6 +72,12 @@ export type Device = {
   policyUpdateBannerDismissed?: boolean
   /** Device-wide override for public and authenticated AppView requests. */
   appViewOverride: AppViewPreference | undefined
+  /**
+   * Whether the trending topics widget was installed the last time we checked,
+   * so `trendingWidget:installed` and `trendingWidget:uninstalled` are only
+   * logged when that changes.
+   */
+  trendingWidgetInstalled?: boolean
   pendingOTAUpdate?: {
     attemptedAt: number
     channel: string

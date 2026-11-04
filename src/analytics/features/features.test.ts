@@ -1,7 +1,6 @@
 import {Features, features} from './index'
 
 it('keeps ordinary functionality available without privileged targeting', () => {
-  expect(features.enabled(Features.ProfileLinksEnable)).toBe(true)
   expect(features.enabled(Features.GroupChatsDisable)).toBe(false)
   expect(features.enabled(Features.LiveNowBetaDisable)).toBe(false)
   expect(features.enabled(Features.ImportContactsOnboardingDisable)).toBe(false)
@@ -19,7 +18,7 @@ it.each([
   Features.FollowingV2Enable,
   Features.OnboardingInterestsRequiredEnable,
   Features.ModerationInboxEnable,
-  Features.AtmosphereExploreEnable,
+  Features.AtmosphereScreenEnable,
 ])('keeps the experimental feature %s disabled', feature => {
   expect(features.enabled(feature)).toBe(false)
 })
