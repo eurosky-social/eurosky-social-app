@@ -76,7 +76,6 @@ import {
 import {AnalyticsContext, setupDeviceId} from '#/analytics'
 import {getDeviceId} from '#/analytics/identifiers'
 import {IS_ANDROID, IS_IOS} from '#/env'
-import {HalloweenProvider} from '#/features/halloween/context'
 import {
   prefetchLiveEvents,
   Provider as LiveEventsProvider,
@@ -240,9 +239,7 @@ function App() {
                                 <LandingProvider>
                                   <SafeAreaProvider
                                     initialMetrics={initialWindowMetrics}>
-                                    <HalloweenProvider>
-                                      <InnerApp />
-                                    </HalloweenProvider>
+                                    <InnerApp />
                                   </SafeAreaProvider>
                                 </LandingProvider>
                               </BottomSheetProvider>
