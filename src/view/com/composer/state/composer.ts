@@ -75,7 +75,6 @@ export type EmbedDraft = {
 }
 
 export type PostDraft = {
-  halloweenCostumeNumber?: number
   id: string
   richtext: RichText
   labels: SelfLabel[]
@@ -634,9 +633,7 @@ export function createComposerState({
   initQuoteUri,
   initInteractionSettings,
   initEditPost,
-  halloweenCostumeNumber,
 }: {
-  halloweenCostumeNumber?: number
   initText: string | undefined
   initExternalUri: string | undefined
   initMention: string | undefined
@@ -760,7 +757,6 @@ export function createComposerState({
       posts: [
         {
           id: nanoid(),
-          halloweenCostumeNumber,
           richtext: initRichText,
           shortenedGraphemeLength: getShortenedLength(initRichText),
           labels: [],

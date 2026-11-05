@@ -1,6 +1,5 @@
 import {init} from '@sentry/browser'
 
-import {featureFlagsIntegration} from '#/logger/sentry/featureFlags'
 import {dropExpectedNetworkErrors} from '#/logger/sentry/network-errors'
 import * as env from '#/env'
 
@@ -47,8 +46,5 @@ init({
    * SDK's equivalent is the BrowserSession default integration, so filter it
    * out to match.
    */
-  integrations: defaults => [
-    ...defaults.filter(i => i.name !== 'BrowserSession'),
-    featureFlagsIntegration,
-  ],
+  integrations: defaults => defaults.filter(i => i.name !== 'BrowserSession'),
 })

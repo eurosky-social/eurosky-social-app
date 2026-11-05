@@ -1,6 +1,7 @@
 # Frontpages
 
-Publication detail pages use one shared editorial layout in both news versions.
+Publication detail pages use the editorial layout only with news v2 enabled.
+With news v2 disabled, the original RSS-based newsroom pages remain in use.
 Ordinary `/profile/:name` pages keep the normal social profile and its tabs.
 The news feed, explore spread, outlet directory, article pages and discussions
 remain separate, unchanged surfaces.
@@ -19,11 +20,11 @@ remain separate, unchanged surfaces.
   `/frontpage` opens the outlet directory.
 - With news v2 disabled, `legacy/NewsroomScreen.tsx` resolves the original
   publisher registry by ID, DID or handle. `/frontpage` opens its default
-  publication. Its news-organization switcher appears above the selected
-  publication's masthead.
-- `preview.ts` adds an explicit `/frontpage/editorial-test` preview using the
-  WIRED-seeded test account. It works with either news version without creating
-  a synthetic aggregator outlet or replacing the account's profile.
+  publication. It keeps the original switcher, masthead, RSS articles, article
+  discussion and publisher/reporters' conversation feed.
+- With news v2 enabled, `preview.ts` adds an explicit
+  `/frontpage/editorial-test` preview using the WIRED-seeded test account,
+  without creating a synthetic aggregator outlet or replacing its profile.
 
 `useProfileFrontpagePath.ts` gives every profile a **Frontpage** shortcut
 with news v2 (temporarily, like editing): an outlet's opens its slug, looked up
@@ -33,7 +34,7 @@ into these routes. Handles resolve to the canonical publication slug/ID.
 
 ## Publication page
 
-`PublicationScreen.tsx` loads the live account and renders
+With news v2 enabled, `PublicationScreen.tsx` loads the live account and renders
 [`editorial/`](editorial/README.md) for account-backed publications:
 
 - A compact masthead with profile-linked avatar/name and verification badge.
@@ -43,10 +44,10 @@ into these routes. Handles resolve to the canonical publication slug/ID.
 - Own original posts presented as a wide newspaper spread, with real article
   metadata, native post media, rich text and social engagement.
 - Owner-published ordering, sizes, hidden posts, feeds and starter packs in
-  the public `social.mu.frontpage/self` record. Both news versions read the
-  same record and enforce the same ownership and compare-and-swap rules.
-- A contextual link below the spread opens the publication/reporters'
-  conversation at `?view=conversation`.
+  the public `social.mu.frontpage/self` record, with ownership and
+  compare-and-swap rules. News v1 does not read or edit this record.
+- The publication/reporters' conversation remains accessible at
+  `?view=conversation`.
 
 Outlets without an AT Protocol account retain their aggregator masthead and
 articles (`components/FrontpageMasthead.tsx`, `FrontpageArticles.tsx`). They do
@@ -68,14 +69,14 @@ scrolling on web. Normal profiles retain their normal shell/right rail.
 
 - `FrontpageScreen.tsx` - aggregator publication resolution.
 - `legacy/NewsroomScreen.tsx` - original registry resolution and switcher.
-- `PublicationScreen.tsx` - shared detail, status and conversation shells.
+- `PublicationScreen.tsx` - news v2 detail, status and conversation shells.
 - `editorial/` - publication layout, rendering, editing, records and tests.
 - `frontpages.ts` - aggregator mapping, paths, domain lookups and reporters.
 - `components/` - accountless articles/masthead, post link chips and news v2 rail.
 - `directory/` - outlet directory (`/outlets`, `/newsrooms`).
 - `legacy/` - original registry, switcher, post link chip and contextual rail.
 
-The superseded legacy masthead, RSS detail renderer and its private queries
-have been removed. Shared news RSS/explore/article functionality is not removed.
+The original masthead, RSS detail renderer and private queries remain in
+`legacy/` for news v1. The editorial layout and editor are news v2 only.
 
 Tests: `pnpm test --runInBand src/features/frontpages`.
