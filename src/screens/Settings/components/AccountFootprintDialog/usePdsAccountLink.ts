@@ -1,5 +1,5 @@
-import {toNiceHostingUrl} from '#/lib/strings/url-helpers'
 import {useSession} from '#/state/session'
+import {pdsAccountLink} from './pdsAccountLink'
 
 /**
  * Where an OAuth user deletes their account: the hosting provider's account
@@ -7,9 +7,8 @@ import {useSession} from '#/state/session'
  */
 export function usePdsAccountLink() {
   const {currentAccount} = useSession()
-  const pdsUrl = currentAccount?.pdsUrl ?? currentAccount?.service ?? ''
-  return {
-    host: toNiceHostingUrl(pdsUrl),
-    url: pdsUrl ? new URL('/account', pdsUrl).href : '',
-  }
+  return pdsAccountLink({
+    pdsUrl: currentAccount?.pdsUrl,
+    service: currentAccount?.service,
+  })
 }

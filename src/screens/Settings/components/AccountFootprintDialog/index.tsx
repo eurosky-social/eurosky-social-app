@@ -83,6 +83,8 @@ function Inner({
     useAccountBlobCountQuery()
 
   const formatCount = (count: number) => i18n.number(count)
+  const formatRecordCount = (count: number) =>
+    data?.counted ? formatCount(count) : ''
 
   const recordsMaxHeight = Math.min(RECORDS_MAX_HEIGHT, windowHeight * 0.45)
   const [hasMoreAbove, setHasMoreAbove] = useState(false)
@@ -142,7 +144,7 @@ function Inner({
             </ButtonText>
           </Button>
         </View>
-      ) : data && (data.length > 0 || !!blobCount) ? (
+      ) : data && (data.services.length > 0 || !!blobCount) ? (
         <View
           style={[
             a.relative,
@@ -177,11 +179,11 @@ function Inner({
                 />
               </View>
             )}
-            {data.map((service, index) => (
+            {data.services.map((service, index) => (
               <ServiceRow
                 key={service.key}
                 service={service}
-                formatCount={formatCount}
+                formatCount={formatRecordCount}
                 isFirst={index === 0 && (isBlobCountError || blobCount === 0)}
               />
             ))}
@@ -268,6 +270,27 @@ function Inner({
               <Trans>Cancel</Trans>
             </ButtonText>
           </Button>
+          {useHostingProvider && !pdsAccountLink.isBlueskyHosted && (
+            <Text
+              style={[
+                a.pt_xs,
+                a.text_sm,
+                a.text_center,
+                t.atoms.text_contrast_medium,
+              ]}>
+              {action === 'delete' ? (
+                <Trans>
+                  If this page doesn’t open, your hosting provider can delete
+                  your account for you.
+                </Trans>
+              ) : (
+                <Trans>
+                  If this page doesn’t open, your hosting provider can
+                  deactivate your account for you.
+                </Trans>
+              )}
+            </Text>
+          )}
         </View>
       )}
 

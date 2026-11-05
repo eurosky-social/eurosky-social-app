@@ -9,6 +9,17 @@ describe('serviceForCollection', () => {
     expect(serviceForCollection('app.bsky.feed.post').name).toBe('Bluesky')
     expect(serviceForCollection('social.mu.newsFeedPrefs').name).toBe('Mu')
     expect(serviceForCollection('sh.tangled.repo').name).toBe('Tangled')
+    expect(serviceForCollection('social.grain.actor.profile').name).toBe(
+      'Grain',
+    )
+    expect(serviceForCollection('net.anisota.beta.game.log').name).toBe(
+      'Anisota',
+    )
+    expect(serviceForCollection('blog.pckt.mini.post').name).toBe('pckt')
+    expect(serviceForCollection('fm.plyr.track').name).toBe('plyr.fm')
+    expect(serviceForCollection('app.offprint.document.article').name).toBe(
+      'Offprint',
+    )
   })
 
   it('does not match a prefix that only shares leading characters', () => {
@@ -33,6 +44,27 @@ describe('groupByService', () => {
     expect(result[0].collections.map(c => c.nsid)).toEqual([
       'app.bsky.feed.like',
       'app.bsky.feed.post',
+    ])
+  })
+})
+
+describe('groupByService without counts', () => {
+  it('puts services with more record types first', () => {
+    const result = groupByService(
+      [
+        'xyz.statusphere.status',
+        'app.bsky.feed.like',
+        'app.bsky.feed.post',
+        'pub.leaflet.document',
+        'pub.leaflet.publication',
+        'app.bsky.actor.profile',
+      ].map(nsid => ({nsid, count: 0})),
+    )
+
+    expect(result.map(s => s.name)).toEqual([
+      'Bluesky',
+      'Leaflet',
+      'Statusphere',
     ])
   })
 })

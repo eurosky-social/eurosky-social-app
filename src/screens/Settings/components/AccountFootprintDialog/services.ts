@@ -10,17 +10,27 @@ const KNOWN_SERVICES: {prefix: string; name: string}[] = [
   {prefix: 'fyi.unravel.frontpage', name: 'Frontpage'},
   {prefix: 'com.whtwnd', name: 'WhiteWind'},
   {prefix: 'pub.leaflet', name: 'Leaflet'},
+  {prefix: 'blog.pckt', name: 'pckt'},
+  {prefix: 'app.offprint', name: 'Offprint'},
   {prefix: 'events.smokesignal', name: 'Smoke Signal'},
   {prefix: 'rsvp.atmo', name: 'Atmo'},
   {prefix: 'community.lexicon.calendar', name: 'Calendar events'},
   {prefix: 'fm.teal', name: 'teal.fm'},
   {prefix: 'app.rocksky', name: 'Rocksky'},
+  {prefix: 'fm.plyr', name: 'plyr.fm'},
   {prefix: 'blue.flashes', name: 'Flashes'},
   {prefix: 'so.sprk', name: 'Spark'},
   {prefix: 'com.shinolabs.pinksea', name: 'PinkSea'},
   {prefix: 'blue.linkat', name: 'Linkat'},
   {prefix: 'xyz.statusphere', name: 'Statusphere'},
   {prefix: 'app.popsky', name: 'Popsky'},
+  {prefix: 'social.grain', name: 'Grain'},
+  {prefix: 'place.stream', name: 'Streamplace'},
+  {prefix: 'net.anisota', name: 'Anisota'},
+  {prefix: 'site.standard', name: 'Standard.site'},
+  {prefix: 'com.germnetwork', name: 'Germ'},
+  {prefix: 'com.atprotofans', name: 'ATProtoFans'},
+  {prefix: 'co.goodfeeds', name: 'Goodfeeds'},
   {prefix: 'com.atproto', name: 'AT Protocol'},
 ]
 
@@ -66,7 +76,8 @@ export type ServiceFootprint = {
 }
 
 /**
- * Groups per-collection counts into services, largest first.
+ * Groups per-collection counts into services, largest first. Without counts,
+ * services with more record types come first.
  */
 export function groupByService(
   collections: CollectionCount[],
@@ -89,7 +100,10 @@ export function groupByService(
     )
   }
   return services.sort(
-    (x, y) => y.total - x.total || x.name.localeCompare(y.name),
+    (x, y) =>
+      y.total - x.total ||
+      y.collections.length - x.collections.length ||
+      x.name.localeCompare(y.name),
   )
 }
 
