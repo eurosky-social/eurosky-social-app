@@ -168,6 +168,7 @@ import {NewsroomScreen as LegacyFrontpageScreen} from '#/features/frontpages/leg
 import {InviteScannerScreen} from '#/features/inviteFriends'
 import {NewsArticleScreen} from '#/features/news/article/NewsArticleScreen'
 import {NewsExploreScreen} from '#/features/news/explore'
+import {NewsOutletsScreen} from '#/features/news/outlets'
 import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
 import {NewsFeedScreen as LegacyNewsFeedScreen} from '#/features/newsFeed/legacy/NewsFeedScreen'
 import {NewsFeedScreen} from '#/features/newsFeed/NewsFeedScreen'
@@ -247,6 +248,13 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
           title: title(msg`${BRAND.name} News`),
           requireAuth: true,
         }}
+      />
+      <Stack.Screen
+        name="NewsOutlets"
+        getComponent={() =>
+          NEWS_V2_ENABLED ? NewsOutletsScreen : NotFoundScreen
+        }
+        options={{title: title(msg`Outlets`), requireAuth: true}}
       />
       <Stack.Screen
         name="OutletDirectory"

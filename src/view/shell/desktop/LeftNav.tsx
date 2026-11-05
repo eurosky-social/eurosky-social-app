@@ -445,6 +445,7 @@ interface NavItemProps {
 const NEWS_HUB_ROUTES = [
   'NewsFeed',
   'NewsSettings',
+  'NewsOutlets',
   'OutletDirectory',
   'Frontpage',
   'NewsArticle',

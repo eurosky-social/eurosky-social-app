@@ -102,8 +102,8 @@ With the flag off:
 - the profile header's Frontpage button and the frontpage chip under link
   embeds come from the publisher registry, not the news aggregator
   (`frontpages/useProfileFrontpagePath.ts`, `Post/Embed/index.tsx`)
-- `/news/settings`, `/news/explore`, `/news/article` and `/outlets`
-  resolve to Not Found
+- `/news/settings`, `/news/explore`, `/news/outlets`, `/news/article` and
+  `/outlets` resolve to Not Found
 - the left nav, drawer and `w` shortcut point at `/news`, labelled “News”
 
 The dev, staging and Oso preview web deploys set the flag; production does
