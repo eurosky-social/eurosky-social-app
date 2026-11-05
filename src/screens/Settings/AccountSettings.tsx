@@ -217,10 +217,7 @@ export function AccountSettingsScreen({}: Props) {
       <ChangePasswordDialog control={changePasswordControl} />
       <ExportCarDialog control={exportCarControl} />
       <DeactivateAccountDialog control={deactivateAccountControl} />
-      <DeleteAccountDialog
-        control={deleteAccountControl}
-        deactivateDialogControl={deactivateAccountControl}
-      />
+      <DeleteAccountDialog control={deleteAccountControl} />
     </Layout.Screen>
   )
 }
