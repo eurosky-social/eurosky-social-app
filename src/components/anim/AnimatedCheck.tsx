@@ -13,7 +13,10 @@ import {type Props, useCommonSVGProps} from '#/components/icons/common'
 const AnimatedPath = Animated.createAnimatedComponent(Path)
 const AnimatedCircle = Animated.createAnimatedComponent(Circle)
 
-const PATH = 'M14.1 27.2l7.1 7.2 16.7-16.8'
+/** Lucide circle-check geometry, kept as strokes for the draw animation. */
+const PATH = 'm9 12 2 2 4-4'
+const CIRCLE_LENGTH = 2 * Math.PI * 10
+const CHECK_LENGTH = Math.SQRT2 * 6
 
 export interface AnimatedCheckRef {
   play(cb?: () => void): void
@@ -30,10 +33,10 @@ export const AnimatedCheck = forwardRef<AnimatedCheckRef, AnimatedCheckProps>(
     const checkAnim = useSharedValue(0)
 
     const circleAnimatedProps = useAnimatedProps(() => ({
-      strokeDashoffset: 166 - circleAnim.get() * 166,
+      strokeDashoffset: CIRCLE_LENGTH * (1 - circleAnim.get()),
     }))
     const checkAnimatedProps = useAnimatedProps(() => ({
-      strokeDashoffset: 48 - 48 * checkAnim.get(),
+      strokeDashoffset: CHECK_LENGTH * (1 - checkAnim.get()),
     }))
 
     const play = useCallback(
@@ -66,26 +69,29 @@ export const AnimatedCheck = forwardRef<AnimatedCheckRef, AnimatedCheckProps>(
       <Svg
         fill="none"
         {...rest}
-        viewBox="0 0 52 52"
+        viewBox="0 0 24 24"
         width={size}
         height={size}
         style={style}>
         <AnimatedCircle
           animatedProps={circleAnimatedProps}
-          cx="26"
-          cy="26"
-          r="24"
+          cx="12"
+          cy="12"
+          r="10"
           fill="none"
           stroke={fill}
-          strokeWidth={4}
-          strokeDasharray={166}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeDasharray={CIRCLE_LENGTH}
         />
         <AnimatedPath
           animatedProps={checkAnimatedProps}
           stroke={fill}
           d={PATH}
-          strokeWidth={4}
-          strokeDasharray={48}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeDasharray={CHECK_LENGTH}
         />
       </Svg>
     )

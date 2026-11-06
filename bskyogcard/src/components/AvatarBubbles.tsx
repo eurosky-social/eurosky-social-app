@@ -1,4 +1,5 @@
 import {Img} from './Img.js'
+import {PersonIcon} from './Lucide.js'
 
 const SCALE = 3
 const BASE_SIZE = 120
@@ -30,9 +31,6 @@ const LAYOUTS: Record<1 | 2 | 3 | 4, BubbleConfig[]> = {
     {size: 32, x: 75, y: 12},
   ],
 }
-
-const PERSON_PATH =
-  'M12.233 2a4.433 4.433 0 1 0 0 8.867 4.433 4.433 0 0 0 0-8.867ZM12.233 12.133c-3.888 0-6.863 2.263-8.071 5.435-.346.906-.11 1.8.44 2.436.535.619 1.36.996 2.25.996h10.762c.89 0 1.716-.377 2.25-.996.55-.636.786-1.53.441-2.436-1.208-3.173-4.184-5.435-8.072-5.435Z'
 
 export function AvatarBubbles(props: {images: (Buffer | null)[]}) {
   const count = Math.min(props.images.length, 4) as 1 | 2 | 3 | 4
@@ -109,13 +107,11 @@ function Placeholder(props: {size: number}) {
         alignItems: 'center',
         justifyContent: 'center',
       }}>
-      <svg
+      <PersonIcon
         width={iconSize}
         height={iconSize}
-        viewBox="0 0 24 24"
-        style={{position: 'absolute', left: offset, top: offset}}>
-        <path d={PERSON_PATH} fill="white" />
-      </svg>
+        style={{position: 'absolute', left: offset, top: offset}}
+      />
     </div>
   )
 }

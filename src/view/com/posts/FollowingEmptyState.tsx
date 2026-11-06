@@ -4,13 +4,13 @@ import {Trans, useLingui} from '@lingui/react/macro'
 import {useNavigation} from '@react-navigation/native'
 
 import {usePalette} from '#/lib/hooks/usePalette'
-import {MagnifyingGlassIcon} from '#/lib/icons'
 import {getTabNavigationAction} from '#/lib/routes/navigation'
 import {type NavigationProp} from '#/lib/routes/types'
 import {s} from '#/lib/styles'
 import {atoms as a} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {ChevronRight_Stroke2_Corner0_Rounded as ChevronRightIcon} from '#/components/icons/Chevron'
+import {MagnifyingGlass_Stroke2_Corner0_Rounded as MagnifyingGlassIcon} from '#/components/icons/MagnifyingGlass'
 import {IS_WEB} from '#/env'
 import {Text} from '../util/text/Text'
 
@@ -36,7 +36,7 @@ export function FollowingEmptyState() {
     <View style={styles.container}>
       <View style={styles.inner}>
         <View style={styles.iconContainer}>
-          <MagnifyingGlassIcon style={[styles.icon, pal.text]} size={62} />
+          <MagnifyingGlassIcon style={[styles.icon, pal.text]} width={62} />
         </View>
         <Text type="xl-medium" style={[s.textCenter, pal.text]}>
           <Trans>

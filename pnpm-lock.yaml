@@ -804,15 +804,18 @@ importers:
       '@eloqnt/cli':
         specifier: 0.6.26
         version: 0.6.26
+      '@filled-lucide/static':
+        specifier: 1.52.1
+        version: 1.52.1
       '@lingui/babel-plugin-lingui-macro':
         specifier: ^5.9.2
         version: 5.9.5(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
       '@lingui/cli':
         specifier: ^5.9.2
         version: 5.9.5(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
-      '@phosphor-icons/core':
-        specifier: 2.1.1
-        version: 2.1.1
+      '@lucide/lab':
+        specifier: 0.12.0
+        version: 0.12.0
       '@react-native/babel-preset':
         specifier: 0.88.1
         version: 0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1)
@@ -909,6 +912,9 @@ importers:
       lint-staged:
         specifier: ^17.0.8
         version: 17.0.8
+      lucide-static:
+        specifier: 1.52.0
+        version: 1.52.0
       node:
         specifier: runtime:^24.22.1
         version: runtime:24.22.1
@@ -930,6 +936,9 @@ importers:
       svgo:
         specifier: ^4.0.2
         version: 4.0.2
+      svgpath:
+        specifier: 2.6.0
+        version: 2.6.0
       ts-plugin-sort-import-suggestions:
         specifier: ^1.0.4
         version: 1.0.4
@@ -2503,6 +2512,9 @@ packages:
   '@fastify/merge-json-schemas@0.2.1':
     resolution: {integrity: sha512-OA3KGBCy6KtIvLf8DINC5880o5iBlDX4SxzLQS8HorJAbqluzLRn80UXU0bxZn7UOFhFgpRJDasfwn9nG4FG4A==}
 
+  '@filled-lucide/static@1.52.1':
+    resolution: {integrity: sha512-k/mq4ZHVkBMgEQrKBiAOCChBpf1xU1Qs0alGUSOd+YEEjgRkY5mcB3CNwQhgaTr0MsqNznycD4iq9wrRZm8w7A==}
+
   '@floating-ui/core@1.7.5':
     resolution: {integrity: sha512-1Ih4WTWyw0+lKyFMcBHGbb5U5FtuHJuujoyyr5zTaWS5EYMeT6Jb2AuDeftsCsEuchO+mM2ij5+q9crhydzLhQ==}
 
@@ -2975,6 +2987,9 @@ packages:
       babel-plugin-macros:
         optional: true
 
+  '@lucide/lab@0.12.0':
+    resolution: {integrity: sha512-x6gNsmSppU1ZUuT5kyYAAUeEC8IhqIAO917/sNzEG7QdIort7x/GJ6d0TP5YfSDczTdmK2OSacPAlvmpg7D2DQ==}
+
   '@messageformat/parser@5.1.1':
     resolution: {integrity: sha512-3p0YRGCcTUCYvBKLIxtDDyrJ0YijGIwrTRu1DT8gIviIDZru8H23+FkY6MJBzM1n9n20CiM4VeDYuBsrrwnLjg==}
 
@@ -3293,9 +3308,6 @@ packages:
   '@parcel/watcher@2.6.0':
     resolution: {integrity: sha512-7FNeNl8NCE7aINx7WXiKQrPYZWC/hvrTsmk6zmxbI7LTXE7hVek/n8AfVgpe2y82zl3w0HvCHN0bVKMBoJcC0w==}
     engines: {node: '>= 10.0.0'}
-
-  '@phosphor-icons/core@2.1.1':
-    resolution: {integrity: sha512-v4ARvrip4qBCImOE5rmPUylOEK4iiED9ZyKjcvzuezqMaiRASCHKcRIuvvxL/twvLpkfnEODCOJp5dM4eZilxQ==}
 
   '@pinojs/redact@0.4.0':
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
@@ -7750,6 +7762,9 @@ packages:
   lru-cache@6.0.0:
     resolution: {integrity: sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==}
     engines: {node: '>=10'}
+
+  lucide-static@1.52.0:
+    resolution: {integrity: sha512-0zZYihAze4ZmUCcyNa9OkWYqn/Y5f9AdTh02AZIxMtP5ravcTTfoSIAnUPBH6ZvKxt+ZW28JB0ldzLRyD82fcw==}
 
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
@@ -12249,6 +12264,8 @@ snapshots:
     dependencies:
       dequal: 2.0.3
 
+  '@filled-lucide/static@1.52.1': {}
+
   '@floating-ui/core@1.7.5':
     dependencies:
       '@floating-ui/utils': 0.2.11
@@ -12849,6 +12866,8 @@ snapshots:
     optionalDependencies:
       '@lingui/babel-plugin-lingui-macro': 5.9.5(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
 
+  '@lucide/lab@0.12.0': {}
+
   '@messageformat/parser@5.1.1':
     dependencies:
       moo: 0.5.3
@@ -13034,8 +13053,6 @@ snapshots:
       '@parcel/watcher-linux-x64-musl': 2.6.0
       '@parcel/watcher-win32-arm64': 2.6.0
       '@parcel/watcher-win32-x64': 2.6.0
-
-  '@phosphor-icons/core@2.1.1': {}
 
   '@pinojs/redact@0.4.0': {}
 
@@ -18069,6 +18086,8 @@ snapshots:
   lru-cache@6.0.0:
     dependencies:
       yallist: 4.0.0
+
+  lucide-static@1.52.0: {}
 
   magic-string@0.30.21:
     dependencies:

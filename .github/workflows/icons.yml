@@ -3,8 +3,10 @@ name: Icon codegen
 on:
   pull_request:
     paths:
-      - 'scripts/gen-phosphor-icons.mjs'
-      - 'scripts/phosphor*.json'
+      - 'scripts/gen-lucide-icons.mjs'
+      - 'scripts/lucide-icons.json'
+      - 'bskyembed/src/icons/**'
+      - 'bskyogcard/src/components/Lucide.tsx'
       - 'assets/icons/**'
       - 'assets/nano-icons/**'
       - 'scripts/icons/**'
@@ -18,8 +20,10 @@ on:
       - main
       - eurosky/fork
     paths:
-      - 'scripts/gen-phosphor-icons.mjs'
-      - 'scripts/phosphor*.json'
+      - 'scripts/gen-lucide-icons.mjs'
+      - 'scripts/lucide-icons.json'
+      - 'bskyembed/src/icons/**'
+      - 'bskyogcard/src/components/Lucide.tsx'
       - 'assets/icons/**'
       - 'assets/nano-icons/**'
       - 'scripts/icons/**'
@@ -60,3 +64,5 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: 🖼️ Check generated icons
         run: pnpm icons:check
+      - name: Test icon geometry and native fonts
+        run: pnpm icons:test

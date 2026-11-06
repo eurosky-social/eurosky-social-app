@@ -34,7 +34,7 @@ from `assets/icons/`, `bskyembed/assets/`, and the app's icon components. Do not
 files during an upstream sync unless you hold an appropriate license from Iconists.
 Upstream's native icon fonts must also be rebuilt from the replacement SVGs, never copied as-is.
 
-The replacement UI icon system is generated from MIT-licensed Phosphor Icons. Its source,
+The replacement UI icon system is generated from Lucide and Filled Lucide (ISC/MIT). Its source,
 generation commands, and notice are described in [Section 6](#6-third-party-assets-you-may-redistribute)
 and [`assets/icons/README.md`](./assets/icons/README.md).
 
@@ -81,7 +81,8 @@ Keep the applicable notices with redistributed copies.
 | Inter typeface | `assets/fonts/inter/`, `bskyogcard/src/assets/fonts/Inter-*.ttf` | The Inter Project Authors | SIL Open Font License 1.1 | [`OFL.txt`](./assets/fonts/inter/OFL.txt) |
 | Noto Sans families (OG card service) | Downloaded by `bskyogcard/scripts/install-fonts.ts` | Adobe, Google LLC, and The Noto Project Authors | SIL Open Font License 1.1 | [`README.md`](./bskyogcard/src/assets/fonts/README.md) |
 | country-flag-icons | `assets/icons/flags/` | @catamphetamine | MIT | [`LICENSE`](./assets/icons/flags/LICENSE) |
-| Phosphor UI icons | `assets/icons/ui/`, Phosphor replacements in `assets/icons/brands/`, and their generated components/fonts<br>`bskyembed/src/icons/Phosphor.tsx` | Phosphor Icons | MIT | [`NOTICE.md`](./NOTICE.md) |
+| Lucide UI icons | `assets/icons/ui/`, Lucide replacements in `assets/icons/brands/`, and their generated components/fonts<br>`bskyembed/src/icons/Lucide.tsx`, `bskyogcard/src/components/Lucide.tsx`, `scripts/icons/custom/` | Lucide contributors, Cole Bemis, Linus-sch; custom additions by this project | ISC/MIT | [`NOTICE.md`](./NOTICE.md) |
+| Tabler GIF icon | `scripts/icons/custom/gif.svg`, generated GIF SVGs/components and native glyphs | Paweł Kuna | MIT | [`NOTICE.md`](./NOTICE.md) |
 | Material Icons | `bskyweb/static/media/MaterialIcons.*.ttf` | Google, Inc. | Apache License 2.0 | [`NOTICE.md`](./NOTICE.md) |
 
 Build output under `bskyweb/static/media/` also contains compiled Inter files. They are the same
@@ -147,7 +148,7 @@ You have our blessing to fork this application. To do it cleanly:
 1. **Do not restore the upstream landing illustrations.** They were commissioned for Bluesky's
    products only and have been removed. See
    [Section 1](#1-commissioned-bluesky-artwork--removed).
-2. **Keep the Phosphor notice if you redistribute the generated UI icons.** See
+2. **Keep the Lucide and Filled Lucide notices if you redistribute the generated UI icons.** See
    [Section 6](#6-third-party-assets-you-may-redistribute).
 3. **Replace `assets/images/`.** Treat as not licensed to you until its provenance is fully
    documented. See [Section 7](#7-product-imagery--provenance-being-documented).

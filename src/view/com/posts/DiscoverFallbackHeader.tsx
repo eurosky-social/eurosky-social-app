@@ -2,7 +2,7 @@ import {View} from 'react-native'
 import {Trans} from '@lingui/react/macro'
 
 import {usePalette} from '#/lib/hooks/usePalette'
-import {InfoCircleIcon} from '#/lib/icons'
+import {CircleInfo_Stroke2_Corner0_Rounded as InfoCircleIcon} from '#/components/icons/Circle'
 import {TextLink} from '../util/Link'
 import {Text} from '../util/text/Text'
 
@@ -22,7 +22,7 @@ export function DiscoverFallbackHeader() {
         pal.viewLight,
       ]}>
       <View style={{width: 68, paddingLeft: 12}}>
-        <InfoCircleIcon size={36} style={pal.textLight} strokeWidth={1.5} />
+        <InfoCircleIcon width={36} style={pal.textLight} />
       </View>
       <View style={{flex: 1}}>
         <Text type="md" style={pal.text}>
