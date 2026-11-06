@@ -18,6 +18,7 @@ import * as Toast from '#/components/Toast'
 import {type app} from '#/lexicons'
 import {fetchIsTrustedTile, useTileAuthor} from '../../author'
 import {getTileMothership} from '../../mothership'
+import {fetchTilesPaused, useTilesPolicy} from '../../policy'
 import {type TileRef} from '../../record'
 import {tileHeight, type TileSizing} from '../../sizing'
 import {TileCard} from '../TileCard'
@@ -97,6 +98,7 @@ export function TileEmbed({
   const queryClient = useQueryClient()
   const appviewClient = useAppviewClient()
   const author = useTileAuthor(tile)
+  const policy = useTilesPolicy()
   const [status, setStatus] = useState<Status>(
     autoplay && !preview ? 'loading' : 'card',
   )
@@ -119,6 +121,11 @@ export function TileEmbed({
     busyRef.current = true
     setStatus('loading')
     try {
+      if (await fetchTilesPaused(queryClient)) {
+        Toast.show(l`Tiles are paused right now.`, {type: 'warning'})
+        setStatus('card')
+        return
+      }
       if (!(await fetchIsTrustedTile(queryClient, appviewClient, tile))) {
         Toast.show(
           l`This tile can't be played here: its author isn't verified.`,
@@ -156,10 +163,12 @@ export function TileEmbed({
   })
   const autoplayedRef = useRef(false)
   useEffect(() => {
-    if (!autoplay || preview || autoplayedRef.current) return
+    if (!autoplay || preview || !policy.enabled || autoplayedRef.current) {
+      return
+    }
     autoplayedRef.current = true
     void activateRef.current()
-  }, [autoplay, preview])
+  }, [autoplay, preview, policy.enabled])
 
   const deactivate = () => {
     loadedRef.current = null
@@ -167,6 +176,15 @@ export function TileEmbed({
     setInset(undefined)
     setStatus('card')
   }
+
+  // Paused while running (the switch flipped under it): the tile comes down.
+  useEffect(() => {
+    if (policy.enabled || status !== 'active') return
+    loadedRef.current = null
+    setSizing(undefined)
+    setInset(undefined)
+    setStatus('card')
+  }, [policy.enabled, status])
 
   /*
    * The loader hands back a DOM iframe (the shuttle, on its own origin), so
@@ -232,6 +250,7 @@ export function TileEmbed({
             hovered={hovered}
             pressed={pressed}
             loading={status === 'loading'}
+            paused={policy.enabled ? undefined : policy}
             style={style}
           />
         )}

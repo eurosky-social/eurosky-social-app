@@ -37,6 +37,7 @@ running tile instead of following the link.
 | `resolve.ts` | reads the tile record from the author's PDS (handle or any DID) |
 | `thumb(.web).ts` | the card thumbnail; the web build composites the play button |
 | `permissions.ts` | whether a tile's author is trusted, and the error the post pipeline throws |
+| `policy.ts` | the switch that pauses every tile: the admin repo's `social.mu.tiles.policy` record, read at play time |
 | `author.ts` | the author of a tile (the repo in its URI), the trust check, and the hook the card footer uses |
 | `attach.ts` | attaching a tile to a post draft, with the author check; used by the paste path and the toolbar button |
 | `mothership(.web).ts` | the page's one `TileMothership`, with a mu loader that resolves the PDS itself |
@@ -86,6 +87,20 @@ when they are verified, and a tile by an unverified author says so in place of
 the play icon. The composer and the post pipeline apply the same check up front
 so nobody attaches a card that will never play. This is a client-side rule for
 now.
+
+## Pausing every tile
+
+`social.mu.tiles.policy` (`lexicons/social/mu/tiles/policy.json`) is a
+singleton record in the brand's admin repo, the account that owns the
+trusted-verifier list in `brand.json`, so the people who decide whose tiles
+run also decide whether any do. `policy.ts` reads it with a one-minute refetch
+while any tile embed is mounted, and every gate asks it first: a card shows a
+pause icon and the record's `message` instead of offering to play, autoplay
+stays off, a tile running when the switch flips comes down, and the composer
+and the post pipeline refuse to attach one. No record, or an admin PDS that
+cannot be reached, means tiles play: the switch can stop them, an outage
+cannot. `services/tiles/policy.mjs` flips it from a terminal with the admin
+account's app password; open apps notice within a minute, with no release.
 
 ## Playing
 

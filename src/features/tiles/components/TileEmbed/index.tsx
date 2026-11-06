@@ -16,6 +16,7 @@ import {TimesLarge_Stroke2_Corner0_Rounded as XIcon} from '#/components/icons/Ti
 import * as Toast from '#/components/Toast'
 import {type app} from '#/lexicons'
 import {fetchIsTrustedTile, useTileAuthor} from '../../author'
+import {fetchTilesPaused, useTilesPolicy} from '../../policy'
 import {type TileRef} from '../../record'
 import {tileHeight, type TileSizing} from '../../sizing'
 import {TileCard} from '../TileCard'
@@ -59,6 +60,7 @@ export function TileEmbed({
   const queryClient = useQueryClient()
   const appviewClient = useAppviewClient()
   const author = useTileAuthor(tile)
+  const policy = useTilesPolicy()
   const [checking, setChecking] = useState(autoplay && !preview)
   const [active, setActive] = useState(false)
   const busyRef = useRef(false)
@@ -75,6 +77,10 @@ export function TileEmbed({
     busyRef.current = true
     setChecking(true)
     try {
+      if (await fetchTilesPaused(queryClient)) {
+        Toast.show(l`Tiles are paused right now.`, {type: 'warning'})
+        return
+      }
       if (!(await fetchIsTrustedTile(queryClient, appviewClient, tile))) {
         Toast.show(
           l`This tile can't be played here: its author isn't verified.`,
@@ -100,15 +106,24 @@ export function TileEmbed({
   })
   const autoplayedRef = useRef(false)
   useEffect(() => {
-    if (!autoplay || preview || autoplayedRef.current) return
+    if (!autoplay || preview || !policy.enabled || autoplayedRef.current) {
+      return
+    }
     autoplayedRef.current = true
     void activateRef.current()
-  }, [autoplay, preview])
+  }, [autoplay, preview, policy.enabled])
 
   const deactivate = () => {
     setActive(false)
     setSizing(undefined)
   }
+
+  // Paused while running (the switch flipped under it): the tile comes down.
+  useEffect(() => {
+    if (policy.enabled || !active) return
+    setActive(false)
+    setSizing(undefined)
+  }, [policy.enabled, active])
 
   const onError = (message: string) => {
     logger.warn('tiles: could not load tile', {
@@ -162,6 +177,7 @@ export function TileEmbed({
             hovered={hovered}
             pressed={pressed}
             loading={checking}
+            paused={policy.enabled ? undefined : policy}
             style={style}
           />
         )}

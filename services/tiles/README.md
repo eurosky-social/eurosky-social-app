@@ -41,6 +41,23 @@ empty, the app fetches from the PDS as before. The native apps do not use it:
 the hosted page they run tiles in (`@dasl/tile-host`) fetches from the PDS
 itself.
 
+## The switch
+
+`policy.mjs` is not part of the CDN: it pauses or resumes tile playback for
+everyone by writing the `social.mu.tiles.policy` record in the brand's admin
+repo (`src/features/tiles/policy.ts` reads it; see the tiles README). Open
+apps notice within a minute, with no release.
+
+```bash
+node services/tiles/policy.mjs status
+HANDLE=eurosky.social APP_PASSWORD=xxxx-xxxx-xxxx-xxxx node services/tiles/policy.mjs pause "Tiles are paused while we look into a problem."
+HANDLE=eurosky.social APP_PASSWORD=xxxx-xxxx-xxxx-xxxx node services/tiles/policy.mjs resume
+```
+
+`HANDLE` defaults to the creator of the trusted-verifier list in
+`src/config/brand.json`; an app password of that account is enough. The
+message is shown on every tile card while paused.
+
 ## Local run
 
 ```bash

@@ -35,6 +35,7 @@ import {
 } from '#/view/com/composer/state/composer'
 import {fetchIsTrustedTile} from '#/features/tiles/author'
 import {UntrustedTileAuthorError} from '#/features/tiles/permissions'
+import {fetchTilesPaused, TilesPausedError} from '#/features/tiles/policy'
 import {type TileExternal} from '#/features/tiles/record'
 import {app, chat, com} from '#/lexicons'
 import * as bsky from '#/types/bsky'
@@ -573,6 +574,9 @@ async function resolveMedia(
        * of our verified accounts will play, so any other is refused here.
        */
       if (resolvedLink.tile) {
+        if (await fetchTilesPaused(queryClient)) {
+          throw new TilesPausedError()
+        }
         if (
           !(await fetchIsTrustedTile(
             queryClient,

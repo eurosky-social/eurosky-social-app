@@ -8,6 +8,7 @@ import {useAppviewClient, useChatClient} from '#/state/session'
 import {type PostAction} from '#/view/com/composer/state/composer'
 import * as Toast from '#/components/Toast'
 import {fetchIsTrustedTile} from './author'
+import {fetchTilesPaused} from './policy'
 
 /**
  * Attaches a tile at-URI to a post draft as its link card, the way the
@@ -28,6 +29,12 @@ export function useAttachTile(
   const chatClient = useChatClient()
   return useCallback(
     async (uri: string) => {
+      if (await fetchTilesPaused(queryClient)) {
+        Toast.show(l`Tiles are paused right now, so one can't be added.`, {
+          type: 'error',
+        })
+        return false
+      }
       let tile
       try {
         const resolved = await queryClient.fetchQuery(

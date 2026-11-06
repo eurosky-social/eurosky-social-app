@@ -149,6 +149,7 @@ import {useAttachTile} from '#/features/tiles/attach'
 import {AddTileButton} from '#/features/tiles/components/AddTileButton'
 import {isTileUri} from '#/features/tiles/detect'
 import {UntrustedTileAuthorError} from '#/features/tiles/permissions'
+import {TilesPausedError} from '#/features/tiles/policy'
 import {app, chat} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {
@@ -1181,6 +1182,8 @@ export const ComposePost = ({
         err = l`This post's author has disabled quote posts.`
       } else if (e instanceof UntrustedTileAuthorError) {
         err = l`Only tiles published by verified accounts can be posted.`
+      } else if (e instanceof TilesPausedError) {
+        err = l`Tiles are paused right now, so this one can't be posted.`
       }
       setError(err)
       setIsPublishing(false)

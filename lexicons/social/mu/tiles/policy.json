@@ -1,0 +1,31 @@
+{
+  "lexicon": 1,
+  "id": "social.mu.tiles.policy",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "Whether tiles may play in mu. Written by the brand's admin account (the creator of its trusted-verifier list) and read by every client when a tile is about to play, so flipping it reaches running apps within a minute without a release. Absent, tiles play. Stored as a singleton at rkey 'self'.",
+      "key": "literal:self",
+      "record": {
+        "type": "object",
+        "required": ["enabled", "updatedAt"],
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether tiles may play. False pauses every tile everywhere: cards stop offering to play, running tiles come down, and none can be attached to a post."
+          },
+          "message": {
+            "type": "string",
+            "description": "Shown on tile cards while paused, e.g. why.",
+            "maxGraphemes": 140,
+            "maxLength": 1400
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "datetime"
+          }
+        }
+      }
+    }
+  }
+}
