@@ -2,6 +2,19 @@ import {Text} from 'react-native'
 import {render} from '@testing-library/react-native'
 
 import {type State} from '#/lib/routes/types'
+import {
+  Building_Filled_Corner2_Rounded,
+  Building_Stroke2_Corner2_Rounded,
+} from '#/components/icons/Building'
+import {
+  HomeOpen_Filled_Corner0_Rounded,
+  HomeOpen_Stroke2_Corner0_Rounded,
+} from '#/components/icons/Home'
+import {
+  Newspaper_Filled_Corner2_Rounded,
+  Newspaper_Stroke2_Corner2_Rounded,
+} from '#/components/icons/Newspaper'
+import {VideoClip_Filled_Corner0_Rounded} from '#/components/icons/VideoClip'
 import {NAVIGATION_IDS} from '#/config/navigation'
 import {getProduct} from '#/config/product'
 import {getNavigationDestinations} from './destinations'
@@ -37,6 +50,24 @@ it('defines every allowed ID once with shared page metadata', () => {
   }
 })
 
+it('uses newspaper/building icons for news and preserves social Home icons', () => {
+  const news = getNavigationDestinations({newsV2: true}, getProduct('news'))
+  expect(news.home.icons).toEqual({
+    inactive: Newspaper_Stroke2_Corner2_Rounded,
+    active: Newspaper_Filled_Corner2_Rounded,
+  })
+  expect(news.shorts.icons.active).toBe(VideoClip_Filled_Corner0_Rounded)
+  expect(news.shorts.icons.active).not.toBe(news.shorts.icons.inactive)
+  expect(news.publisher.icons).toEqual({
+    inactive: Building_Stroke2_Corner2_Rounded,
+    active: Building_Filled_Corner2_Rounded,
+  })
+  const social = getNavigationDestinations({newsV2: true}, getProduct('social'))
+  expect(social.home.icons).toEqual({
+    inactive: HomeOpen_Stroke2_Corner0_Rounded,
+    active: HomeOpen_Filled_Corner0_Rounded,
+  })
+})
 it('selects each surface in configured order and filters upstream-gated items', () => {
   const config = {
     ...navigation,
@@ -79,6 +110,27 @@ it.each(['sidebar', 'drawer', 'bottomBar', 'nativeBottomBar'] as const)(
         bookmarkingEnabled: false,
       }).map(item => item.id),
     ).toEqual(['home'])
+  },
+)
+
+it.each(['sidebar', 'drawer', 'bottomBar', 'nativeBottomBar'] as const)(
+  'hides Settings from the news %s without restricting social menus',
+  surface => {
+    expect(
+      selectNavigation(
+        getProduct('news').navigation,
+        surface,
+        definitions,
+        signedIn,
+      ).map(d => d.id),
+    ).toEqual(['home', 'publisher', 'shorts', 'saved', 'profile'])
+    if (surface === 'sidebar' || surface === 'drawer') {
+      expect(
+        selectNavigation(navigation, surface, definitions, signedIn).map(
+          d => d.id,
+        ),
+      ).toContain('settings')
+    }
   },
 )
 

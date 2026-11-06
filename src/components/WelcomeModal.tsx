@@ -13,6 +13,7 @@ import {TimesLarge_Stroke2_Corner0_Rounded as XIcon} from '#/components/icons/Ti
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {BRAND} from '#/config/brand'
+import {PRODUCT} from '#/config/product'
 
 interface WelcomeModalProps {
   control: WelcomeModalControl
@@ -111,11 +112,23 @@ export function WelcomeModal({control}: WelcomeModalProps) {
                     t.atoms.text,
                     web({lineHeight: 1.2, letterSpacing: -0.5}),
                   ]}>
-                  <Trans>Real people.</Trans>
-                  {'\n'}
-                  <Trans>Real conversations.</Trans>
-                  {'\n'}
-                  <Trans>Social media you control.</Trans>
+                  {PRODUCT.id === 'news' ? (
+                    <>
+                      <Trans>Read the news.</Trans>
+                      {'\n'}
+                      <Trans>Follow your sources.</Trans>
+                      {'\n'}
+                      <Trans>Join the conversation.</Trans>
+                    </>
+                  ) : (
+                    <>
+                      <Trans>Real people.</Trans>
+                      {'\n'}
+                      <Trans>Real conversations.</Trans>
+                      {'\n'}
+                      <Trans>Social media you control.</Trans>
+                    </>
+                  )}
                 </Text>
               </View>
               <View style={[a.gap_md, a.align_center]}>

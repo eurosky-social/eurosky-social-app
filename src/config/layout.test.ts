@@ -15,11 +15,19 @@ it('keeps ordinary social pages standard with their contextual sidebar', () => {
     rightSidebar: 'auto',
   })
 })
-it('hides the news sidebar globally, but widens only Publisher', () => {
+it('hides the news sidebar globally and widens reader pages and whole conversations', () => {
   const config = getProduct('news').layout
   expect(resolvePageLayout(config, 'Publisher')).toEqual({
     contentWidth: 'wide',
     rightSidebar: 'hidden',
+  })
+  expect(resolvePageLayout(config, 'PostThread')).toEqual({
+    contentWidth: 'wide',
+    rightSidebar: 'hidden',
+  })
+  expect(resolvePageLayout(getProduct('social').layout, 'PostThread')).toEqual({
+    contentWidth: 'standard',
+    rightSidebar: 'auto',
   })
   expect(resolvePageLayout(config, 'Profile')).toEqual({
     contentWidth: 'standard',

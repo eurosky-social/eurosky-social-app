@@ -43,6 +43,7 @@ import {LoadingPlaceholder} from '#/view/com/util/LoadingPlaceholder'
 import {PressableWithHover} from '#/view/com/util/PressableWithHover'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {NavSignupCard} from '#/view/shell/NavSignupCard'
+import {ShortsTheme} from '#/screens/Shorts/Theme'
 import {
   atoms as a,
   native,
@@ -55,6 +56,7 @@ import {
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {type DialogControlProps} from '#/components/Dialog'
 import {ArrowBoxLeft_Stroke2_Corner0_Rounded as LeaveIcon} from '#/components/icons/Arrow'
+import {BrandLogo} from '#/components/icons/BrandLogo'
 import {type Props as SVGIconProps} from '#/components/icons/common'
 import {DotGrid3x1_Stroke2_Corner0_Rounded as EllipsisIcon} from '#/components/icons/DotGrid'
 import {EditBig_Stroke2_Corner2_Rounded as EditBigIcon} from '#/components/icons/EditBig'
@@ -109,7 +111,9 @@ function ProfileCard({minimal}: {minimal: boolean}) {
   const {isActive: live} = useActorStatus(profile)
 
   return (
-    <View style={[a.pb_md, !minimal && [a.w_full, a.align_start]]}>
+    <View
+      testID="desktop-account-control"
+      style={[a.pb_md, !minimal && [a.w_full, a.align_start]]}>
       {!isLoading && profile ? (
         <Menu.Root>
           <Menu.Trigger label={l`Switch accounts`}>
@@ -618,19 +622,32 @@ function ComposeBtn({minimal}: {minimal: boolean}) {
   )
 }
 
-export function DesktopLeftNav({
-  routeName,
-  onNavigateTab,
-}: {
+type DesktopLeftNavProps = {
   routeName: string
   onNavigateTab?: (tab: SidebarTab) => void
-}) {
+}
+
+export function DesktopLeftNav(props: DesktopLeftNavProps) {
+  return IS_WEB && props.routeName === 'Shorts' ? (
+    <ShortsTheme>
+      <DesktopLeftNavContent {...props} />
+    </ShortsTheme>
+  ) : (
+    <DesktopLeftNavContent {...props} />
+  )
+}
+
+function DesktopLeftNavContent({
+  routeName,
+  onNavigateTab,
+}: DesktopLeftNavProps) {
   const {hasSession, currentAccount} = useSession()
   const navigationState = useNavigationState(state => state)
   const destinations = useProductNavigation('sidebar')
   const {i18n, t: l} = useLingui()
   const ax = useAnalytics()
   const {gtMobile} = useBreakpoints()
+  const t = useTheme()
 
   const aa = useAgeAssurance()
   // splitview uses the minimal variant of the leftnav. unfortunately there's no easy
@@ -666,6 +683,7 @@ export function DesktopLeftNav({
   const insets = useSafeAreaInsets()
 
   const leftNavMinimal = isMessagesRelatedScreen || leftNavMinimalBreakpoint
+  const profileAtBottom = PRODUCT.id === 'news'
 
   if (!hasSession && !gtMobile) {
     return null
@@ -673,8 +691,19 @@ export function DesktopLeftNav({
 
   const content = (
     <>
+      {hasSession && profileAtBottom && (
+        <View style={[leftNavMinimal ? a.py_lg : a.p_lg, a.pb_xl]}>
+          <BrandLogo
+            variant={leftNavMinimal ? 'mark' : 'wordmark'}
+            size={leftNavMinimal ? 28 : 136}
+            fill={t.atoms.text.color}
+            accessibilityLabel="mu news"
+            accessibilityHint=""
+          />
+        </View>
+      )}
       {hasSession ? (
-        <ProfileCard minimal={leftNavMinimal} />
+        !profileAtBottom && <ProfileCard minimal={leftNavMinimal} />
       ) : !leftNavMinimal ? (
         <View style={[a.pt_xl]}>
           <NavSignupCard />
@@ -719,6 +748,11 @@ export function DesktopLeftNav({
       {hasSession && PRODUCT.capabilities.standalonePosting && (
         <ComposeBtn minimal={leftNavMinimal} />
       )}
+      {hasSession && profileAtBottom && (
+        <View style={[a.pt_lg, {marginTop: 'auto'}]}>
+          <ProfileCard minimal={leftNavMinimal} />
+        </View>
+      )}
     </>
   )
 
@@ -729,6 +763,7 @@ export function DesktopLeftNav({
       style={[
         a.fixed,
         a.top_0,
+        profileAtBottom && a.bottom_0,
         web(a.p_lg),
         styles.leftNav,
         native(a.bottom_0),
@@ -762,6 +797,7 @@ export function DesktopLeftNav({
           style={[a.flex_1, a.w_full]}
           contentContainerStyle={[
             a.p_lg,
+            profileAtBottom && a.flex_grow,
             {
               paddingTop: insets.top + tokens.space.lg,
               paddingBottom: insets.bottom + tokens.space.lg,

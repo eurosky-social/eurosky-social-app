@@ -1,3 +1,4 @@
+import {PRODUCT} from '#/config/product'
 import {defaults, tryParse, tryStringify} from './schema'
 
 jest.mock('#/logger', () => ({logger: {error: jest.fn()}}))
@@ -7,6 +8,15 @@ jest.mock('#/locale/deviceLocales', () => ({
 }))
 jest.mock('#/locale/helpers', () => ({findSupportedAppLanguage: () => 'en'}))
 
+it('defaults news to true Dark without changing social or explicit saved preferences', () => {
+  expect(defaults.colorMode).toBe(PRODUCT.id === 'news' ? 'dark' : 'system')
+  expect(defaults.darkTheme).toBe(PRODUCT.id === 'news' ? 'dark' : 'dim')
+  expect(
+    tryParse(
+      JSON.stringify({...defaults, colorMode: 'light', darkTheme: 'dim'}),
+    ),
+  ).toMatchObject({colorMode: 'light', darkTheme: 'dim'})
+})
 it('accepts obsolete seasonal data without discarding sessions or preferences', () => {
   const account = {
     did: 'did:plc:alice',

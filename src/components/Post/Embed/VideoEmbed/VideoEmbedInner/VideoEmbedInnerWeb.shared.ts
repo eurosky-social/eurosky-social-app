@@ -1,7 +1,11 @@
 import {type app} from '#/lexicons'
+import {type VideoAudioState} from '../VideoVolumeContext'
 
 export type VideoEmbedInnerWebProps = {
   embed: app.bsky.embed.video.View
+  overlay?: React.ReactNode
+  audio?: VideoAudioState
+  controlsVisible?: boolean
   active: boolean
   setActive: () => void
   onScreen: boolean

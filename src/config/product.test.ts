@@ -19,7 +19,7 @@ it('selects the news posting restrictions explicitly', () => {
     id: 'news',
     capabilities: {
       messaging: false,
-      bookmarking: false,
+      bookmarking: true,
       standalonePosting: false,
       quotePosting: false,
     },

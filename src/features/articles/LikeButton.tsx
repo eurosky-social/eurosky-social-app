@@ -5,7 +5,7 @@ import {type Shadow} from '#/state/cache/post-shadow'
 import {useFeedFeedbackContext} from '#/state/feed-feedback'
 import {usePostLikeMutationQueue} from '#/state/queries/post'
 import {useRequireAuth} from '#/state/session'
-import {useTheme} from '#/alf'
+import {atoms as a, useTheme} from '#/alf'
 import {
   Heart2_Filled_Stroke2_Corner0_Rounded as Liked,
   Heart2_Stroke2_Corner0_Rounded as Like,
@@ -22,8 +22,10 @@ import {type app} from '#/lexicons'
 /** Use the normal mutation queue so likes, counts and rollback are shared with threads. */
 export function ArticleLikeButton({
   post,
+  vertical = false,
 }: {
   post: Shadow<app.bsky.feed.defs.PostView>
+  vertical?: boolean
 }) {
   const {t: l} = useLingui()
   const t = useTheme()
@@ -59,6 +61,7 @@ export function ArticleLikeButton({
   return (
     <PostControlButton
       testID="editorialLikes"
+      {...(vertical ? {style: [a.flex_col, a.gap_xs]} : {})}
       active={liked}
       activeColor={t.palette.pink}
       label={

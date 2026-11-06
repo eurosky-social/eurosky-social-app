@@ -28,6 +28,7 @@ export interface PagerWithHeaderProps {
     | ((props: PagerWithHeaderChildParams) => JSX.Element)
   items: string[]
   isHeaderReady: boolean
+  hideTabBar?: boolean
   renderHeader?: ({
     setMinimumHeight,
   }: {
@@ -47,6 +48,7 @@ export const PagerWithHeader = forwardRef<PagerRef, PagerWithHeaderProps>(
       testID,
       items,
       isHeaderReady,
+      hideTabBar = false,
       renderHeader,
       initialPage,
       onPageSelected,
@@ -63,6 +65,7 @@ export const PagerWithHeader = forwardRef<PagerRef, PagerWithHeaderProps>(
             items={items}
             renderHeader={renderHeader}
             isHeaderReady={isHeaderReady}
+            hideTabBar={hideTabBar}
             currentPage={currentPage}
             onCurrentPageSelected={onCurrentPageSelected}
             onSelect={props.onSelect}
@@ -74,6 +77,7 @@ export const PagerWithHeader = forwardRef<PagerRef, PagerWithHeaderProps>(
       [
         items,
         isHeaderReady,
+        hideTabBar,
         renderHeader,
         currentPage,
         onCurrentPageSelected,
@@ -120,6 +124,7 @@ let PagerTabBar = ({
   currentPage,
   items,
   isHeaderReady,
+  hideTabBar,
   testID,
   renderHeader,
   onCurrentPageSelected,
@@ -135,6 +140,7 @@ let PagerTabBar = ({
     setMinimumHeight: (height: number) => void
   }) => JSX.Element
   isHeaderReady: boolean
+  hideTabBar?: boolean
   onCurrentPageSelected?: (index: number) => void
   onSelect?: (index: number) => void
   tabBarAnchor?: JSX.Element | null | undefined
@@ -142,28 +148,30 @@ let PagerTabBar = ({
   return (
     <>
       <Layout.Center>{renderHeader?.({setMinimumHeight: noop})}</Layout.Center>
-      {tabBarAnchor}
-      <Layout.Center
-        style={[
-          a.z_10,
-          web([
-            a.sticky,
-            {
-              top: 0,
-              display: isHeaderReady ? undefined : 'none',
-            },
-          ]),
-        ]}>
-        <TabBar
-          testID={testID}
-          items={items}
-          selectedPage={currentPage}
-          onSelect={onSelect}
-          onPressSelected={onCurrentPageSelected}
-          dragProgress={undefined as any /* native-only */}
-          dragState={undefined as any /* native-only */}
-        />
-      </Layout.Center>
+      {!hideTabBar && tabBarAnchor}
+      {!hideTabBar && (
+        <Layout.Center
+          style={[
+            a.z_10,
+            web([
+              a.sticky,
+              {
+                top: 0,
+                display: isHeaderReady ? undefined : 'none',
+              },
+            ]),
+          ]}>
+          <TabBar
+            testID={testID}
+            items={items}
+            selectedPage={currentPage}
+            onSelect={onSelect}
+            onPressSelected={onCurrentPageSelected}
+            dragProgress={undefined as any /* native-only */}
+            dragState={undefined as any /* native-only */}
+          />
+        </Layout.Center>
+      )}
     </>
   )
 }

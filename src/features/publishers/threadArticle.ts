@@ -1,3 +1,4 @@
+import {type FeedPostSliceItem} from '#/state/queries/post-feed'
 import {type ThreadItem} from '#/state/queries/usePostThread/types'
 import {PRODUCT, type ProductConfig} from '#/config/product'
 import {articleFromPost} from '#/features/articles/articles'
@@ -8,18 +9,35 @@ export function publisherThreadArticle(
   item: Extract<ThreadItem, {type: 'threadPost'}>,
   product: ProductConfig = PRODUCT,
 ) {
+  if (item.depth > 0) return undefined
+  return publisherPostArticle(
+    {
+      _reactKey: item.key,
+      uri: item.value.post.uri,
+      post: item.value.post,
+      record: item.value.post.record,
+      moderation: item.moderation,
+    },
+    product,
+  )
+}
+
+/** Profile reply context uses the same publisher body, not a second social external card. */
+export function publisherFeedArticle(
+  item: FeedPostSliceItem,
+  feedDescriptor?: string,
+  product: ProductConfig = PRODUCT,
+) {
+  if (!feedDescriptor?.startsWith('publisher-replies|')) return undefined
+  return publisherPostArticle(item, product)
+}
+
+function publisherPostArticle(item: FeedPostSliceItem, product: ProductConfig) {
   if (
     product.id !== 'news' ||
-    item.depth > 0 ||
-    item.value.post.record.reply ||
-    !PUBLISHERS.some(publisher => publisher.did === item.value.post.author.did)
+    item.record.reply ||
+    !PUBLISHERS.some(publisher => publisher.did === item.post.author.did)
   )
     return undefined
-  return articleFromPost({
-    _reactKey: item.key,
-    uri: item.value.post.uri,
-    post: item.value.post,
-    record: item.value.post.record,
-    moderation: item.moderation,
-  })
+  return articleFromPost(item)
 }

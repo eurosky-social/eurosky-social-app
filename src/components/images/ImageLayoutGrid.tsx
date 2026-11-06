@@ -18,6 +18,7 @@ interface ImageLayoutGridProps {
   onLongPress?: (index: number) => void
   onPressIn?: (index: number) => void
   style?: StyleProp<ViewStyle>
+  maxHeight?: number
   viewContext?: PostEmbedViewContext
   isWithinQuote?: boolean
 }
@@ -25,6 +26,7 @@ interface ImageLayoutGridProps {
 export function ImageLayoutGrid({
   style,
   isWithinQuote: isWithinQuoteProp,
+  maxHeight,
   ...props
 }: ImageLayoutGridProps) {
   const {gtMobile} = useBreakpoints()
@@ -32,7 +34,15 @@ export function ImageLayoutGrid({
   const gap = isWithinQuote ? (gtMobile ? a.gap_xs : a.gap_2xs) : a.gap_xs
 
   return (
-    <View style={style}>
+    <View
+      style={[
+        style,
+        maxHeight !== undefined && {
+          maxWidth: maxHeight * (props.images.length === 4 ? 1 : 2),
+          width: '100%',
+          alignSelf: 'center',
+        },
+      ]}>
       <View style={[gap, a.rounded_md, a.overflow_hidden]}>
         <ImageLayoutGridInner
           {...props}

@@ -11,6 +11,8 @@ import {
 import {useAppviewClient} from '#/state/session'
 import {
   assertBookmarkingEnabled,
+  assertCanBookmarkPost,
+  assertCanBookmarkUri,
   BookmarkingUnavailableError,
 } from '#/features/product/bookmarking'
 import {app} from '#/lexicons'
@@ -34,12 +36,14 @@ export function useBookmarkMutation() {
     async mutationFn(args: MutationArgs) {
       assertBookmarkingEnabled()
       if (args.action === 'create') {
+        assertCanBookmarkPost(args.post)
         updatePostShadow(qc, args.post.uri, {bookmarked: true})
         await client.call(app.bsky.bookmark.createBookmark, {
           uri: args.post.uri,
           cid: args.post.cid,
         })
       } else if (args.action === 'delete') {
+        assertCanBookmarkUri(args.uri)
         updatePostShadow(qc, args.uri, {bookmarked: false})
         await client.call(app.bsky.bookmark.deleteBookmark, {
           uri: args.uri as AtUriString,

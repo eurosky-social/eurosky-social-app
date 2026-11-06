@@ -1,7 +1,9 @@
 import {Children, isValidElement} from 'react'
 import {renderHook} from '@testing-library/react-native'
 
+import {type ArticleSize} from '../articles'
 import {ArticleGrid} from './index.web'
+import {useArticleBands} from './useArticleBands'
 
 jest.mock('#/alf', () => ({
   useTheme: () => ({atoms: {border_contrast_low: {borderColor: '#333'}}}),
@@ -30,15 +32,45 @@ function order(node: React.ReactNode): number[] {
       : [child.props['data-story']]
   })
 }
-it('renders two small left stories before the right feature in DOM order, with the rule on the correct side', () => {
+it('does not resize an existing story into a reversed feature when pagination appends its companion', () => {
+  const {result, rerender} = renderHook(
+    ({sizes}: {sizes: ArticleSize[]}) => {
+      const bands = useArticleBands(
+        sizes.map((_, index) => `${index}`),
+        sizes,
+      )
+      return ArticleGrid({
+        wide: true,
+        sizes,
+        bands,
+        children: sizes.map((_, index) => (
+          <span key={index} data-story={index} />
+        )),
+      })
+    },
+    {initialProps: {sizes: ['small']}},
+  )
+  const before = element(
+    Children.toArray(element(result.current).props.children)[0],
+  )
+  rerender({sizes: ['small', 'medium']})
+  const after = element(
+    Children.toArray(element(result.current).props.children)[0],
+  )
+  expect(after.props.style).toEqual(before.props.style)
+  expect(order(after)).toEqual([0])
+  expect(order(result.current)).toEqual([0, 1])
+})
+
+it('renders one small story before the right feature in DOM order, with the rule on the correct side', () => {
   const {result} = renderHook(() =>
     ArticleGrid({
       wide: true,
-      sizes: ['small', 'small', 'medium'],
-      children: [0, 1, 2].map(index => <span key={index} data-story={index} />),
+      sizes: ['small', 'medium'],
+      children: [0, 1].map(index => <span key={index} data-story={index} />),
     }),
   )
-  expect(order(result.current)).toEqual([0, 1, 2])
+  expect(order(result.current)).toEqual([0, 1])
   const band = element(
     Children.toArray(element(result.current).props.children)[0],
   )
@@ -48,7 +80,7 @@ it('renders two small left stories before the right feature in DOM order, with t
   const aside = element(
     Children.toArray(element(band.props.children).props.children)[0],
   )
-  expect(order(aside)).toEqual([0, 1])
+  expect(order(aside)).toEqual([0])
   expect(aside.props.style?.borderRight).toBe('1px solid #333')
   expect(aside.props.style?.borderLeft).toBeUndefined()
 })

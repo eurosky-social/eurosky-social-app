@@ -1,5 +1,6 @@
 import {describe, expect, it} from '@jest/globals'
 
+import {type ArticleSize} from '../articles'
 import {articleBands, automaticArticleSize, defaultArticleSize} from './layout'
 
 function readingOrder(band: ReturnType<typeof articleBands>[number]) {
@@ -7,62 +8,74 @@ function readingOrder(band: ReturnType<typeof articleBands>[number]) {
 }
 
 describe('newspaper bands', () => {
-  it('stacks two small stories to the left of a right-hand feature without reordering them', () => {
-    expect(articleBands(['small', 'small', 'medium'])).toEqual([
+  it('pairs a lead with only one small story, leaving later stories in chronological rows', () => {
+    expect(articleBands(['medium', 'small', 'small', 'small'])).toEqual([
+      {main: 0, aside: [1], columns: 'minmax(0, 2fr) minmax(0, 1fr)'},
+      {main: 2, aside: [3], columns: 'repeat(2, minmax(0, 1fr))'},
+    ])
+  })
+  it('puts one small story to the left of a right-hand feature without reordering', () => {
+    expect(articleBands(['small', 'medium'])).toEqual([
       {
-        main: 2,
-        aside: [0, 1],
+        main: 1,
+        aside: [0],
         columns: 'minmax(0, 1fr) minmax(0, 2fr)',
         reversed: true,
       },
     ])
   })
-  it('never creates an automatic reversed split with only one supporting story', () => {
-    const mixed = articleBands([
-      'small',
-      'medium',
-      'big',
-      'small',
-      'small',
-      'medium',
-    ])
-    expect(
-      mixed
-        .filter(band => band.reversed)
-        .every(band => band.aside.length === 2),
-    ).toBe(true)
-    expect(mixed.flatMap(readingOrder)).toEqual([0, 1, 2, 3, 4, 5])
-    expect(mixed[0].columns).toBe('repeat(2, minmax(0, 1fr))')
+  it('never stacks two supporting stories or drops/reorders stories, including arbitrary saved editorial sizes', () => {
+    const choices: ArticleSize[] = ['small', 'medium', 'big']
+    for (let length = 1; length <= 5; length++) {
+      for (let value = 0; value < 3 ** length; value++) {
+        const sizes = Array.from(
+          {length},
+          (_, index) => choices[Math.floor(value / 3 ** index) % 3],
+        )
+        const bands = articleBands(sizes)
+        expect(bands.every(band => band.aside.length <= 1)).toBe(true)
+        expect(bands.flatMap(readingOrder)).toEqual(
+          Array.from({length}, (_, index) => index),
+        )
+      }
+    }
   })
   it('does not leave an empty second column for an orphan beside a full-width post', () => {
     expect(articleBands(['small', 'big'])[0].columns).toBe('minmax(0, 1fr)')
   })
-  it('gives bare posts a normal full-width row instead of an empty illustrated hero', () => {
+  it('gives bare posts a normal full-width row rather than an empty illustrated hero', () => {
     expect(automaticArticleSize({}, 0)).toBe('big')
     expect(
       automaticArticleSize({image: 'https://example.com/image.jpg'}, 0),
     ).toBe('medium')
     expect(
-      automaticArticleSize({image: 'https://example.com/image.jpg'}, 5),
+      automaticArticleSize({image: 'https://example.com/image.jpg'}, 4),
     ).toBe('big')
   })
-  it('automatically varies pairs, full-width features and reversed splits without reordering posts', () => {
-    const bands = articleBands(
-      Array.from({length: 15}, (_, index) => defaultArticleSize(index)),
+  it('varies forward features, pairs, full-width stories and reversed features without orphan small stories', () => {
+    const sizes = Array.from({length: 14}, (_, index) =>
+      defaultArticleSize(index),
     )
+    const bands = articleBands(sizes)
     expect(bands.map(band => band.columns)).toEqual([
       'minmax(0, 2fr) minmax(0, 1fr)',
       'repeat(2, minmax(0, 1fr))',
       'minmax(0, 1fr)',
       'minmax(0, 1fr) minmax(0, 2fr)',
-      'minmax(0, 1fr) minmax(0, 2fr)',
       'repeat(2, minmax(0, 1fr))',
+      'minmax(0, 2fr) minmax(0, 1fr)',
+      'minmax(0, 1fr) minmax(0, 2fr)',
       'minmax(0, 1fr)',
     ])
     expect(bands.flatMap(readingOrder)).toEqual(
-      Array.from({length: 15}, (_, index) => index),
+      Array.from({length: 14}, (_, index) => index),
     )
-    expect(defaultArticleSize(15)).toBe(defaultArticleSize(0))
+    expect(
+      bands
+        .filter(band => band.aside.length === 0)
+        .every(band => sizes[band.main] === 'big'),
+    ).toBe(true)
+    expect(defaultArticleSize(14)).toBe(defaultArticleSize(0))
   })
   it('keeps small stories in two-column rows, never three across', () => {
     expect(articleBands(['small', 'small', 'small', 'small'])).toEqual([
@@ -70,34 +83,10 @@ describe('newspaper bands', () => {
       {main: 2, aside: [3], columns: 'repeat(2, minmax(0, 1fr))'},
     ])
   })
-
-  it('keeps two small supporting stories beside a two-thirds lead', () => {
-    expect(
-      articleBands(['medium', 'small', 'small', 'small', 'small']),
-    ).toEqual([
-      {main: 0, aside: [1, 2], columns: 'minmax(0, 2fr) minmax(0, 1fr)'},
-      {main: 3, aside: [4], columns: 'repeat(2, minmax(0, 1fr))'},
-    ])
-  })
-
   it('gives a big story its own full-width band', () => {
     expect(articleBands(['big', 'small', 'small'])).toEqual([
       {main: 0, aside: [], columns: 'minmax(0, 1fr)'},
       {main: 1, aside: [2], columns: 'repeat(2, minmax(0, 1fr))'},
     ])
-  })
-
-  it('preserves reading order with mixed sizes and an odd final story', () => {
-    const bands = articleBands([
-      'small',
-      'medium',
-      'big',
-      'medium',
-      'small',
-      'big',
-      'small',
-    ])
-    expect(bands.flatMap(readingOrder)).toEqual([0, 1, 2, 3, 4, 5, 6])
-    expect(bands.at(-1)?.aside).toEqual([])
   })
 })

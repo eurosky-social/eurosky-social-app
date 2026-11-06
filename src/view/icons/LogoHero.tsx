@@ -2,6 +2,7 @@ import {type SvgProps} from 'react-native-svg'
 
 import {useTheme} from '#/alf'
 import {BrandLogo} from '#/components/icons/BrandLogo'
+import {PRODUCT} from '#/config/product'
 
 /**
  * The brand logo for hero + marketing surfaces (welcome modal, signup card,
@@ -15,7 +16,7 @@ export function LogoHero({width, ...rest}: SvgProps) {
 
   return (
     <BrandLogo
-      variant="hero"
+      variant={PRODUCT.id === 'news' ? 'lockup' : 'hero'}
       size={size}
       fill={t.palette.primary_500}
       {...rest}

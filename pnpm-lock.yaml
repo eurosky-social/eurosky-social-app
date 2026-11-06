@@ -804,6 +804,9 @@ importers:
       '@eloqnt/cli':
         specifier: 0.6.26
         version: 0.6.26
+      '@expo/env':
+        specifier: 2.5.4
+        version: 2.5.4(supports-color@8.1.1)
       '@filled-lucide/static':
         specifier: 1.52.1
         version: 1.52.1

@@ -912,6 +912,7 @@ let PostFeed = ({
         const item = slice.items[indexInSlice]
         return (
           <PostFeedItem
+            feedDescriptor={feed}
             post={item.post}
             record={item.record}
             postNumbering={item.postNumbering}

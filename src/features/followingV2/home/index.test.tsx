@@ -5,6 +5,19 @@ import {HomeScreen} from '.'
 const mockEnabled = jest.fn()
 let mockIsNative = true
 let mockMergedFollowing = false
+let mockProduct = 'social'
+
+jest.mock('#/config/product', () => ({
+  PRODUCT: {
+    get id() {
+      return mockProduct
+    },
+  },
+}))
+jest.mock('#/screens/NewsHome', () => {
+  const {Text} = require('react-native') as typeof import('react-native')
+  return {NewsHomeScreen: () => <Text>publisher news home</Text>}
+})
 
 jest.mock('#/state/queries/preferences', () => ({
   usePreferencesQuery: () => ({
@@ -52,6 +65,18 @@ describe.each([
     mockEnabled.mockReset()
     mockIsNative = isNative
     mockMergedFollowing = false
+    mockProduct = 'social'
+  })
+
+  it('always uses the public publisher Home in news, without mounting either social Home', () => {
+    mockProduct = 'news'
+    mockEnabled.mockReturnValue(true)
+    mockMergedFollowing = true
+    render(<HomeScreen {...props} />)
+    expect(screen.getByText('publisher news home')).toBeTruthy()
+    expect(screen.queryByText('legacy home')).toBeNull()
+    expect(screen.queryByText('following v2 home')).toBeNull()
+    expect(mockEnabled).not.toHaveBeenCalled()
   })
 
   it('renders the fork when following v2 is enabled', () => {

@@ -30,6 +30,7 @@ export const router = new Router<AllNavigatableRoutes>({
   Frontpage: ['/frontpage/:name', '/frontpage', '/newsroom/:name', '/newsroom'],
   PublisherDirectory: ['/publishers', '/publisher'],
   Publisher: '/publisher/:publisher',
+  Shorts: '/shorts',
   // moderation
   Moderation: '/moderation',
   ModerationInbox: '/moderation/inbox',

@@ -3,6 +3,7 @@ import {moderateProfile, type ModerationOpts} from '@bsky/sdk/moderation'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 
+import {useInfiniteScroll} from '#/lib/hooks/useInfiniteScroll'
 import {useSetTitle} from '#/lib/hooks/useSetTitle'
 import {type CommonNavigatorParams} from '#/lib/routes/types'
 import {useProfileShadow} from '#/state/cache/profile-shadow'
@@ -143,6 +144,10 @@ function PublisherArticles({
     undefined,
     {enabled: !blocked},
   )
+  const {sentinel, ...scroll} = useInfiniteScroll({
+    ...feed,
+    hasNextPage: !blocked && feed.hasNextPage,
+  })
   const articles = articlesFromAuthorFeed(
     feed.data?.pages.flatMap(page => page.slices) ?? [],
     profile.did,
@@ -153,7 +158,11 @@ function PublisherArticles({
       style={a.flex_1}
       modui={moderation.ui('profileView')}
       screenDescription={l`publisher`}>
-      <Layout.Content contentContainerStyle={[a.pb_4xl]}>
+      <Layout.Content
+        webPageScroll
+        testID="publisherArticlesScroll"
+        {...scroll}
+        contentContainerStyle={[a.pb_4xl]}>
         <PublisherHeader back={back} />
         <View style={[a.px_lg]}>
           {!blocked && (
@@ -198,28 +207,15 @@ function PublisherArticles({
                   </Text>
                 </Status>
               ) : null}
-              {feed.hasNextPage && !feed.isError && (
+              {feed.isFetchingNextPage && (
                 <Status>
-                  <Button
-                    testID="publisherMoreStories"
-                    label={l`More stories`}
-                    color="secondary"
-                    size="small"
-                    disabled={feed.isFetching}
-                    onPress={() => void feed.fetchNextPage()}>
-                    <ButtonText>
-                      {feed.isFetchingNextPage ? (
-                        <Trans>Loading…</Trans>
-                      ) : (
-                        <Trans>More stories</Trans>
-                      )}
-                    </ButtonText>
-                  </Button>
+                  <Loader size="lg" />
                 </Status>
               )}
             </>
           )}
         </View>
+        {sentinel}
       </Layout.Content>
     </ScreenHider>
   )

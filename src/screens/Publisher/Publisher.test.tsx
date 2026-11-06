@@ -16,6 +16,10 @@ jest.mock('#/alf', () => ({
   web: (value: unknown) => value,
   useTheme: () => ({atoms: {}, palette: {contrast_500: '#888'}}),
 }))
+jest.mock('@react-navigation/native', () => ({
+  ...jest.requireActual('@react-navigation/native'),
+  useIsFocused: () => true,
+}))
 jest.mock('#/lib/hooks/useSetTitle', () => ({useSetTitle: jest.fn()}))
 jest.mock('#/state/cache/profile-shadow', () => ({
   useProfileShadow: (value: unknown) => value,
@@ -355,10 +359,18 @@ it('never enables a blocked account feed', () => {
     screen.getByText('Posts are unavailable for this account.'),
   ).toBeTruthy()
 })
-it('supports pagination, and stops offering it at the end', () => {
+it('loads more automatically near the bottom without a More stories button', () => {
   mockFeed.hasNextPage = true
   const screen = renderPublisher()
-  fireEvent.press(screen.getByTestId('publisherMoreStories'))
+  fetchNextPage.mockResolvedValue(undefined)
+  expect(screen.queryByTestId('publisherMoreStories')).toBeNull()
+  fireEvent.scroll(screen.getByTestId('publisherArticlesScroll'), {
+    nativeEvent: {
+      contentOffset: {y: 1400},
+      contentSize: {height: 2000},
+      layoutMeasurement: {height: 800},
+    },
+  })
   expect(fetchNextPage).toHaveBeenCalledTimes(1)
 })
 it('does not offer pagination after the final page', () => {

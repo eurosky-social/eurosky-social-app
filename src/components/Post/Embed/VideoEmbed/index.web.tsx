@@ -26,9 +26,11 @@ import {
 } from '#/components/Post/Embed/VideoEmbed/VideoEmbedInner/VideoEmbedInnerWeb'
 import {useAnalytics} from '#/analytics'
 import {IS_WEB_FIREFOX} from '#/env'
+import {usePostMediaMaxHeight} from '#/features/product/media'
 import {type app} from '#/lexicons'
 import {useActiveVideoWeb} from './ActiveVideoWebContext'
 import * as VideoFallback from './VideoEmbedInner/VideoFallback'
+import {type VideoAudioState} from './VideoVolumeContext'
 
 const noop = () => {}
 
@@ -42,11 +44,21 @@ const MIN_CARD_WIDTH = 280
 export function VideoEmbed({
   embed,
   post,
+  immersive = false,
+  overlay,
+  audio,
+  controlsVisible,
 }: {
   embed: app.bsky.embed.video.View
   post?: app.bsky.feed.defs.PostView
+  immersive?: boolean
+  /** Media decoration below the accessible playback controls. */
+  overlay?: React.ReactNode
+  audio?: VideoAudioState
+  controlsVisible?: boolean
 }) {
   const t = useTheme()
+  const maxHeight = usePostMediaMaxHeight()
   const ref = useRef<HTMLDivElement>(null)
   const {
     active: activeFromContext,
@@ -183,7 +195,7 @@ export function VideoEmbed({
       style={{
         display: 'flex',
         flex: 1,
-        cursor: 'default',
+        cursor: controlsVisible === false ? 'none' : 'default',
         position: 'relative',
         backgroundColor: t.palette.black,
         backgroundImage: `url(${embed.thumbnail})`,
@@ -229,6 +241,9 @@ export function VideoEmbed({
         <OnlyNearScreen>
           <VideoEmbedInnerWeb
             embed={embed}
+            overlay={overlay}
+            audio={audio}
+            controlsVisible={controlsVisible}
             active={active}
             setActive={setActive}
             onScreen={onScreen}
@@ -258,6 +273,17 @@ export function VideoEmbed({
     </div>
   )
 
+  if (immersive)
+    return (
+      <View style={[a.flex_1, a.w_full]}>
+        <ViewportObserver
+          sendPosition={isGif ? noop : sendPosition}
+          isAnyViewActive={currentActiveView !== null}>
+          {contents}
+        </ViewportObserver>
+      </View>
+    )
+
   return (
     <View
       style={[a.pt_xs]}
@@ -266,6 +292,7 @@ export function VideoEmbed({
         sendPosition={isGif ? noop : sendPosition}
         isAnyViewActive={currentActiveView !== null}>
         <ConstrainedImage
+          maxHeight={maxHeight}
           fullBleed={fullBleed}
           aspectRatio={constrained || 1}
           // slightly smaller max height than images

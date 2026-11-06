@@ -325,10 +325,10 @@ describe('story sizes', () => {
     const curation = defaultCuration()
     expect(articleSize(curation, uri('a'), true, 0)).toBe('medium')
     expect(articleSize(curation, uri('b'), false, 1)).toBe('small')
-    expect(articleSize(curation, uri('f'), false, 5)).toBe('big')
+    expect(articleSize(curation, uri('e'), false, 4)).toBe('big')
     const sized = setArticleSize(curation, uri('a'), 'small')
     expect(articleSize(sized, uri('a'), true, 0)).toBe('medium')
-    expect(articleSize(sized, uri('a'), false, 5)).toBe('small')
+    expect(articleSize(sized, uri('a'), false, 4)).toBe('small')
   })
 
   it('keeps a starter pack’s display choice per slot', () => {

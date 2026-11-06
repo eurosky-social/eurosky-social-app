@@ -250,6 +250,14 @@
       "icon": "messages-square",
       "variant": "outline"
     },
+    "Building_Filled_Corner2_Rounded": {
+      "icon": "building-2",
+      "variant": "filled"
+    },
+    "Building_Stroke2_Corner2_Rounded": {
+      "icon": "building-2",
+      "variant": "outline"
+    },
     "BulletList_Filled_Corner0_Rounded": {
       "icon": "list",
       "variant": "bold"
@@ -1174,6 +1182,10 @@
       "icon": "badge-check",
       "variant": "filled",
       "whiteBacking": true
+    },
+    "VideoClip_Filled_Corner0_Rounded": {
+      "icon": "video",
+      "variant": "filled"
     },
     "VideoClip_Stroke1_Corner0_Rounded": {
       "icon": "clapperboard",

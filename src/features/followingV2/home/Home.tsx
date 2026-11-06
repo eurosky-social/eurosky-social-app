@@ -321,7 +321,12 @@ function HomeScreenReady({
           }
           const savedFeedConfig = feedInfo.savedFeed
           // These feeds keep per-source pagination state in the legacy API.
-          if (feed.startsWith('newsfeed|') || feed.startsWith('frontpage|')) {
+          if (
+            feed.startsWith('newsfeed|') ||
+            feed.startsWith('frontpage|') ||
+            feed.startsWith('publishers|') ||
+            feed.startsWith('publisher-replies|')
+          ) {
             return (
               <LegacyFeedPage
                 key={feed}
@@ -344,7 +349,11 @@ function HomeScreenReady({
               feed={
                 feed as Exclude<
                   FeedDescriptor,
-                  `newsfeed|${string}` | `frontpage|${string}`
+                  | `newsfeed|${string}`
+                  | `frontpage|${string}`
+                  | `publishers|${'articles' | 'videos'}`
+                  | `publishers|${'following' | 'following-videos'}|${string}`
+                  | `publisher-replies|${string}`
                 >
               }
               renderEmptyState={renderCustomFeedEmptyState}

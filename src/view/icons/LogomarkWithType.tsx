@@ -4,8 +4,7 @@ import {useTheme} from '#/alf'
 import {BrandLogo} from '#/components/icons/BrandLogo'
 
 /**
- * mu has no separate symbol + wordmark lockup - the wordmark is the whole
- * brand mark - so this renders the same shared brand logo as <Logomark>.
+ * Product lockup. Social falls back to the mu mark; news includes its name.
  */
 export function LogomarkWithType({
   fill,
@@ -15,5 +14,12 @@ export function LogomarkWithType({
   const t = useTheme()
   const size = parseInt(`${width ?? 32}`)
 
-  return <BrandLogo size={size} fill={fill || t.atoms.text.color} {...rest} />
+  return (
+    <BrandLogo
+      variant="lockup"
+      size={size}
+      fill={fill || t.atoms.text.color}
+      {...rest}
+    />
+  )
 }

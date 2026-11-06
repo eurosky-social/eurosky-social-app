@@ -9,6 +9,7 @@ export function ArticleGrid({
   children,
   wide,
   sizes,
+  bands,
   renderInsert,
 }: ArticleGridProps) {
   const t = useTheme()
@@ -46,7 +47,7 @@ export function ArticleGrid({
         gap: 24,
         paddingTop: 20,
       }}>
-      {articleBands(sizes).map(band => {
+      {(bands ?? articleBands(sizes)).map(band => {
         const main = (
           <div style={{position: 'relative', minWidth: 0}}>
             {renderInsert?.(band.main, !!band.reversed)}

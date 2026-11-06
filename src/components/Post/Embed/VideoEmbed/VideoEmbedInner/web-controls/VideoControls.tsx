@@ -37,6 +37,8 @@ import {type ControlsProps} from './VideoControls.shared'
 import {VolumeControl} from './VolumeControl'
 
 export function Controls({
+  audio,
+  controlsVisible,
   videoRef,
   hlsRef,
   active,
@@ -56,7 +58,7 @@ export function Controls({
     pause,
     playing,
     muted,
-    changeMuted,
+    changeMuted: changeElementMuted,
     togglePlayPause,
     currentTime,
     duration,
@@ -64,6 +66,16 @@ export function Controls({
     error,
     canPlay,
   } = useVideoElement(videoRef)
+  const changeMuted = useCallback(
+    (value: boolean | ((previous: boolean) => boolean)) => {
+      const video = videoRef.current
+      if (!video) return
+      const next = typeof value === 'function' ? value(video.muted) : value
+      changeElementMuted(next)
+      audio?.onMutedChange(next)
+    },
+    [videoRef, changeElementMuted, audio],
+  )
   const t = useTheme()
   const {_} = useLingui()
   const subtitlesEnabled = useSubtitlesEnabled()
@@ -161,11 +173,21 @@ export function Controls({
   const onPressEmptySpace = useCallback(() => {
     if (!focused) {
       drawFocus()
+      if (audio?.muted) changeMuted(false)
+      else if (audio && !autoplayDisabled) togglePlayPause()
       if (autoplayDisabled) play()
     } else {
       togglePlayPause()
     }
-  }, [togglePlayPause, drawFocus, focused, autoplayDisabled, play])
+  }, [
+    togglePlayPause,
+    drawFocus,
+    focused,
+    autoplayDisabled,
+    play,
+    audio,
+    changeMuted,
+  ])
 
   const onPressPlayPause = useCallback(() => {
     drawFocus()
@@ -282,8 +304,9 @@ export function Controls({
   )
 
   const showControls =
-    ((focused || autoplayDisabled) && !playing) ||
-    (interactingViaKeypress ? hasFocus : hovered)
+    controlsVisible ??
+    (((focused || autoplayDisabled) && !playing) ||
+      (interactingViaKeypress ? hasFocus : hovered))
 
   // adjust subtitle cue positioning to avoid occlusion by controls
   // uses percentage-based positioning (snapToLines=false) so wrapped
@@ -305,6 +328,7 @@ export function Controls({
 
   return (
     <div
+      inert={controlsVisible === false}
       style={{
         position: 'absolute',
         inset: 0,
@@ -329,7 +353,7 @@ export function Controls({
         onPointerMove={onPointerMoveEmptySpace}
         onPointerLeave={onPointerLeaveEmptySpace}
         accessibilityLabel={
-          !focused
+          !focused && (!audio || audio.muted)
             ? _(msg`Unmute video`)
             : playing
               ? _(msg`Pause video`)
@@ -342,9 +366,12 @@ export function Controls({
         ]}
         onPress={onPressEmptySpace}
       />
-      {!showControls && !focused && duration > 0 && (
-        <TimeIndicator time={Math.floor(duration - currentTime)} />
-      )}
+      {controlsVisible !== false &&
+        !showControls &&
+        !focused &&
+        duration > 0 && (
+          <TimeIndicator time={Math.floor(duration - currentTime)} />
+        )}
       <View
         style={[
           a.flex_shrink_0,

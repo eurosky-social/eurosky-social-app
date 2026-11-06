@@ -11,6 +11,7 @@ import {atoms as a, useTheme} from '#/alf'
 import {Fill} from '#/components/Fill'
 import {ConstrainedImage} from '#/components/images/AutoSizedImage'
 import {MediaInsetBorder} from '#/components/MediaInsetBorder'
+import {usePostMediaMaxHeight} from '#/features/product/media'
 import {GifPresentationControls} from '../VideoEmbed/GifPresentationControls'
 
 export function GifEmbed({
@@ -29,6 +30,7 @@ export function GifEmbed({
   minMobileAspectRatio?: number
 }) {
   const t = useTheme()
+  const maxHeight = usePostMediaMaxHeight()
   const {_} = useLingui()
   const autoplayDisabled = useAutoplayDisabled()
 
@@ -61,6 +63,7 @@ export function GifEmbed({
 
   return (
     <ConstrainedImage
+      maxHeight={maxHeight}
       aspectRatio={constrained}
       minMobileAspectRatio={minMobileAspectRatio}>
       <View

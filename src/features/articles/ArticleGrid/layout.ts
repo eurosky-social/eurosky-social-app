@@ -6,16 +6,15 @@ const DEFAULT_SIZES: readonly ArticleSize[] = [
   'small',
   'small',
   'small',
-  'small',
   'big',
   'small',
-  'small',
   'medium',
   'small',
   'small',
   'medium',
   'small',
   'small',
+  'medium',
   'big',
 ]
 
@@ -23,7 +22,7 @@ export function defaultArticleSize(position: number): ArticleSize {
   return DEFAULT_SIZES[position % DEFAULT_SIZES.length]
 }
 
-/** A bare post should not leave an empty hero column beside two illustrated stories. */
+/** A bare post should not leave an empty illustrated hero column. */
 export function automaticArticleSize(
   article: Pick<PostArticle, 'external' | 'image' | 'media' | 'quote'>,
   position: number,
@@ -43,7 +42,7 @@ export type ArticleBand = {
   reversed?: boolean
 }
 
-/** Reversed features follow their two companions in both visual and DOM reading order. */
+/** Each feature has one companion, with chronological visual and DOM reading order. */
 export function articleBands(sizes: ArticleSize[]): ArticleBand[] {
   const bands: ArticleBand[] = []
   for (let index = 0; index < sizes.length; index++) {
@@ -51,22 +50,16 @@ export function articleBands(sizes: ArticleSize[]): ArticleBand[] {
     const size = sizes[index]
     if (size === 'big') {
       bands.push({main, aside: [], columns: 'minmax(0, 1fr)'})
-    } else if (
-      size === 'small' &&
-      sizes[index + 1] === 'small' &&
-      sizes[index + 2] === 'medium'
-    ) {
+    } else if (size === 'small' && sizes[index + 1] === 'medium') {
       bands.push({
-        main: index + 2,
-        aside: [index, index + 1],
+        main: index + 1,
+        aside: [index],
         columns: 'minmax(0, 1fr) minmax(0, 2fr)',
         reversed: true,
       })
-      index += 2
+      index++
     } else if (size === 'medium') {
-      const aside: number[] = []
-      while (aside.length < 2 && sizes[index + 1] === 'small')
-        aside.push(++index)
+      const aside = sizes[index + 1] === 'small' ? [++index] : []
       bands.push({
         main,
         aside,

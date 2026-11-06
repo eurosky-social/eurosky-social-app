@@ -93,6 +93,8 @@ export type ContentProps = AnimatedScrollViewProps & {
   style?: StyleProp<ViewStyle>
   contentContainerStyle?: StyleProp<ViewStyle>
   ignoreTabletLayoutOffset?: boolean
+  /** Use the document's scrollbar for web readers, not an inner ScrollView. */
+  webPageScroll?: boolean
   ref?: AnimatedRef<Animated.ScrollView>
 }
 
@@ -106,6 +108,7 @@ export const Content = memo(function Content({
   centerContent,
   ignoreTabletLayoutOffset,
   automaticallyAdjustsScrollIndicatorInsets,
+  webPageScroll = false,
   ref,
   ...props
 }: ContentProps) {
@@ -135,6 +138,25 @@ export const Content = memo(function Content({
       marginBottom: footerHeight.get(),
     }
   })
+
+  if (IS_WEB && webPageScroll) {
+    return (
+      <Animated.View
+        id="content"
+        style={[a.w_full, animatedStyle, style]}
+        testID={props.testID}
+        onLayout={props.onLayout}
+        accessibilityLabel={props.accessibilityLabel}
+        accessibilityHint={props.accessibilityHint}
+        accessibilityRole={props.accessibilityRole}>
+        <Center
+          ignoreTabletLayoutOffset={ignoreTabletLayoutOffset}
+          style={contentContainerStyle}>
+          {children as React.ReactNode}
+        </Center>
+      </Animated.View>
+    )
+  }
 
   const scrollView = (
     <Animated.ScrollView

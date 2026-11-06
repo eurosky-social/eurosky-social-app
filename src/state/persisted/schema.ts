@@ -5,6 +5,7 @@ import {z} from 'zod'
 import {deviceLanguageCodes, deviceLocales} from '#/locale/deviceLocales'
 import {findSupportedAppLanguage} from '#/locale/helpers'
 import {logger} from '#/logger'
+import {PRODUCT} from '#/config/product'
 
 const externalEmbedOptions = ['show', 'hide'] as const
 
@@ -184,8 +185,8 @@ const schema = z.object({
 export type Schema = z.infer<typeof schema>
 
 export const defaults: Schema = {
-  colorMode: 'system',
-  darkTheme: 'dim',
+  colorMode: PRODUCT.id === 'news' ? 'dark' : 'system',
+  darkTheme: PRODUCT.id === 'news' ? 'dark' : 'dim',
   interfaceStyle: {
     borders: 'standard',
   },

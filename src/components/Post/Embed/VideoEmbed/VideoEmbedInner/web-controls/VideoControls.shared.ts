@@ -1,6 +1,10 @@
 import type Hls from 'hls.js'
 
+import {type VideoAudioState} from '../../VideoVolumeContext'
+
 export type ControlsProps = {
+  audio?: VideoAudioState
+  controlsVisible?: boolean
   videoRef: React.RefObject<HTMLVideoElement | null>
   hlsRef: React.RefObject<Hls | undefined | null>
   active: boolean

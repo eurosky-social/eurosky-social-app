@@ -4,9 +4,8 @@ import {usePalette} from '#/lib/hooks/usePalette'
 import {BrandLogo} from '#/components/icons/BrandLogo'
 
 /**
- * mu brand wordmark. The mark and the wordmark are the same glyph for mu, so
- * this renders the shared brand logo. Defaults to the theme text colour (ink on
- * light, cotton on dark); callers can override.
+ * Product wordmark, using the news lockup in news builds. Defaults to the
+ * theme text colour; callers can override.
  */
 export function Logotype({
   fill,
@@ -16,5 +15,12 @@ export function Logotype({
   const pal = usePalette('default')
   const size = parseInt(`${width ?? 32}`)
 
-  return <BrandLogo size={size} fill={fill || pal.text.color} {...rest} />
+  return (
+    <BrandLogo
+      variant="wordmark"
+      size={size}
+      fill={fill || pal.text.color}
+      {...rest}
+    />
+  )
 }

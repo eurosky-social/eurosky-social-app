@@ -34,6 +34,9 @@ export {
 
 export function VideoEmbedInnerWeb({
   embed,
+  overlay,
+  audio,
+  controlsVisible,
   active,
   setActive,
   onScreen,
@@ -88,7 +91,7 @@ export function VideoEmbedInnerWeb({
             style={{width: '100%', height: '100%', objectFit: 'contain'}}
             playsInline
             preload="none"
-            muted={embed.presentation === 'gif' || !focused}
+            muted={isGif || (audio ? audio.muted : !focused)}
             aria-labelledby={embed.alt ? figId : undefined}
             onTimeUpdate={e => {
               const currentTime = e.currentTarget.currentTime
@@ -127,10 +130,13 @@ export function VideoEmbedInnerWeb({
             </figcaption>
           )}
         </figure>
+        {!isFullscreen && overlay}
         {!isFullscreen && !isGif && embed.alt && (
           <AltBadgeWithDialog text={embed.alt} position="top-right" />
         )}
         <Controls
+          audio={audio}
+          controlsVisible={controlsVisible}
           videoRef={videoRef}
           hlsRef={hlsRef}
           active={active}

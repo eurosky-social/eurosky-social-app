@@ -147,6 +147,7 @@ import {PetCompanionSettingsScreen} from '#/screens/Settings/PetCompanionSetting
 import {PrivacyAndSecuritySettingsScreen} from '#/screens/Settings/PrivacyAndSecuritySettings'
 import {SettingsScreen} from '#/screens/Settings/Settings'
 import {ThreadPreferencesScreen} from '#/screens/Settings/ThreadPreferences'
+import {ShortsScreen} from '#/screens/Shorts'
 import {
   StarterPackScreen,
   StarterPackScreenShort,
@@ -239,6 +240,11 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         name="Publisher"
         getComponent={() => PublisherScreen}
         options={{title: title(msg`Publisher`)}}
+      />
+      <Stack.Screen
+        name="Shorts"
+        getComponent={() => ShortsScreen}
+        options={{title: title(msg`Shorts`)}}
       />
       <Stack.Screen
         name="Frontpage"
@@ -860,7 +866,8 @@ function NativeTabBar(props: BottomTabBarProps) {
     signupQueued: !!currentAccount?.signupQueued,
     showLoggedOut,
     onboardingActive: onboardingState.isActive,
-    isVideoFeed: currentRouteName === 'VideoFeed',
+    isVideoFeed:
+      currentRouteName === 'VideoFeed' || currentRouteName === 'Shorts',
   })
 
   useEffect(() => {

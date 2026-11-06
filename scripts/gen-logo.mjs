@@ -32,7 +32,15 @@ const SRC_DIR = path.join(ROOT, 'assets/brand')
 const OUT = path.join(ROOT, 'src/config/brand-logo.generated.json')
 
 /** Recognised roles, in no particular order. `mark` is required. */
-const ROLES = ['mark', 'wordmark', 'lockup', 'hero', 'icon']
+const ROLES = [
+  'mark',
+  'wordmark',
+  'lockup',
+  'hero',
+  'icon',
+  'news',
+  'news-mark',
+]
 
 /** @param {string} raw */
 function clean(raw) {

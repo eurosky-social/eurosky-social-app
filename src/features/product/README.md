@@ -14,7 +14,7 @@ Use the same variable with `pnpm start` or the native build commands. Set it in 
 
 Omitting the variable preserves the social product. An explicitly empty or unknown value is rejected. Expo configuration validates the selection for builds, and the runtime adapter validates it too. No remote configuration or user feature editor is involved.
 
-**The news preset is a development scaffold, not production-ready.** Messaging and standalone/quote posting are disabled in this client, but interactive checks and broader news-product work remain pending. News navigation contains Home, Publisher, Profile, and Settings; social navigation is unchanged. Home content, configurable settings composition, signed-out presentation, and news data dependencies remain unfinished.
+**The news preset is a development scaffold, not production-ready.** Messaging and standalone/quote posting are disabled; Saved and bookmark actions are limited to canonical registered publisher posts. News Home interleaves recent articles from fifteen publishers, including signed-out web Home; Shorts interleaves publisher videos. Publisher profiles redirect to Publisher details; other profiles show publisher-rooted replies without tabs. Menus contain Home, Publisher, Shorts, Saved and Profile; Settings is hidden from menus, not route-blocked. Social behavior remains unchanged. Configurable settings/auth copy, signed-in/native checks, background notification filtering and production export validation remain pending.
 
 ## Current capabilities
 
@@ -34,17 +34,17 @@ Quotes are provisionally disabled for news. Replies/likes/reposts and edit/delet
 
 ## Navigation
 
-Edit the selected preset's `navigation` in `src/config/product-presets.json`. Each array selects destinations **in display order**; omit an ID to hide it. Social preserves its existing menus. News uses Home, Publisher, Profile, and Settings on every signed-in surface, Home only in the signed-out drawer, and no signed-out sidebar destinations.
+Edit the selected preset's `navigation` in `src/config/product-presets.json`. Each array selects destinations **in display order**; omit an ID to hide it. Social preserves its existing menus. News uses Home, Publisher, Shorts, Saved and Profile on signed-in surfaces, and Home, Publisher and Shorts on signed-out sidebar/drawer surfaces. The desktop news sidebar keeps the existing account-switch/profile menu at the bottom; social keeps it at the top.
 
 The news preset uses:
 
 ```json
 {
-  "sidebar": ["home", "publisher", "profile", "settings"],
-  "drawer": ["home", "publisher", "profile", "settings"],
-  "bottomBar": ["home", "publisher", "profile", "settings"],
-  "signedOutSidebar": [],
-  "signedOutDrawer": ["home"]
+  "sidebar": ["home", "publisher", "shorts", "saved", "profile"],
+  "drawer": ["home", "publisher", "shorts", "saved", "profile"],
+  "bottomBar": ["home", "publisher", "shorts", "saved", "profile"],
+  "signedOutSidebar": ["home", "publisher", "shorts"],
+  "signedOutDrawer": ["home", "publisher", "shorts"]
 }
 ```
 
@@ -54,11 +54,11 @@ The news preset uses:
 - Optional `nativeBottomBar`: overrides only the native bottom bar when a different selection/order is needed.
 - `signedOutSidebar` / `signedOutDrawer`: separate visitor menus, limited to public destinations. The bottom bar's signed-out create-account/sign-in controls are unchanged.
 
-Available IDs: `home`, `news`, `publisher`, `search`, `notifications`, `atmosphere`, `chat`, `feeds`, `lists`, `saved`, `profile`, `settings`. Unknown/duplicate IDs and bottom bars outside 1–5 items are rejected. Atmosphere still requires its upstream feature flag; account-only destinations are filtered for signed-out visitors. Keep useful navigation and account/settings access when composing a menu.
+Available IDs: `home`, `news`, `publisher`, `shorts`, `search`, `notifications`, `atmosphere`, `chat`, `feeds`, `lists`, `saved`, `profile`, `settings`. Unknown/duplicate IDs and bottom bars outside 1–5 items are rejected. Atmosphere still requires its upstream feature flag; account-only destinations are filtered for signed-out visitors. Keep useful navigation and account/settings access when composing a menu.
 
 **Hiding Chat is separate from disabling messaging.** Omitted destinations generally remain routable. The news preset also sets `capabilities.messaging: false`, which independently blocks the Messages route family, filters Chat even if added back to a menu, and disables messaging actions/background work. Compose availability follows the posting capability, not a navigation ID.
 
-The first item is **not** a new home route: `/`, native startup, login/onboarding return, logout, and account-switch fallbacks are unchanged. Those are a separate home-policy slice. Changing presets requires restarting/rebuilding the bundle.
+The first menu item does **not** redefine the home route or auth-return destinations. Home/Start select `NewsHomeScreen` in news and the existing social Home logic otherwise. Native startup/authentication, login/onboarding return, logout and account-switch route targets remain shared. Changing presets requires restarting/rebuilding the bundle.
 
 ### Add a destination
 
@@ -77,7 +77,12 @@ The news preset uses:
 ```json
 {
   "defaults": {"rightSidebar": "hidden"},
-  "pages": {"Publisher": {"contentWidth": "wide"}}
+  "pages": {
+    "Home": {"contentWidth": "wide"},
+    "Start": {"contentWidth": "wide"},
+    "Publisher": {"contentWidth": "wide"},
+    "PublisherDirectory": {"contentWidth": "wide"}
+  }
 }
 ```
 
@@ -89,11 +94,11 @@ The news preset uses:
 
 The shared stack scopes the active shell and each cached scene separately, so navigating between wide and standard pages does not change a background page's geometry. `useLayoutBreakpoints().rightNavVisible` means the effective visible rail, not merely the physical breakpoint. New wide collections should use `usePageGeometry()` for their presentation rather than treating a hidden sidebar as a width signal.
 
-The new [Publisher reader](../publishers/README.md) is separate from Home and independent of News V2/aggregator configuration. Its [article views](../articles/README.md) are shared with the original editorial frontpage.
+The [Publisher reader, news Home and Shorts](../publishers/README.md) are independent of News V2/aggregator configuration. The shared [article views](../articles/README.md) also serve the original editable editorial frontpage, without importing curation into the reader.
 
 ## Bookmarking
 
-`capabilities.bookmarking` is enabled for social and disabled for news, independently of menu order. The bookmark control and post-menu action are hidden, Saved navigation/shortcuts are filtered, and direct/restored Bookmarks routes are rejected before mounting. The bookmarks query is disabled (including a guarded explicit refetch), and create/delete mutations reject before optimistic updates or network writes; policy failures do not perform rollback changes. Ordinary social behavior remains unchanged.
+`capabilities.bookmarking` is enabled for both presets. Social remains unrestricted. News only exposes bookmark actions for canonical registered publisher DIDs' `app.bsky.feed.post` records, with matching post authors. UI and create/delete mutations enforce eligibility before optimistic changes or writes. Saved uses an observer-only filter: unrelated account bookmarks, query pages and cursors remain untouched. Authentication and normal ownership checks still apply. Disabling the capability explicitly also gates routes, queries, navigation and writes.
 
 ## Messaging
 

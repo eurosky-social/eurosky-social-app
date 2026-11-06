@@ -72,6 +72,33 @@ export function listenProfileShadowUpdate(
   }
 }
 
+/** The same optimistic graph state for a list of profiles, without a hook per row. */
+export function useProfileShadows<
+  TProfileView extends bsky.profile.AnyProfileView,
+>(profiles: readonly TProfileView[]): Shadow<TProfileView>[] {
+  const [snapshot, setSnapshot] = useState<
+    Map<TProfileView, Partial<ProfileShadow> | undefined>
+  >(() => new Map())
+  useEffect(
+    () =>
+      listenProfileShadowUpdate(({did}) => {
+        if (profiles.some(profile => profile.did === did))
+          setSnapshot(
+            new Map(profiles.map(profile => [profile, shadows.get(profile)])),
+          )
+      }),
+    [profiles],
+  )
+  return useMemo(
+    () =>
+      profiles.map(profile => {
+        const shadow = snapshot.get(profile) ?? shadows.get(profile)
+        return shadow ? mergeShadow(profile, shadow) : castAsShadow(profile)
+      }),
+    [profiles, snapshot],
+  )
+}
+
 export function useProfileShadow<
   TProfileView extends bsky.profile.AnyProfileView,
 >(profile: TProfileView): Shadow<TProfileView> {

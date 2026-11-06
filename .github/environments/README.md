@@ -10,6 +10,7 @@ of the same name as a file in this directory.
 | `production`  | https://mu.social         | push to `eurosky/deploy`    | Mu    |
 | `staging`     | https://staging.mu.social | push to `eurosky/fork`      | Mu    |
 | `dev`         | https://dev.mu.social     | manual run, any branch      | Mu    |
+| `news`        | https://news.mu.social    | manual run, permitted branch | Mu    |
 | `oso`         | https://oso.mu.social     | manual run from `oso`       | Oso   |
 
 ## What lives where
@@ -27,6 +28,30 @@ Build the exact bundle CI would, without deploying:
 ```bash
 ./scripts/web_build.sh staging
 ```
+
+## News testing deployment
+
+`news.env` selects `EXPO_PUBLIC_PRODUCT=news` while retaining Mu branding and the
+shared services in `common.env`. It does not use the dev News V2 backend.
+
+OAuth metadata is published at
+`https://news.mu.social/oauth-client-metadata.json`, with the return URL
+`https://news.mu.social/`. Assertions come from the existing
+`https://oauth-staging.mu.social/client-assertion` worker, which accepts HTTPS
+subdomains of `mu.social` and derives a separate client identity per origin.
+No new signing service or key is needed for this preview; see
+[`services/oauth/README.md`](../../services/oauth/README.md).
+
+Create a GitHub environment named `news` with its own Bunny credentials and
+permit the testing branch (initially `flo/news-app`). Then run **Deploy web**
+manually against that branch and environment. The branch must contain
+`news.env` and the news app changes; this does not add an automatic push deploy.
+
+`ROBOTS_MODE=disallow-all` keeps crawlers out but is not access control. The
+existing Bunny edge preset is disabled for this environment because it assumes
+the apex hostname and blocks some machine user-agents. Configure SPA fallback,
+HTTP status handling and caching on the new news zone separately before testing
+live OAuth and direct links.
 
 ## Adding an environment
 
@@ -49,6 +74,7 @@ Creating environments needs admin on the repository.
 | `production`  | `eurosky/deploy` only       | optional            |
 | `staging`     | `eurosky/fork` only         | none                |
 | `dev`         | any                         | none                |
+| `news`        | `flo/news-app` initially     | none                |
 | `oso`         | `oso` only                  | recommended         |
 
 Secrets on each environment:
@@ -58,7 +84,7 @@ Secrets on each environment:
 - `BUNNY_STORAGE_PASSWORD` – that storage zone's password
 - `BUNNY_PULLZONE_ID` – numeric pull zone id
 
-`BUNNY_API_KEY` (account-level) stays a repository secret shared by all four;
+`BUNNY_API_KEY` (account-level) stays a repository secret shared by environments;
 an environment secret of the same name would override it.
 
 ## Migrating from the per-environment workflows

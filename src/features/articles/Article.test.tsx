@@ -1,3 +1,4 @@
+import {Dimensions, Text} from 'react-native'
 import {i18n} from '@lingui/core'
 import {render, screen} from '@testing-library/react-native'
 
@@ -8,9 +9,14 @@ import {Embed} from '#/components/Post/Embed'
 import {ImageEmbed} from '#/components/Post/Embed/ImageEmbed'
 import {VideoEmbed} from '#/components/Post/Embed/VideoEmbed'
 import {RichText} from '#/components/RichText'
+import {PRODUCT} from '#/config/product'
 import {Article} from './Article'
 import {articleFromPost} from './articles'
 import {ArticleLikeButton} from './LikeButton'
+
+jest.mock('#/components/PostControls/BookmarkButton', () => ({
+  BookmarkButton: () => null,
+}))
 
 jest.mock('./LikeButton', () => {
   const {View, Text} = require('react-native') as typeof import('react-native')
@@ -51,6 +57,7 @@ jest.mock('#/state/preferences/moderation-opts', () => ({
   useModerationOpts: () => undefined,
 }))
 jest.mock('#/alf', () => ({
+  SERIF_FONT_FAMILY: 'Georgia',
   atoms: new Proxy({}, {get: () => ({})}),
   web: (style: unknown) => style,
   useBreakpoints: jest.fn(() => ({gtMobile: true})),
@@ -146,6 +153,7 @@ it('uses the expanded article presentation in a thread without duplicating engag
   })
   render(<Article article={story} presentation="thread" lead size="big" />)
   expect(screen.getByText('A real headline')).toBeTruthy()
+  expect(screen.getByTestId('editorialStoryLink').props.to).toBe(story.url)
   expect(
     screen.getByText('A full article summary').props.numberOfLines,
   ).toBeUndefined()
@@ -154,6 +162,126 @@ it('uses the expanded article presentation in a thread without duplicating engag
   expect(ArticleLikeButton).not.toHaveBeenCalled()
 })
 
+it.each(['A real headline', ''])(
+  'opens the original post from a reader preview with title %j, including its image',
+  title => {
+    const story = article({
+      $type: 'app.bsky.embed.external#view',
+      external: {
+        uri: 'https://example.com/story',
+        title,
+        description: 'A real summary',
+        thumb: 'https://example.com/photo.jpg',
+      },
+    })
+    render(<Article article={story} linkTo="post" />)
+    expect(screen.getByTestId('editorialStoryLink').props.to).toBe(
+      '/profile/test.example/post/one',
+    )
+    expect(screen.getByLabelText(story.imageAlt).props.accessibilityHint).toBe(
+      'Opens the post',
+    )
+    expect(screen.getByTestId('editorialComments').props.to).toBe(
+      '/profile/test.example/post/one',
+    )
+  },
+)
+
+it.each(['small', 'big'] as const)(
+  'puts the source on its own row only for %s articles',
+  size => {
+    render(
+      <Article
+        article={article()}
+        size={size}
+        compact={size === 'small'}
+        byline={<Text testID="testSource">WIRED</Text>}
+      />,
+    )
+    if (size === 'small') {
+      expect(
+        screen
+          .getByTestId('editorialPublisherRow')
+          .findByProps({testID: 'testSource'}),
+      ).toBeTruthy()
+    } else {
+      expect(screen.queryByTestId('editorialPublisherRow')).toBeNull()
+      expect(
+        screen
+          .getByTestId('editorialEngagementRow')
+          .findByProps({testID: 'testSource'}),
+      ).toBeTruthy()
+    }
+  },
+)
+it('opens text and photo previews in the thread without nesting an interactive gallery', () => {
+  const story = article({
+    $type: 'app.bsky.embed.images#view',
+    images: [
+      {
+        thumb: 'https://example.com/thumb.jpg',
+        fullsize: 'https://example.com/full.jpg',
+        alt: 'Real photo',
+      },
+    ],
+  })
+  render(<Article article={story} linkTo="post" />)
+  expect(screen.getByTestId('editorialPostLink').props.to).toBe(
+    '/profile/test.example/post/one',
+  )
+  expect(screen.getByTestId('editorialMediaLink').props.to).toBe(
+    '/profile/test.example/post/one',
+  )
+  expect(ImageEmbed).not.toHaveBeenCalled()
+  expect(jest.mocked(RichText).mock.calls[0][0]).toMatchObject({
+    disableLinks: true,
+    enableTags: false,
+  })
+})
+it('opens a text-only reader post in its original thread', () => {
+  render(<Article article={article()} linkTo="post" />)
+  expect(screen.getByTestId('editorialPostLink').props.to).toBe(
+    '/profile/test.example/post/one',
+  )
+})
+it('opens a video caption in its thread without wrapping playback controls in a link', () => {
+  const story = article({
+    $type: 'app.bsky.embed.video#view',
+    cid: 'bafyvideo',
+    playlist: 'https://example.com/video.m3u8',
+    thumbnail: 'https://example.com/video.jpg',
+  })
+  render(<Article article={story} linkTo="post" />)
+  expect(screen.getByTestId('editorialPostLink').props.to).toBe(
+    '/profile/test.example/post/one',
+  )
+  expectOutsideLink(VideoEmbed)
+})
+it('shows four description lines on compact wide news stories, covering companions and equal pairs', () => {
+  const original = PRODUCT.id
+  jest.replaceProperty(PRODUCT, 'id', 'news')
+  try {
+    const story = article({
+      $type: 'app.bsky.embed.external#view',
+      external: {
+        uri: 'https://example.com/story',
+        title: 'Source headline',
+        description: 'The genuine source description',
+      },
+    })
+    const view = render(<Article article={story} size="small" compact wide />)
+    expect(
+      screen.getByText('The genuine source description').props.numberOfLines,
+    ).toBe(4)
+    expect(screen.getByTestId('articleHeadline').props.style).toContainEqual(
+      expect.objectContaining({fontFamily: 'Georgia'}),
+    )
+    view.rerender(<Article article={story} size="small" compact />)
+    expect(screen.queryByText('The genuine source description')).toBeNull()
+  } finally {
+    jest.replaceProperty(PRODUCT, 'id', original)
+  }
+})
 it('does not repeat the publisher caption when it matches the summary', () => {
   const story = article({
     $type: 'app.bsky.embed.external#view',
@@ -395,6 +523,87 @@ it('uses a compact thumbnail-and-headline row for small mobile articles', () => 
   expect(screen.getByText('A mobile headline').props.numberOfLines).toBe(3)
   expect(screen.queryByText('A summary that should not take space.')).toBeNull()
   expect(screen.getByTestId('editorialStoryLink')).toBeTruthy()
+})
+
+it('places publisher attribution inside the engagement row, outside the story link', () => {
+  render(
+    <Article
+      article={article()}
+      byline={<Text testID="sourceBadge">WIRED</Text>}
+    />,
+  )
+  expect(
+    screen
+      .getByTestId('editorialPostStats')
+      .findByProps({testID: 'sourceBadge'}),
+  ).toBeTruthy()
+  let parent = screen.getByTestId('sourceBadge').parent
+  while (parent) {
+    expect(parent.type).not.toBe(Link)
+    parent = parent.parent
+  }
+})
+
+it('caps compact Home feature headlines without changing Publisher features', () => {
+  const story = article({
+    $type: 'app.bsky.embed.external#view',
+    external: {
+      uri: 'https://example.com/story',
+      title: 'A real headline',
+      description: '',
+    },
+  })
+  const {rerender} = render(<Article article={story} lead wide dense />)
+  expect(screen.getByTestId('articleHeadline').props.style).toContainEqual(
+    expect.objectContaining({fontSize: PRODUCT.id === 'news' ? 48 : 30}),
+  )
+  rerender(<Article article={story} lead wide />)
+  expect(screen.getByTestId('articleHeadline').props.style).toContainEqual(
+    expect.objectContaining({fontSize: PRODUCT.id === 'news' ? 56 : 40}),
+  )
+})
+
+it('places a large video beside the story and caps its height at 80 percent of the window', () => {
+  const story = article({
+    $type: 'app.bsky.embed.video#view',
+    cid: 'bafyvideo',
+    playlist: 'https://video.example/video.m3u8',
+    aspectRatio: {width: 9, height: 16},
+  })
+  render(<Article article={story} size="big" wide />)
+  expect(screen.getByTestId('articleFeatureVideo').props.style).toContainEqual(
+    expect.objectContaining({
+      width: '48%',
+      maxHeight: Dimensions.get('window').height * 0.8,
+    }),
+  )
+  expect(jest.mocked(VideoEmbed).mock.calls[0][0].immersive).toBe(true)
+  expectOutsideLink(VideoEmbed)
+})
+
+it('stacks and caps large videos on narrow screens without changing carousel cards', () => {
+  const story = article({
+    $type: 'app.bsky.embed.video#view',
+    cid: 'bafyvideo',
+    playlist: 'https://video.example/video.m3u8',
+  })
+  jest.mocked(useBreakpoints).mockReturnValueOnce({
+    gtMobile: false,
+    gtPhone: false,
+    gtTablet: false,
+    activeBreakpoint: undefined,
+  })
+  const {rerender} = render(<Article article={story} size="big" />)
+  expect(screen.queryByTestId('articleFeatureVideo')).toBeNull()
+  expect(screen.getByTestId('articleCappedVideo').props.style).toContainEqual(
+    expect.objectContaining({
+      width: '100%',
+      maxHeight: Dimensions.get('window').height * 0.8,
+    }),
+  )
+  rerender(<Article article={story} size="big" card />)
+  expect(screen.queryByTestId('articleFeatureVideo')).toBeNull()
+  expect(screen.queryByTestId('articleCappedVideo')).toBeNull()
 })
 
 it('does not render media for deleted posts', () => {

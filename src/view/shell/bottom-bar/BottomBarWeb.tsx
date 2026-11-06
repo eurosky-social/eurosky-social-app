@@ -47,6 +47,7 @@ import {Text} from '#/components/Typography'
 import {useAgeAssurance} from '#/ageAssurance'
 import {useAnalytics} from '#/analytics'
 import {type Events} from '#/analytics/metrics/types'
+import {PRODUCT} from '#/config/product'
 import {isFollowingV2HomeDotEnabled} from '#/features/followingV2/eligibility'
 import {
   NavigationItems,
@@ -279,7 +280,10 @@ export function BottomBarWeb() {
               ]}>
               <View style={[a.flex_row, a.align_center, a.gap_md]}>
                 <View style={{paddingTop: 4}}>
-                  <Logotype width={44} fill={t.atoms.text.color} />
+                  <Logotype
+                    width={PRODUCT.id === 'news' ? 96 : 44}
+                    fill={t.atoms.text.color}
+                  />
                 </View>
               </View>
 

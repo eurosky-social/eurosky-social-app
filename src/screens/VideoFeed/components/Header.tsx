@@ -2,6 +2,7 @@ import {useCallback} from 'react'
 import {type GestureResponderEvent, View} from 'react-native'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
+import {Trans} from '@lingui/react/macro'
 import {useNavigation} from '@react-navigation/native'
 
 import {HITSLOP_30} from '#/lib/constants'
@@ -70,6 +71,14 @@ export function Header({
 }) {
   let content = null
   switch (sourceContext.type) {
+    case 'publishers': {
+      content = (
+        <Text style={[a.font_bold, a.text_lg]}>
+          <Trans>Shorts</Trans>
+        </Text>
+      )
+      break
+    }
     case 'feedgen': {
       content = <FeedHeader sourceContext={sourceContext} />
       break
@@ -92,7 +101,7 @@ export function Header({
 export function FeedHeader({
   sourceContext,
 }: {
-  sourceContext: Exclude<VideoFeedSourceContext, {type: 'author'}>
+  sourceContext: Extract<VideoFeedSourceContext, {type: 'feedgen'}>
 }) {
   const {gtMobile} = useBreakpoints()
 

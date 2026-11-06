@@ -15,6 +15,7 @@ import {
 import {useAppviewClient} from '#/state/session'
 import {PRODUCT} from '#/config/product'
 import {assertBookmarkingEnabled} from '#/features/product/bookmarking'
+import {selectBookmarksForProduct} from '#/features/publishers/bookmarks'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 
@@ -33,6 +34,7 @@ export function useBookmarksQuery() {
   >({
     queryKey: createBookmarksQueryKey(),
     enabled: PRODUCT.capabilities.bookmarking,
+    select: selectBookmarksForProduct,
     async queryFn({pageParam}) {
       assertBookmarkingEnabled()
       return await client.call(app.bsky.bookmark.getBookmarks, {

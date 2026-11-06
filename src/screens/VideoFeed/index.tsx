@@ -32,11 +32,9 @@ import {
   type ViewabilityConfig,
 } from '@react-native/virtualized-lists'
 import {
-  type RouteProp,
   useFocusEffect,
   useIsFocused,
   useNavigation,
-  useRoute,
 } from '@react-navigation/native'
 import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 
@@ -110,6 +108,7 @@ import {usePostFeedQuery as useFollowingV2PostFeedQuery} from '#/features/follow
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {Scrubber, VIDEO_PLAYER_BOTTOM_INSET} from './components/Scrubber'
+import {type VideoFeedSourceContext} from './types'
 
 function createThreeVideoPlayers(
   sources?: [string, string, string],
@@ -132,12 +131,20 @@ function createThreeVideoPlayers(
   return [p1, p2, p3]
 }
 
-export function VideoFeed({}: NativeStackScreenProps<
-  CommonNavigatorParams,
-  'VideoFeed'
->) {
+export function VideoFeed({
+  route,
+}: NativeStackScreenProps<CommonNavigatorParams, 'VideoFeed'>) {
+  return <VideoFeedScreen source={route.params} />
+}
+
+export function PublisherVideoFeed({
+  initialPostUri,
+}: {initialPostUri?: string} = {}) {
+  return <VideoFeedScreen source={{type: 'publishers', initialPostUri}} />
+}
+
+function VideoFeedScreen({source: params}: {source: VideoFeedSourceContext}) {
   const {top} = useSafeAreaInsets()
-  const {params} = useRoute<RouteProp<CommonNavigatorParams, 'VideoFeed'>>()
 
   const t = useTheme()
   useFocusEffect(
@@ -168,7 +175,7 @@ export function VideoFeed({}: NativeStackScreenProps<
           ]}>
           <Header sourceContext={params} />
         </View>
-        <Feed />
+        <Feed params={params} />
       </Layout.Screen>
     </ThemeProvider>
   )
@@ -191,14 +198,15 @@ type VideoItem = {
   reqId: string | undefined
 }
 
-function Feed() {
-  const {params} = useRoute<RouteProp<CommonNavigatorParams, 'VideoFeed'>>()
+function Feed({params}: {params: VideoFeedSourceContext}) {
   const isFocused = useIsFocused()
   const {hasSession} = useSession()
   const {height} = useSafeAreaFrame()
 
   const feedDesc = useMemo(() => {
     switch (params.type) {
+      case 'publishers':
+        return 'publishers|videos' as const
       case 'feedgen':
         return `feedgen|${params.uri}` as const
       case 'author':
@@ -223,9 +231,13 @@ function Feed() {
   const legacyQuery = usePostFeedQuery(feedDesc, feedParams, {
     enabled: !isFollowingV2,
   })
-  const followingV2Query = useFollowingV2PostFeedQuery(feedDesc, feedParams, {
-    enabled: isFollowingV2,
-  })
+  const followingV2Query = useFollowingV2PostFeedQuery(
+    params.type === 'feedgen' ? `feedgen|${params.uri}` : 'following',
+    feedParams,
+    {
+      enabled: isFollowingV2,
+    },
+  )
   const {data, error, hasNextPage, isFetchingNextPage, fetchNextPage} =
     isFollowingV2 ? followingV2Query : legacyQuery
 

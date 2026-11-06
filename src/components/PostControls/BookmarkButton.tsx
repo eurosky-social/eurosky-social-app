@@ -15,16 +15,14 @@ import {
 import {Trash_Stroke2_Corner0_Rounded as TrashIcon} from '#/components/icons/Trash'
 import * as toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
-import {PRODUCT} from '#/config/product'
+import {canBookmarkPost} from '#/features/product/bookmarking'
 import {type app} from '#/lexicons'
 import {PostControlButton, PostControlButtonIcon} from './PostControlButton'
 
 export const BookmarkButton = memo(function BookmarkButton(
   props: React.ComponentProps<typeof BookmarkButtonInner>,
 ) {
-  return PRODUCT.capabilities.bookmarking ? (
-    <BookmarkButtonInner {...props} />
-  ) : null
+  return canBookmarkPost(props.post) ? <BookmarkButtonInner {...props} /> : null
 })
 
 function BookmarkButtonInner({

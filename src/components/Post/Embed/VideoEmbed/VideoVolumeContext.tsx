@@ -1,5 +1,11 @@
 import {createContext, useContext, useMemo, useState} from 'react'
 
+/** Optional controlled audio for a continuous reader; ordinary inline players stay unchanged. */
+export type VideoAudioState = {
+  muted: boolean
+  onMutedChange: (muted: boolean) => void
+}
+
 const Context = createContext<{
   muted: boolean
   setMuted: React.Dispatch<React.SetStateAction<boolean>>

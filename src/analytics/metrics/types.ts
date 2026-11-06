@@ -170,6 +170,7 @@ export type Events = {
       | 'lists'
       | 'news'
       | 'publisher'
+      | 'shorts'
       | 'saved'
       | 'settings'
       | 'menu'

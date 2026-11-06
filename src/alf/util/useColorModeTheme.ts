@@ -4,6 +4,7 @@ import {type Theme, type ThemeName} from '@bsky.app/alf'
 
 import {useThemePrefs} from '#/state/shell'
 import {themes} from '#/alf/themes'
+import {PRODUCT} from '#/config/product'
 import {IS_WEB} from '#/env'
 
 export function useColorModeTheme(
@@ -37,7 +38,7 @@ function getThemeName(
   ) {
     return 'light'
   } else {
-    return darkTheme ?? 'dim'
+    return darkTheme ?? (PRODUCT.id === 'news' ? 'dark' : 'dim')
   }
 }
 

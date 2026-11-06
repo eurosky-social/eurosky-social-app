@@ -1,7 +1,17 @@
 import {type ThreadItem} from '#/state/queries/usePostThread/types'
 import {getProduct} from '#/config/product'
 import {PUBLISHERS} from './publishers'
-import {publisherThreadArticle} from './threadArticle'
+import {publisherFeedArticle, publisherThreadArticle} from './threadArticle'
+
+function feedItem(source = item()) {
+  return {
+    _reactKey: source.key,
+    uri: source.value.post.uri,
+    post: source.value.post,
+    record: source.value.post.record,
+    moderation: source.moderation,
+  }
+}
 
 function item(did: string = PUBLISHERS[0].did, reply = false) {
   return {
@@ -36,6 +46,49 @@ it('keeps the original publisher article when it becomes an ancestor after openi
   expect(
     publisherThreadArticle({...item(), depth: -2}, getProduct('news')),
   ).toBeDefined()
+})
+it.each(PUBLISHERS)(
+  'renders $name originals above profile replies as articles with their original identity',
+  publisher => {
+    const source = feedItem(item(publisher.did))
+    expect(
+      publisherFeedArticle(
+        source,
+        'publisher-replies|did:plc:reader',
+        getProduct('news'),
+      )?.item,
+    ).toBe(source)
+  },
+)
+it.each([
+  undefined,
+  'author|did:plc:reader',
+  'publishers|articles',
+  'publisher-replies-other|did:plc:reader',
+])('leaves unrelated feed %s untouched', descriptor => {
+  expect(
+    publisherFeedArticle(feedItem(), descriptor, getProduct('news')),
+  ).toBeUndefined()
+})
+it('preserves social profile feeds and ordinary comments, even publisher-authored replies', () => {
+  const descriptor = 'publisher-replies|did:plc:reader'
+  expect(
+    publisherFeedArticle(feedItem(), descriptor, getProduct('social')),
+  ).toBeUndefined()
+  expect(
+    publisherFeedArticle(
+      feedItem(item('did:plc:reader')),
+      descriptor,
+      getProduct('news'),
+    ),
+  ).toBeUndefined()
+  expect(
+    publisherFeedArticle(
+      feedItem(item(PUBLISHERS[0].did, true)),
+      descriptor,
+      getProduct('news'),
+    ),
+  ).toBeUndefined()
 })
 it('preserves social, non-publisher posts and replies', () => {
   expect(publisherThreadArticle(item(), getProduct('social'))).toBeUndefined()

@@ -45,16 +45,17 @@ it.each(['sidebar', 'drawer', 'bottomBar', 'nativeBottomBar'] as const)(
     expect(news[surface] ?? news.bottomBar).toEqual([
       'home',
       'publisher',
+      'shorts',
+      'saved',
       'profile',
-      'settings',
     ])
   },
 )
 
-it('removes other news destinations from signed-out navigation', () => {
+it('exposes only public news destinations in signed-out navigation', () => {
   const news = getProduct('news').navigation
-  expect(news.signedOutSidebar).toEqual([])
-  expect(news.signedOutDrawer).toEqual(['home'])
+  expect(news.signedOutSidebar).toEqual(['home', 'publisher', 'shorts'])
+  expect(news.signedOutDrawer).toEqual(['home', 'publisher', 'shorts'])
 })
 
 it('supports adding and reordering existing destinations on mobile', () => {

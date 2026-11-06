@@ -1,5 +1,5 @@
-import {useEffect, useMemo, useRef} from 'react'
-import {type DimensionValue, Pressable, View} from 'react-native'
+import {useEffect, useRef} from 'react'
+import {Pressable, View} from 'react-native'
 import Animated, {
   type AnimatedRef,
   useAnimatedRef,
@@ -25,10 +25,12 @@ export function ConstrainedImage({
   children,
   minMobileAspectRatio,
   showPlaceholder = true,
+  maxHeight,
 }: {
   aspectRatio: number
   fullBleed?: boolean
   minMobileAspectRatio?: number
+  maxHeight?: number
   /**
    * Whether to fill the box with a placeholder colour behind `children`.
    * Turn this off if the children paint their own.
@@ -41,17 +43,27 @@ export function ConstrainedImage({
    * Computed as a % value to apply as `paddingTop`, this basically controls
    * the height of the image.
    */
-  const outerAspectRatio = useMemo<DimensionValue>(() => {
-    const ratio = IS_NATIVE
-      ? Math.min(1 / aspectRatio, minMobileAspectRatio ?? 16 / 9) // 9:16 bounding box
-      : Math.min(1 / aspectRatio, 1) // 1:1 bounding box
-    return `${ratio * 100}%`
-  }, [aspectRatio, minMobileAspectRatio])
+  const ratio = IS_NATIVE
+    ? Math.min(1 / aspectRatio, minMobileAspectRatio ?? 16 / 9)
+    : Math.min(1 / aspectRatio, 1)
+  const outerAspectRatio = `${ratio * 100}%` as const
 
   return (
     <View style={[a.w_full]}>
-      <View style={[a.overflow_hidden, {paddingTop: outerAspectRatio}]}>
-        <View style={[a.absolute, a.inset_0, a.flex_row]}>
+      <View
+        style={[
+          a.overflow_hidden,
+          maxHeight === undefined
+            ? {paddingTop: outerAspectRatio}
+            : {aspectRatio: 1 / ratio, maxHeight},
+        ]}>
+        <View
+          style={[
+            a.absolute,
+            a.inset_0,
+            a.flex_row,
+            maxHeight !== undefined && a.justify_center,
+          ]}>
           <View
             style={[
               a.h_full,
@@ -76,9 +88,11 @@ export function AutoSizedImage({
   onPressIn,
   onContainerRef,
   onDimsChange,
+  maxHeight,
 }: {
   image: app.bsky.embed.images.ViewImage
   crop?: 'none' | 'square' | 'constrained'
+  maxHeight?: number
   onPress?: (
     containerRef: AnimatedRef<any>,
     fetchedDims: Dimensions | null,
@@ -121,7 +135,7 @@ export function AutoSizedImage({
   }
 
   const cropDisabled = crop === 'none'
-  const isCropped = rawIsCropped && !cropDisabled
+  const isCropped = rawIsCropped && !cropDisabled && maxHeight === undefined
   const isContain = aspectRatio === undefined
   const hasAlt = !!image.alt
 
@@ -135,7 +149,7 @@ export function AutoSizedImage({
       collapsable={false}
       style={[{flex: 1}, t.atoms.bg_contrast_25]}>
       <Image
-        contentFit={isContain ? 'contain' : 'cover'}
+        contentFit={isContain || maxHeight !== undefined ? 'contain' : 'cover'}
         style={[a.w_full, a.h_full]}
         source={image.thumb}
         accessible={true} // Must set for `accessibilityLabel` to work
@@ -242,7 +256,7 @@ export function AutoSizedImage({
           a.w_full,
           a.rounded_md,
           a.overflow_hidden,
-          {aspectRatio: max ?? 1},
+          {aspectRatio: max ?? 1, maxHeight},
           web([
             a.transition_transform,
             {transitionDuration: '200ms'},
@@ -257,7 +271,8 @@ export function AutoSizedImage({
       <ConstrainedImage
         fullBleed={crop === 'square'}
         aspectRatio={constrained ?? 1}
-        showPlaceholder={false}>
+        showPlaceholder={false}
+        maxHeight={maxHeight}>
         <Pressable
           onPress={() => onPress?.(containerRef, fetchedDimsRef.current)}
           onLongPress={onLongPress}

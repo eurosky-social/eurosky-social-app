@@ -1,6 +1,7 @@
 import {useCallback, useMemo, useState} from 'react'
 import {View} from 'react-native'
 import {type $Typed} from '@atproto/lex'
+import {moderatePost} from '@bsky/sdk/moderation'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
@@ -18,8 +19,10 @@ import {
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
 import {cleanError} from '#/lib/strings/errors'
+import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {useBookmarkMutation} from '#/state/queries/bookmarks/useBookmarkMutation'
 import {useBookmarksQuery} from '#/state/queries/bookmarks/useBookmarksQuery'
+import {useAutoPagination} from '#/state/queries/util'
 import {Post} from '#/view/com/post/Post'
 import {EmptyState} from '#/view/com/util/EmptyState'
 import {List} from '#/view/com/util/List'
@@ -37,7 +40,11 @@ import * as Skele from '#/components/Skeleton'
 import * as toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
+import {PRODUCT} from '#/config/product'
 import {IS_IOS} from '#/env'
+import {Article} from '#/features/articles/Article'
+import {articleFromPost} from '#/features/articles/articles'
+import {PublisherByline} from '#/features/publishers/Byline'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 
@@ -93,18 +100,32 @@ type ListItem =
     }
 
 function BookmarksInner() {
+  const {_} = useLingui()
   const initialNumToRender = useInitialNumToRender()
   const [isPTRing, setIsPTRing] = useState(false)
   const trackPostView = usePostViewTracking('Bookmarks')
   const {
     data,
     isLoading,
+    isRefetching,
     isFetchingNextPage,
     hasNextPage,
     fetchNextPage,
     error,
     refetch,
   } = useBookmarksQuery()
+  useAutoPagination(
+    {
+      data,
+      isLoading,
+      isRefetching,
+      isFetchingNextPage,
+      hasNextPage: PRODUCT.id === 'news' && !!hasNextPage && !error,
+      fetchNextPage,
+    },
+    data?.pages.reduce((count, page) => count + page.bookmarks.length, 0) ?? 0,
+    1,
+  )
 
   const onRefresh = useCallback(async () => {
     setIsPTRing(true)
@@ -127,7 +148,7 @@ function BookmarksInner() {
 
     if (isLoading) {
       i.push({type: 'loading', key: 'loading'})
-    } else if (error || !data) {
+    } else if ((PRODUCT.id !== 'news' && error) || !data) {
       // handled in Footer
     } else {
       const bookmarks = data.pages.flatMap(p => p.bookmarks)
@@ -155,13 +176,13 @@ function BookmarksInner() {
             })
           }
         }
-      } else {
+      } else if (PRODUCT.id !== 'news' || !hasNextPage) {
         i.push({type: 'empty', key: 'empty'})
       }
     }
 
     return i
-  }, [isLoading, error, data])
+  }, [isLoading, error, data, hasNextPage])
 
   const isEmpty = items.length === 1 && items[0]?.type === 'empty'
 
@@ -172,7 +193,11 @@ function BookmarksInner() {
       keyExtractor={keyExtractor}
       refreshing={isPTRing}
       onRefresh={() => void onRefresh()}
-      onEndReached={() => void onEndReached()}
+      onEndReached={
+        PRODUCT.id === 'news' && items.length === 0
+          ? undefined
+          : () => void onEndReached()
+      }
       onEndReachedThreshold={4}
       onItemSeen={(item: ListItem) => {
         if (item.type === 'bookmark') {
@@ -180,12 +205,31 @@ function BookmarksInner() {
         }
       }}
       ListFooterComponent={
-        <ListFooter
-          isFetchingNextPage={isFetchingNextPage}
-          error={cleanError(error)}
-          onRetry={fetchNextPage}
-          style={[isEmpty && a.border_t_0]}
-        />
+        <>
+          <ListFooter
+            isFetchingNextPage={isFetchingNextPage}
+            error={cleanError(error)}
+            onRetry={fetchNextPage}
+            style={[isEmpty && a.border_t_0]}
+          />
+          {PRODUCT.id === 'news' &&
+            items.length === 0 &&
+            hasNextPage &&
+            !isFetchingNextPage &&
+            !error && (
+              <View style={[a.p_lg, a.align_center]}>
+                <Button
+                  label={_(msg`Load more`)}
+                  color="secondary"
+                  size="small"
+                  onPress={() => void onEndReached()}>
+                  <ButtonText>
+                    <Trans>Load more</Trans>
+                  </ButtonText>
+                </Button>
+              </View>
+            )}
+        </>
       }
       initialNumToRender={initialNumToRender}
       windowSize={9}
@@ -272,6 +316,14 @@ function BookmarkItem({
   hideTopBorder: boolean
 }) {
   const ax = useAnalytics()
+  if (PRODUCT.id === 'news')
+    return (
+      <NewsBookmarkArticle
+        post={item.bookmark.item}
+        hideTopBorder={hideTopBorder}
+        onOpen={() => ax.metric('bookmarks:post-clicked', {})}
+      />
+    )
   return (
     <Post
       post={item.bookmark.item}
@@ -280,6 +332,44 @@ function BookmarkItem({
         ax.metric('bookmarks:post-clicked', {})
       }}
     />
+  )
+}
+
+function NewsBookmarkArticle({
+  post,
+  hideTopBorder,
+  onOpen,
+}: {
+  post: app.bsky.feed.defs.PostView
+  hideTopBorder: boolean
+  onOpen: () => void
+}) {
+  const opts = useModerationOpts()
+  const t = useTheme()
+  if (!opts || !bsky.matches(app.bsky.feed.post, post.record)) return null
+  const article = articleFromPost({
+    _reactKey: post.uri,
+    uri: post.uri,
+    post,
+    record: post.record,
+    moderation: moderatePost(post, opts),
+  })
+  return (
+    <View
+      style={[
+        a.p_lg,
+        !hideTopBorder && a.border_t,
+        t.atoms.border_contrast_low,
+      ]}>
+      <Article
+        article={article}
+        linkTo="post"
+        size="big"
+        dense
+        byline={<PublisherByline profile={post.author} />}
+        onOpen={onOpen}
+      />
+    </View>
   )
 }
 

@@ -46,6 +46,7 @@ export interface PagerWithHeaderProps {
     | ((props: PagerWithHeaderChildParams) => JSX.Element)
   items: string[]
   isHeaderReady: boolean
+  hideTabBar?: boolean
   renderHeader?: ({
     setMinimumHeight,
   }: {
@@ -64,6 +65,7 @@ export function PagerWithHeader({
   testID,
   items,
   isHeaderReady,
+  hideTabBar = false,
   renderHeader,
   initialPage,
   onPageSelected,
@@ -75,7 +77,7 @@ export function PagerWithHeader({
   const [tabBarHeight, setTabBarHeight] = useState(0)
   const [headerOnlyHeight, setHeaderOnlyHeight] = useState(0)
   const scrollY = useSharedValue(0)
-  const headerHeight = headerOnlyHeight + tabBarHeight
+  const headerHeight = headerOnlyHeight + (hideTabBar ? 0 : tabBarHeight)
 
   // capture the header bar sizing
   const onTabBarLayout = useCallback((evt: LayoutChangeEvent) => {
@@ -100,6 +102,7 @@ export function PagerWithHeader({
             headerOnlyHeight={headerOnlyHeight}
             items={items}
             isHeaderReady={isHeaderReady}
+            hideTabBar={hideTabBar}
             renderHeader={renderHeader}
             currentPage={currentPage}
             headerOverflowInset={headerOverflowInset}
@@ -120,6 +123,7 @@ export function PagerWithHeader({
       headerOnlyHeight,
       items,
       isHeaderReady,
+      hideTabBar,
       renderHeader,
       currentPage,
       onCurrentPageSelected,
@@ -206,7 +210,9 @@ export function PagerWithHeader({
         .filter(Boolean)
         .map((child, i) => {
           const isReady =
-            isHeaderReady && headerOnlyHeight > 0 && tabBarHeight > 0
+            isHeaderReady &&
+            headerOnlyHeight > 0 &&
+            (hideTabBar || tabBarHeight > 0)
           return (
             <View key={i} collapsable={false}>
               <PagerItem
@@ -229,6 +235,7 @@ let PagerTabBar = ({
   currentPage,
   headerOnlyHeight,
   isHeaderReady,
+  hideTabBar,
   items,
   scrollY,
   testID,
@@ -245,6 +252,7 @@ let PagerTabBar = ({
   currentPage: number
   headerOnlyHeight: number
   isHeaderReady: boolean
+  hideTabBar?: boolean
   items: string[]
   testID?: string
   scrollY: SharedValue<number>
@@ -349,24 +357,26 @@ let PagerTabBar = ({
           )
         }
       </View>
-      <View
-        onLayout={onTabBarLayout}
-        style={{
-          // Render it immediately to measure it early since its size doesn't depend on the content.
-          // However, keep it invisible until the header above stabilizes in order to prevent jumps.
-          opacity: isHeaderReady ? 1 : 0,
-          pointerEvents: isHeaderReady ? 'auto' : 'none',
-        }}>
-        <TabBar
-          testID={testID}
-          items={items}
-          selectedPage={currentPage}
-          onSelect={onSelect}
-          onPressSelected={onCurrentPageSelected}
-          dragProgress={dragProgress}
-          dragState={dragState}
-        />
-      </View>
+      {!hideTabBar && (
+        <View
+          onLayout={onTabBarLayout}
+          style={{
+            // Render it immediately to measure it early since its size doesn't depend on the content.
+            // However, keep it invisible until the header above stabilizes in order to prevent jumps.
+            opacity: isHeaderReady ? 1 : 0,
+            pointerEvents: isHeaderReady ? 'auto' : 'none',
+          }}>
+          <TabBar
+            testID={testID}
+            items={items}
+            selectedPage={currentPage}
+            onSelect={onSelect}
+            onPressSelected={onCurrentPageSelected}
+            dragProgress={dragProgress}
+            dragState={dragState}
+          />
+        </View>
+      )}
     </Animated.View>
   )
 }

@@ -2,6 +2,7 @@ import {i18n} from '@lingui/core'
 import {I18nProvider} from '@lingui/react'
 import {act, fireEvent, render} from '@testing-library/react-native'
 
+import {PostControlButton} from '#/components/PostControls/PostControlButton'
 import * as Toast from '#/components/Toast'
 import {ArticleLikeButton} from './LikeButton'
 
@@ -10,12 +11,21 @@ jest.mock('#/state/queries/post', () => ({
   usePostLikeMutationQueue: () => [mockLike, mockUnlike],
 }))
 jest.mock('#/state/session', () => ({useRequireAuth: () => mockRequireAuth}))
-jest.mock('#/alf', () => ({useTheme: () => ({palette: {pink: '#f09'}})}))
+jest.mock('#/alf', () => ({
+  atoms: {flex_col: {flexDirection: 'column'}, gap_xs: {gap: 4}},
+  useTheme: () => ({palette: {pink: '#f09'}}),
+}))
 jest.mock('#/components/PostControls/PostControlButton', () => {
   const {Pressable, Text} =
     require('react-native') as typeof import('react-native')
   return {
-    PostControlButton: Pressable,
+    PostControlButton: jest.fn(
+      (props: React.ComponentProps<typeof Pressable>) =>
+        (require('react') as typeof import('react')).createElement(
+          Pressable,
+          props,
+        ),
+    ),
     PostControlButtonText: Text,
     PostControlButtonIcon: () => null,
   }
@@ -71,6 +81,25 @@ it('likes the original post rather than navigating, and unlikes from the shared 
   expect(screen.getByText('12')).toBeTruthy()
   await press(screen)
   expect(mockUnlike).toHaveBeenCalledTimes(1)
+})
+it('does not override the shared horizontal spacing with an undefined style', () => {
+  const screen = render(root(post()))
+  expect(screen.getByTestId('editorialLikes')).toBeTruthy()
+  expect(jest.mocked(PostControlButton).mock.calls[0][0]).not.toHaveProperty(
+    'style',
+  )
+})
+it('keeps vertical video counts below the heart with a gap', () => {
+  const screen = render(
+    <I18nProvider i18n={i18n}>
+      <ArticleLikeButton post={post()} vertical />
+    </I18nProvider>,
+  )
+  expect(screen.getByTestId('editorialLikes')).toBeTruthy()
+  expect(jest.mocked(PostControlButton).mock.calls[0][0].style).toEqual([
+    {flexDirection: 'column'},
+    {gap: 4},
+  ])
 })
 it('requires authentication before mutating', async () => {
   mockRequireAuth.mockImplementation(() => Promise.resolve())

@@ -18,14 +18,28 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
+import {loadProjectEnv} from '@expo/env'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+loadProjectEnv(ROOT, {
+  mode: process.env.NODE_ENV ?? 'development',
+  silent: true,
+})
 const BRAND_PATH = path.join(ROOT, 'src/config/brand.json')
 const LOGO_PATH = path.join(ROOT, 'src/config/brand-logo.generated.json')
 
 const brand = JSON.parse(fs.readFileSync(BRAND_PATH, 'utf8'))
 const colors = brand.colors
 const logo = JSON.parse(fs.readFileSync(LOGO_PATH, 'utf8'))
+const product = process.env.EXPO_PUBLIC_PRODUCT ?? 'social'
+const presets = JSON.parse(
+  fs.readFileSync(path.join(ROOT, 'src/config/product-presets.json'), 'utf8'),
+)
+if (!Object.hasOwn(presets, product)) {
+  throw new Error(
+    `Unknown EXPO_PUBLIC_PRODUCT "${product}". Expected: social, news.`,
+  )
+}
 const meta = brand
 const BRAND_NAME = meta.name
 const BRAND_HOST = meta.hosts[0]
@@ -118,14 +132,17 @@ function themeColorMeta(i) {
 /**
  * Pre-boot splash mark - the generated brand logo SVG (brand-logo.generated.json,
  * from assets/brand/*.svg) inlined verbatim, matching the static #splash mark the
- * React splash (src/Splash*.tsx) hands off to. Uses the `hero` role when present
- * (mu's dimensional wordmark), else `mark`. Logo `theme:<key>` tokens and
+ * React splash (src/Splash*.tsx) hands off to. News uses its compact lockup;
+ * social uses the `hero` role when present, else `mark`. Logo `theme:<key>` tokens and
  * `currentColor` are resolved here from the default accent, mirroring how
  * <BrandLogo> resolves them from the active theme in-app.
  * @param {string} i
  */
 function splashSvg(i) {
-  const role = logo.hero ?? logo.mark
+  const role =
+    product === 'news'
+      ? (logo['news-mark'] ?? logo.mark)
+      : (logo.hero ?? logo.mark)
   const xml = role.xml
     .replace(/theme:([A-Za-z0-9_]+)/g, (_, k) => A[k] ?? 'currentColor')
     .replace(/currentColor/g, A.primary_500)
@@ -242,6 +259,11 @@ function renderPrebootFile(content) {
     `$1${A.primary_500}$2`,
   )
   out = regenRegion(out, 'splash', 'html', splashSvg)
+  // Match the product's first-run theme; never override a saved ALF theme.
+  out = out.replace(
+    /const theme = localStorage\.getItem\('ALF_THEME'\)(?: \|\| 'dark')?/,
+    `const theme = localStorage.getItem('ALF_THEME')${product === 'news' ? " || 'dark'" : ''}`,
+  )
 
   // Brand text identity (brand.json). The og/twitter block lives only in
   // public/index.html; the twitter:site tag only in base.html - both optional so

@@ -35,6 +35,7 @@ import {KeepAwake} from '#/components/KeepAwake'
 import {PlayButtonIcon} from '#/components/video/PlayButtonIcon'
 import {useAnalytics} from '#/analytics'
 import {IS_NATIVE} from '#/env'
+import {postMediaMaxHeight} from '#/features/product/media'
 import {type app} from '#/lexicons'
 
 interface ShouldStartLoadRequest {
@@ -247,7 +248,11 @@ export function ExternalPlayer({
       <Animated.View
         ref={viewRef}
         collapsable={false}
-        style={[aspect, a.overflow_hidden]}>
+        style={[
+          aspect,
+          a.overflow_hidden,
+          {maxHeight: postMediaMaxHeight(windowDims.height)},
+        ]}>
         {link.thumb && (!isPlayerActive || isLoading) ? (
           <>
             <Image

@@ -42,6 +42,9 @@ import {useAppviewClient, useSession} from '#/state/session'
 import * as userActionHistory from '#/state/userActionHistory'
 import {KnownError} from '#/view/com/posts/PostFeedErrorMessage'
 import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
+import {PublisherFeedAPI} from '#/features/publishers/feed'
+import {publisherFeedSources} from '#/features/publishers/feedDescriptor'
+import {PublisherRepliesAPI} from '#/features/publishers/replies'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {useFeedTuners} from '../preferences/feed-tuners'
@@ -77,6 +80,11 @@ export type FeedDescriptor =
   | `posts|${PostsUriList}`
   | `newsfeed|${string}`
   | `frontpage|${string}`
+  | 'publishers|articles'
+  | 'publishers|videos'
+  | `publishers|following|${string}`
+  | `publishers|following-videos|${string}`
+  | `publisher-replies|${ActorDid}`
   | 'demo'
 export interface FeedParams {
   mergeFeedEnabled?: boolean
@@ -200,7 +208,8 @@ export function usePostFeedQuery(
     enabled,
     staleTime: STALE.INFINITY,
     queryKey: RQKEY(feedDesc, params),
-    async queryFn({pageParam}: {pageParam: RQPageParam}) {
+    async queryFn(context: {pageParam: RQPageParam; signal: AbortSignal}) {
+      const {pageParam} = context
       logger.debug('usePostFeedQuery', {feedDesc, cursor: pageParam?.cursor})
       const {api, cursor} = pageParam
         ? pageParam
@@ -218,7 +227,12 @@ export function usePostFeedQuery(
             cursor: undefined,
           }
 
-      const res = await api.fetch({cursor, limit: fetchLimit})
+      const res = await api.fetch({
+        cursor,
+        limit: fetchLimit,
+        // Only consume the signal for the new API; preserve legacy background-fetch behavior.
+        ...(feedDesc.startsWith('publishers|') ? {signal: context.signal} : {}),
+      })
 
       /*
        * If this is a public view, we need to check if posts fail moderation.
@@ -442,6 +456,22 @@ function createApi({
         return new FollowingFeedAPI({client})
       }
     }
+  } else if (feedDesc.startsWith('publishers|')) {
+    return new PublisherFeedAPI({
+      client,
+      videos:
+        feedDesc === 'publishers|videos' ||
+        feedDesc.startsWith('publishers|following-videos|'),
+      dids: publisherFeedSources(feedDesc),
+    })
+  } else if (feedDesc.startsWith('publisher-replies|')) {
+    return new PublisherRepliesAPI({
+      client,
+      feedParams: {
+        actor: feedDesc.split('|')[1] as AtIdentifierString,
+        filter: 'posts_with_replies',
+      },
+    })
   } else if (feedDesc.startsWith('author')) {
     const [__, actor, filter] = feedDesc.split('|')
     /*

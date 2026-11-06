@@ -18,6 +18,7 @@ import {
   usePostShadow,
 } from '#/state/cache/post-shadow'
 import {useFeedFeedbackContext} from '#/state/feed-feedback'
+import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {unstableCacheProfileView} from '#/state/queries/profile'
 import {useSession} from '#/state/session'
 import {useMergedThreadgateHiddenReplies} from '#/state/threadgate-hidden-replies'
@@ -53,7 +54,10 @@ import {DiscoverDebug} from '#/components/PostControls/DiscoverDebug'
 import {RichText} from '#/components/RichText'
 import {SubtleHover} from '#/components/SubtleHover'
 import {Features, useAnalytics} from '#/analytics'
+import {ArticleContent} from '#/features/articles/Article'
+import {articleModeration} from '#/features/articles/moderation'
 import {useActorStatus} from '#/features/liveNow'
+import {publisherFeedArticle} from '#/features/publishers/threadArticle'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {PostFeedReason} from './PostFeedReason'
@@ -74,6 +78,7 @@ interface FeedItemProps {
   isThreadLastChild?: boolean
   isThreadParent?: boolean
   feedContext: string | undefined
+  feedDescriptor?: string
   reqId: string | undefined
   hideTopBorder?: boolean
   isParentBlocked?: boolean
@@ -82,6 +87,7 @@ interface FeedItemProps {
 
 export function PostFeedItem({
   post,
+  feedDescriptor: sourceFeedDescriptor,
   record,
   postNumbering,
   reason,
@@ -124,6 +130,7 @@ export function PostFeedItem({
           postNumbering={postNumbering}
           reason={reason}
           feedContext={feedContext}
+          feedDescriptor={sourceFeedDescriptor}
           reqId={reqId}
           richText={richText}
           parentAuthor={parentAuthor}
@@ -146,6 +153,7 @@ export function PostFeedItem({
 
 let FeedItemInner = ({
   post,
+  feedDescriptor: sourceFeedDescriptor,
   record,
   postNumbering,
   reason,
@@ -452,6 +460,7 @@ let FeedItemInner = ({
               post={post}
               additionalPostAlerts={additionalPostAlerts}
               feedDescriptor={feedDescriptor}
+              sourceFeedDescriptor={sourceFeedDescriptor}
             />
             <PostControls
               post={post}
@@ -490,16 +499,18 @@ let PostContent = ({
   onOpenEmbed,
   additionalPostAlerts,
   feedDescriptor,
+  sourceFeedDescriptor,
 }: {
   moderation: ModerationDecision
   richText: RichTextAPI
   postEmbed: app.bsky.feed.defs.PostView['embed']
   postAuthor: app.bsky.feed.defs.PostView['author']
   onOpenEmbed: () => void
-  post: app.bsky.feed.defs.PostView
+  post: Shadow<app.bsky.feed.defs.PostView>
   postNumbering: FeedPostNumbering | undefined
   additionalPostAlerts?: AppModerationCause[]
   feedDescriptor?: string
+  sourceFeedDescriptor?: string
 }): React.ReactNode => {
   const [limitLines, setLimitLines] = useState(
     () => countLines(richText.text) >= MAX_POST_LINES,
@@ -512,6 +523,15 @@ let PostContent = ({
     [post],
   )
 
+  const moderationOpts = useModerationOpts()
+  const article =
+    record && moderationOpts
+      ? publisherFeedArticle(
+          {_reactKey: post.uri, uri: post.uri, post, record, moderation},
+          sourceFeedDescriptor ?? feedDescriptor,
+        )
+      : undefined
+
   const onPressShowMore = useCallback(() => {
     setLimitLines(false)
   }, [setLimitLines])
@@ -519,7 +539,11 @@ let PostContent = ({
   return (
     <ContentHider
       testID="contentHider-post"
-      modui={moderation.ui('contentList')}
+      modui={
+        article
+          ? articleModeration(article, moderationOpts)
+          : moderation.ui('contentList')
+      }
       ignoreMute
       childContainerStyle={styles.contentHiderChild}>
       <PostAlerts
@@ -528,58 +552,76 @@ let PostContent = ({
         style={[a.pb_xs]}
         additionalCauses={additionalPostAlerts}
       />
-      {richText.text ? (
-        <View style={[a.mb_2xs]}>
-          <RichText
-            enableTags
-            enableCode
-            testID="postText"
-            value={richText}
-            numberOfLines={limitLines ? MAX_POST_LINES : undefined}
-            style={[a.flex_1, a.text_md]}
-            authorHandle={postAuthor.handle}
-            shouldProxyLinks={true}
-            suffixOffset={POST_NUMBER_INLINE_OFFSET}
-            suffix={
-              !limitLines && showPostNumber ? (
-                <ThreadItemPostNumber value={postNumbering} />
-              ) : undefined
-            }
+      {article ? (
+        <View testID="publisherFeedArticle" style={[a.pt_sm]}>
+          <ArticleContent
+            article={article}
+            post={post}
+            presentation="thread"
+            linkTo="post"
+            lead
+            size="big"
+            dense
+            onOpen={onOpenEmbed}
           />
-          {limitLines && (
-            <View style={[a.flex_row, a.align_center, a.gap_xs]}>
-              <ShowMoreTextButton
-                style={[a.text_md]}
-                onPress={onPressShowMore}
-              />
-              <ThreadItemPostNumber inline={false} value={postNumbering} />
-            </View>
-          )}
+          <TranslatedPost hideTranslateLink post={post} />
         </View>
       ) : (
-        <ThreadItemPostNumber inline={false} value={postNumbering} />
+        <>
+          {richText.text ? (
+            <View style={[a.mb_2xs]}>
+              <RichText
+                enableTags
+                enableCode
+                testID="postText"
+                value={richText}
+                numberOfLines={limitLines ? MAX_POST_LINES : undefined}
+                style={[a.flex_1, a.text_md]}
+                authorHandle={postAuthor.handle}
+                shouldProxyLinks={true}
+                suffixOffset={POST_NUMBER_INLINE_OFFSET}
+                suffix={
+                  !limitLines && showPostNumber ? (
+                    <ThreadItemPostNumber value={postNumbering} />
+                  ) : undefined
+                }
+              />
+              {limitLines && (
+                <View style={[a.flex_row, a.align_center, a.gap_xs]}>
+                  <ShowMoreTextButton
+                    style={[a.text_md]}
+                    onPress={onPressShowMore}
+                  />
+                  <ThreadItemPostNumber inline={false} value={postNumbering} />
+                </View>
+              )}
+            </View>
+          ) : (
+            <ThreadItemPostNumber inline={false} value={postNumbering} />
+          )}
+          {record && <TranslatedPost hideTranslateLink post={post} />}
+          {postEmbed ? (
+            <View
+              style={[
+                a.pb_xs,
+                maybeApplyGalleryOffsetStyles('embed', {
+                  post,
+                  modui: moderation.ui('contentList'),
+                  additionalCauses: additionalPostAlerts,
+                }),
+              ]}>
+              <Embed
+                embed={postEmbed}
+                moderation={moderation}
+                onOpen={onOpenEmbed}
+                viewContext={PostEmbedViewContext.Feed}
+                post={post}
+                feedDescriptor={feedDescriptor}
+              />
+            </View>
+          ) : null}
+        </>
       )}
-      {record && <TranslatedPost hideTranslateLink post={post} />}
-      {postEmbed ? (
-        <View
-          style={[
-            a.pb_xs,
-            maybeApplyGalleryOffsetStyles('embed', {
-              post,
-              modui: moderation.ui('contentList'),
-              additionalCauses: additionalPostAlerts,
-            }),
-          ]}>
-          <Embed
-            embed={postEmbed}
-            moderation={moderation}
-            onOpen={onOpenEmbed}
-            viewContext={PostEmbedViewContext.Feed}
-            post={post}
-            feedDescriptor={feedDescriptor}
-          />
-        </View>
-      ) : null}
     </ContentHider>
   )
 }

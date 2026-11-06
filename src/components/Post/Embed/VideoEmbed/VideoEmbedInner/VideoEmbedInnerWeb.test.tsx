@@ -2,6 +2,7 @@ import {Component} from 'react'
 import {Text} from 'react-native'
 import {act, render} from '@testing-library/react-native'
 
+import {type VideoAudioState} from '../VideoVolumeContext'
 import {loadHls} from './loadHls'
 import {VideoEmbedInnerWeb} from './VideoEmbedInnerWeb'
 
@@ -49,11 +50,21 @@ class Boundary extends Component<
   }
 }
 
-function Player({attempt = 0}: {attempt?: number}) {
+function Player({
+  attempt = 0,
+  audio,
+  gif = false,
+}: {
+  attempt?: number
+  audio?: VideoAudioState
+  gif?: boolean
+}) {
   return (
     <Boundary key={attempt}>
       <VideoEmbedInnerWeb
+        audio={audio}
         embed={{
+          ...(gif ? {presentation: 'gif' as const} : {}),
           $type: 'app.bsky.embed.video#view',
           cid: 'test-cid',
           playlist: 'https://video.example/playlist.m3u8',
@@ -108,6 +119,21 @@ it('leaves loading state on failure and recovers when the boundary is retried', 
   expect(loadHls).toHaveBeenCalledTimes(2)
 })
 
+it('honours continuous audio state across player remounts, while GIFs remain muted', () => {
+  jest.mocked(loadHls).mockReturnValue(new Promise(() => {}))
+  const audio = {muted: false, onMutedChange: jest.fn()}
+  const view = render(<Player audio={audio} />)
+  const video = () => view.root.findAll(node => node.type === 'video')[0]
+  expect(video().props).toMatchObject({muted: false})
+  view.rerender(<Player attempt={1} audio={audio} />)
+  expect(video().props).toMatchObject({muted: false})
+  view.rerender(<Player attempt={2} audio={{...audio, muted: true}} />)
+  expect(video().props).toMatchObject({muted: true})
+  view.rerender(<Player attempt={3} audio={audio} gif />)
+  expect(video().props).toMatchObject({muted: true})
+  view.rerender(<Player attempt={4} />)
+  expect(video().props).toMatchObject({muted: true})
+})
 it('handles a pending import rejection after unmount without an unhandled rejection', async () => {
   let reject!: (error: Error) => void
   jest.mocked(loadHls).mockReturnValueOnce(

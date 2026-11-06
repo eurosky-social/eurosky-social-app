@@ -28,6 +28,7 @@ export interface TabBarProps {
   dragProgress?: SharedValue<number> // Ignored on web.
   dragState?: SharedValue<'idle' | 'dragging' | 'settling'> // Ignored on web.
   transparent?: boolean // Ignored on web.
+  fullWidth?: boolean
 }
 
 // How much of the previous/next item we're showing
@@ -40,6 +41,7 @@ export function TabBar({
   items,
   unread,
   align = 'center',
+  fullWidth = false,
   onSelect,
   onPressSelected,
 }: TabBarProps) {
@@ -109,7 +111,7 @@ export function TabBar({
   return (
     <View
       testID={testID}
-      style={[t.atoms.bg, styles.outer]}
+      style={[t.atoms.bg, styles.outer, fullWidth && a.w_full]}
       accessibilityRole="tablist">
       <DraggableScrollView
         testID={`${testID}-selector`}

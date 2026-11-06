@@ -35,6 +35,8 @@ export interface TabBarProps {
   dragProgress: SharedValue<number>
   dragState: SharedValue<'idle' | 'dragging' | 'settling'>
   transparent?: boolean
+  /** Web reader spreads; native keeps its standard tablet geometry. */
+  fullWidth?: boolean
 }
 
 const ITEM_PADDING = 10

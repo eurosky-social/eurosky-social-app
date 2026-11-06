@@ -48,7 +48,7 @@ import * as Prompt from '#/components/Prompt'
 import {Text} from '#/components/Typography'
 import {WhoCanReply} from '#/components/WhoCanReply'
 import {Features} from '#/analytics'
-import {PRODUCT} from '#/config/product'
+import {canBookmarkPost} from '#/features/product/bookmarking'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 
@@ -209,7 +209,7 @@ function ReaderSeamControlsInner({
     post.repostCount ||
     post.likeCount ||
     post.quoteCount ||
-    (PRODUCT.capabilities.bookmarking && post.bookmarkCount)
+    (canBookmarkPost(post) && post.bookmarkCount)
 
   return (
     <View style={[a.gap_xs, presentation === 'article' ? a.pt_lg : a.pt_xs]}>
@@ -272,7 +272,7 @@ function ReaderSeamControlsInner({
             </Link>
           ) : null}
           <LikesStat post={post} />
-          {PRODUCT.capabilities.bookmarking && post.bookmarkCount ? (
+          {canBookmarkPost(post) && post.bookmarkCount ? (
             <Text
               testID="bookmarkCount-expanded"
               style={[a.text_md, t.atoms.text_contrast_medium]}>

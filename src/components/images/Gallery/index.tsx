@@ -34,6 +34,7 @@ export * from './maybeApplyGalleryOffsetStyles'
 
 interface GalleryProps {
   images: app.bsky.embed.images.ViewImage[]
+  maxHeight?: number
   onPress?: (
     index: number,
     containerRefs: AnimatedRef<any>[],
@@ -67,6 +68,7 @@ export function Gallery({
   viewContext,
   isWithinQuote,
   metricsPostContext,
+  maxHeight,
 }: GalleryProps) {
   const {t: l} = useLingui()
   const ax = useAnalytics()
@@ -74,12 +76,15 @@ export function Gallery({
   const largeAltBadge = useLargeAltBadgeEnabled()
   const bps = useBreakpoints()
   const isWithinChat = viewContext === PostEmbedViewContext.ChatMessage
-  const contentHeight = getContentHeight({
-    isWithinChat,
-    isWithinQuote,
-    gtPhone: bps.gtPhone,
-    gtMobile: bps.gtMobile,
-  })
+  const contentHeight = Math.min(
+    maxHeight ?? Infinity,
+    getContentHeight({
+      isWithinChat,
+      isWithinQuote,
+      gtPhone: bps.gtPhone,
+      gtMobile: bps.gtMobile,
+    }),
+  )
 
   const galleryRef = useRef<GalleryPrimitive.GalleryRef>(null)
   const containerRefsRef = useRef<Map<number, AnimatedRef>>(new Map())
@@ -169,6 +174,7 @@ export function Gallery({
       <View style={[a.relative, a.gap_sm]}>
         {images.map((image, index) => (
           <AutoSizedImage
+            maxHeight={maxHeight}
             key={image.thumb + index}
             crop={
               viewContext === PostEmbedViewContext.ThreadHighlighted

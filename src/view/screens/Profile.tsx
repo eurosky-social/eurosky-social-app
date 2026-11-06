@@ -53,6 +53,7 @@ import {ScreenHider} from '#/components/moderation/ScreenHider'
 import {ProfileStarterPacks} from '#/components/StarterPack/ProfileStarterPacks'
 import {PRODUCT} from '#/config/product'
 import {ComposeFAB as FAB} from '#/features/product/ComposeFAB'
+import {findPublisherByDid} from '#/features/publishers/publishers'
 import {type app} from '#/lexicons'
 import {navigate} from '#/Navigation'
 
@@ -89,7 +90,7 @@ export function ProfileScreen(props: Props) {
   )
 }
 
-function ProfileScreenInner({route}: Props) {
+function ProfileScreenInner({route, navigation}: Props) {
   const {_} = useLingui()
   const {currentAccount} = useSession()
   const queryClient = useQueryClient()
@@ -102,6 +103,11 @@ function ProfileScreenInner({route}: Props) {
     refetch: refetchDid,
     isPending: isDidPending,
   } = useResolveDidQuery(name)
+  const publisher =
+    PRODUCT.id === 'news' ? findPublisherByDid(resolvedDid ?? name) : undefined
+  useEffect(() => {
+    if (publisher) navigation.replace('Publisher', {publisher: publisher.id})
+  }, [navigation, publisher])
   const {
     data: profile,
     error: profileError,
@@ -109,7 +115,7 @@ function ProfileScreenInner({route}: Props) {
     isPlaceholderData: isPlaceholderProfile,
     isPending: isProfilePending,
   } = useProfileQuery({
-    did: resolvedDid,
+    did: publisher ? undefined : resolvedDid,
   })
 
   const onPressTryAgain = useCallback(() => {
@@ -140,7 +146,7 @@ function ProfileScreenInner({route}: Props) {
   // Most pushes will happen here, since we will have only placeholder data
   // A disabled dependent query remains pending, so only consider the profile
   // pending once handle resolution has produced a DID.
-  if (isDidPending || (!!resolvedDid && isProfilePending)) {
+  if (publisher || isDidPending || (!!resolvedDid && isProfilePending)) {
     return (
       <Layout.Content>
         <ProfileHeaderLoading />
@@ -247,22 +253,23 @@ function ProfileScreenLoaded({
 
   const isMe = profile.did === currentAccount?.did
   const hasLabeler = !!profile.associated?.labeler
-  const showFiltersTab = hasLabeler
-  const showPostsTab = true
+  const newsProfile = PRODUCT.id === 'news'
+  const showFiltersTab = !newsProfile && hasLabeler
+  const showPostsTab = !newsProfile
   // Reply deep links must work without a session so crawlers can index reply-heavy profiles.
-  const showRepliesTab = hasSession || tab === 'replies'
-  const showMediaTab = !hasLabeler
-  const showVideosTab = !hasLabeler
-  const showLikesTab = isMe
+  const showRepliesTab = newsProfile || hasSession || tab === 'replies'
+  const showMediaTab = !newsProfile && !hasLabeler
+  const showVideosTab = !newsProfile && !hasLabeler
+  const showLikesTab = !newsProfile && isMe
   const feedGenCount = profile.associated?.feedgens || 0
-  const showFeedsTab = isMe || feedGenCount > 0
+  const showFeedsTab = !newsProfile && (isMe || feedGenCount > 0)
   const starterPackCount = profile.associated?.starterPacks || 0
-  const showStarterPacksTab = isMe || starterPackCount > 0
+  const showStarterPacksTab = !newsProfile && (isMe || starterPackCount > 0)
   // subtract starterpack count from list count, since starterpacks are a type of list
   const listCount = (profile.associated?.lists || 0) - starterPackCount
   // Lists are public, so direct links can bypass the logged-in-only tab visibility.
   const showListsTab =
-    (hasSession || tab === 'lists') && (isMe || listCount > 0)
+    !newsProfile && (hasSession || tab === 'lists') && (isMe || listCount > 0)
 
   const sectionTitles = [
     showFiltersTab ? _(msg`Labels`) : undefined,
@@ -452,6 +459,7 @@ function ProfileScreenLoaded({
         initialPage={initialPage}
         isHeaderReady={!showPlaceholder}
         items={sectionTitles}
+        hideTabBar={newsProfile}
         onPageSelected={onPageSelected}
         onCurrentPageSelected={onCurrentPageSelected}
         renderHeader={renderHeader}
@@ -515,14 +523,23 @@ function ProfileScreenLoaded({
           ? ({headerHeight, isFocused, scrollElRef}) => (
               <ProfileFeedSection
                 ref={repliesSectionRef}
-                feed={`author|${profile.did}|posts_with_replies`}
+                feed={
+                  newsProfile
+                    ? `publisher-replies|${profile.did}`
+                    : `author|${profile.did}|posts_with_replies`
+                }
                 headerHeight={headerHeight}
                 isFocused={isFocused}
                 scrollElRef={scrollElRef as ListRef}
                 ignoreFilterFor={profile.did}
                 setScrollViewTag={setScrollViewTag}
-                emptyStateMessage={_(msg`No replies yet`)}
+                emptyStateMessage={
+                  newsProfile
+                    ? _(msg`No replies to publisher stories yet`)
+                    : _(msg`No replies yet`)
+                }
                 emptyStateIcon={MessageIcon}
+                postFeedRef={newsProfile ? postFeedRef : undefined}
               />
             )
           : null}

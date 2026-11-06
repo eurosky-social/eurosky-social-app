@@ -15,6 +15,7 @@
  * a dimensional logo is just `hero.svg` with two `theme:` tones.
  */
 import generated from '#/config/brand-logo.generated.json'
+import {type ProductId} from '#/config/product'
 
 export type LogoVariant = 'mark' | 'wordmark' | 'lockup' | 'hero' | 'icon'
 
@@ -34,7 +35,24 @@ const FALLBACKS: Record<LogoVariant, LogoVariant[]> = {
   icon: ['icon', 'mark'],
 }
 
-export function getLogo(variant: LogoVariant = 'mark'): LogoAsset {
+export function getLogo(
+  variant: LogoVariant = 'mark',
+  product: ProductId = 'social',
+): LogoAsset {
+  if (
+    product === 'news' &&
+    (variant === 'mark' || variant === 'icon' || variant === 'hero') &&
+    ROLES['news-mark']
+  ) {
+    return ROLES['news-mark']
+  }
+  if (
+    product === 'news' &&
+    (variant === 'wordmark' || variant === 'lockup') &&
+    ROLES.news
+  ) {
+    return ROLES.news
+  }
   for (const role of FALLBACKS[variant]) {
     const asset = ROLES[role]
     if (asset) return asset

@@ -18,18 +18,28 @@ import {useThrottledValue} from '#/components/hooks/useThrottledValue'
 import {ConstrainedImage} from '#/components/images/AutoSizedImage'
 import {PlayButtonIcon} from '#/components/video/PlayButtonIcon'
 import {useAnalytics} from '#/analytics'
+import {usePostMediaMaxHeight} from '#/features/product/media'
 import {type app} from '#/lexicons'
 import {GifPresentationControls} from './GifPresentationControls'
 import {VideoEmbedInnerNative} from './VideoEmbedInner/VideoEmbedInnerNative'
 import * as VideoFallback from './VideoEmbedInner/VideoFallback'
+import {type VideoAudioState} from './VideoVolumeContext'
 
 interface Props {
   embed: app.bsky.embed.video.View
   post?: app.bsky.feed.defs.PostView
+  /** Fill a caller-sized preview. Native immersive feeds use pooled VideoFeed players. */
+  immersive?: boolean
+  /** Web-only media decoration below playback controls. */
+  overlay?: React.ReactNode
+  /** Web-only controlled audio and idle chrome. */
+  audio?: VideoAudioState
+  controlsVisible?: boolean
 }
 
-export function VideoEmbed({embed, post}: Props) {
+export function VideoEmbed({embed, post, immersive = false}: Props) {
   const [key, setKey] = useState(0)
+  const maxHeight = usePostMediaMaxHeight()
 
   const renderError = useCallback(
     (error: unknown) => (
@@ -59,9 +69,15 @@ export function VideoEmbed({embed, post}: Props) {
     </ErrorBoundary>
   )
 
+  if (immersive)
+    return (
+      <View style={[a.flex_1, a.w_full, a.overflow_hidden]}>{contents}</View>
+    )
+
   return (
     <View style={[a.pt_xs]}>
       <ConstrainedImage
+        maxHeight={maxHeight}
         aspectRatio={constrained || 1}
         // slightly smaller max height than images
         // images use 16 / 9, for reference

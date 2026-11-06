@@ -37,7 +37,7 @@ export function PublisherDirectoryScreen() {
           </Layout.Header.TitleText>
         </Layout.Header.Content>
       </Layout.Header.Outer>
-      <Layout.Content contentContainerStyle={[a.pb_4xl]}>
+      <Layout.Content webPageScroll contentContainerStyle={[a.pb_4xl]}>
         <PublisherGrid wide={wide}>
           {PUBLISHERS.map(publisher => (
             <PublisherCard key={publisher.id} publisher={publisher} />

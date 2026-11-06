@@ -27,13 +27,15 @@ Build-time `EXPO_PUBLIC_*` env vars override a few of these per deployment (see
 One SVG per role. Only `mark.svg` is **required**; the rest are optional and fall
 back to it, so a single-glyph brand and a symbol+wordmark brand both work:
 
-| file          | role                                            |
-| ------------- | ----------------------------------------------- |
-| `mark.svg`    | the symbol/glyph (required; fallback for all)   |
-| `wordmark.svg`| the styled brand name                           |
-| `lockup.svg`  | symbol + word together                          |
-| `hero.svg`    | large / marketing (a multi-tone "3D" logo lives here) |
-| `icon.svg`    | app-icon-specific art (else the mark on a tile) |
+| file            | role                                                  |
+| --------------- | ----------------------------------------------------- |
+| `mark.svg`      | the symbol/glyph (required; fallback for all)         |
+| `wordmark.svg`  | the styled brand name                                 |
+| `lockup.svg`    | symbol + word together                                |
+| `hero.svg`      | large / marketing (a multi-tone "3D" logo lives here) |
+| `icon.svg`      | app-icon-specific art (else the mark on a tile)       |
+| `news.svg`      | optional news-product wordmark/lockup override        |
+| `news-mark.svg` | compact news mark with small lettering underneath     |
 
 **Theming convention** so one SVG follows light/dark + the accent picker:
 
@@ -61,6 +63,18 @@ Under the hood (run individually if you like):
   avatar, App Clip icon, embed logos, and bskyweb social cards.
 - `pnpm brand:gen-favicons` — generates favicons, touch icons, and the Safari
   mask from the icon master PNG.
+
+News builds use `news.svg` for wordmark/lockup surfaces, including the desktop
+sidebar and sign-in UI. Its lettering is outlined, so it needs no runtime font.
+Compact marks and the web splash use `news-mark.svg`, with small teal news
+lettering below mu. Wordmarks use a smaller teal news suffix; social keeps its
+existing logos. The build default accent is teal; saved user accent choices are
+not overwritten.
+
+`pnpm web` and `pnpm build-web` sync the pre-boot HTML for the selected product
+before starting/exporting. The sync reads Expo's dotenv files as well as an
+explicit `EXPO_PUBLIC_PRODUCT`. Run brand checks with the same product selection,
+e.g. `EXPO_PUBLIC_PRODUCT=news pnpm brand:check` for a news build.
 
 That's the full visual + text rebrand. `BRAND.name` propagates through the UI
 automatically; the upstream "Bluesky" → name swap lives in
@@ -113,4 +127,7 @@ Universal SSL and the TLS handshake will fail.
 - **Content** (optional) — onboarding packs, suggested follows, default feeds,
   news sources, verifier DIDs: `src/screens/Onboarding/`,
   `src/features/newsFeed/sources.ts`, `src/lib/constants.ts`.
+
+```
+
 ```

@@ -19,6 +19,7 @@ import {Earth_Stroke2_Corner0_Rounded as Globe} from '#/components/icons/Globe'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {IS_NATIVE} from '#/env'
+import {usePostMediaMaxHeight} from '#/features/product/media'
 import {type app} from '#/lexicons'
 import {ExternalGif} from './ExternalGif'
 import {ExternalPlayer} from './ExternalPlayer'
@@ -39,6 +40,7 @@ export const ExternalEmbed = ({
 }) => {
   const {_} = useLingui()
   const t = useTheme()
+  const maxHeight = usePostMediaMaxHeight()
   const haptics = useHaptics()
   const externalEmbedPrefs = useExternalEmbedsPrefs()
   const niceUrl = toNiceDomain(link.uri)
@@ -111,7 +113,7 @@ export const ExternalEmbed = ({
           ]}>
           {imageUri && !embedPlayerParams ? (
             <Image
-              style={[a.aspect_card]}
+              style={[a.aspect_card, {maxHeight}]}
               source={{uri: imageUri}}
               accessibilityIgnoresInvertColors
               loading="lazy"

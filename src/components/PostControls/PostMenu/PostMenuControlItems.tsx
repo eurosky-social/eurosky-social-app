@@ -23,6 +23,7 @@ import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
 import {PRODUCT} from '#/config/product'
 import {IS_WEB} from '#/env'
+import {canBookmarkPost} from '#/features/product/bookmarking'
 import {type app} from '#/lexicons'
 import {usePostBookmark} from '../BookmarkButton'
 
@@ -200,7 +201,7 @@ export function PostMenuControlItems({
             position="right"
           />
         </Menu.Item>
-        {PRODUCT.capabilities.bookmarking && (
+        {canBookmarkPost(post) && (
           <Menu.Item
             testID="postDropdownBookmarkBtn"
             label={bookmarkLabel}

@@ -180,7 +180,7 @@
         "primary_975": "#29071D"
       }
     },
-    "defaultAccent": "pink"
+    "defaultAccent": "teal"
   },
   "oauth": {
     "$comment": "scope = what NEW logins request (keep transitional-only so every PDS accepts it). declaredScope = superset advertised in client metadata (must cover step-ups like identity:handle AND any scope older cached bundles still request). See src/config/oauth.ts.",

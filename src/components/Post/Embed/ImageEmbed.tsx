@@ -15,6 +15,7 @@ import {type Dimensions} from '#/components/Lightbox/types'
 import {ImageContextMenu} from '#/components/Post/Embed/ImageContextMenu'
 import {PostEmbedViewContext} from '#/components/Post/Embed/types'
 import {useAnalytics} from '#/analytics'
+import {usePostMediaMaxHeight} from '#/features/product/media'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {type EmbedType} from '#/types/bsky/post'
@@ -32,6 +33,7 @@ export function ImageEmbed({
   imageLayout?: 'grid' | 'carousel'
 }) {
   const ax = useAnalytics()
+  const maxHeight = usePostMediaMaxHeight()
   const {openLightbox} = useLightboxControls()
   const images: app.bsky.embed.images.ViewImage[] =
     embed.type === 'gallery'
@@ -134,6 +136,7 @@ export function ImageEmbed({
             borderRadius={tokens.borderRadius.md}
             onPreviewPress={openFromSingle}>
             <AutoSizedImage
+              maxHeight={maxHeight}
               crop={
                 rest.viewContext === PostEmbedViewContext.ThreadHighlighted
                   ? 'none'
@@ -160,6 +163,7 @@ export function ImageEmbed({
       return (
         <View style={[a.mt_sm, rest.style]}>
           <Gallery
+            maxHeight={maxHeight}
             images={images}
             onPress={onPress}
             onPressIn={onPressIn}
@@ -174,6 +178,7 @@ export function ImageEmbed({
     return (
       <View style={[a.mt_sm, rest.style]}>
         <ImageLayoutGrid
+          maxHeight={maxHeight}
           images={images}
           onPress={onPress}
           onPressIn={onPressIn}

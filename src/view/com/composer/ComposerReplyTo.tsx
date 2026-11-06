@@ -1,23 +1,63 @@
 import {useCallback, useMemo, useState} from 'react'
 import {LayoutAnimation, Pressable, View} from 'react-native'
 import {Image} from 'expo-image'
+import {moderatePost} from '@bsky/sdk/moderation'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
+import {useModerationOpts} from '#/state/preferences/moderation-opts'
+import {usePostQuery} from '#/state/queries/post'
 import {type ComposerOptsPostRef} from '#/state/shell/composer'
 import {PreviewableUserAvatar} from '#/view/com/util/UserAvatar'
-import {atoms as a, useTheme, utils, web} from '#/alf'
+import {atoms as a, SERIF_FONT_FAMILY, useTheme, utils, web} from '#/alf'
+import {ContentHider} from '#/components/moderation/ContentHider'
 import {QuoteEmbed} from '#/components/Post/Embed'
 import {ProfileBadges} from '#/components/ProfileBadges'
 import {Text} from '#/components/Typography'
+import {PRODUCT} from '#/config/product'
+import {articleFromPost, type PostArticle} from '#/features/articles/articles'
+import {findPublisherByDid} from '#/features/publishers/publishers'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {parseEmbed} from '#/types/bsky/post'
 
 export function ComposerReplyTo({replyTo}: {replyTo: ComposerOptsPostRef}) {
+  if (PRODUCT.id === 'news' && findPublisherByDid(replyTo.author.did))
+    return <PublisherReplyTo replyTo={replyTo} />
+  return <ComposerReplyToInner replyTo={replyTo} />
+}
+
+function PublisherReplyTo({replyTo}: {replyTo: ComposerOptsPostRef}) {
+  const {data: post} = usePostQuery(replyTo.uri)
+  const opts = useModerationOpts()
+  const article =
+    post &&
+    opts &&
+    post.uri === replyTo.uri &&
+    post.author.did === replyTo.author.did &&
+    bsky.matches(app.bsky.feed.post, post.record) &&
+    !post.record.reply
+      ? articleFromPost({
+          _reactKey: post.uri,
+          uri: post.uri,
+          post,
+          record: post.record,
+          moderation: moderatePost(post, opts),
+        })
+      : undefined
+  return <ComposerReplyToInner replyTo={replyTo} article={article} />
+}
+
+function ComposerReplyToInner({
+  replyTo,
+  article,
+}: {
+  replyTo: ComposerOptsPostRef
+  article?: PostArticle
+}) {
   const t = useTheme()
   const {_} = useLingui()
   const {embed} = replyTo
@@ -119,23 +159,82 @@ export function ComposerReplyTo({replyTo}: {replyTo: ComposerOptsPostRef}) {
           <ProfileBadges profile={replyTo.author} size="sm" style={[a.pl_xs]} />
         </View>
         <View style={[a.flex_row, a.gap_md]}>
-          <View style={[a.flex_1, a.flex_grow]}>
-            <Text
-              style={[a.text_md, a.leading_snug, t.atoms.text_contrast_high]}
-              numberOfLines={!showFull ? 6 : undefined}
-              emoji>
-              {replyTo.text}
-            </Text>
-          </View>
-          {images && !replyTo.moderation?.ui('contentMedia').blur && (
-            <ComposerReplyToImages images={images} totalNumber={totalNumber} />
+          {article ? (
+            <PublisherReplyArticle article={article} expanded={showFull} />
+          ) : (
+            <View style={[a.flex_1, a.flex_grow]}>
+              <Text
+                style={[a.text_md, a.leading_snug, t.atoms.text_contrast_high]}
+                numberOfLines={!showFull ? 6 : undefined}
+                emoji>
+                {replyTo.text}
+              </Text>
+            </View>
           )}
+          {!article &&
+            images &&
+            !replyTo.moderation?.ui('contentMedia').blur && (
+              <ComposerReplyToImages
+                images={images}
+                totalNumber={totalNumber}
+              />
+            )}
         </View>
         {showFull && parsedQuoteEmbed && parsedQuoteEmbed.type === 'post' && (
           <QuoteEmbed embed={parsedQuoteEmbed} linkDisabled />
         )}
       </View>
     </Pressable>
+  )
+}
+
+/** A static article preview: no playback, navigation, or engagement inside the reply editor. */
+function PublisherReplyArticle({
+  article,
+  expanded,
+}: {
+  article: PostArticle
+  expanded: boolean
+}) {
+  const t = useTheme()
+  return (
+    <ContentHider
+      modui={article.item.moderation.ui('contentMedia')}
+      style={[a.flex_1]}>
+      <View
+        testID="composerPublisherArticle"
+        style={[a.flex_row, a.gap_md, a.py_xs]}>
+        {!!article.image && (
+          <Image
+            source={{uri: article.image}}
+            accessibilityLabel={article.imageAlt}
+            accessibilityHint=""
+            accessibilityIgnoresInvertColors
+            contentFit="cover"
+            style={[a.rounded_sm, {width: 104, height: 72}]}
+          />
+        )}
+        <View style={[a.flex_1, a.gap_xs, {minWidth: 0}]}>
+          <Text
+            style={[
+              article.external ? a.font_bold : undefined,
+              article.external && {fontFamily: SERIF_FONT_FAMILY},
+              a.text_md,
+              a.leading_snug,
+            ]}
+            numberOfLines={expanded ? undefined : 3}>
+            {article.title}
+          </Text>
+          {!!article.external?.description && (
+            <Text
+              style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}
+              numberOfLines={expanded ? undefined : 2}>
+              {article.external.description}
+            </Text>
+          )}
+        </View>
+      </View>
+    </ContentHider>
   )
 }
 

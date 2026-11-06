@@ -4,6 +4,7 @@ import {type AuthorFilter} from '#/state/queries/post-feed'
  * Kind of like `FeedDescriptor` but not
  */
 export type VideoFeedSourceContext =
+  | {type: 'publishers'; initialPostUri?: string}
   | {
       type: 'feedgen'
       uri: string

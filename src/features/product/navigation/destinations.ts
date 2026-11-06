@@ -17,6 +17,10 @@ import {
   Bookmark_Stroke2_Corner0_Rounded as Bookmark,
 } from '#/components/icons/Bookmark'
 import {
+  Building_Filled_Corner2_Rounded as BuildingFilled,
+  Building_Stroke2_Corner2_Rounded as Building,
+} from '#/components/icons/Building'
+import {
   BulletList_Filled_Corner0_Rounded as ListFilled,
   BulletList_Stroke2_Corner0_Rounded as List,
 } from '#/components/icons/BulletList'
@@ -50,8 +54,13 @@ import {
   UserCircle_Filled_Corner0_Rounded as ProfileFilled,
   UserCircle_Stroke2_Corner0_Rounded as Profile,
 } from '#/components/icons/UserCircle'
+import {
+  VideoClip_Filled_Corner0_Rounded as VideoFilled,
+  VideoClip_Stroke2_Corner0_Rounded as Video,
+} from '#/components/icons/VideoClip'
 import {type Events} from '#/analytics/metrics/types'
 import {type NavigationId} from '#/config/navigation'
+import {PRODUCT, type ProductConfig} from '#/config/product'
 
 export type NavigationDestination = {
   id: NavigationId
@@ -74,20 +83,26 @@ export type NavigationDestination = {
 )
 
 /** Add page metadata here, not in each shell. Route registration stays explicit. */
-export function getNavigationDestinations({
-  account,
-  newsV2,
-}: {
-  account?: Pick<SessionAccount, 'handle' | 'did'>
-  newsV2: boolean
-}): Record<NavigationId, NavigationDestination> {
+export function getNavigationDestinations(
+  {
+    account,
+    newsV2,
+  }: {
+    account?: Pick<SessionAccount, 'handle' | 'did'>
+    newsV2: boolean
+  },
+  product: ProductConfig = PRODUCT,
+): Record<NavigationId, NavigationDestination> {
   return {
     home: {
       id: 'home',
       label: msg`Home`,
       href: '/',
       routes: ['Home'],
-      icons: {inactive: Home, active: HomeFilled},
+      icons:
+        product.id === 'news'
+          ? {inactive: News, active: NewsFilled}
+          : {inactive: Home, active: HomeFilled},
       metricItem: 'home',
       tab: 'Home',
       public: true,
@@ -116,10 +131,23 @@ export function getNavigationDestinations({
       label: msg`Publisher`,
       href: '/publishers',
       routes: ['PublisherDirectory', 'Publisher'],
-      icons: {inactive: News, active: NewsFilled},
+      icons:
+        product.id === 'news'
+          ? {inactive: Building, active: BuildingFilled}
+          : {inactive: News, active: NewsFilled},
       metricItem: 'publisher',
       public: true,
       target: {name: 'PublisherDirectory', params: undefined},
+    },
+    shorts: {
+      id: 'shorts',
+      label: msg`Shorts`,
+      href: '/shorts',
+      routes: ['Shorts'],
+      icons: {inactive: Video, active: VideoFilled},
+      metricItem: 'shorts',
+      public: true,
+      target: {name: 'Shorts', params: undefined},
     },
     search: {
       id: 'search',

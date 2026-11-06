@@ -58,7 +58,7 @@ it('offers a full rainbow in spectrum order', () => {
     'purple',
     'pink',
   ])
-  expect(DEFAULT_ACCENT).toBe('pink')
+  expect(DEFAULT_ACCENT).toBe('teal')
 })
 
 it.each(ACCENT_KEYS)('%s has a complete light-to-dark ALF ramp', key => {

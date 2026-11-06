@@ -6,6 +6,7 @@ import {
   type LogoVariant,
   substituteLogoColors,
 } from '#/config/brand-logo'
+import {PRODUCT} from '#/config/product'
 
 /**
  * The single place that renders the brand logo. Every in-app logo surface -
@@ -41,7 +42,7 @@ export function BrandLogo({
   ...rest
 }: BrandLogoProps) {
   const t = useTheme()
-  const logo = getLogo(variant)
+  const logo = getLogo(variant, PRODUCT.id)
   const xml = substituteLogoColors(logo.xml, palette ?? t.palette)
 
   return (

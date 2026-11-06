@@ -2,9 +2,8 @@ import {BrandLogo} from './BrandLogo'
 import {type Props, useCommonSVGProps} from './common'
 
 /**
- * mu brand mark. For mu the symbol and the wordmark are one and the same, so
- * `Mark` and `Full` both render the shared brand logo via <BrandLogo>; `Mark`
- * sits in a square box (icon-style), `Full` is aspect-correct.
+ * Shared brand mark and product lockup. `Mark` stays icon-sized; `Full`
+ * includes the news wordmark in news builds and is aspect-correct.
  */
 export function Mark(props: Props) {
   const {fill, size, style} = useCommonSVGProps(props)
@@ -23,7 +22,7 @@ export function Full(
 
   return (
     <BrandLogo
-      variant="mark"
+      variant="lockup"
       size={size}
       fill={props.markFill ?? props.textFill ?? fill}
       style={style}

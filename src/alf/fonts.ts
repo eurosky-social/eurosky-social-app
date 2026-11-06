@@ -20,6 +20,13 @@ export const MONOSPACE_FONT_FAMILY = IS_WEB
     ? 'monospace'
     : 'Menlo'
 
+/** Native system serif families; a newspaper stack on web without a remote font request. */
+export const SERIF_FONT_FAMILY = IS_WEB
+  ? 'Georgia, "Times New Roman", serif'
+  : IS_ANDROID
+    ? 'serif'
+    : 'Georgia'
+
 const factor = 0.0625 // 1 - (15/16)
 const fontScaleMultipliers: Record<Device['fontScale'], number> = {
   '-2': 1 - factor * 1, // unused
@@ -57,10 +64,14 @@ export function applyFonts(
   fontFamily: 'system' | 'theme',
 ) {
   /*
-   * Preserve explicit monospace fonts in code blocks instead of replacing them
-   * with the proportional theme font.
+   * Preserve opt-in code and headline families instead of replacing them
+   * with the UI theme font.
    */
-  if (style.fontFamily === MONOSPACE_FONT_FAMILY) return
+  if (
+    style.fontFamily === MONOSPACE_FONT_FAMILY ||
+    style.fontFamily === SERIF_FONT_FAMILY
+  )
+    return
 
   if (fontFamily === 'theme') {
     if (IS_ANDROID) {
