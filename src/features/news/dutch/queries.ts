@@ -1,6 +1,11 @@
 import {type Client} from '@atproto/lex'
 import {useLingui} from '@lingui/react/macro'
-import {useQueries, useQuery} from '@tanstack/react-query'
+import {
+  type QueryClient,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import {jwtDecode} from 'jwt-decode'
 
 import {logger} from '#/logger'
@@ -20,6 +25,9 @@ import {
   type DutchCategoriesResponse,
   type DutchCategory,
   type DutchOutletArticlesResponse,
+  type DutchOutletDetail,
+  type DutchOutletListing,
+  type DutchOutletResponse,
   type DutchOutletsResponse,
   type DutchTheme,
   type DutchThemesResponse,
@@ -33,6 +41,7 @@ import {
   type DutchThreadViewParams,
   dutchThreadViewParams,
   encodeDutchThreadView,
+  languagesForPlaces,
 } from './view'
 
 /**
@@ -59,6 +68,9 @@ export const createDutchThreadQueryKey = (args: {
 
 export const createDutchOutletsQueryKey = () =>
   createQueryKey('dutchOutlets', {})
+
+export const createDutchOutletQueryKey = (args: {ref: string}) =>
+  createQueryKey('dutchOutlet', args)
 
 export const createDutchOutletArticlesQueryKey = (args: {
   slug: string
@@ -101,9 +113,10 @@ export type DutchThreadFilter = {
  * neither clusters nor searches for posts itself. One read per filter, run
  * side by side; the results come back in the filters' order.
  *
- * Sorted by `burst`, the service's own ranking of what is news now, unless a
- * country is asked for, where `here` puts the threads its outlets covered most
- * first.
+ * Sorted by `burst`, the service's own ranking of what is news now, which
+ * favours the last day's news. A country view too: `here` (most of the
+ * country's outlets first) has no sense of age, so a big story of last week
+ * led it.
  */
 export function useDutchThreadsQueries({
   scope = DUTCH_WORLD_SCOPE,
@@ -117,7 +130,8 @@ export function useDutchThreadsQueries({
   filters: DutchThreadFilter[]
   /**
    * ISO language codes: threads with an article in one, each showing only
-   * those articles and with its lead in one of them as `leadIn`.
+   * those articles and with its lead in one of them as `leadIn`. A filter
+   * narrowed to a country or province adds that country's own languages.
    */
   languages?: string[]
   limit?: number
@@ -125,7 +139,7 @@ export function useDutchThreadsQueries({
 }) {
   const pdsClient = useMaybePdsClient()
   const views = filters.map(filter => ({
-    languages,
+    languages: languagesForPlaces(languages, filter),
     countries: filter.countries,
     outlets: filter.outlets,
     boost: filter.boost,
@@ -139,7 +153,7 @@ export function useDutchThreadsQueries({
         theme: filter.theme,
         category: filter.category,
         ...viewParams,
-        sort: (viewParams.country ? 'here' : 'burst') as DutchThreadSort,
+        sort: 'burst' as DutchThreadSort,
         limit,
       }
       return {
@@ -309,6 +323,104 @@ export function useDutchOutletsQuery({
   }
 }
 
+/**
+ * One outlet, by slug or DID: what its frontpage and its account's profile
+ * shortcut need, without reading the whole list, which is slow to answer. Null where the service has no such outlet. Starts from the list
+ * when that is already loaded, so a page opened from the directory does not
+ * wait on a read of its own.
+ */
+export function useDutchOutletQuery({
+  ref,
+  enabled = true,
+}: {
+  ref?: string
+  enabled?: boolean
+}) {
+  const pdsClient = useMaybePdsClient()
+  const queryClient = useQueryClient()
+  const query = useQuery<DutchOutletDetail | null>({
+    queryKey: createDutchOutletQueryKey({ref: ref ?? ''}),
+    /* Outlets are added by hand, on the order of days. */
+    staleTime: STALE.HOURS.ONE,
+    enabled: enabled && !!ref && IS_DUTCH_API_CONFIGURED && !!pdsClient,
+    initialData: () =>
+      queryClient
+        .getQueryData<DutchOutletListing[]>(createDutchOutletsQueryKey())
+        ?.find(outlet => outlet.slug === ref || outlet.did === ref),
+    initialDataUpdatedAt: () =>
+      queryClient.getQueryState(createDutchOutletsQueryKey())?.dataUpdatedAt,
+    queryFn: () => fetchDutchOutlet(pdsClient!, queryClient, ref!),
+  })
+
+  return {
+    /** Undefined until loaded, null where there is no such outlet. */
+    outlet: query.data,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    refetch: query.refetch,
+  }
+}
+
+/**
+ * Several outlets, by slug or DID, in the order asked: one read each, sharing
+ * `useDutchOutletQuery`'s cache, so a handful of named outlets never waits on
+ * the whole list. Each entry is undefined until loaded and null where the
+ * service has no such outlet.
+ */
+export function useDutchOutletsByRefQuery({
+  refs,
+  enabled = true,
+}: {
+  refs: string[]
+  enabled?: boolean
+}) {
+  const pdsClient = useMaybePdsClient()
+  const queryClient = useQueryClient()
+  const results = useQueries({
+    queries: refs.map(ref => ({
+      queryKey: createDutchOutletQueryKey({ref}),
+      staleTime: STALE.HOURS.ONE,
+      enabled: enabled && IS_DUTCH_API_CONFIGURED && !!pdsClient,
+      queryFn: () => fetchDutchOutlet(pdsClient!, queryClient, ref),
+    })),
+  })
+
+  return {
+    outlets: results.map(result => result.data),
+    isLoading: results.some(result => result.isLoading),
+  }
+}
+
+async function fetchDutchOutlet(
+  client: Client,
+  queryClient: QueryClient,
+  ref: string,
+): Promise<DutchOutletDetail | null> {
+  try {
+    const data = await fetchDutchApi<DutchOutletResponse>(
+      client,
+      buildDutchApiUrl(`/api/outlets/${encodeURIComponent(ref)}`),
+    )
+    /*
+     * Cached under its other name too, so the frontpage a profile links
+     * to by slug opens without asking again.
+     */
+    for (const name of [data.outlet.slug, data.outlet.did]) {
+      if (name && name !== ref) {
+        queryClient.setQueryData(
+          createDutchOutletQueryKey({ref: name}),
+          data.outlet,
+        )
+      }
+    }
+    return data.outlet
+  } catch (error) {
+    if (error instanceof DutchApiError && error.status === 404) return null
+    logger.error('dutchOutlet: failed to load', {safeMessage: error})
+    throw error
+  }
+}
+
 /** How many of an outlet's articles its frontpage shows. */
 export const OUTLET_ARTICLES_LIMIT = 20
 
@@ -462,6 +574,15 @@ function tokenLifetimeMs(bearerToken: string): number {
  * following it would only surface later as a parse or CORS failure. See
  * ./README.md "Access".
  */
+/** A non-OK answer from the Dutch API, by status, for callers that tell them apart. */
+class DutchApiError extends Error {
+  status: number
+  constructor(status: number, url: string) {
+    super(`Dutch API ${status} for ${url}`)
+    this.status = status
+  }
+}
+
 async function fetchDutchApi<T>(client: Client, url: string): Promise<T> {
   let res = await requestDutchApi(client, url)
   if (res.status === 401) {
@@ -485,7 +606,7 @@ async function fetchDutchApi<T>(client: Client, url: string): Promise<T> {
   }
 
   if (!res.ok) {
-    throw new Error(`Dutch API ${res.status} for ${url}`)
+    throw new DutchApiError(res.status, url)
   }
 
   const contentType = res.headers.get('content-type') ?? ''

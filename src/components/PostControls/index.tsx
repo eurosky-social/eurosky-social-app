@@ -18,13 +18,12 @@ import {
   ProgressGuideAction,
   useProgressGuideControls,
 } from '#/state/shell/progress-guide'
-import {atoms as a, useBreakpoints} from '#/alf'
+import {atoms as a, useBreakpoints, useTheme} from '#/alf'
 import {Reply_Stroke2_Corner0_Rounded as Bubble} from '#/components/icons/Reply'
 import {useFormatPostStatCount} from '#/components/PostControls/util'
 import * as Skele from '#/components/Skeleton'
 import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
-import {useLikePresentation} from '#/features/halloween/useLikePresentation'
 import {type app} from '#/lexicons'
 import {BookmarkButton} from './BookmarkButton'
 import {
@@ -71,12 +70,7 @@ let PostControls = ({
 }): React.ReactNode => {
   const ax = useAnalytics()
   const {t: l} = useLingui()
-  const likePresentation = useLikePresentation({
-    uri: post.uri,
-    record,
-    isLiked: Boolean(post.viewer?.like),
-    likeCount: post.likeCount ?? 0,
-  })
+  const t = useTheme()
   const {openComposer} = useOpenComposer()
   const {feedDescriptor} = useFeedFeedbackContext()
   const [queueLike, queueUnlike] = usePostLikeMutationQueue(
@@ -273,11 +267,28 @@ let PostControls = ({
             testID="likeBtn"
             big={big}
             active={Boolean(post.viewer?.like)}
-            activeColor={likePresentation.activeColor}
+            activeColor={t.palette.pink}
             onPress={() => requireAuth(() => onPressToggleLike())}
-            label={likePresentation.label}>
+            label={
+              post.viewer?.like
+                ? l({
+                    message: `Unlike (${plural(post.likeCount ?? 0, {
+                      one: '# like',
+                      other: '# likes',
+                    })})`,
+                    comment:
+                      'Like button, liked state: action followed by total likes.',
+                  })
+                : l({
+                    message: `Like (${plural(post.likeCount ?? 0, {
+                      one: '# like',
+                      other: '# likes',
+                    })})`,
+                    comment:
+                      'Like button, unliked state: action followed by total likes.',
+                  })
+            }>
             <AnimatedLikeIcon
-              {...likePresentation.iconProps}
               isLiked={Boolean(post.viewer?.like)}
               big={big}
               hasBeenToggled={hasLikeIconBeenToggled}

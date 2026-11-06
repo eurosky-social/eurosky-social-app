@@ -7,6 +7,7 @@ export enum Nux {
   ExploreInterestsCard = 'ExploreInterestsCard',
   InitialVerificationAnnouncement = 'InitialVerificationAnnouncement',
   ActivitySubscriptions = 'ActivitySubscriptions',
+  AtmosphereNux = 'AtmosphereNux',
   AgeAssuranceDismissibleNotice = 'AgeAssuranceDismissibleNotice',
   AgeAssuranceDismissibleFeedBanner = 'AgeAssuranceDismissibleFeedBanner',
   BookmarksAnnouncement = 'BookmarksAnnouncement',
@@ -17,7 +18,6 @@ export enum Nux {
   GroupChatsAnnouncement = 'GroupChatsAnnouncement',
   InviteFriendsAnnouncement = 'InviteFriendsAnnouncement',
   MuForYouFeedAnnouncement = 'MuForYouFeedAnnouncement',
-  IPadBetaAnnouncement = 'IPadBetaAnnouncement',
 
   /*
    * Blocking announcements. New IDs are required for each new announcement.
@@ -42,6 +42,10 @@ export type AppNux = BaseNux<
     }
   | {
       id: Nux.ActivitySubscriptions
+      data: undefined
+    }
+  | {
+      id: Nux.AtmosphereNux
       data: undefined
     }
   | {
@@ -88,10 +92,6 @@ export type AppNux = BaseNux<
       id: Nux.MuForYouFeedAnnouncement
       data: undefined
     }
-  | {
-      id: Nux.IPadBetaAnnouncement
-      data: undefined
-    }
 >
 
 export const NuxSchemas: Record<Nux, zod.ZodObject<any> | undefined> = {
@@ -99,6 +99,7 @@ export const NuxSchemas: Record<Nux, zod.ZodObject<any> | undefined> = {
   [Nux.ExploreInterestsCard]: undefined,
   [Nux.InitialVerificationAnnouncement]: undefined,
   [Nux.ActivitySubscriptions]: undefined,
+  [Nux.AtmosphereNux]: undefined,
   [Nux.AgeAssuranceDismissibleNotice]: undefined,
   [Nux.AgeAssuranceDismissibleFeedBanner]: undefined,
   [Nux.PolicyUpdate202508]: undefined,
@@ -110,5 +111,4 @@ export const NuxSchemas: Record<Nux, zod.ZodObject<any> | undefined> = {
   [Nux.GroupChatsAnnouncement]: undefined,
   [Nux.InviteFriendsAnnouncement]: undefined,
   [Nux.MuForYouFeedAnnouncement]: undefined,
-  [Nux.IPadBetaAnnouncement]: undefined,
 }

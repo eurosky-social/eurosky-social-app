@@ -6,9 +6,7 @@ import Animated, {
   LayoutAnimationConfig,
   LinearTransition,
 } from 'react-native-reanimated'
-import {msg} from '@lingui/core/macro'
-import {useLingui} from '@lingui/react'
-import {Trans} from '@lingui/react/macro'
+import {Trans, useLingui} from '@lingui/react/macro'
 
 import {
   type CommonNavigatorParams,
@@ -29,17 +27,14 @@ import {TitleCase_Stroke2_Corner0_Rounded as Aa} from '#/components/icons/TitleC
 import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
 import {ACCENTS, DEFAULT_ACCENT} from '#/config/brand-theme'
-import {HalloweenAppearanceSettings} from '#/features/halloween/AppearanceSettings'
-import {useHalloween} from '#/features/halloween/context'
 import * as SettingsList from './components/SettingsList'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'AppearanceSettings'>
 export function AppearanceSettingsScreen({}: Props) {
-  const {_} = useLingui()
+  const {t: l} = useLingui()
   const {fonts} = useAlf()
 
   const {colorMode, darkTheme} = useThemePrefs()
-  const {isActive: halloweenActive} = useHalloween()
   const {setColorMode, setDarkTheme} = useSetThemePrefs()
   const interfaceStyle = useInterfaceStyle()
   const setInterfaceStyle = useSetInterfaceStyle()
@@ -87,53 +82,50 @@ export function AppearanceSettingsScreen({}: Props) {
         <Layout.Content>
           <SettingsList.Container>
             <AppearanceToggleButtonGroup
-              title={_(msg`Color mode`)}
+              title={l`Color mode`}
               icon={PhoneIcon}
               items={[
                 {
-                  label: _(msg`System`),
+                  label: l`System`,
                   name: 'system',
                 },
                 {
-                  label: _(msg`Light`),
+                  label: l`Light`,
                   name: 'light',
                 },
                 {
-                  label: _(msg`Dark`),
+                  label: l`Dark`,
                   name: 'dark',
                 },
               ]}
-              value={halloweenActive ? 'dark' : colorMode}
-              disabled={halloweenActive}
+              value={colorMode}
               onChange={onChangeAppearance}
             />
 
-            {(halloweenActive || colorMode !== 'light') && (
+            {colorMode !== 'light' && (
               <Animated.View
                 entering={native(FadeInUp)}
                 exiting={native(FadeOutUp)}>
                 <AppearanceToggleButtonGroup
-                  title={_(msg`Dark theme`)}
+                  title={l`Dark theme`}
                   icon={MoonIcon}
                   items={[
                     {
-                      label: _(msg`Dim`),
+                      label: l`Dim`,
                       name: 'dim',
                     },
                     {
-                      label: _(msg`Dark`),
+                      label: l`Dark`,
                       name: 'dark',
                     },
                   ]}
-                  value={halloweenActive ? 'dark' : (darkTheme ?? 'dim')}
-                  disabled={halloweenActive}
+                  value={darkTheme ?? 'dim'}
                   onChange={onChangeDarkTheme}
                 />
               </Animated.View>
             )}
 
             <AccentColorPicker />
-            <HalloweenAppearanceSettings />
 
             <SettingsList.Divider />
             <SettingsList.Group
@@ -145,7 +137,7 @@ export function AppearanceSettingsScreen({}: Props) {
               </SettingsList.ItemText>
               <Toggle.Item
                 name="interface_borders"
-                label={_(msg`Hide subtle interface borders`)}
+                label={l`Hide subtle interface borders`}
                 value={interfaceStyle.borders === 'hidden'}
                 onChange={hidden =>
                   setInterfaceStyle({
@@ -164,18 +156,16 @@ export function AppearanceSettingsScreen({}: Props) {
               <SettingsList.Divider />
 
               <AppearanceToggleButtonGroup
-                title={_(msg`Font`)}
-                description={_(
-                  msg`For the best experience, we recommend using the theme font.`,
-                )}
+                title={l`Font`}
+                description={l`For the best experience, we recommend using the theme font.`}
                 icon={Aa}
                 items={[
                   {
-                    label: _(msg`System`),
+                    label: l`System`,
                     name: 'system',
                   },
                   {
-                    label: _(msg`Theme`),
+                    label: l`Theme`,
                     name: 'theme',
                   },
                 ]}
@@ -184,19 +174,19 @@ export function AppearanceSettingsScreen({}: Props) {
               />
 
               <AppearanceToggleButtonGroup
-                title={_(msg`Font size`)}
+                title={l`Font size`}
                 icon={TextSize}
                 items={[
                   {
-                    label: _(msg`Smaller`),
+                    label: l`Smaller`,
                     name: '-1',
                   },
                   {
-                    label: _(msg`Default`),
+                    label: l`Default`,
                     name: '0',
                   },
                   {
-                    label: _(msg`Larger`),
+                    label: l`Larger`,
                     name: '1',
                   },
                 ]}
@@ -225,7 +215,6 @@ export function AppearanceToggleButtonGroup<T extends string>({
   items,
   value,
   onChange,
-  disabled = false,
 }: {
   title: string
   description?: string
@@ -236,7 +225,6 @@ export function AppearanceToggleButtonGroup<T extends string>({
   }[]
   value: T
   onChange: (value: T) => void
-  disabled?: boolean
 }) {
   const t = useTheme()
   return (
@@ -264,9 +252,7 @@ export function AppearanceToggleButtonGroup<T extends string>({
             <SegmentedControl.Item
               key={item.name}
               label={item.label}
-              value={item.name}
-              disabled={disabled}
-              style={disabled ? {opacity: 0.5} : undefined}>
+              value={item.name}>
               <SegmentedControl.ItemText>
                 {item.label}
               </SegmentedControl.ItemText>
@@ -278,27 +264,31 @@ export function AppearanceToggleButtonGroup<T extends string>({
   )
 }
 
-// Eurosky: per-user accent picker. Swatches are the curated brand accent
-// families (brand.json#colors.accents); selecting one persists `accentColor`,
-// which ThemeProvider applies live via `themesOverride`. undefined = the
-// brand's defaultAccent.
+/** Brand accent families in rainbow order, as defined in brand.json. */
 const ACCENT_KEYS = Object.keys(ACCENTS)
-
-function accentLabel(key: string): string {
-  return key.charAt(0).toUpperCase() + key.slice(1)
-}
 
 function AccentColorPicker() {
   const t = useTheme()
-  const {_} = useLingui()
+  const {t: l} = useLingui()
+  const labels: Record<string, string> = {
+    red: l`Red`,
+    orange: l`Orange`,
+    yellow: l`Yellow`,
+    green: l`Green`,
+    teal: l`Teal`,
+    cyan: l`Cyan`,
+    blue: l`Blue`,
+    indigo: l`Indigo`,
+    purple: l`Purple`,
+    pink: l`Pink`,
+  }
   const {accentColor} = useThemePrefs()
   const {setAccentColor} = useSetThemePrefs()
-  const {isActive: halloweenActive} = useHalloween()
-  const selected = halloweenActive ? 'orange' : (accentColor ?? DEFAULT_ACCENT)
+  const selected = accentColor ?? DEFAULT_ACCENT
   return (
     <SettingsList.Group contentContainerStyle={[a.gap_sm]} iconInset={false}>
       <SettingsList.ItemIcon icon={ColorPaletteIcon} />
-      <SettingsList.ItemText>{_(msg`Accent color`)}</SettingsList.ItemText>
+      <SettingsList.ItemText>{l`Accent color`}</SettingsList.ItemText>
       <View style={[a.flex_row, a.gap_lg, a.flex_wrap, a.w_full, a.pt_xs]}>
         {ACCENT_KEYS.map(key => {
           const isSelected = selected === key
@@ -306,19 +296,12 @@ function AccentColorPicker() {
             <Pressable
               key={key}
               accessibilityRole="button"
-              accessibilityLabel={accentLabel(key)}
-              accessibilityHint={_(msg`Sets the app accent color`)}
-              accessibilityState={{
-                selected: isSelected,
-                disabled: halloweenActive,
-              }}
-              disabled={halloweenActive}
+              testID={`accentColor-${key}`}
+              accessibilityLabel={labels[key]}
+              accessibilityHint={l`Sets the app accent color`}
+              accessibilityState={{selected: isSelected}}
               onPress={() => setAccentColor(key)}
-              style={[
-                a.align_center,
-                a.gap_xs,
-                halloweenActive && {opacity: 0.5},
-              ]}>
+              style={[a.align_center, a.gap_xs]}>
               <View
                 style={[
                   a.rounded_full,
@@ -339,7 +322,7 @@ function AccentColorPicker() {
                   isSelected ? a.font_bold : undefined,
                   t.atoms.text_contrast_medium,
                 ]}>
-                {accentLabel(key)}
+                {labels[key]}
               </Text>
             </Pressable>
           )

@@ -35,7 +35,6 @@ import {buildProfileRow, GERM_KEY} from '../row'
 import {
   useCanEditProfileLinks,
   useOwnProfileLinksQuery,
-  useProfileLinksEnabled,
   useProfileViewLinks,
   useSaveProfileLinksMutation,
 } from '../state'
@@ -71,20 +70,18 @@ export function ProfileHeaderLinks({
 }) {
   const ax = useAnalytics()
   const {currentAccount} = useSession()
-  const enabled = useProfileLinksEnabled()
   const canEdit = useCanEditProfileLinks()
   const isOwnProfile = currentAccount?.did === profile.did
   /* Repo data enables editing, but must not shuffle the row on arrival. */
   const viewLinks = useProfileViewLinks(profile)
   const {data: snapshot} = useOwnProfileLinksQuery(profile.did, {
-    enabled: enabled && !hidden && isOwnProfile,
+    enabled: !hidden && isOwnProfile,
   })
-  const links =
-    !enabled || hidden
-      ? []
-      : isOwnProfile
-        ? profileHeaderLinks(viewLinks, snapshot)
-        : viewLinks
+  const links = hidden
+    ? []
+    : isOwnProfile
+      ? profileHeaderLinks(viewLinks, snapshot)
+      : viewLinks
   const supportLinkCount = links.filter(link =>
     getSupportProvider(link.url),
   ).length
@@ -92,6 +89,7 @@ export function ProfileHeaderLinks({
   useEffect(() => {
     if (links.length === 0) return
     ax.metric('profile:links:impression', {
+      profileDid: profile.did,
       linkCount: links.length,
       supportLinkCount,
       isOwnProfile,
@@ -161,6 +159,8 @@ function ProfileLinksRow({
 
   const logClick = (link: ProfileLink) => {
     ax.metric('profile:links:click', {
+      profileDid: profile.did,
+      linkUri: link.uri,
       domain: getLinkHost(link.url),
       supportProvider: getSupportProvider(link.url)?.name,
       isOwnProfile,
@@ -169,8 +169,11 @@ function ProfileLinksRow({
 
   const showPreview = (link: ProfileLink) => {
     ax.metric('profile:links:preview', {
+      profileDid: profile.did,
+      linkUri: link.uri,
       domain: getLinkHost(link.url),
       supportProvider: getSupportProvider(link.url)?.name,
+      isOwnProfile,
     })
     setActiveLink(link)
     previewControl.open()

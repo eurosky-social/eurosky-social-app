@@ -1,8 +1,9 @@
 import {useCallback, useEffect} from 'react'
 import {BackHandler, useWindowDimensions, View} from 'react-native'
 import {Drawer} from 'react-native-drawer-layout'
-import {SystemBars} from 'react-native-edge-to-edge'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
+import {NavigationBar} from 'expo-navigation-bar'
+import {StatusBar} from 'expo-status-bar'
 import {BottomSheetOutlet} from '@bsky.app/bottom-sheet'
 import {updateActiveViewAsync} from '@bsky.app/expo-bluesky-swiss-army/src/VisibilityView'
 import {useNavigation, useNavigationState} from '@react-navigation/native'
@@ -46,7 +47,6 @@ import {NoAccessScreen} from '#/ageAssurance/components/NoAccessScreen'
 import {RedirectOverlay} from '#/ageAssurance/components/RedirectOverlay'
 import {PassiveAnalytics} from '#/analytics/PassiveAnalytics'
 import {IS_ANDROID, IS_IOS, IS_LIQUID_GLASS} from '#/env'
-import {HalloweenCornerWebs} from '#/features/halloween/CornerWebs'
 import {PetCompanion} from '#/features/petCompanion'
 import {RoutesContainer, TabsNavigator} from '#/Navigation'
 import {Composer} from './Composer'
@@ -225,8 +225,6 @@ function DrawerLayout({children}: {children: React.ReactNode}) {
         }),
       }}>
       {children}
-      {/* Keep decorations inside the page so the drawer and its scrim cover them. */}
-      <HalloweenCornerWebs />
     </Drawer>
   )
 }
@@ -236,6 +234,7 @@ export function Shell() {
   const aa = useAgeAssurance()
   const {currentAccount} = useSession()
   const fullyExpandedCount = useDialogFullyExpandedCountContext()
+  const {gtMobile} = useBreakpoints()
 
   useIntentHandler()
   useOTAUpdateRecovery()
@@ -246,19 +245,20 @@ export function Shell() {
 
   return (
     <View testID="mobileShellView" style={[a.h_full, t.atoms.bg]}>
-      <SystemBars
-        hidden={{
-          statusBar: false,
-          navigationBar: false,
-        }}
-        style={{
-          statusBar:
-            t.name !== 'light' ||
-            (IS_IOS && !IS_LIQUID_GLASS && fullyExpandedCount > 0)
-              ? 'light'
-              : 'dark',
-          navigationBar: t.name !== 'light' ? 'light' : 'dark',
-        }}
+      <StatusBar
+        animated
+        hidden={false}
+        verticalBarBehaviorIOS={gtMobile ? 'automatic' : 'disabled'}
+        style={
+          t.name !== 'light' ||
+          (IS_IOS && !IS_LIQUID_GLASS && fullyExpandedCount > 0)
+            ? 'light'
+            : 'dark'
+        }
+      />
+      <NavigationBar
+        hidden={false}
+        style={t.name !== 'light' ? 'light' : 'dark'}
       />
       {currentAccount?.status === 'takendown' ? (
         <Takendown />

@@ -25,6 +25,7 @@ export const router = new Router<AllNavigatableRoutes>({
    */
   NewsExplore: ['/news/explore', '/newsroom/explore'],
   NewsArticle: ['/news/article', '/newsroom/article'],
+  NewsOutlets: '/news/outlets',
   OutletDirectory: ['/outlets', '/newsrooms'],
   Frontpage: ['/frontpage/:name', '/frontpage', '/newsroom/:name', '/newsroom'],
   // moderation
@@ -67,13 +68,11 @@ export const router = new Router<AllNavigatableRoutes>({
   PreferencesExternalEmbeds: '/settings/external-embeds',
   AccessibilitySettings: '/settings/accessibility',
   AppearanceSettings: '/settings/appearance',
-  CostumeEditor: '/halloween/costume',
   NetworkServicesSettings: '/settings/network-services',
   ContentServiceSettings: '/settings/network-services/content-service',
   AppViewTransferSettings: '/settings/network-services/transfer-app-data',
   PetCompanionSettings: '/settings/pet-companion',
   DecorationsSettings: '/settings/decorations',
-  BetaFeaturesSettings: '/settings/beta-features',
   SavedFeeds: '/settings/saved-feeds',
   AccountSettings: '/settings/account',
   AutomationLabelSettings: '/settings/automation-label',

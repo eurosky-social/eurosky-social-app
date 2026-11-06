@@ -248,6 +248,38 @@ test('preserves supported brand shapes and paint roles', async t => {
   ])
 })
 
+test('verification marks keep white ticks on light, dark, and dim backgrounds', async () => {
+  const {default: sharp} = await import('sharp')
+  const glyphmap = JSON.parse(await fs.readFile(
+    new URL('../../assets/nano-icons/nanoicons/icons-brands.glyphmap.json', import.meta.url),
+    'utf8',
+  ))
+  for (const name of ['VerifiedCheck', 'VerifierCheck']) {
+    const source = await fs.readFile(
+      new URL(`../../assets/icons/brands/${name}.svg`, import.meta.url),
+      'utf8',
+    )
+    assert.doesNotMatch(source, /\btransform=/, `${name} must bake transforms before component codegen`)
+    assert.deepEqual(
+      glyphmap.i[name][1].map(([, color]) => color),
+      ['#fff', 'currentColor'],
+      `${name} must preserve the white tick in its native font layers`,
+    )
+    for (const background of ['#FFFFFF', '#000000', '#1A1A1A']) {
+      const svg = source.replaceAll('currentColor', '#BB2D8C').replace(
+        /(<svg[^>]*>)/,
+        `$1<rect width="24" height="24" fill="${background}"/>`,
+      )
+      const pixels = await sharp(Buffer.from(svg)).resize(240, 240).ensureAlpha().raw().toBuffer()
+      const pixel = (x, y) => [...pixels.subarray((y * 240 + x) * 4, (y * 240 + x) * 4 + 4)]
+      assert.deepEqual(pixel(105, 145), [255, 255, 255, 255], `${name} tick on ${background}`)
+      assert.deepEqual(pixel(120, 50), [187, 45, 140, 255], `${name} keeps its accent fill`)
+      const rgb = [1, 3, 5].map(i => parseInt(background.slice(i, i + 2), 16))
+      assert.deepEqual(pixel(5, 5), [...rgb, 255], `${name} keeps its exterior transparent`)
+    }
+  }
+})
+
 test('detects export collisions', async t => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'icon-codegen-'))
   t.after(() => fs.rm(root, {recursive: true, force: true}))

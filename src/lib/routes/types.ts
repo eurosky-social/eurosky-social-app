@@ -1,10 +1,18 @@
-import {type NavigationState, type PartialState} from '@react-navigation/native'
-import {type NativeStackNavigationProp} from '@react-navigation/native-stack'
+import {
+  type NavigationState,
+  type NavigatorScreenParams,
+  type PartialState,
+} from '@react-navigation/native'
 
 import {type SearchFilters} from '#/screens/Search/searchParams'
 import {type VideoFeedSourceContext} from '#/screens/VideoFeed/types'
 
 export type {NativeStackScreenProps} from '@react-navigation/native-stack'
+export type {
+  NavigationProp,
+  RootNavigationProp,
+  RootNavigatorParams,
+} from '#/lib/routes/navigation'
 
 /**
  * The advanced-search filter params are owned by searchParams.ts (the param
@@ -27,8 +35,9 @@ export type CommonNavigatorParams = {
   Lists: undefined
   NewsFeed: undefined
   NewsSettings: undefined
-  Frontpage: {name?: string}
+  Frontpage: {name?: string; view?: 'conversation'}
   NewsExplore: undefined
+  NewsOutlets: undefined
   OutletDirectory: undefined
   NewsArticle: {
     url: string
@@ -57,7 +66,7 @@ export type CommonNavigatorParams = {
   ModerationInteractionSettings: undefined
   ModerationVerificationSettings: undefined
   Settings: undefined
-  Profile: {name: string; hideBackButton?: boolean}
+  Profile: {name: string; hideBackButton?: boolean; tab?: string}
   ProfileFollowers: {name: string}
   ProfileFollows: {name: string}
   ProfileKnownFollowers: {name: string}
@@ -91,13 +100,11 @@ export type CommonNavigatorParams = {
   PreferencesExternalEmbeds: undefined
   AccessibilitySettings: undefined
   AppearanceSettings: undefined
-  CostumeEditor: undefined
   NetworkServicesSettings: undefined
   ContentServiceSettings: undefined
   AppViewTransferSettings: undefined
   PetCompanionSettings: undefined
   DecorationsSettings: undefined
-  BetaFeaturesSettings: undefined
   AccountSettings: undefined
   AutomationLabelSettings: undefined
   PrivacyAndSecuritySettings: undefined
@@ -122,7 +129,7 @@ export type CommonNavigatorParams = {
   LegacyNotificationSettings: undefined
   Feeds: undefined
   Start: {name: string; rkey: string}
-  StarterPack: {name: string; rkey: string; new?: boolean}
+  StarterPack: {name: string; rkey: string; new?: boolean; view?: 'posts'}
   StarterPackShort: {code: string}
   StarterPackWizard: {
     fromDialog?: boolean
@@ -135,17 +142,18 @@ export type CommonNavigatorParams = {
   FindContactsFlow: undefined
 }
 
-export type BottomTabNavigatorParams = CommonNavigatorParams & {
-  HomeTab: undefined
-  SearchTab: undefined
-  NotificationsTab: undefined
-  MyProfileTab: undefined
-  MessagesTab: undefined
-  AtmosphereTab: undefined
-  FeedsTab: undefined
-  ListsTab: undefined
-  BookmarksTab: undefined
-  SettingsTab: undefined
+export type BottomTabNavigatorParams = {
+  HomeTab: NavigatorScreenParams<HomeTabNavigatorParams> | undefined
+  SearchTab: NavigatorScreenParams<SearchTabNavigatorParams> | undefined
+  NotificationsTab:
+    NavigatorScreenParams<NotificationsTabNavigatorParams> | undefined
+  MyProfileTab: NavigatorScreenParams<MyProfileTabNavigatorParams> | undefined
+  MessagesTab: NavigatorScreenParams<MessagesTabNavigatorParams> | undefined
+  AtmosphereTab: NavigatorScreenParams<CommonNavigatorParams> | undefined
+  FeedsTab: NavigatorScreenParams<CommonNavigatorParams> | undefined
+  ListsTab: NavigatorScreenParams<CommonNavigatorParams> | undefined
+  BookmarksTab: NavigatorScreenParams<CommonNavigatorParams> | undefined
+  SettingsTab: NavigatorScreenParams<CommonNavigatorParams> | undefined
 }
 
 export type HomeTabNavigatorParams = CommonNavigatorParams & {
@@ -165,11 +173,13 @@ export type MyProfileTabNavigatorParams = CommonNavigatorParams & {
 }
 
 export type MessagesTabNavigatorParams = CommonNavigatorParams & {
-  Messages: {
-    pushToConversation?: string
-    pushToNewGroupChat?: boolean
-    animation?: 'push' | 'pop'
-  }
+  Messages:
+    | {
+        pushToConversation?: string
+        pushToNewGroupChat?: boolean
+        animation?: 'push' | 'pop'
+      }
+    | undefined
 }
 
 export type FlatNavigatorParams = CommonNavigatorParams & {
@@ -177,40 +187,16 @@ export type FlatNavigatorParams = CommonNavigatorParams & {
   Search: SearchParams
   Feeds: undefined
   Notifications: undefined
-  Messages: {
-    pushToConversation?: string
-    pushToNewGroupChat?: boolean
-    animation?: 'push' | 'pop'
-  }
+  Messages: MessagesTabNavigatorParams['Messages']
 }
 
-export type AllNavigatorParams = CommonNavigatorParams & {
-  HomeTab: undefined
-  Home: undefined
-  SearchTab: undefined
-  Search: SearchParams
-  Feeds: undefined
-  NotificationsTab: undefined
-  Notifications: undefined
-  MyProfileTab: undefined
-  MessagesTab: undefined
-  AtmosphereTab: undefined
-  FeedsTab: undefined
-  ListsTab: undefined
-  BookmarksTab: undefined
-  SettingsTab: undefined
-  Messages: {
-    pushToConversation?: string
-    pushToNewGroupChat?: boolean
-    animation?: 'push' | 'pop'
+/** A checked leaf destination for navigation from outside a screen stack. */
+export type CommonNavigationDestination = {
+  [Name in keyof CommonNavigatorParams]: {
+    name: Name
+    params: CommonNavigatorParams[Name]
   }
-}
-
-// NOTE
-// this isn't strictly correct but it should be close enough
-// a TS wizard might be able to get this 100%
-// -prf
-export type NavigationProp = NativeStackNavigationProp<AllNavigatorParams>
+}[keyof CommonNavigatorParams]
 
 export type State =
   NavigationState | Omit<PartialState<NavigationState>, 'stale'>
@@ -219,5 +205,5 @@ export type RouteParams = Record<string, string>
 export type MatchResult = {params: RouteParams}
 export type Route = {
   match: (path: string) => MatchResult | undefined
-  build: (params?: Record<string, any>) => string
+  build: (params?: Record<string, unknown>) => string
 }

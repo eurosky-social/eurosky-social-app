@@ -14,7 +14,11 @@ import {getPublicAppViewUrl} from '#/features/appView/config'
 import {withAppViewShadowFetch} from '#/features/appView/shadow'
 import {app} from '#/lexicons'
 import {type FeedAPI, type FeedAPIResponse} from './types'
-import {createBskyTopicsHeader, isBlueskyOwnedFeed} from './utils'
+import {
+  createBskyFeedHeaders,
+  createBskyTopicsHeader,
+  isBlueskyOwnedFeed,
+} from './utils'
 
 type GetCustomFeedParams = XrpcRequestParams<typeof app.bsky.feed.getFeed.main>
 
@@ -45,7 +49,12 @@ export class CustomFeedAPI implements FeedAPI {
         ...this.params,
         limit: 1,
       },
-      {headers: {'Accept-Language': contentLangs}},
+      {
+        headers: {
+          ...createBskyFeedHeaders(this.params.feed),
+          'Accept-Language': contentLangs,
+        },
+      },
     )
     return data.feed[0]
   }
@@ -79,6 +88,7 @@ export class CustomFeedAPI implements FeedAPI {
           {
             signal,
             headers: {
+              ...createBskyFeedHeaders(this.params.feed),
               ...(isBlueskyOwned
                 ? createBskyTopicsHeader(this.userInterests)
                 : {}),
@@ -184,7 +194,13 @@ async function getFeedOrNull(
     return await getLoggedOutAppviewClient().call(
       app.bsky.feed.getFeed,
       params,
-      {signal, headers: {'Accept-Language': contentLangs}},
+      {
+        signal,
+        headers: {
+          ...createBskyFeedHeaders(params.feed),
+          'Accept-Language': contentLangs,
+        },
+      },
     )
   } catch (e) {
     if (e instanceof XrpcResponseError) {

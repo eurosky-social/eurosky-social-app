@@ -16,7 +16,6 @@ import {IMAGE_SIZE_CONFIG_POSTS} from '#/lib/constants'
 import {type EditedPostRecord} from '#/lib/edit-post'
 import {isNetworkError} from '#/lib/strings/errors'
 import {shortenLinks, stripInvalidMentions} from '#/lib/strings/rich-text-manip'
-import {matchXrpcError} from '#/lib/xrpc-error'
 import {logger} from '#/logger'
 import {compressImage} from '#/state/gallery'
 import {
@@ -32,10 +31,6 @@ import {
   type PostDraft,
   type ThreadDraft,
 } from '#/view/com/composer/state/composer'
-import {
-  COSTUME_COLLECTION,
-  readOwnCostume,
-} from '#/features/halloween/costumes/records'
 import {app, chat, com} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {createGIFDescription} from '../gif-alt-text'
@@ -90,23 +85,6 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
   const did = opts.pdsClient.assertDid
   const writes: com.atproto.repo.applyWrites.$InputBody['writes'] = []
   const uris: string[] = []
-  const costumeDraft = thread.posts.find(
-    draft => draft.halloweenCostumeNumber !== undefined,
-  )
-  const readCostume = async () => {
-    const costume = await readOwnCostume(opts.pdsClient)
-    if (
-      !costume ||
-      costume.costumeNumber !== costumeDraft?.halloweenCostumeNumber
-    ) {
-      throw new Error(
-        t`Your costume has changed. Open the costume studio to share the latest version.`,
-      )
-    }
-    return costume
-  }
-  /* Fail before uploading media; the write below re-checks at the latest head. */
-  if (costumeDraft) await readCostume()
 
   let now = new Date()
   let tid: TID | undefined
@@ -154,9 +132,6 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
       embed,
       langs,
       labels,
-      ...(draft.halloweenCostumeNumber !== undefined
-        ? {isHalloweenCostume: true}
-        : {}),
     }
     writes.push({
       $type: 'com.atproto.repo.applyWrites#create',
@@ -206,56 +181,12 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
     }
   }
 
-  const costumeUri = costumeDraft
-    ? uris[thread.posts.indexOf(costumeDraft)]
-    : undefined
-  /* Read the head right before writing so slow uploads don't widen the race window. */
-  const writeCostumePost = async () => {
-    const {cid: head} = await opts.pdsClient.call(
-      com.atproto.sync.getLatestCommit,
-      {did},
-    )
-    const costume = await readCostume()
-    /* Default validation still checks known schemas but permits the custom costume collection. */
+  try {
     await opts.pdsClient.call(com.atproto.repo.applyWrites, {
       repo: did,
-      swapCommit: head,
-      writes: [
-        {
-          $type: 'com.atproto.repo.applyWrites#update',
-          collection: COSTUME_COLLECTION,
-          rkey: 'self',
-          value: {...costume, post: costumeUri},
-        },
-        ...writes,
-      ],
+      writes: writes,
+      validate: true,
     })
-    return costume
-  }
-
-  let costume: Awaited<ReturnType<typeof readOwnCostume>> = undefined
-  try {
-    if (costumeDraft) {
-      /* InvalidSwap means nothing was committed, so one fresh attempt cannot duplicate posts. */
-      for (let attempt = 0; !costume; attempt++) {
-        try {
-          costume = await writeCostumePost()
-        } catch (e) {
-          if (matchXrpcError(e, com.atproto.repo.applyWrites) !== 'InvalidSwap')
-            throw e
-          if (attempt > 0)
-            throw new Error(
-              t`Your account was updated while posting. Please try again.`,
-            )
-        }
-      }
-    } else {
-      await opts.pdsClient.call(com.atproto.repo.applyWrites, {
-        repo: did,
-        writes: writes,
-        validate: true,
-      })
-    }
   } catch (err) {
     const e = err as Error
     logger.error(`Failed to create post`, {
@@ -270,12 +201,6 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
     }
   }
 
-  if (costume) {
-    queryClient.setQueryData(['halloweenCostume', did], {
-      costumeNumber: costume.costumeNumber,
-      post: costumeUri,
-    })
-  }
   return {uris}
 }
 

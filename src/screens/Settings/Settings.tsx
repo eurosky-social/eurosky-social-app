@@ -11,6 +11,7 @@ import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 import {HELP_DESK_URL, HITSLOP_10} from '#/lib/constants'
 import {useAccountSwitcher} from '#/lib/hooks/useAccountSwitcher'
 import {useApplyPullRequestOTAUpdate} from '#/lib/hooks/useOTAUpdates'
+import {getHomeNavigationAction} from '#/lib/routes/navigation'
 import {
   type CommonNavigatorParams,
   type NavigationProp,
@@ -24,15 +25,18 @@ import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {useDeleteActorDeclaration} from '#/state/queries/messages/actor-declaration'
 import {useModerationInboxUnreadCountQuery} from '#/state/queries/moderation-inbox'
 import {useProfileQuery, useProfilesQuery} from '#/state/queries/profile'
-import {usePdsClient} from '#/state/session'
-import {type SessionAccount, useSession, useSessionApi} from '#/state/session'
+import {
+  type SessionAccount,
+  usePdsClient,
+  useSession,
+  useSessionApi,
+} from '#/state/session'
 import {useOnboardingDispatch} from '#/state/shell'
 import {useLoggedOutViewControls} from '#/state/shell/logged-out'
 import {useCloseAllActiveElements} from '#/state/util'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
-import {GrowthbookDialog} from '#/screens/Settings/components/GrowthbookDialog'
 import * as SettingsList from '#/screens/Settings/components/SettingsList'
-import {atoms as a, platform, tokens, useBreakpoints, useTheme} from '#/alf'
+import {atoms as a, tokens, useBreakpoints, useTheme} from '#/alf'
 import {AgeAssuranceDismissibleNotice} from '#/components/ageAssurance/AgeAssuranceDismissibleNotice'
 import {AvatarStackWithFetch} from '#/components/AvatarStack'
 import {Button, ButtonText} from '#/components/Button'
@@ -40,7 +44,6 @@ import {useIsFindContactsFeatureEnabledBasedOnGeolocation} from '#/components/co
 import {useDialogControl} from '#/components/Dialog'
 import {SwitchAccountDialog} from '#/components/dialogs/SwitchAccount'
 import {Accessibility_Stroke2_Corner2_Rounded as AccessibilityIcon} from '#/components/icons/Accessibility'
-import {Beaker_Stroke2_Corner2_Rounded as BeakerIcon} from '#/components/icons/Beaker'
 import {Bell_Stroke2_Corner0_Rounded as NotificationIcon} from '#/components/icons/Bell'
 import {BubbleInfo_Stroke2_Corner2_Rounded as BubbleInfoIcon} from '#/components/icons/BubbleInfo'
 import {ChevronTop_Stroke2_Corner0_Rounded as ChevronUpIcon} from '#/components/icons/Chevron'
@@ -295,14 +298,6 @@ export function SettingsScreen({}: Props) {
               <Trans>Languages</Trans>
             </SettingsList.ItemText>
           </SettingsList.LinkItem>
-          <SettingsList.LinkItem
-            to="/settings/beta-features"
-            label={l`Beta features`}>
-            <SettingsList.ItemIcon icon={BeakerIcon} />
-            <SettingsList.ItemText>
-              <Trans>Beta features</Trans>
-            </SettingsList.ItemText>
-          </SettingsList.LinkItem>
           <SettingsList.PressableItem
             onPress={() => void Linking.openURL(HELP_DESK_URL)}
             label={l`Help`}
@@ -403,29 +398,20 @@ function ProfilePreview({
           a.align_center,
           a.justify_center,
           a.w_full,
+          a.pt_sm,
         ]}>
         <Text
           emoji
           testID="profileHeaderDisplayName"
           numberOfLines={1}
           style={[
-            a.pt_sm,
             t.atoms.text,
             gtMobile ? a.text_4xl : a.text_3xl,
             a.font_bold,
           ]}>
           {displayName}
         </Text>
-        <ProfileBadges
-          profile={shadow}
-          size="xl"
-          interactive
-          style={[
-            {
-              marginTop: platform({web: 8, ios: 8, android: 10}),
-            },
-          ]}
-        />
+        <ProfileBadges profile={shadow} size="xl" interactive />
       </View>
       <Text style={[a.text_md, a.leading_snug, t.atoms.text_contrast_medium]}>
         {sanitizeHandle(profile.handle, '@')}
@@ -450,10 +436,11 @@ function DevOptions() {
     currentChannel,
   } = useApplyPullRequestOTAUpdate()
   const [actyNotifNudged, setActyNotifNudged] = useActivitySubscriptionsNudged()
-  const growthbookControl = useDialogControl()
 
   const resetOnboarding = () => {
-    navigation.navigate('Home')
+    navigation.dispatch(
+      getHomeNavigationAction(navigation.getState(), 'navigate'),
+    )
     onboardingDispatch({type: 'start'})
     Toast.show(l`Onboarding reset`)
   }
@@ -511,14 +498,6 @@ function DevOptions() {
           <Trans>System log</Trans>
         </SettingsList.ItemText>
       </SettingsList.PressableItem>
-      <SettingsList.PressableItem
-        onPress={() => growthbookControl.open()}
-        label={l`View GrowthBook information`}>
-        <SettingsList.ItemText>
-          <Trans>GrowthBook</Trans>
-        </SettingsList.ItemText>
-      </SettingsList.PressableItem>
-      <GrowthbookDialog control={growthbookControl} />
       <SettingsList.PressableItem
         onPress={() => navigation.navigate('Debug')}
         label={l`Open storybook page`}>

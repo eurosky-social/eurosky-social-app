@@ -32,6 +32,7 @@ import {app} from '#/lexicons'
 import {
   getDefaultNewsroomPublisher,
   getNewsroomPublisherByDid,
+  NEWSROOM_PUBLISHERS,
   type NewsroomPublisher,
 } from './publishers'
 
@@ -63,13 +64,16 @@ export function NewsroomRightRail({
     if (route.name !== 'Frontpage') return undefined
     return (route.params as {name?: string} | undefined)?.name
   })
-  const publisher =
-    (routeParamName && getNewsroomPublisherByDid(routeParamName)) ||
-    getDefaultNewsroomPublisher()
+  const publisher = routeParamName
+    ? (getNewsroomPublisherByDid(routeParamName) ??
+      NEWSROOM_PUBLISHERS.find(value => value.id === routeParamName))
+    : getDefaultNewsroomPublisher()
 
   return (
     <View>
-      <ReportersModule publisher={publisher} collapsible={inline} />
+      {publisher && (
+        <ReportersModule publisher={publisher} collapsible={inline} />
+      )}
       <NewsModule compact={inline} />
       <ExploreLiveSportsWidget />
     </View>
