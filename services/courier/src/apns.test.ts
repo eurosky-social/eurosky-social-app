@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import {generateKeyPairSync, type KeyObject, verify} from 'node:crypto'
+import {once} from 'node:events'
 import http2 from 'node:http2'
 import {type AddressInfo} from 'node:net'
 import {after, before, beforeEach, describe, it} from 'node:test'
@@ -83,10 +84,15 @@ describe('ApnsClient', () => {
     )
   })
 
-  beforeEach(() => {
+  beforeEach(async () => {
     apple.received.length = 0
     apple.replies.length = 0
     client?.close()
+    /* The server notices the closed connection a moment later; wait for it, so
+     * tests that count connections never count the previous test's one. */
+    await Promise.all(
+      [...apple.sessions].map(session => once(session, 'close')),
+    )
     const {port} = apple.server.address() as AddressInfo
     client = new ApnsClient({
       keyId: 'KEY123',
