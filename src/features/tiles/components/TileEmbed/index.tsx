@@ -52,7 +52,7 @@ export function TileEmbed({
    * DOM to measure the post by.
    */
   fullWidth?: boolean
-  /** Load the tile on mount instead of waiting for a tap (`?tile=activate`). */
+  /** Load the tile on mount instead of waiting for a tap. */
   autoplay?: boolean
 }) {
   const {t: l} = useLingui()

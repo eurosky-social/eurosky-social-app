@@ -14,9 +14,7 @@ A tile post is an ordinary `app.bsky.embed.external` link card, so every client
 shows something sensible, plus a pointer:
 
 - `external.uri` is the URL of the post itself on mu (`/profile/<handle>/post/<rkey>`),
-  which is why `post()` mints the record key before it resolves the embed. It
-  carries `?tile=activate` (`link.ts`): opened on mu, the post skips the card
-  and loads the tile straight away (`autoplay.tsx`, set up by the thread screen).
+  which is why `post()` mints the record key before it resolves the embed.
 - `external.title` / `description` come from the manifest's `name` / `description`.
 - `external.thumb` is the manifest's first screenshot with a translucent play
   button drawn over it (`thumb.web.ts`), so the card reads as playable anywhere.
@@ -42,8 +40,6 @@ running tile instead of following the link.
 | `author.ts` | the author of a tile (the repo in its URI), the trust check, and the hook the card footer uses |
 | `mothership(.web).ts` | the page's one `TileMothership`, with a mu loader that resolves the PDS itself |
 | `sizing.ts` | the rendered height for a manifest's `sizing` and a card width, shared by web and native |
-| `link.ts` | the `?tile=activate` the card's link carries |
-| `autoplay.tsx` | the context through which the thread screen tells the post a `?tile=activate` URL names to play at once |
 | `host.ts` | the URL of the hosted page the native player loads (`@dasl/tile-host`) |
 | `components/TileCard.tsx` | the card, shared by the feed embed and the composer preview |
 | `components/TileAuthor.tsx` | the footer line: the author's avatar, name, check and handle |
@@ -57,9 +53,8 @@ Touchpoints in upstream code, each marked `EUROSKY`:
   gets the post URL and the pointer; a tile by an unverified author is refused.
 - `components/Post/Embed/index.tsx`: the `link` case checks the post record for a
   pointer before the custom embed handlers, and tells the embed whether it may
-  spread to the post's edges (not in a quote or a DM) and whether to autoplay.
-- `view/screens/PostThread.tsx` and `lib/routes/types.ts`: the `tile` query param
-  on a post URL, validated and handed to `TileAutoplayProvider`.
+  spread to the post's edges (not in a quote or a DM) and whether to autoplay
+  (the post is shown on its own, as a thread's anchor, rather than in a feed).
 - `view/com/composer/text-input/TextInput.web.tsx` and `TextInput.tsx`: a tile
   at-URI pasted (web) or appearing in the text (native) attaches it, since facet
   detection never sees at-URIs; a paste that is only the URI stays out of the text.
@@ -102,8 +97,9 @@ The height follows the manifest's `sizing` at the width the tile ends up with
 the height it asked for, the way the reference loader honours a declared
 height as is; a wider column grows it in proportion; no sizing means 16:9.
 The frame fills a div whose height React owns, so a resize never remounts the
-tile. A post opened at its `?tile=activate` URL loads the tile on mount instead
-of waiting for a click.
+tile. A post shown on its own, as the anchor of its thread rather than as a
+feed item, loads the tile on mount instead of waiting for a click; the card's
+link is the plain post URL, so other clients lead there.
 
 ## Loading server
 

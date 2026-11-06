@@ -70,8 +70,8 @@ function measureInset(node: unknown): Inset | undefined {
  * so the frame runs flush from edge to edge and its height follows the
  * manifest's sizing at that width.
  *
- * Opened from a link that asks for it (`autoplay`, from `?tile=activate` on
- * the post's URL), the tile loads straight away, with no card to click.
+ * Shown as the post itself rather than as a feed item (`autoplay`), the tile
+ * loads straight away, with no card to click.
  */
 export function TileEmbed({
   link,
