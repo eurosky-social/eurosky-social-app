@@ -10,6 +10,10 @@ import {
 import {useQueryClient} from '@tanstack/react-query'
 
 import {useAccountSwitcher} from '#/lib/hooks/useAccountSwitcher'
+import {
+  MARK_READ_REASON,
+  readNotificationIds,
+} from '#/lib/notifications/markRead'
 import {logger as notyLogger} from '#/lib/notifications/util'
 import {getMessagesNavigationAction} from '#/lib/routes/navigation'
 import {type NavigationProp} from '#/lib/routes/types'
@@ -43,6 +47,7 @@ export type NotificationReason =
   | 'repost-via-repost'
   | 'verified'
   | 'unverified'
+  | typeof MARK_READ_REASON
   | 'subscribed-post'
 
 type ChatNotificationReason = Extract<NotificationReason, `chat-${string}`>
@@ -55,9 +60,19 @@ type ChatNotificationReason = Extract<NotificationReason, `chat-${string}`>
 export type NotificationPayload =
   | undefined
   | {
-      reason: Exclude<NotificationReason, ChatNotificationReason>
+      reason: Exclude<
+        NotificationReason,
+        ChatNotificationReason | typeof MARK_READ_REASON
+      >
       uri: string
       subject: string
+      recipientDid: string
+    }
+  | {
+      /**
+       * Silent: the account's notifications were read on another device.
+       */
+      reason: typeof MARK_READ_REASON
       recipientDid: string
     }
   | {
@@ -97,6 +112,13 @@ const DEFAULT_HANDLER_OPTIONS = {
   shouldShowList: false,
   shouldPlaySound: false,
   shouldSetBadge: true,
+} satisfies Notifications.NotificationBehavior
+
+const SILENT_HANDLER_OPTIONS = {
+  shouldShowBanner: false,
+  shouldShowList: false,
+  shouldPlaySound: false,
+  shouldSetBadge: false,
 } satisfies Notifications.NotificationBehavior
 
 /**
@@ -310,6 +332,16 @@ export function useNotificationsHandler() {
 
         logger.debug('useNotificationsHandler: incoming', {e, payload})
 
+        if (payload.reason === MARK_READ_REASON) {
+          /*
+           * Reaches JS only while the app is open on Android. On iOS, and on
+           * Android in the background, the native handlers clear instead.
+           */
+          void dismissReadNotifications(payload.recipientDid)
+          invalidateCachedUnreadPage()
+          return Promise.resolve(SILENT_HANDLER_OPTIONS)
+        }
+
         if (
           isChatNotificationPayload(payload) &&
           payload.recipientDid === currentAccount?.did
@@ -433,6 +465,25 @@ export function useNotificationsHandler() {
 
 export function storePayloadForAccountSwitch(payload: NotificationPayload) {
   storedAccountSwitchPayload = payload
+}
+
+/**
+ * Removes the shown notifications a "mark read" from another device covers.
+ */
+async function dismissReadNotifications(recipientDid: string) {
+  try {
+    const presented = await Notifications.getPresentedNotificationsAsync()
+    const ids = readNotificationIds(
+      presented.map(n => ({
+        identifier: n.request.identifier,
+        payload: getNotificationPayload(n),
+      })),
+      recipientDid,
+    )
+    await Promise.all(ids.map(id => Notifications.dismissNotificationAsync(id)))
+  } catch (error) {
+    notyLogger.error('dismissReadNotifications: failed', {safeMessage: error})
+  }
 }
 
 export function getNotificationPayload(

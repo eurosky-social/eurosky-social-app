@@ -73,6 +73,11 @@ export type Device = {
   /** Device-wide override for public and authenticated AppView requests. */
   appViewOverride: AppViewPreference | undefined
   /**
+   * Per account DID, the AppView this device's push token was last registered
+   * with, so a switch of AppView can unregister it at the old one.
+   */
+  pushAppViews?: Record<string, string>
+  /**
    * Whether the trending topics widget was installed the last time we checked,
    * so `trendingWidget:installed` and `trendingWidget:uninstalled` are only
    * logged when that changes.
