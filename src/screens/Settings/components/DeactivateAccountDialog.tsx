@@ -8,14 +8,17 @@ import {logger} from '#/logger'
 import {usePdsClient, useSession, useSessionApi} from '#/state/session'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
-import {type DialogOuterProps} from '#/components/Dialog'
+import * as Dialog from '#/components/Dialog'
+import {type DialogOuterProps, useDialogControl} from '#/components/Dialog'
 import {Divider} from '#/components/Divider'
 import {CircleInfo_Stroke2_Corner0_Rounded as CircleInfo} from '#/components/icons/CircleInfo'
 import {Loader} from '#/components/Loader'
 import * as Prompt from '#/components/Prompt'
 import {Text} from '#/components/Typography'
 import {com} from '#/lexicons'
-import {OAuthAccountActionPasswordRequired} from './OAuthAccountActionPasswordRequired'
+import {AccountActionIdentity} from './AccountActionIdentity'
+import {AccountActionIntro} from './AccountActionIntro'
+import {AccountFootprintDialog} from './AccountFootprintDialog'
 
 export function DeactivateAccountDialog({
   control,
@@ -23,15 +26,42 @@ export function DeactivateAccountDialog({
   control: DialogOuterProps['control']
 }) {
   const {currentAccount} = useSession()
+  const footprintControl = useDialogControl()
+  const isOauth = !!currentAccount?.isOauthSession
+  /*
+   * Deactivation starts from the account footprint. Confirming there reopens
+   * this dialog with the real confirmation; closing it any other way starts
+   * over.
+   */
+  const [hasReviewed, setHasReviewed] = useState(false)
+
+  const onPressWhatWillILose = () => {
+    control.close(() => footprintControl.open())
+  }
 
   return (
-    <Prompt.Outer control={control}>
-      {currentAccount?.isOauthSession ? (
-        <OAuthAccountActionPasswordRequired action="deactivate" />
-      ) : (
-        <DeactivateAccountDialogInner control={control} />
-      )}
-    </Prompt.Outer>
+    <>
+      <Prompt.Outer control={control} onClose={() => setHasReviewed(false)}>
+        {isOauth || !hasReviewed ? (
+          <AccountActionIntro
+            action="deactivate"
+            onPressWhatWillILose={onPressWhatWillILose}
+          />
+        ) : (
+          <DeactivateAccountDialogInner control={control} />
+        )}
+        <Dialog.Close />
+      </Prompt.Outer>
+      <AccountFootprintDialog
+        control={footprintControl}
+        action="deactivate"
+        useHostingProvider={isOauth}
+        onConfirm={() => {
+          setHasReviewed(true)
+          control.open()
+        }}
+      />
+    </>
   )
 }
 
@@ -77,14 +107,21 @@ function DeactivateAccountDialogInner({
 
   return (
     <>
-      <Prompt.TitleText>{_(msg`Deactivate account`)}</Prompt.TitleText>
-      <Prompt.DescriptionText>
-        <Trans>
-          Your profile, posts, feeds, and lists will no longer be visible to
-          other Bluesky users. You can reactivate your account at any time by
-          logging in.
-        </Trans>
-      </Prompt.DescriptionText>
+      <Prompt.Content>
+        <AccountActionIdentity />
+        <Prompt.TitleText>
+          <Trans>Deactivate your account</Trans>
+        </Prompt.TitleText>
+        <View style={[a.mt_xs]}>
+          <Prompt.DescriptionText>
+            <Trans>
+              Your profile, posts, and everything else in your Atmosphere
+              account will be hidden in every app. You can reactivate your
+              account at any time by logging in.
+            </Trans>
+          </Prompt.DescriptionText>
+        </View>
+      </Prompt.Content>
 
       <View style={[a.pb_xl]}>
         <Divider />

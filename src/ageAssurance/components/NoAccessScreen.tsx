@@ -229,10 +229,7 @@ export function NoAccessScreen() {
 
       <MuAgeConfirmDialog control={birthdateControl} />
       <DeactivateAccountDialog control={deactivateAccountControl} />
-      <DeleteAccountDialog
-        control={deleteAccountControl}
-        deactivateDialogControl={deactivateAccountControl}
-      />
+      <DeleteAccountDialog control={deleteAccountControl} />
 
       {/*
        * While this blocking overlay is up, other dialogs in the shell are not
