@@ -48,6 +48,7 @@ import * as Prompt from '#/components/Prompt'
 import {Text} from '#/components/Typography'
 import {WhoCanReply} from '#/components/WhoCanReply'
 import {Features} from '#/analytics'
+import {PRODUCT} from '#/config/product'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 
@@ -95,6 +96,7 @@ export function ReaderSeamControls({
   postSource,
   showComposePrompt = false,
   showDetails = true,
+  presentation = 'post',
   onPostSuccess,
   threadgateRecord,
 }: {
@@ -107,6 +109,7 @@ export function ReaderSeamControls({
    * timestamp, and the action bar's own counts cover the stats.
    */
   showDetails?: boolean
+  presentation?: 'post' | 'article'
   onPostSuccess?: (data: OnPostSuccessData) => void
   threadgateRecord?: app.bsky.feed.threadgate.Main
 }) {
@@ -123,6 +126,7 @@ export function ReaderSeamControls({
       postSource={postSource}
       showComposePrompt={showComposePrompt}
       showDetails={showDetails}
+      presentation={presentation}
       onPostSuccess={onPostSuccess}
       threadgateRecord={threadgateRecord}
     />
@@ -135,16 +139,11 @@ function ReaderSeamControlsInner({
   postSource,
   showComposePrompt,
   showDetails,
+  presentation,
   onPostSuccess,
   threadgateRecord,
-}: {
-  post: ThreadPostItem
+}: React.ComponentProps<typeof ReaderSeamControls> & {
   postShadow: Shadow<app.bsky.feed.defs.PostView>
-  postSource?: PostSource
-  showComposePrompt?: boolean
-  showDetails?: boolean
-  onPostSuccess?: (data: OnPostSuccessData) => void
-  threadgateRecord?: app.bsky.feed.threadgate.Main
 }) {
   const t = useTheme()
   const {t: l, i18n} = useLingui()
@@ -207,10 +206,13 @@ function ReaderSeamControlsInner({
   }
 
   const hasEngagement =
-    post.repostCount || post.likeCount || post.quoteCount || post.bookmarkCount
+    post.repostCount ||
+    post.likeCount ||
+    post.quoteCount ||
+    (PRODUCT.capabilities.bookmarking && post.bookmarkCount)
 
   return (
-    <View style={[a.gap_xs, a.pt_xs]}>
+    <View style={[a.gap_xs, presentation === 'article' ? a.pt_lg : a.pt_xs]}>
       {showDetails && <BackdatedPostIndicator post={post} />}
 
       {showDetails && (
@@ -226,7 +228,7 @@ function ReaderSeamControlsInner({
       )}
 
       {/* Engagement counts */}
-      {showDetails && hasEngagement ? (
+      {showDetails && presentation !== 'article' && hasEngagement ? (
         <View
           style={[
             a.flex_row,
@@ -270,7 +272,7 @@ function ReaderSeamControlsInner({
             </Link>
           ) : null}
           <LikesStat post={post} />
-          {post.bookmarkCount ? (
+          {PRODUCT.capabilities.bookmarking && post.bookmarkCount ? (
             <Text
               testID="bookmarkCount-expanded"
               style={[a.text_md, t.atoms.text_contrast_medium]}>
@@ -284,7 +286,7 @@ function ReaderSeamControlsInner({
           ) : null}
         </View>
       ) : null}
-      {showDetails && (
+      {showDetails && presentation !== 'article' && (
         <KnownLikers
           post={post}
           feature={Features.PostThreadKnownLikersEnable}

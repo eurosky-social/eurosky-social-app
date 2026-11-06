@@ -1,7 +1,11 @@
 import {isDidString} from '@atproto/lex'
 import {z} from 'zod'
 
+import {defaultArticleSize} from '#/features/articles/ArticleGrid/layout'
+import {type ArticleSize} from '#/features/articles/articles'
 import {articleLinkKey} from './articleLinks'
+
+export {type ArticleSize} from '#/features/articles/articles'
 
 export const FRONTPAGE_COLLECTION = 'social.mu.frontpage'
 /** Bounds every list of references a record keeps: pinned stories and settings. */
@@ -15,7 +19,6 @@ export const NEW_SECTION_LENGTH = 6
 export const MAX_SECTION_TITLE = 120
 export const MAX_SECTION_DESCRIPTION = 300
 
-export type ArticleSize = 'small' | 'medium' | 'big'
 /** How a section lays out its stories: the newspaper grid, or a row of cards that scrolls sideways. */
 export type SectionKind = 'grid' | 'carousel'
 export type StarterPackViewMode = 'people' | 'posts'
@@ -740,27 +743,6 @@ export function setCover(curation: Curation, cover: boolean): Curation {
   return {...curation, cover}
 }
 
-/**
- * A pattern of sizes for stories the owner has not sized: a lead with
- * companions, pairs, a wide feature and a reversed split.
- */
-const SIZES: ArticleSize[] = [
-  'medium',
-  'small',
-  'small',
-  'small',
-  'small',
-  'big',
-  'small',
-  'medium',
-  'small',
-  'small',
-  'medium',
-  'small',
-  'small',
-  'big',
-]
-
 /** A story's size: the owner's choice, or its place in the section's pattern. The page's lead is never small. */
 export function articleSize(
   curation: Curation,
@@ -770,7 +752,7 @@ export function articleSize(
 ): ArticleSize {
   const size =
     curation.sizes?.find(value => value.post === uri)?.size ??
-    SIZES[position % SIZES.length]
+    defaultArticleSize(position)
   return lead ? (size === 'big' ? 'big' : 'medium') : size
 }
 

@@ -312,6 +312,7 @@ export function KeyboardShortcuts() {
         void navigateTo({name: 'Lists'})
         break
       case 'b':
+        if (!PRODUCT.capabilities.bookmarking) return false
         void navigateTo({name: 'Bookmarks'})
         break
       case 'p':

@@ -9,6 +9,10 @@ import {
   optimisticallySaveBookmark,
 } from '#/state/queries/bookmarks/useBookmarksQuery'
 import {useAppviewClient} from '#/state/session'
+import {
+  assertBookmarkingEnabled,
+  BookmarkingUnavailableError,
+} from '#/features/product/bookmarking'
 import {app} from '#/lexicons'
 
 type MutationArgs =
@@ -28,6 +32,7 @@ export function useBookmarkMutation() {
 
   return useMutation({
     async mutationFn(args: MutationArgs) {
+      assertBookmarkingEnabled()
       if (args.action === 'create') {
         updatePostShadow(qc, args.post.uri, {bookmarked: true})
         await client.call(app.bsky.bookmark.createBookmark, {
@@ -49,6 +54,7 @@ export function useBookmarkMutation() {
       }
     },
     onError(e, args) {
+      if (e instanceof BookmarkingUnavailableError) return
       if (args.action === 'create') {
         updatePostShadow(qc, args.post.uri, {bookmarked: false})
       } else if (args.action === 'delete') {

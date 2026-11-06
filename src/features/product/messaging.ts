@@ -25,10 +25,5 @@ export function assertMessagingEnabled(product: ProductConfig = PRODUCT) {
   if (!product.capabilities.messaging) throw new MessagingUnavailableError()
 }
 
-/** Match the whole registered Messages route family, including native tabs. */
-export function isProductRouteAvailable(
-  name: string,
-  product: ProductConfig = PRODUCT,
-) {
-  return product.capabilities.messaging || !name.startsWith('Messages')
-}
+/** Compatibility for existing route-policy callers. */
+export {isProductRouteAvailable} from './routes'

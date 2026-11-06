@@ -83,7 +83,10 @@ an automatic `ours` or `theirs` resolution:
 - Web OAuth sign-in versus native password sign-in
 - mu age assurance and the no-access screen
 - Branding, logos, splash screens, and logged-out navigation
+- Product page-layout overrides: preserve independent sidebar visibility/content and width, shared center/header/border/rail geometry, and per-scene providers around cached descriptors. A hidden rail is not a wide-mode signal. Shared article views now live in `src/features/articles/`; editorial import paths remain compatibility exports
 - Product presets and shell destination slots: review new upstream destinations/actions against `src/features/product/README.md`; do not bypass preset order/visibility or capability guards
+- Publisher cards/profile details reuse shared Follow controls, safe profile links, and optional `ProfileHeaderMetrics.showFollowing=false`. News publisher thread bodies reuse `ArticleContent` for selected and ancestor originals; preserve moderation/report/deletion/threadgate boundaries, translations, normal replies, and unchanged social/reader views. `ReaderSeamControls.presentation` hides only the article's redundant engagement row, not its date or actions
+- Bookmarking product policy: preserve the hidden button/menu/navigation/shortcut, disabled query/direct route, and mutation guard before optimistic state. Social keeps bookmarking enabled
 - Messaging route/layout guards, query/polling providers, and `createLexClient`: retain disabled-policy checks before auth/network work, including restored routes and public/service-override clients. Preserve independent account-deletion cleanup and age-safety declarations; do not strip OAuth grants without reviewing those flows
 - Custom settings, routes, pets, and profile decorations
 - Fork-owned links, hosts, app identifiers, and services

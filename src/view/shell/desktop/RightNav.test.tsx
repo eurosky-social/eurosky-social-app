@@ -1,8 +1,20 @@
 import {render, screen} from '@testing-library/react-native'
 
+import {getProduct, PRODUCT} from '#/config/product'
+import {PageLayoutProvider} from '#/features/product/layout/context'
 import {DesktopRightNav} from './RightNav'
 
-jest.mock('@lingui/react', () => ({useLingui: () => ({_: jest.fn()})}))
+jest.mock('#/config/product', () => {
+  const actual = jest.requireActual<{getProduct: typeof getProduct}>(
+    '#/config/product',
+  )
+  return {...actual, PRODUCT: actual.getProduct('social')}
+})
+
+jest.mock('@lingui/react', () => ({
+  useLingui: () => ({_: jest.fn()}),
+  Trans: () => null,
+}))
 jest.mock('@react-navigation/native', () => ({
   useNavigationState: (selector: (state: unknown) => unknown) => selector({}),
 }))
@@ -37,15 +49,77 @@ jest.mock('#/features/frontpages/components/FrontpageRightRail', () => ({
     return <Text>V2 frontpage rail</Text>
   },
 }))
-jest.mock('#/features/news/article/NewsArticleRightRail', () => ({}))
+jest.mock('#/features/news/article/NewsArticleRightRail', () => ({
+  NewsArticleRightRail: () => {
+    const {Text} = require('react-native') as typeof import('react-native')
+    return <Text>Article rail</Text>
+  },
+}))
 jest.mock('#/features/newsFeed/legacy/NewsFeedRightRail', () => ({}))
-jest.mock('#/view/shell/desktop/Feeds', () => ({}))
-jest.mock('#/view/shell/desktop/Search', () => ({}))
+jest.mock('#/view/shell/desktop/Feeds', () => ({
+  DesktopFeeds: () => {
+    const {Text} = require('react-native') as typeof import('react-native')
+    return <Text>Feeds</Text>
+  },
+}))
+jest.mock('#/view/shell/desktop/Search', () => ({
+  DesktopSearch: () => {
+    const {Text} = require('react-native') as typeof import('react-native')
+    return <Text>Search</Text>
+  },
+}))
 jest.mock('#/components/AppLanguageDropdown', () => ({}))
-jest.mock('#/components/Button', () => ({}))
+jest.mock('#/components/Button', () => ({
+  ButtonText: (require('react-native') as typeof import('react-native')).Text,
+  ButtonIcon: () => null,
+}))
 jest.mock('#/components/Layout', () => ({CENTER_COLUMN_OFFSET: 0}))
-jest.mock('#/components/Link', () => ({}))
-jest.mock('#/components/Typography', () => ({}))
+jest.mock('#/components/Link', () => ({
+  Link: (require('react-native') as typeof import('react-native')).View,
+  InlineLinkText: (require('react-native') as typeof import('react-native'))
+    .Text,
+}))
+jest.mock('#/components/Typography', () => ({
+  Text: (require('react-native') as typeof import('react-native')).Text,
+}))
+
+afterEach(() => jest.restoreAllMocks())
+
+it('hides the rail globally without needing a wide page', () => {
+  jest.replaceProperty(PRODUCT, 'layout', getProduct('news').layout)
+  const {toJSON} = render(
+    <PageLayoutProvider routeName="Profile">
+      <DesktopRightNav routeName="Profile" />
+    </PageLayoutProvider>,
+  )
+  expect(toJSON()).toBeNull()
+})
+it('can restore a sidebar on one page of a globally hidden product', () => {
+  jest.replaceProperty(PRODUCT, 'layout', {
+    defaults: {rightSidebar: 'hidden'},
+    pages: {Frontpage: {rightSidebar: 'default'}},
+  })
+  render(
+    <PageLayoutProvider routeName="Frontpage">
+      <DesktopRightNav routeName="Frontpage" />
+    </PageLayoutProvider>,
+  )
+  expect(screen.getByText('Search')).toBeTruthy()
+  expect(screen.queryByText('Legacy newsroom rail')).toBeNull()
+})
+it('can replace the rail content independently of width', () => {
+  jest.replaceProperty(PRODUCT, 'layout', {
+    defaults: {},
+    pages: {Frontpage: {rightSidebar: 'article'}},
+  })
+  render(
+    <PageLayoutProvider routeName="Frontpage">
+      <DesktopRightNav routeName="Frontpage" />
+    </PageLayoutProvider>,
+  )
+  expect(screen.getByText('Article rail')).toBeTruthy()
+  expect(screen.queryByText('Legacy newsroom rail')).toBeNull()
+})
 
 let mockNewsV2Enabled = false
 let mockView: string | undefined

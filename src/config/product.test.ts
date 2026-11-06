@@ -8,6 +8,7 @@ it('defaults to the unchanged social product', () => {
   expect(getProduct(undefined)).toEqual(getProduct('social'))
   expect(getProduct('social').capabilities).toEqual({
     messaging: true,
+    bookmarking: true,
     standalonePosting: true,
     quotePosting: true,
   })
@@ -18,6 +19,7 @@ it('selects the news posting restrictions explicitly', () => {
     id: 'news',
     capabilities: {
       messaging: false,
+      bookmarking: false,
       standalonePosting: false,
       quotePosting: false,
     },

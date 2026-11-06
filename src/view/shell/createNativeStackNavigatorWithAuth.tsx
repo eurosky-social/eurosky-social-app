@@ -39,7 +39,8 @@ import {SignupQueued} from '#/screens/SignupQueued'
 import {atoms as a, useLayoutBreakpoints} from '#/alf'
 import {PolicyUpdateOverlay} from '#/components/PolicyUpdateOverlay'
 import {IS_NATIVE, IS_WEB} from '#/env'
-import {isProductRouteAvailable} from '#/features/product/messaging'
+import {PageLayoutProvider} from '#/features/product/layout/context'
+import {isProductRouteAvailable} from '#/features/product/routes'
 import {BottomBarWeb} from './bottom-bar/BottomBarWeb'
 import {DesktopLeftNav} from './desktop/LeftNav'
 import {DesktopRightNav} from './desktop/RightNav'
@@ -202,35 +203,55 @@ function NativeStackNavigator({
     }
   }
 
+  finalDescriptors = Object.fromEntries(
+    Object.entries(finalDescriptors).map(([key, descriptor]) => [
+      key,
+      {
+        ...descriptor,
+        render: () => (
+          <PageLayoutProvider
+            routeName={descriptor.route.name}
+            params={descriptor.route.params}>
+            {descriptor.render()}
+          </PageLayoutProvider>
+        ),
+      },
+    ]),
+  )
+
   // Show the bottom bar if we have a session only on mobile web. If we don't have a session, we want to show it
   // on both tablet and mobile web so that we see the create account CTA.
   const showBottomBar = hasSession ? isMobile : leftNavMinimal
 
   return (
-    <NavigationContent>
-      <View role="main" style={a.flex_1}>
-        <NativeStackView
-          {...rest}
-          state={state}
-          navigation={navigation}
-          descriptors={finalDescriptors}
-          describe={describe}
-        />
-      </View>
-      {IS_WEB && (
-        <>
-          {showBottomBar ? (
-            <BottomBarWeb />
-          ) : (
-            <DesktopLeftNav routeName={activeRoute.name} />
-          )}
-          {!isMobile && <DesktopRightNav routeName={activeRoute.name} />}
-        </>
-      )}
+    <PageLayoutProvider
+      routeName={activeRoute.name}
+      params={activeRoute.params}>
+      <NavigationContent>
+        <View role="main" style={a.flex_1}>
+          <NativeStackView
+            {...rest}
+            state={state}
+            navigation={navigation}
+            descriptors={finalDescriptors}
+            describe={describe}
+          />
+        </View>
+        {IS_WEB && (
+          <>
+            {showBottomBar ? (
+              <BottomBarWeb />
+            ) : (
+              <DesktopLeftNav routeName={activeRoute.name} />
+            )}
+            {!isMobile && <DesktopRightNav routeName={activeRoute.name} />}
+          </>
+        )}
 
-      {/* Only shown after logged in and onboaring etc are complete */}
-      {hasSession && <PolicyUpdateOverlay />}
-    </NavigationContent>
+        {/* Only shown after logged in and onboaring etc are complete */}
+        {hasSession && <PolicyUpdateOverlay />}
+      </NavigationContent>
+    </PageLayoutProvider>
   )
 }
 

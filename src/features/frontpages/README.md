@@ -65,6 +65,14 @@ the wide-screen right rail and inline on smaller conversation screens. The
 editorial spread itself occupies the center and right columns and uses document
 scrolling on web. Normal profiles retain their normal shell/right rail.
 
+## Shared article views and simple Publisher page
+
+Article extraction, moderation, article links/media/stats, and the newspaper grid now live in [`features/articles`](../articles/README.md). Existing editorial imports re-export those implementations, so Frontpage V2 retains its editor/layout behavior without owning the shared renderer.
+
+The new [`Publisher` reader](../publishers/README.md) uses the same article views with a separate hardcoded publisher directory and chronological publisher details (no inline switcher). It has no sections/rearranging and ignores saved frontpage layouts. It is a separate route, works without News V2 or the aggregator API, and does not replace this editorial page or Home.
+
+Desktop width and right-rail visibility/content now follow independent [product layout settings](../product/README.md#page-layout); empty social overrides preserve the existing news spread/conversation geometry.
+
 ## Files
 
 - `FrontpageScreen.tsx` - aggregator publication resolution.

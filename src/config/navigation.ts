@@ -2,6 +2,7 @@
 export const NAVIGATION_IDS = [
   'home',
   'news',
+  'publisher',
   'search',
   'notifications',
   'atmosphere',

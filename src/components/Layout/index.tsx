@@ -31,6 +31,7 @@ import {
 } from '#/components/Layout/const'
 import {ScrollbarOffsetContext} from '#/components/Layout/context'
 import {IS_IPAD, IS_WEB} from '#/env'
+import {usePageGeometry} from '#/features/product/layout/usePageGeometry'
 
 export * from '#/components/Layout/const'
 export * as Header from '#/components/Layout/Header'
@@ -204,6 +205,7 @@ export const Center = memo(function LayoutCenter({
   const {isWithinOffsetView} = useContext(ScrollbarOffsetContext)
   const {gtMobile} = useBreakpoints()
   const {centerColumnOffset} = useLayoutBreakpoints()
+  const {width, offset} = usePageGeometry()
   const {isWithinDialog} = useDialogContext()
   const {isWithinSplitView} = useIsWithinSplitView()
   const ctx = useMemo(() => ({isWithinOffsetView: true}), [])
@@ -213,11 +215,13 @@ export const Center = memo(function LayoutCenter({
         a.w_full,
         !isWithinSplitView && a.mx_auto,
         gtMobile && {
-          maxWidth: CENTER_COLUMN_WIDTH,
+          maxWidth:
+            isWithinDialog || isWithinSplitView ? CENTER_COLUMN_WIDTH : width,
         },
         !isWithinOffsetView &&
           !isWithinSplitView && {
             transform: [
+              {translateX: isWithinDialog ? 0 : offset},
               {
                 translateX:
                   centerColumnOffset &&
@@ -246,6 +250,7 @@ const WebCenterBorders = memo(function LayoutWebCenterBorders() {
   const t = useTheme()
   const {gtMobile} = useBreakpoints()
   const {centerColumnOffset} = useLayoutBreakpoints()
+  const {width, offset} = usePageGeometry()
   return gtMobile ? (
     <View
       style={[
@@ -255,10 +260,11 @@ const WebCenterBorders = memo(function LayoutWebCenterBorders() {
         a.border_r,
         t.atoms.border_contrast_low,
         web({
-          width: 602,
+          width: width + 2,
           left: '50%',
           transform: [
             {translateX: '-50%'},
+            {translateX: offset},
             {translateX: centerColumnOffset ? CENTER_COLUMN_OFFSET : 0},
             ...a.scrollbar_offset.transform,
           ],

@@ -15,10 +15,19 @@ import {
 import {Trash_Stroke2_Corner0_Rounded as TrashIcon} from '#/components/icons/Trash'
 import * as toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
+import {PRODUCT} from '#/config/product'
 import {type app} from '#/lexicons'
 import {PostControlButton, PostControlButtonIcon} from './PostControlButton'
 
-export const BookmarkButton = memo(function BookmarkButton({
+export const BookmarkButton = memo(function BookmarkButton(
+  props: React.ComponentProps<typeof BookmarkButtonInner>,
+) {
+  return PRODUCT.capabilities.bookmarking ? (
+    <BookmarkButtonInner {...props} />
+  ) : null
+})
+
+function BookmarkButtonInner({
   post,
   big,
   logContext,
@@ -46,7 +55,7 @@ export const BookmarkButton = memo(function BookmarkButton({
       <PostControlButtonIcon icon={isBookmarked ? BookmarkFilled : Bookmark} />
     </PostControlButton>
   )
-})
+}
 
 /**
  * Saves a post to the viewer's saved posts, or removes it, with the bookmark

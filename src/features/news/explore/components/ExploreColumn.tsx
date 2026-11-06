@@ -1,4 +1,4 @@
-import {useWindowDimensions, View} from 'react-native'
+import {View} from 'react-native'
 
 import {
   atoms as a,
@@ -8,59 +8,10 @@ import {
   useTheme,
   web,
 } from '#/alf'
-import {
-  CENTER_COLUMN_OFFSET,
-  CENTER_COLUMN_WIDTH,
-  SCROLLBAR_OFFSET,
-} from '#/components/Layout'
-import {IS_WEB} from '#/env'
+import {CENTER_COLUMN_OFFSET, SCROLLBAR_OFFSET} from '#/components/Layout'
+import {usePageGeometry as useExploreSpread} from '#/features/product/layout/usePageGeometry'
 
-/** Breathing room between the spread and the window's right edge. */
-const EDGE_GUTTER = 40
-
-/** Past this, more width only stretches headlines; the spread stops growing. */
-const MAX_SPREAD_WIDTH = 1500
-
-/**
- * The explore page's geometry. It is the one news surface that is not a
- * branded org space, so instead of `Layout.Center`'s fixed 600px column it runs
- * from the center column's left edge to the window's right edge - the shell
- * hides the right rail on this route (see `DesktopRightNav`) and the spread
- * takes everything it leaves.
- *
- * Below the right-nav breakpoint, and on native, the spread is just the center
- * column and its bands stack.
- */
-export function useExploreSpread() {
-  const {rightNavVisible, centerColumnOffset} = useLayoutBreakpoints()
-  const {width: windowWidth} = useWindowDimensions()
-  const wide = IS_WEB && rightNavVisible
-
-  /*
-   * The center column sits at `windowWidth / 2 - 300` (shifted left on the
-   * tablet breakpoint), so everything from there to the right edge is the
-   * spread's to use.
-   */
-  const available =
-    windowWidth / 2 +
-    CENTER_COLUMN_WIDTH / 2 -
-    EDGE_GUTTER -
-    (centerColumnOffset ? CENTER_COLUMN_OFFSET : 0)
-  const width = wide
-    ? Math.min(Math.max(available, CENTER_COLUMN_WIDTH), MAX_SPREAD_WIDTH)
-    : CENTER_COLUMN_WIDTH
-
-  return {
-    /** Whether the spread currently reaches into the right column. */
-    wide,
-    width,
-    /**
-     * Keeps the wider column's left edge on the center column's: the column is
-     * centered in the window, so it shifts right by half the added width.
-     */
-    offset: (width - CENTER_COLUMN_WIDTH) / 2,
-  }
-}
+export {usePageGeometry as useExploreSpread} from '#/features/product/layout/usePageGeometry'
 
 /**
  * Centers content in the spread. Mirrors `Layout.Center`, at the spread's width

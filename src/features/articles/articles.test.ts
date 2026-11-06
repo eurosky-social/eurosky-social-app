@@ -4,8 +4,8 @@ import {
   type FeedPostSlice,
   type FeedPostSliceItem,
 } from '#/state/queries/post-feed'
+import {findPublicationPreview} from '#/features/frontpages/preview'
 import {type app} from '#/lexicons'
-import {findPublicationPreview} from '../preview'
 import {articleFromPost, editorialArticles} from './articles'
 
 const DID = 'did:plc:y57igqldvutzs7gpmmrrqbw7'

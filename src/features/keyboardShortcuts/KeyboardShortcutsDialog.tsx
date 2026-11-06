@@ -76,7 +76,9 @@ function KeyboardShortcutsDialogInner() {
           )}
           <ShortcutRow shortcut="G F" label={l`Feeds`} />
           <ShortcutRow shortcut="G L" label={l`Lists`} />
-          <ShortcutRow shortcut="G B" label={l`Saved`} />
+          {PRODUCT.capabilities.bookmarking && (
+            <ShortcutRow shortcut="G B" label={l`Saved`} />
+          )}
           <ShortcutRow shortcut="G P" label={l`Profile`} />
           <ShortcutRow shortcut="G S" label={l`Settings`} />
         </ShortcutGroup>

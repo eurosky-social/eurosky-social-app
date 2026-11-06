@@ -69,6 +69,31 @@ it.each(['sidebar', 'drawer', 'bottomBar', 'nativeBottomBar'] as const)(
   },
 )
 
+it.each(['sidebar', 'drawer', 'bottomBar', 'nativeBottomBar'] as const)(
+  'cannot re-enable bookmarking by configuring the %s menu',
+  surface => {
+    const config = {...navigation, [surface]: ['saved', 'home'] as const}
+    expect(
+      selectNavigation(config, surface, definitions, {
+        ...signedIn,
+        bookmarkingEnabled: false,
+      }).map(item => item.id),
+    ).toEqual(['home'])
+  },
+)
+
+it('opens the publisher directory while keeping publisher details in the same menu section', () => {
+  expect(definitions.publisher.href).toBe('/publishers')
+  expect(definitions.publisher.target).toEqual({
+    name: 'PublisherDirectory',
+    params: undefined,
+  })
+  expect(definitions.publisher.routes).toEqual([
+    'PublisherDirectory',
+    'Publisher',
+  ])
+})
+
 it('shares bottom-bar defaults but allows a different native order', () => {
   expect(
     selectNavigation(navigation, 'nativeBottomBar', definitions, signedIn).map(

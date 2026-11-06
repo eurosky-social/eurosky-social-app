@@ -39,11 +39,12 @@ it('preserves social defaults independently for each surface', () => {
 })
 
 it.each(['sidebar', 'drawer', 'bottomBar', 'nativeBottomBar'] as const)(
-  'limits the news %s to Home, Profile, and Settings',
+  'adds Publisher to the minimal news %s',
   surface => {
     const news = getProduct('news').navigation
     expect(news[surface] ?? news.bottomBar).toEqual([
       'home',
+      'publisher',
       'profile',
       'settings',
     ])

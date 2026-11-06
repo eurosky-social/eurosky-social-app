@@ -14,7 +14,7 @@ Use the same variable with `pnpm start` or the native build commands. Set it in 
 
 Omitting the variable preserves the social product. An explicitly empty or unknown value is rejected. Expo configuration validates the selection for builds, and the runtime adapter validates it too. No remote configuration or user feature editor is involved.
 
-**The news preset is a development scaffold, not production-ready.** Messaging and standalone/quote posting are disabled in this client, but interactive checks and broader news-product work remain pending. News navigation now contains only Home, Profile, and Settings; social navigation is unchanged. Home content, configurable settings composition, signed-out presentation, and news data dependencies remain unfinished.
+**The news preset is a development scaffold, not production-ready.** Messaging and standalone/quote posting are disabled in this client, but interactive checks and broader news-product work remain pending. News navigation contains Home, Publisher, Profile, and Settings; social navigation is unchanged. Home content, configurable settings composition, signed-out presentation, and news data dependencies remain unfinished.
 
 ## Current capabilities
 
@@ -34,15 +34,15 @@ Quotes are provisionally disabled for news. Replies/likes/reposts and edit/delet
 
 ## Navigation
 
-Edit the selected preset's `navigation` in `src/config/product-presets.json`. Each array selects destinations **in display order**; omit an ID to hide it. Social preserves its existing menus. News uses Home, Profile, and Settings on every signed-in surface, Home only in the signed-out drawer, and no signed-out sidebar destinations.
+Edit the selected preset's `navigation` in `src/config/product-presets.json`. Each array selects destinations **in display order**; omit an ID to hide it. Social preserves its existing menus. News uses Home, Publisher, Profile, and Settings on every signed-in surface, Home only in the signed-out drawer, and no signed-out sidebar destinations.
 
 The news preset uses:
 
 ```json
 {
-  "sidebar": ["home", "profile", "settings"],
-  "drawer": ["home", "profile", "settings"],
-  "bottomBar": ["home", "profile", "settings"],
+  "sidebar": ["home", "publisher", "profile", "settings"],
+  "drawer": ["home", "publisher", "profile", "settings"],
+  "bottomBar": ["home", "publisher", "profile", "settings"],
   "signedOutSidebar": [],
   "signedOutDrawer": ["home"]
 }
@@ -54,7 +54,7 @@ The news preset uses:
 - Optional `nativeBottomBar`: overrides only the native bottom bar when a different selection/order is needed.
 - `signedOutSidebar` / `signedOutDrawer`: separate visitor menus, limited to public destinations. The bottom bar's signed-out create-account/sign-in controls are unchanged.
 
-Available IDs: `home`, `news`, `search`, `notifications`, `atmosphere`, `chat`, `feeds`, `lists`, `saved`, `profile`, `settings`. Unknown/duplicate IDs and bottom bars outside 1–5 items are rejected. Atmosphere still requires its upstream feature flag; account-only destinations are filtered for signed-out visitors. Keep useful navigation and account/settings access when composing a menu.
+Available IDs: `home`, `news`, `publisher`, `search`, `notifications`, `atmosphere`, `chat`, `feeds`, `lists`, `saved`, `profile`, `settings`. Unknown/duplicate IDs and bottom bars outside 1–5 items are rejected. Atmosphere still requires its upstream feature flag; account-only destinations are filtered for signed-out visitors. Keep useful navigation and account/settings access when composing a menu.
 
 **Hiding Chat is separate from disabling messaging.** Omitted destinations generally remain routable. The news preset also sets `capabilities.messaging: false`, which independently blocks the Messages route family, filters Chat even if added back to a menu, and disables messaging actions/background work. Compose availability follows the posting capability, not a navigation ID.
 
@@ -68,9 +68,36 @@ The first item is **not** a new home route: `/`, native startup, login/onboardin
 4. Add a `NavigationSlot` only if the destination needs specialized platform UI (such as the profile avatar/account-switch long press, unread badges, or moderation badge). Existing specialized controls stay in their platform renderers to minimize upstream churn; their styling/copy still lives there.
 5. Test signed in/out, active related routes, direct links, native back/reselect, and both presets. The shared selector/renderer and bottom-bar integration tests live in `navigation/`.
 
+## Page layout
+
+`layout` in each preset has global `defaults` and per-route `pages` overrides. Width and sidebar policy are separate settings; hiding a rail never implicitly widens a page.
+
+The news preset uses:
+
+```json
+{
+  "defaults": {"rightSidebar": "hidden"},
+  "pages": {"Publisher": {"contentWidth": "wide"}}
+}
+```
+
+- `contentWidth`: `standard` (600px desktop column) or `wide` (responsive spread, capped at 1500px). Small/native screens remain stacked. Center content, headers, borders, existing web lists, and rail positioning use the same geometry.
+- `rightSidebar`: `auto` (existing contextual behavior), `hidden`, `default` (search/feeds), `publication`, or `article` (existing contextual replacement rails). Contextual replacements need their route's matching data/params; they are not independent directory widgets. Add a name to `RIGHT_SIDEBARS` in `config/layout.ts` and a renderer in `view/shell/desktop/RightNav.tsx` for a new replacement.
+- `pages` keys are registered screen names, not menu IDs or URL paths. For example, `"Profile": {"rightSidebar": "default"}` restores a sidebar on Profile even if it is globally hidden. A page may independently override either or both settings.
+- Wide pages reserve space for a visible rail instead of overlapping it. A wide request can remain effectively standard at intermediate widths where both columns would not fit.
+- Social's empty overrides preserve existing layouts, including News V2 spreads, the Frontpage conversation's contextual rail, and message split views. Message screens retain their intrinsic no-rail behavior.
+
+The shared stack scopes the active shell and each cached scene separately, so navigating between wide and standard pages does not change a background page's geometry. `useLayoutBreakpoints().rightNavVisible` means the effective visible rail, not merely the physical breakpoint. New wide collections should use `usePageGeometry()` for their presentation rather than treating a hidden sidebar as a width signal.
+
+The new [Publisher reader](../publishers/README.md) is separate from Home and independent of News V2/aggregator configuration. Its [article views](../articles/README.md) are shared with the original editorial frontpage.
+
+## Bookmarking
+
+`capabilities.bookmarking` is enabled for social and disabled for news, independently of menu order. The bookmark control and post-menu action are hidden, Saved navigation/shortcuts are filtered, and direct/restored Bookmarks routes are rejected before mounting. The bookmarks query is disabled (including a guarded explicit refetch), and create/delete mutations reject before optimistic updates or network writes; policy failures do not perform rollback changes. Ordinary social behavior remains unchanged.
+
 ## Messaging
 
-`capabilities.messaging` is enabled for social and disabled for news. `messaging.ts` owns the shared route/transport policy.
+`capabilities.messaging` is enabled for social and disabled for news. `messaging.ts` owns transport policy; `routes.ts` owns shared route availability (with a compatibility re-export from `messaging.ts`).
 
 - The shared stack navigator rejects `Messages*` routes before authentication/onboarding or split-view layouts mount, including restored background routes. Existing typed routes/URLs stay registered and show the existing Not Found screen instead of prompting login. Chat invitation intents are ignored before authentication, landing-state changes, or prefetch.
 - Profile message buttons, chat sharing/recent chats, invitation embeds/dialogs, chat keyboard shortcuts/help, and the group-chat announcement are gated. Standard link sharing, following, blocking, reporting, and supported posting remain independent.

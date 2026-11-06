@@ -10,6 +10,20 @@ import {VideoEmbed} from '#/components/Post/Embed/VideoEmbed'
 import {RichText} from '#/components/RichText'
 import {Article} from './Article'
 import {articleFromPost} from './articles'
+import {ArticleLikeButton} from './LikeButton'
+
+jest.mock('./LikeButton', () => {
+  const {View, Text} = require('react-native') as typeof import('react-native')
+  const {useFormatPostStatCount} =
+    require('#/components/PostControls/util') as typeof import('#/components/PostControls/util')
+  return {
+    ArticleLikeButton: jest.fn(({post}: {post: {likeCount?: number}}) => (
+      <View testID="editorialLikes">
+        <Text>{useFormatPostStatCount()(post.likeCount ?? 0)}</Text>
+      </View>
+    )),
+  }
+})
 
 jest.mock('expo-image', () => ({
   Image: (require('react-native') as typeof import('react-native')).View,
@@ -38,6 +52,7 @@ jest.mock('#/state/preferences/moderation-opts', () => ({
 }))
 jest.mock('#/alf', () => ({
   atoms: new Proxy({}, {get: () => ({})}),
+  web: (style: unknown) => style,
   useBreakpoints: jest.fn(() => ({gtMobile: true})),
   useTheme: () => ({atoms: new Proxy({}, {get: () => ({})})}),
 }))
@@ -119,6 +134,84 @@ beforeEach(() => {
   jest.clearAllMocks()
 })
 
+it('uses the expanded article presentation in a thread without duplicating engagement controls or truncating the summary', () => {
+  const story = article({
+    $type: 'app.bsky.embed.external#view',
+    external: {
+      uri: 'https://example.com/story',
+      title: 'A real headline',
+      description: 'A full article summary',
+      thumb: 'https://example.com/photo.jpg',
+    },
+  })
+  render(<Article article={story} presentation="thread" lead size="big" />)
+  expect(screen.getByText('A real headline')).toBeTruthy()
+  expect(
+    screen.getByText('A full article summary').props.numberOfLines,
+  ).toBeUndefined()
+  expect(screen.getByTestId('editorialPostText').props.selectable).toBe(true)
+  expect(screen.queryByTestId('editorialPostStats')).toBeNull()
+  expect(ArticleLikeButton).not.toHaveBeenCalled()
+})
+
+it('does not repeat the publisher caption when it matches the summary', () => {
+  const story = article({
+    $type: 'app.bsky.embed.external#view',
+    external: {
+      uri: 'https://example.com/story',
+      title: 'A real headline',
+      description: 'The publisher’s summary.',
+    },
+  })
+  story.item.record.text = 'The publisher’s summary.'
+  render(<Article article={story} presentation="thread" lead />)
+  expect(screen.getAllByText('The publisher’s summary.')).toHaveLength(1)
+  expect(screen.queryByTestId('editorialPostText')).toBeNull()
+})
+
+it('renders missing link-preview metadata as post text, not an oversized headline', () => {
+  const story = article({
+    $type: 'app.bsky.embed.external#view',
+    external: {
+      uri: 'https://www.theverge.com/tech/1028412/airbnb',
+      title: '',
+      description: '',
+    },
+  })
+  story.item.record.text =
+    'A travel company is planning an AI-native trip. www.theverge.com/tech/1028412...'
+  render(<Article article={story} lead wide size="medium" />)
+  expect(screen.getByTestId('editorialPostText')).toBeTruthy()
+  expect(screen.getByTestId('articleHeadline').props.children).toBe(
+    'theverge.com',
+  )
+  expect(
+    screen.getByTestId('articleHeadline').props.accessibilityRole,
+  ).toBeUndefined()
+  expect(screen.getByTestId('articleHeadline').props.style).toContainEqual(
+    expect.objectContaining({fontSize: 14}),
+  )
+  expect(screen.getByTestId('editorialStoryLink').props.to).toBe(story.url)
+})
+
+it('constrains long real headlines to their column and allows URL-sized tokens to wrap', () => {
+  const story = article({
+    $type: 'app.bsky.embed.external#view',
+    external: {
+      uri: 'https://example.com/story',
+      title: 'A real headline withaverylongunbrokentoken'.repeat(10),
+      description: '',
+    },
+  })
+  render(<Article article={story} lead wide />)
+  expect(screen.getByTestId('articleHeadline').props.style).toContainEqual({
+    overflowWrap: 'anywhere',
+  })
+  expect(screen.getByTestId('articleHeadline').props.accessibilityRole).toBe(
+    'header',
+  )
+})
+
 it('renders all photos in the shared carousel outside the headline link', () => {
   const story = article({
     $type: 'app.bsky.embed.images#view',
@@ -189,15 +282,15 @@ it('shows a ghost comment button with only the reply count', () => {
   expect(screen.queryByText(/Conversation/)).toBeNull()
 })
 
-it('shows like and repost counts linked to the appropriate people lists', () => {
+it('uses an interactive like control while keeping the repost people-list link', () => {
   const story = article()
   story.item.post.likeCount = 11
   story.item.post.repostCount = 4
   render(<Article article={story} />)
-  expect(screen.getByTestId('editorialLikes').props.to).toBe(
-    '/profile/test.example/post/one/liked-by',
+  expect(jest.mocked(ArticleLikeButton).mock.calls[0][0].post).toBe(
+    story.item.post,
   )
-  expect(screen.getByTestId('editorialLikes').props.variant).toBe('ghost')
+  expect(screen.getByTestId('editorialLikes').props.to).toBeUndefined()
   expect(screen.getByTestId('editorialReposts').props.variant).toBe('ghost')
   expect(screen.getByTestId('editorialReposts').props.to).toBe(
     '/profile/test.example/post/one/reposted-by',
@@ -255,7 +348,12 @@ it('keeps full post text and facets above the media without overriding link colo
     enableCode: true,
     shouldProxyLinks: true,
   })
-  expect(props.style).toEqual([{fontSize: 20, lineHeight: 30}])
+  expect(props.style).toContainEqual(
+    expect.objectContaining({fontSize: 20, lineHeight: 30}),
+  )
+  expect(props.style).not.toContainEqual(
+    expect.objectContaining({color: expect.anything()}),
+  )
 })
 
 it('renders quote cards and unavailable-quote placeholders after the post text', () => {

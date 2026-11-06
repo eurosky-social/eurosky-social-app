@@ -49,6 +49,7 @@ import {
 } from '#/screens/PostThread/components/ThreadItemPost'
 import {ThreadItemPostNoUnauthenticated} from '#/screens/PostThread/components/ThreadItemPostNoUnauthenticated'
 import {ThreadItemPostTombstone} from '#/screens/PostThread/components/ThreadItemPostTombstone'
+import {ThreadItemPublisher} from '#/screens/PostThread/components/ThreadItemPublisher'
 import {ThreadItemReaderSegment} from '#/screens/PostThread/components/ThreadItemReaderSegment'
 import {ThreadItemReadMore} from '#/screens/PostThread/components/ThreadItemReadMore'
 import {ThreadItemReadMoreUp} from '#/screens/PostThread/components/ThreadItemReadMoreUp'
@@ -75,6 +76,7 @@ import {ListFooter} from '#/components/Lists'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {IS_NATIVE} from '#/env'
+import {publisherThreadArticle} from '#/features/publishers/threadArticle'
 
 const PARENT_CHUNK_SIZE = IS_NATIVE ? 5 : 20
 const CHILDREN_CHUNK_SIZE = 50
@@ -568,6 +570,14 @@ export function PostThread({
     ({item, index}: {item: ReaderItem; index: number}) => {
       if (item.type === 'threadPost') {
         if (item.depth < 0) {
+          if (!reader && publisherThreadArticle(item))
+            return (
+              <ThreadItemPublisher
+                item={item}
+                threadgateRecord={thread.data.threadgate?.record ?? undefined}
+                onPostSuccess={optimisticOnPostReply}
+              />
+            )
           return (
             <ThreadItemPost
               item={item}

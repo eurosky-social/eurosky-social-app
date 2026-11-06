@@ -2,6 +2,7 @@ import {useMemo} from 'react'
 import {useMediaQuery} from 'react-responsive'
 
 import {type Breakpoint, BREAKPOINTS} from '#/alf/breakpoints.shared'
+import {usePageLayout} from '#/features/product/layout/context'
 
 export {type Breakpoint, BreakpointWidthContext} from '#/alf/breakpoints.shared'
 
@@ -33,7 +34,9 @@ export function useBreakpoints(): Record<Breakpoint, boolean> & {
  * Fine-tuned breakpoints for the shell layout
  */
 export function useLayoutBreakpoints() {
-  const rightNavVisible = useMediaQuery({minWidth: BREAKPOINTS.rightNav})
+  const rightNavAvailable = useMediaQuery({minWidth: BREAKPOINTS.rightNav})
+  const {rightSidebar} = usePageLayout()
+  const rightNavVisible = rightNavAvailable && rightSidebar !== 'hidden'
   const centerColumnOffset = useMediaQuery({
     minWidth: BREAKPOINTS.rightNav,
     maxWidth: BREAKPOINTS.tablet,

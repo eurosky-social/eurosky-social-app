@@ -67,7 +67,7 @@ export type NavigationDestination = {
   metricItem: Events['nav:click']['item']
   public?: boolean
   feature?: 'atmosphere'
-  capability?: 'messaging'
+  capability?: 'messaging' | 'bookmarking'
 } & (
   | {tab: SidebarTab; target?: never}
   | {tab?: never; target: CommonNavigationDestination}
@@ -110,6 +110,16 @@ export function getNavigationDestinations({
       icons: {inactive: News, active: NewsFilled},
       metricItem: 'news',
       target: {name: newsV2 ? 'NewsExplore' : 'NewsFeed', params: undefined},
+    },
+    publisher: {
+      id: 'publisher',
+      label: msg`Publisher`,
+      href: '/publishers',
+      routes: ['PublisherDirectory', 'Publisher'],
+      icons: {inactive: News, active: NewsFilled},
+      metricItem: 'publisher',
+      public: true,
+      target: {name: 'PublisherDirectory', params: undefined},
     },
     search: {
       id: 'search',
@@ -175,6 +185,7 @@ export function getNavigationDestinations({
       label: msg({message: 'Saved', context: 'link to bookmarks screen'}),
       href: '/saved',
       routes: ['Bookmarks'],
+      capability: 'bookmarking',
       icons: {inactive: Bookmark, active: BookmarkFilled},
       metricItem: 'saved',
       tab: 'Bookmarks',

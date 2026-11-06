@@ -28,9 +28,13 @@ import {NewsroomRightRail as LegacyFrontpageRightRail} from '#/features/frontpag
 import {NewsArticleRightRail} from '#/features/news/article/NewsArticleRightRail'
 import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
 import {NewsFeedRightRail as LegacyNewsFeedRightRail} from '#/features/newsFeed/legacy/NewsFeedRightRail'
+import {usePageLayout} from '#/features/product/layout/context'
+import {usePageGeometry} from '#/features/product/layout/usePageGeometry'
 
 export function DesktopRightNav({routeName}: {routeName: string}) {
   const t = useTheme()
+  const {rightSidebar} = usePageLayout()
+  const {offset} = usePageGeometry()
   const {_} = useLingui()
   const {hasSession} = useSession()
   const gutters = useGutters(['base', 0, 'base', 'wide'])
@@ -63,9 +67,9 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
 
   if (
     !rightNavVisible ||
+    rightSidebar === 'hidden' ||
     isMessagesRelatedScreen ||
-    isNewsExplore ||
-    isPublicationSpread
+    (rightSidebar === 'auto' && (isNewsExplore || isPublicationSpread))
   ) {
     return null
   }
@@ -75,7 +79,11 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
   // The news surfaces swap the default search/feeds column for their own
   // rails, each cross-linking the other.
   const railContent =
-    routeName === 'Frontpage' ? (
+    rightSidebar === 'default' ? null : rightSidebar === 'publication' ? (
+      <FrontpageRightRail />
+    ) : rightSidebar === 'article' ? (
+      <NewsArticleRightRail />
+    ) : routeName === 'Frontpage' ? (
       NEWS_V2_ENABLED ? (
         <FrontpageRightRail />
       ) : (
@@ -109,7 +117,9 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
             transform: [
               {
                 translateX:
-                  300 + (centerColumnOffset ? CENTER_COLUMN_OFFSET : 0),
+                  300 +
+                  offset * 2 +
+                  (centerColumnOffset ? CENTER_COLUMN_OFFSET : 0),
               },
               ...a.scrollbar_offset.transform,
             ],
@@ -135,7 +145,10 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
           left: '50%',
           transform: [
             {
-              translateX: 300 + (centerColumnOffset ? CENTER_COLUMN_OFFSET : 0),
+              translateX:
+                300 +
+                offset * 2 +
+                (centerColumnOffset ? CENTER_COLUMN_OFFSET : 0),
             },
             ...a.scrollbar_offset.transform,
           ],

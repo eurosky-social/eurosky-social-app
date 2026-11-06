@@ -17,6 +17,7 @@ export function useProductNavigation(surface: NavigationSurface) {
   return selectNavigation(PRODUCT.navigation, surface, destinations, {
     hasSession,
     messagingEnabled: PRODUCT.capabilities.messaging,
+    bookmarkingEnabled: PRODUCT.capabilities.bookmarking,
     atmosphereEnabled: ax.features.enabled(ax.features.AtmosphereScreenEnable),
   })
 }

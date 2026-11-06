@@ -31,22 +31,32 @@
       "signedOutSidebar": [],
       "signedOutDrawer": ["home", "feeds", "search"]
     },
+    "layout": {"defaults": {}, "pages": {}},
     "capabilities": {
       "messaging": true,
+      "bookmarking": true,
       "standalonePosting": true,
       "quotePosting": true
     }
   },
   "news": {
     "navigation": {
-      "sidebar": ["home", "profile", "settings"],
-      "drawer": ["home", "profile", "settings"],
-      "bottomBar": ["home", "profile", "settings"],
+      "sidebar": ["home", "publisher", "profile", "settings"],
+      "drawer": ["home", "publisher", "profile", "settings"],
+      "bottomBar": ["home", "publisher", "profile", "settings"],
       "signedOutSidebar": [],
       "signedOutDrawer": ["home"]
     },
+    "layout": {
+      "defaults": {"rightSidebar": "hidden"},
+      "pages": {
+        "Publisher": {"contentWidth": "wide"},
+        "PublisherDirectory": {"contentWidth": "wide"}
+      }
+    },
     "capabilities": {
       "messaging": false,
+      "bookmarking": false,
       "standalonePosting": false,
       "quotePosting": false
     }

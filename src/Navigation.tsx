@@ -118,6 +118,8 @@ import {ProfileFollowsScreen} from '#/screens/Profile/ProfileFollows'
 import {ProfileLabelerLikedByScreen} from '#/screens/Profile/ProfileLabelerLikedBy'
 import {ProfileSearchScreen} from '#/screens/Profile/ProfileSearch'
 import {ProfileListScreen} from '#/screens/ProfileList'
+import {PublisherScreen} from '#/screens/Publisher'
+import {PublisherDirectoryScreen} from '#/screens/Publisher/Directory'
 import {SavedFeeds} from '#/screens/SavedFeeds'
 import {SearchScreen} from '#/screens/Search'
 import {AboutSettingsScreen} from '#/screens/Settings/AboutSettings'
@@ -227,6 +229,16 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
           NEWS_V2_ENABLED ? NewsSettingsScreen : NotFoundScreen
         }
         options={{title: title(msg`News preferences`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="PublisherDirectory"
+        getComponent={() => PublisherDirectoryScreen}
+        options={{title: title(msg`Publishers`)}}
+      />
+      <Stack.Screen
+        name="Publisher"
+        getComponent={() => PublisherScreen}
+        options={{title: title(msg`Publisher`)}}
       />
       <Stack.Screen
         name="Frontpage"

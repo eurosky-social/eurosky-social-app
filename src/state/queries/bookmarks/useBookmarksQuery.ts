@@ -13,6 +13,8 @@ import {
   getEmbeddedPost,
 } from '#/state/queries/util'
 import {useAppviewClient} from '#/state/session'
+import {PRODUCT} from '#/config/product'
+import {assertBookmarkingEnabled} from '#/features/product/bookmarking'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 
@@ -30,7 +32,9 @@ export function useBookmarksQuery() {
     string | undefined
   >({
     queryKey: createBookmarksQueryKey(),
+    enabled: PRODUCT.capabilities.bookmarking,
     async queryFn({pageParam}) {
+      assertBookmarkingEnabled()
       return await client.call(app.bsky.bookmark.getBookmarks, {
         cursor: pageParam,
       })

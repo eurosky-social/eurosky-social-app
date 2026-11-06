@@ -33,6 +33,7 @@ import {ScrollbarOffsetContext} from '#/components/Layout/context'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {IS_IOS} from '#/env'
+import {usePageGeometry} from '#/features/product/layout/usePageGeometry'
 
 const HEADER_BUTTON_HITSLOP = {top: 30, bottom: 10, left: 30, right: 30}
 
@@ -52,6 +53,7 @@ export function Outer({
   const {gtMobile} = useBreakpoints()
   const {isWithinOffsetView} = useContext(ScrollbarOffsetContext)
   const {centerColumnOffset} = useLayoutBreakpoints()
+  const {width, offset} = usePageGeometry()
   const {isWithinSplitView, isWithinLeftPanel} = useIsWithinSplitView()
   /*
    * Native headers sit 4px lower in their box to balance the status bar above
@@ -78,10 +80,14 @@ export function Outer({
           web: [a.py_xs, {minHeight: 52}],
         }),
         t.atoms.border_contrast_low,
-        gtMobile && [a.mx_auto, {maxWidth: CENTER_COLUMN_WIDTH}],
+        gtMobile && [
+          a.mx_auto,
+          {maxWidth: isWithinSplitView ? CENTER_COLUMN_WIDTH : width},
+        ],
         !isWithinOffsetView &&
           !isWithinSplitView && {
             transform: [
+              {translateX: offset},
               {translateX: centerColumnOffset ? CENTER_COLUMN_OFFSET : 0},
               {translateX: web(SCROLLBAR_OFFSET) ?? 0},
             ],

@@ -200,16 +200,18 @@ export function PostMenuControlItems({
             position="right"
           />
         </Menu.Item>
-        <Menu.Item
-          testID="postDropdownBookmarkBtn"
-          label={bookmarkLabel}
-          onPress={() => requireAuth(() => void onBookmark())}>
-          <Menu.ItemText>{bookmarkLabel}</Menu.ItemText>
-          <Menu.ItemIcon
-            icon={isBookmarked ? BookmarkFilledIcon : BookmarkIcon}
-            position="right"
-          />
-        </Menu.Item>
+        {PRODUCT.capabilities.bookmarking && (
+          <Menu.Item
+            testID="postDropdownBookmarkBtn"
+            label={bookmarkLabel}
+            onPress={() => requireAuth(() => void onBookmark())}>
+            <Menu.ItemText>{bookmarkLabel}</Menu.ItemText>
+            <Menu.ItemIcon
+              icon={isBookmarked ? BookmarkFilledIcon : BookmarkIcon}
+              position="right"
+            />
+          </Menu.Item>
+        )}
       </Menu.Group>
       <Menu.Divider />
     </>

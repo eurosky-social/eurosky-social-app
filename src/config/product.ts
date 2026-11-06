@@ -1,3 +1,4 @@
+import {type LayoutConfig, validateLayout} from '#/config/layout'
 import {type NavigationConfig, validateNavigation} from '#/config/navigation'
 import presets from '#/config/product-presets.json'
 
@@ -6,8 +7,10 @@ export type ProductId = keyof typeof presets
 export type ProductConfig = {
   readonly id: ProductId
   readonly navigation: NavigationConfig
+  readonly layout: LayoutConfig
   readonly capabilities: {
     readonly messaging: boolean
+    readonly bookmarking: boolean
     readonly standalonePosting: boolean
     readonly quotePosting: boolean
   }
@@ -23,7 +26,13 @@ export function getProduct(selection: string | undefined): ProductConfig {
   }
   const preset = presets[id as ProductId]
   validateNavigation(preset.navigation)
-  return {id: id as ProductId, ...preset, navigation: preset.navigation}
+  validateLayout(preset.layout)
+  return {
+    id: id as ProductId,
+    ...preset,
+    navigation: preset.navigation,
+    layout: preset.layout,
+  }
 }
 
 /** Expo inlines this literal environment access into web and native bundles. */

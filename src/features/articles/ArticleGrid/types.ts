@@ -1,4 +1,4 @@
-import {type ArticleSize} from '../curation'
+import {type ArticleSize} from '../articles'
 
 export type ArticleGridProps = {
   children: React.ReactNode

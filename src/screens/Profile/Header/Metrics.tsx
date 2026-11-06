@@ -12,8 +12,10 @@ import {type app} from '#/lexicons'
 
 export function ProfileHeaderMetrics({
   profile,
+  showFollowing = true,
 }: {
   profile: Shadow<app.bsky.actor.defs.ProfileViewDetailed>
+  showFollowing?: boolean
 }) {
   const t = useTheme()
   const {_, i18n} = useLingui()
@@ -42,16 +44,18 @@ export function ProfileHeaderMetrics({
           {pluralizedFollowers}
         </Text>
       </InlineLinkText>
-      <InlineLinkText
-        testID="profileHeaderFollowsButton"
-        style={[a.flex_row, t.atoms.text]}
-        to={makeProfileLink(profile, 'follows')}
-        label={_(msg`${profile.followsCount || 0} following`)}>
-        <Text style={[a.font_semi_bold, a.text_md]}>{following} </Text>
-        <Text style={[t.atoms.text_contrast_medium, a.text_md]}>
-          {pluralizedFollowings}
-        </Text>
-      </InlineLinkText>
+      {showFollowing && (
+        <InlineLinkText
+          testID="profileHeaderFollowsButton"
+          style={[a.flex_row, t.atoms.text]}
+          to={makeProfileLink(profile, 'follows')}
+          label={_(msg`${profile.followsCount || 0} following`)}>
+          <Text style={[a.font_semi_bold, a.text_md]}>{following} </Text>
+          <Text style={[t.atoms.text_contrast_medium, a.text_md]}>
+            {pluralizedFollowings}
+          </Text>
+        </InlineLinkText>
+      )}
       <Text style={[a.font_semi_bold, t.atoms.text, a.text_md]}>
         {formatCount(i18n, profile.postsCount || 0)}{' '}
         <Text style={[t.atoms.text_contrast_medium, a.font_normal, a.text_md]}>

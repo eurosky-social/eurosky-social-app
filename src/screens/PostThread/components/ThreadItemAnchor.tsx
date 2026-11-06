@@ -14,6 +14,7 @@ import {
 } from '#/state/cache/post-shadow'
 import {useProfileShadow} from '#/state/cache/profile-shadow'
 import {useFeedFeedback} from '#/state/feed-feedback'
+import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {useSession} from '#/state/session'
 import {type OnPostSuccessData} from '#/state/shell/composer'
 import {useMergedThreadgateHiddenReplies} from '#/state/threadgate-hidden-replies'
@@ -60,7 +61,11 @@ import {RichText} from '#/components/RichText'
 import * as Skele from '#/components/Skeleton'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
+import {ArticleContent} from '#/features/articles/Article'
+import {articleModeration} from '#/features/articles/moderation'
 import {useActorStatus} from '#/features/liveNow'
+import {PublisherFollowButton} from '#/features/publishers/FollowButton'
+import {publisherThreadArticle} from '#/features/publishers/threadArticle'
 import {type app} from '#/lexicons'
 
 export type ThreadItemAnchorReaderSeam = ReaderSeamData & {
@@ -202,6 +207,16 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
   const postNumbering = item.value
   const showPostNumber = useHasThreadItemPostNumber(postNumbering)
   const moderation = item.moderation
+  const moderationOpts = useModerationOpts()
+  const articleCandidate =
+    !inReader && moderationOpts ? publisherThreadArticle(item) : undefined
+  const articleModui = articleCandidate
+    ? articleModeration(articleCandidate, moderationOpts, 'contentView')
+    : undefined
+  const article = articleModui?.filter ? undefined : articleCandidate
+  const contentModeration = article
+    ? articleModui
+    : moderation.ui('contentView')
   const authorShadow = useProfileShadow(post.author)
   const {isActive: live} = useActorStatus(post.author)
   const richText = useMemo(
@@ -297,7 +312,8 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
           <View style={[a.flex_row, a.gap_md, a.pb_md]}>
             <View collapsable={false}>
               <PreviewableUserAvatar
-                size={42}
+                size={article ? 32 : 42}
+                shape={article ? 'square' : undefined}
                 profile={post.author}
                 moderation={moderation.ui('avatar')}
                 type={post.author.associated?.labeler ? 'labeler' : 'user'}
@@ -320,7 +336,7 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
                       emoji
                       style={[
                         a.flex_shrink,
-                        a.text_lg,
+                        article ? a.text_md : a.text_lg,
                         a.font_semi_bold,
                         a.leading_snug,
                       ]}
@@ -340,23 +356,34 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
                       />
                     </View>
                   </View>
-                  <Text
-                    style={[
-                      a.text_md,
-                      a.leading_snug,
-                      t.atoms.text_contrast_medium,
-                    ]}
-                    numberOfLines={1}>
-                    {sanitizeHandle(post.author.handle, '@')}
-                  </Text>
+                  {!article && (
+                    <Text
+                      style={[
+                        a.text_md,
+                        a.leading_snug,
+                        t.atoms.text_contrast_medium,
+                      ]}
+                      numberOfLines={1}>
+                      {sanitizeHandle(post.author.handle, '@')}
+                    </Text>
+                  )}
                 </ProfileHoverCard>
               </View>
             </Link>
             <View collapsable={false} style={[a.self_center]}>
-              <ThreadItemAnchorFollowButton
-                did={post.author.did}
-                enabled={showFollowButton}
-              />
+              {article && moderationOpts ? (
+                showFollowButton && (
+                  <PublisherFollowButton
+                    profile={authorShadow}
+                    moderationOpts={moderationOpts}
+                  />
+                )
+              ) : (
+                <ThreadItemAnchorFollowButton
+                  did={post.author.did}
+                  enabled={showFollowButton}
+                />
+              )}
             </View>
           </View>
           {/* Bracket wrapper: spans content + expanded details + replies */}
@@ -372,7 +399,7 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
             <View style={[!inReader && a.pb_sm]}>
               <View>
                 <ContentHider
-                  modui={moderation.ui('contentView')}
+                  modui={contentModeration}
                   ignoreMute
                   childContainerStyle={[a.pt_sm]}>
                   <PostAlerts
@@ -383,42 +410,58 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
                     style={[a.pb_sm]}
                     additionalCauses={additionalPostAlerts}
                   />
-                  {richText?.text ? (
-                    <View>
-                      <RichText
-                        enableTags
-                        enableCode
-                        selectable
-                        value={richText}
-                        style={[a.flex_1, a.text_lg]}
-                        authorHandle={post.author.handle}
-                        shouldProxyLinks={true}
-                        suffixOffset={POST_NUMBER_INLINE_OFFSET}
-                        suffix={
-                          showPostNumber ? (
-                            <ThreadItemPostNumber value={postNumbering} />
-                          ) : undefined
-                        }
-                      />
-                    </View>
-                  ) : (
-                    <ThreadItemPostNumber
-                      inline={false}
-                      value={postNumbering}
-                    />
-                  )}
-                  <TranslatedPost post={post} postTextStyle={[a.text_lg]} />
-                  {post.embed && (
-                    <View style={[richText?.text ? a.py_xs : []]}>
-                      <Embed
-                        embed={post.embed}
-                        moderation={moderation}
-                        viewContext={PostEmbedViewContext.ThreadHighlighted}
-                        onOpen={onOpenEmbed}
+                  {article ? (
+                    <>
+                      <ArticleContent
+                        article={article}
                         post={post}
-                        feedDescriptor={feedFeedback.feedDescriptor}
+                        presentation="thread"
+                        lead
+                        size="big"
+                        onOpen={onOpenEmbed}
                       />
-                    </View>
+                      <TranslatedPost post={post} postTextStyle={[a.text_lg]} />
+                    </>
+                  ) : (
+                    <>
+                      {richText?.text ? (
+                        <View>
+                          <RichText
+                            enableTags
+                            enableCode
+                            selectable
+                            value={richText}
+                            style={[a.flex_1, a.text_lg]}
+                            authorHandle={post.author.handle}
+                            shouldProxyLinks={true}
+                            suffixOffset={POST_NUMBER_INLINE_OFFSET}
+                            suffix={
+                              showPostNumber ? (
+                                <ThreadItemPostNumber value={postNumbering} />
+                              ) : undefined
+                            }
+                          />
+                        </View>
+                      ) : (
+                        <ThreadItemPostNumber
+                          inline={false}
+                          value={postNumbering}
+                        />
+                      )}
+                      <TranslatedPost post={post} postTextStyle={[a.text_lg]} />
+                      {post.embed && (
+                        <View style={[richText?.text ? a.py_xs : []]}>
+                          <Embed
+                            embed={post.embed}
+                            moderation={moderation}
+                            viewContext={PostEmbedViewContext.ThreadHighlighted}
+                            onOpen={onOpenEmbed}
+                            post={post}
+                            feedDescriptor={feedFeedback.feedDescriptor}
+                          />
+                        </View>
+                      )}
+                    </>
                   )}
                 </ContentHider>
               </View>
@@ -426,6 +469,7 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
               {!inReader && (
                 <ReaderSeamControls
                   post={item}
+                  presentation={article ? 'article' : 'post'}
                   postSource={postSource}
                   onPostSuccess={onPostSuccess}
                   threadgateRecord={threadgateRecord}

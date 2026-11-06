@@ -22,10 +22,12 @@ export function selectNavigation(
     hasSession,
     atmosphereEnabled,
     messagingEnabled,
+    bookmarkingEnabled = true,
   }: {
     hasSession: boolean
     atmosphereEnabled: boolean
     messagingEnabled: boolean
+    bookmarkingEnabled?: boolean
   },
 ): NavigationDestination[] {
   const ids = hasSession
@@ -40,6 +42,7 @@ export function selectNavigation(
     .filter(
       item =>
         (item.capability !== 'messaging' || messagingEnabled) &&
+        (item.capability !== 'bookmarking' || bookmarkingEnabled) &&
         (hasSession || item.public) &&
         (item.feature !== 'atmosphere' || atmosphereEnabled),
     )

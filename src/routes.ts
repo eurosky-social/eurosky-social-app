@@ -28,6 +28,8 @@ export const router = new Router<AllNavigatableRoutes>({
   NewsOutlets: '/news/outlets',
   OutletDirectory: ['/outlets', '/newsrooms'],
   Frontpage: ['/frontpage/:name', '/frontpage', '/newsroom/:name', '/newsroom'],
+  PublisherDirectory: ['/publishers', '/publisher'],
+  Publisher: '/publisher/:publisher',
   // moderation
   Moderation: '/moderation',
   ModerationInbox: '/moderation/inbox',
