@@ -9,6 +9,8 @@ import {logger} from '#/logger'
 import {STALE} from '#/state/queries/index'
 import {createQueryKey, type StructuredQueryKey} from '#/state/queries/util'
 import {useChatClient} from '#/state/session'
+import {PRODUCT} from '#/config/product'
+import {assertMessagingEnabled} from '#/features/product/messaging'
 import {chat} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 
@@ -183,6 +185,7 @@ async function fetchJoinLinkPreviews({
   codes: string[]
   hasSession: boolean
 }) {
+  assertMessagingEnabled()
   return await (hasSession ? client : getPublicChatClient()).call(
     chat.bsky.group.getJoinLinkPreviews,
     {codes},
@@ -217,7 +220,8 @@ export function useJoinLinkPreviewsQuery({
         throw error
       }
     },
-    enabled: codes != null && codes.length > 0,
+    enabled:
+      PRODUCT.capabilities.messaging && codes != null && codes.length > 0,
     staleTime,
     initialData,
   })
@@ -228,6 +232,7 @@ export function usePrefetchJoinLinkPreviews() {
   const queryClient = useQueryClient()
 
   return ({codes, hasSession}: {codes: string[]; hasSession: boolean}) => {
+    if (!PRODUCT.capabilities.messaging) return Promise.resolve()
     return queryClient.prefetchQuery({
       queryKey: createJoinLinkPreviewQueryKey({codes, hasSession}),
       queryFn: () => fetchJoinLinkPreviews({client, codes, hasSession}),
@@ -253,6 +258,7 @@ export function useGetJoinLinkPreview() {
       code: string
       hasSession: boolean
     }): Promise<KnownChatInvitePreview | undefined> => {
+      if (!PRODUCT.capabilities.messaging) return undefined
       try {
         const data = await queryClient.fetchQuery({
           queryKey: createJoinLinkPreviewQueryKey({codes: [code], hasSession}),

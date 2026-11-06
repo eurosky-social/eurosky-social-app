@@ -13,6 +13,7 @@ import {useCurrentConvoId} from '#/state/messages/current-convo-id'
 import {useMessagesEventBus} from '#/state/messages/events'
 import {invalidateJoinLinkPreviewsForConvo} from '#/state/queries/join-links'
 import {useChatClient, useSession} from '#/state/session'
+import {PRODUCT} from '#/config/product'
 import {chat} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {RQKEY as CONVO_KEY} from './conversation'
@@ -114,7 +115,7 @@ export function useListConvosQuery({
   const client = useChatClient()
 
   return useInfiniteQuery({
-    enabled,
+    enabled: PRODUCT.capabilities.messaging && enabled !== false,
     queryKey: RQKEY(status ?? 'all', readState, kind, lockStatus, limit),
     queryFn: async ({pageParam}) => {
       return await client.call(chat.bsky.convo.listConvos, {
@@ -134,7 +135,7 @@ export function useListConvosQuery({
 export function ListConvosProvider({children}: {children: React.ReactNode}) {
   const {hasSession} = useSession()
 
-  if (!hasSession) {
+  if (!PRODUCT.capabilities.messaging || !hasSession) {
     return <>{children}</>
   }
 
@@ -886,6 +887,8 @@ export function useUnreadMessageCount(): {
   hasNew: boolean
 } {
   const {data} = useUnreadCountsQuery()
+  if (!PRODUCT.capabilities.messaging)
+    return {count: 0, numUnread: undefined, hasNew: false}
   const accepted = data?.unreadAcceptedConvos ?? 0
   const request = data?.unreadRequestConvos ?? 0
 

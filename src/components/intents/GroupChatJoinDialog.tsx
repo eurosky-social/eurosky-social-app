@@ -45,11 +45,16 @@ import {Loader} from '#/components/Loader'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
+import {PRODUCT} from '#/config/product'
 import {chat} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {ProfileBadges} from '../ProfileBadges'
 
 export function GroupChatJoinDialog() {
+  return PRODUCT.capabilities.messaging ? <GroupChatJoinDialogOuter /> : null
+}
+
+function GroupChatJoinDialogOuter() {
   const {groupChatJoinDialogControl, groupChatJoinState} = useIntentDialogs()
 
   return (

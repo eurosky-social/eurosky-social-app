@@ -7,6 +7,7 @@ import {CloseQuote_Stroke2_Corner1_Rounded as QuoteIcon} from '#/components/icon
 import {Repost_Stroke2_Corner2_Rounded as RepostIcon} from '#/components/icons/Repost'
 import * as Menu from '#/components/Menu'
 import {useFormatPostStatCount} from '#/components/PostControls/util'
+import {PRODUCT} from '#/config/product'
 import {
   PostControlButton,
   PostControlButtonIcon,
@@ -37,11 +38,15 @@ export function RepostButtonMenu({
   const {hasSession} = useSession()
   const requireAuth = useRequireAuth()
   const formatPostStatCount = useFormatPostStatCount()
+  const canQuote = PRODUCT.capabilities.quotePosting
+  const label = canQuote
+    ? l`Repost or quote post`
+    : l({message: 'Repost', context: 'action'})
 
   return hasSession ? (
     <EventStopper onKeyDown={false}>
       <Menu.Root>
-        <Menu.Trigger label={l`Repost or quote post`}>
+        <Menu.Trigger label={label}>
           {({props}) => (
             <PostControlButton
               testID="repostBtn"
@@ -51,7 +56,7 @@ export function RepostButtonMenu({
               big={big}
               {...props}
               onLongPress={
-                longPressToQuote
+                longPressToQuote && canQuote
                   ? () =>
                       requireAuth(() => {
                         if (embeddingDisabled) {
@@ -88,18 +93,20 @@ export function RepostButtonMenu({
               </Menu.ItemText>
               <Menu.ItemIcon icon={RepostIcon} position="right" />
             </Menu.Item>
-            <Menu.Item
-              disabled={embeddingDisabled}
-              label={
-                embeddingDisabled ? l`Quote posts disabled` : l`Quote post`
-              }
-              testID="repostDropdownQuoteBtn"
-              onPress={onQuote}>
-              <Menu.ItemText>
-                {embeddingDisabled ? l`Quote posts disabled` : l`Quote post`}
-              </Menu.ItemText>
-              <Menu.ItemIcon icon={QuoteIcon} position="right" />
-            </Menu.Item>
+            {canQuote && (
+              <Menu.Item
+                disabled={embeddingDisabled}
+                label={
+                  embeddingDisabled ? l`Quote posts disabled` : l`Quote post`
+                }
+                testID="repostDropdownQuoteBtn"
+                onPress={onQuote}>
+                <Menu.ItemText>
+                  {embeddingDisabled ? l`Quote posts disabled` : l`Quote post`}
+                </Menu.ItemText>
+                <Menu.ItemIcon icon={QuoteIcon} position="right" />
+              </Menu.Item>
+            )}
           </Menu.Group>
         </Menu.Outer>
       </Menu.Root>
@@ -109,7 +116,7 @@ export function RepostButtonMenu({
       onPress={() => requireAuth(() => {})}
       active={isReposted}
       activeColor={t.palette.positive_500}
-      label={l`Repost or quote post`}
+      label={label}
       big={big}>
       <PostControlButtonIcon icon={RepostIcon} />
       {typeof repostCount !== 'undefined' && repostCount > 0 && (

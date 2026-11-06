@@ -13,6 +13,7 @@ import {InlineLinkText} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
+import {PRODUCT} from '#/config/product'
 import {chat, com} from '#/lexicons'
 
 export function ExportCarDialog({
@@ -58,7 +59,7 @@ export function ExportCarDialog({
   }, [l, currentAccount, pdsClient])
 
   const downloadChatData = useCallback(async () => {
-    if (!currentAccount) {
+    if (!PRODUCT.capabilities.messaging || !currentAccount) {
       return
     }
     try {
@@ -128,36 +129,40 @@ export function ExportCarDialog({
             </ButtonText>
           </Button>
 
-          <Text
-            nativeID="dialog-title"
-            style={[a.mt_2xl, a.mb_sm, a.text_2xl, a.font_bold]}>
-            <Trans>Export my chat data</Trans>
-          </Text>
-          <Text
-            style={[
-              a.mb_lg,
-              a.text_sm,
-              a.leading_snug,
-              t.atoms.text_contrast_high,
-            ]}>
-            <Trans>
-              You can also download your chat data as a "JSONL" file. This file
-              only includes chat messages that you have sent and does not
-              include chat messages that you have received.
-            </Trans>
-          </Text>
+          {PRODUCT.capabilities.messaging && (
+            <>
+              <Text
+                nativeID="dialog-title"
+                style={[a.mt_2xl, a.mb_sm, a.text_2xl, a.font_bold]}>
+                <Trans>Export my chat data</Trans>
+              </Text>
+              <Text
+                style={[
+                  a.mb_lg,
+                  a.text_sm,
+                  a.leading_snug,
+                  t.atoms.text_contrast_high,
+                ]}>
+                <Trans>
+                  You can also download your chat data as a "JSONL" file. This
+                  file only includes chat messages that you have sent and does
+                  not include chat messages that you have received.
+                </Trans>
+              </Text>
 
-          <Button
-            color="primary"
-            size="large"
-            label={l`Download chat data`}
-            disabled={!!loading}
-            onPress={() => void downloadChatData()}>
-            <ButtonIcon icon={loading === 'chat' ? Loader : DownloadIcon} />
-            <ButtonText>
-              <Trans context="button">Download chat data</Trans>
-            </ButtonText>
-          </Button>
+              <Button
+                color="primary"
+                size="large"
+                label={l`Download chat data`}
+                disabled={!!loading}
+                onPress={() => void downloadChatData()}>
+                <ButtonIcon icon={loading === 'chat' ? Loader : DownloadIcon} />
+                <ButtonText>
+                  <Trans context="button">Download chat data</Trans>
+                </ButtonText>
+              </Button>
+            </>
+          )}
 
           <Text
             style={[

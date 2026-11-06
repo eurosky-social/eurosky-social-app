@@ -5,6 +5,7 @@ import {atoms as a, useTheme, web} from '#/alf'
 import * as Dialog from '#/components/Dialog'
 import * as Toggle from '#/components/forms/Toggle'
 import {Text} from '#/components/Typography'
+import {PRODUCT} from '#/config/product'
 import {useKeyboardShortcutsPreference} from './preferences'
 
 export function KeyboardShortcutsDialog({
@@ -70,7 +71,9 @@ function KeyboardShortcutsDialogInner() {
           <ShortcutRow shortcut="G W" label={l`News`} />
           <ShortcutRow shortcut="G E" label={l`Explore`} />
           <ShortcutRow shortcut="G N" label={l`Notifications`} />
-          <ShortcutRow shortcut="G C" label={l`Chat`} />
+          {PRODUCT.capabilities.messaging && (
+            <ShortcutRow shortcut="G C" label={l`Chat`} />
+          )}
           <ShortcutRow shortcut="G F" label={l`Feeds`} />
           <ShortcutRow shortcut="G L" label={l`Lists`} />
           <ShortcutRow shortcut="G B" label={l`Saved`} />

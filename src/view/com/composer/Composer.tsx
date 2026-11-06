@@ -135,6 +135,7 @@ import * as Prompt from '#/components/Prompt'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
+import {PRODUCT} from '#/config/product'
 import {
   IS_ANDROID,
   IS_IOS,
@@ -145,6 +146,7 @@ import {
   IS_WEB_SAFARI,
 } from '#/env'
 import {type Gif} from '#/features/gifPicker/types'
+import {canCreatePost} from '#/features/product/publishing'
 import {app, chat} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {
@@ -669,6 +671,9 @@ export const ComposePost = ({
         draftId: draftSummary.id,
       })
 
+      /* Drafts have no reply target; do not turn a saved root post into a reply. */
+      if (!PRODUCT.capabilities.standalonePosting) return
+
       // Load local media files for the draft
       const {loadedMedia} = await loadDraftMedia(draftSummary.draft)
 
@@ -982,7 +987,17 @@ export const ComposePost = ({
       !bsky.isType(chat.bsky.group.defs.joinLinkPreviewView, q.data.view),
   )
 
+  const hasDisallowedQuote =
+    !isEditMode &&
+    !PRODUCT.capabilities.quotePosting &&
+    thread.posts.some(post => !!post.embed.quote)
+
   const canPost =
+    (!!composerState.editPost ||
+      canCreatePost({
+        replyTo,
+        hasQuote: thread.posts.some(post => !!post.embed.quote),
+      })) &&
     !missingAltError &&
     !hasUnavailableChatInvite &&
     thread.posts.some(post => !isEmptyPost(post)) &&
@@ -1497,6 +1512,14 @@ export const ComposePost = ({
             canSaveDraft={allPostsWithinLimit}
             textLength={thread.posts[0].richtext.text.length}>
             {missingAltError && <AltTextReminder error={missingAltError} />}
+            {hasDisallowedQuote && (
+              <Admonition type="error" style={[a.mt_2xs, a.mb_sm, a.mx_lg]}>
+                <Trans>
+                  Remove the quote to continue. Quote posts are not available in
+                  this app.
+                </Trans>
+              </Admonition>
+            )}
             <ErrorBanner
               error={error}
               videoState={erroredVideo}
@@ -1912,18 +1935,20 @@ function ComposerTopBar({
           </>
         ) : (
           <>
-            {!isReply && !isEditMode && (
-              <DraftsButton
-                onSelectDraft={onSelectDraft}
-                onSaveDraft={onSaveDraft}
-                onDiscard={onDiscard}
-                isEmpty={isEmpty}
-                isDirty={isDirty}
-                isEditingDraft={isEditingDraft}
-                canSaveDraft={canSaveDraft}
-                textLength={textLength}
-              />
-            )}
+            {PRODUCT.capabilities.standalonePosting &&
+              !isReply &&
+              !isEditMode && (
+                <DraftsButton
+                  onSelectDraft={onSelectDraft}
+                  onSaveDraft={onSaveDraft}
+                  onDiscard={onDiscard}
+                  isEmpty={isEmpty}
+                  isDirty={isDirty}
+                  isEditingDraft={isEditingDraft}
+                  canSaveDraft={canSaveDraft}
+                  textLength={textLength}
+                />
+              )}
             <Button
               testID="composerPublishBtn"
               label={

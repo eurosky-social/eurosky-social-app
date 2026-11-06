@@ -13,6 +13,7 @@ import {
   RQKEY_LINK_ROOT,
 } from '#/state/queries/resolve-link'
 import * as Toast from '#/components/Toast'
+import {canOpenComposer} from '#/features/product/publishing'
 import {type app} from '#/lexicons'
 
 export interface ComposerOptsPostRef {
@@ -82,6 +83,10 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
   const queryClient = useQueryClient()
 
   const openComposer = useNonReactiveCallback((opts: ComposerOpts) => {
+    if (!canOpenComposer(opts)) {
+      opts.onClose?.()
+      return
+    }
     if (opts.quote) {
       const path = postUriToRelativePath(opts.quote.uri)
       if (path) {

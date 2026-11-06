@@ -17,6 +17,7 @@ import {type Props as SVGIconProps} from '#/components/icons/common'
 import {RaisingHand4Finger_Stroke2_Corner2_Rounded as HandIcon} from '#/components/icons/RaisingHand'
 import {useIntentDialogs} from '#/components/intents/IntentDialogs'
 import * as Toast from '#/components/Toast'
+import {PRODUCT} from '#/config/product'
 import {chat} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {
@@ -33,7 +34,11 @@ import {
  * Pass `initialPreview` when the preview is already known (e.g. a DM message
  * embed already carries the resolved view) to avoid a loading flash.
  */
-export function Root({
+export function Root(props: React.ComponentProps<typeof RootInner>) {
+  return PRODUCT.capabilities.messaging ? <RootInner {...props} /> : null
+}
+
+function RootInner({
   code,
   initialPreview,
   currentConvoId,

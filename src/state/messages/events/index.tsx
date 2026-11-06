@@ -3,6 +3,7 @@ import {AppState} from 'react-native'
 
 import {MessagesEventBus} from '#/state/messages/events/agent'
 import {useChatClient, useSession} from '#/state/session'
+import {PRODUCT} from '#/config/product'
 
 const MessagesEventBusContext = createContext<MessagesEventBus | null>(null)
 MessagesEventBusContext.displayName = 'MessagesEventBusContext'
@@ -24,7 +25,7 @@ export function MessagesEventBusProvider({
 }) {
   const {currentAccount} = useSession()
 
-  if (!currentAccount) {
+  if (!PRODUCT.capabilities.messaging || !currentAccount) {
     return (
       <MessagesEventBusContext.Provider value={null}>
         {children}

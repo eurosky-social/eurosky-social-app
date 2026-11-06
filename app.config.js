@@ -37,6 +37,15 @@ const APPLE_TEAM_ID = process.env.EXPO_APPLE_TEAM_ID ?? '2472Y2UN4X'
  * @returns {{ expo: import('@expo/config-types').ExpoConfig }}
  */
 module.exports = function (_config) {
+  /* Fail invalid selections during Expo configuration, not only at app startup. */
+  const products = require('./src/config/product-presets.json')
+  const product = process.env.EXPO_PUBLIC_PRODUCT ?? 'social'
+  if (!Object.hasOwn(products, product)) {
+    throw new Error(
+      `Unknown EXPO_PUBLIC_PRODUCT "${product}". Expected: ${Object.keys(products).join(', ')}.`,
+    )
+  }
+
   /**
    * App version number. Should be incremented as part of a release cycle.
    */

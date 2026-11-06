@@ -33,6 +33,7 @@ import {Loader} from '#/components/Loader'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
+import {PRODUCT} from '#/config/product'
 import {IS_WEB} from '#/env'
 import {type chat} from '#/lexicons'
 import {CopyTextButton} from './CopyTextButton'
@@ -388,26 +389,28 @@ export function InviteLinkDialog({
                   <Trans>Disable</Trans>
                 </StackedButton>
               ) : null}
-              <StackedButton
-                disabled={linkDisabled}
-                label={l`Post link`}
-                icon={EditIcon}
-                color="primary_subtle"
-                style={[a.flex_1, a.rounded_full]}
-                onPress={() => {
-                  ax.metric('groupchat:inviteLink:shareButton:press', {
-                    convoId,
-                    method: 'post',
-                  })
-                  control.close(() => {
-                    openComposer({
-                      text: joinLinkURI,
-                      logContext: 'Other',
+              {PRODUCT.capabilities.standalonePosting && (
+                <StackedButton
+                  disabled={linkDisabled}
+                  label={l`Post link`}
+                  icon={EditIcon}
+                  color="primary_subtle"
+                  style={[a.flex_1, a.rounded_full]}
+                  onPress={() => {
+                    ax.metric('groupchat:inviteLink:shareButton:press', {
+                      convoId,
+                      method: 'post',
                     })
-                  })
-                }}>
-                <Trans>Post link</Trans>
-              </StackedButton>
+                    control.close(() => {
+                      openComposer({
+                        text: joinLinkURI,
+                        logContext: 'Other',
+                      })
+                    })
+                  }}>
+                  <Trans>Post link</Trans>
+                </StackedButton>
+              )}
               <StackedButton
                 disabled={linkDisabled}
                 label={l`Share`}

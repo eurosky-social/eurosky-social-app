@@ -24,6 +24,7 @@ import * as Menu from '#/components/Menu'
 import * as Toast from '#/components/Toast'
 import {useAgeAssurance} from '#/ageAssurance'
 import {useAnalytics} from '#/analytics'
+import {PRODUCT} from '#/config/product'
 import {IS_IOS} from '#/env'
 import {useDevMode} from '#/storage/hooks/dev-mode'
 import {RecentChats} from './RecentChats'
@@ -109,28 +110,30 @@ let ShareMenuItems = ({
   return (
     <>
       <Menu.Outer>
-        {hasSession && aa.state.access === aa.Access.Full && (
-          <Menu.Group>
-            <Menu.ContainerItem>
-              <RecentChats
-                postUri={postUri}
-                onBeforePress={onBeforeShareViaChat}
-              />
-            </Menu.ContainerItem>
-            <Menu.Item
-              testID="postDropdownSendViaDMBtn"
-              label={l`Send via chat`}
-              onPress={() => {
-                ax.metric('share:press:openDmSearch', {})
-                sendViaChatControl.open()
-              }}>
-              <Menu.ItemText>
-                <Trans>Send via chat</Trans>
-              </Menu.ItemText>
-              <Menu.ItemIcon icon={PaperPlaneIcon} position="right" />
-            </Menu.Item>
-          </Menu.Group>
-        )}
+        {PRODUCT.capabilities.messaging &&
+          hasSession &&
+          aa.state.access === aa.Access.Full && (
+            <Menu.Group>
+              <Menu.ContainerItem>
+                <RecentChats
+                  postUri={postUri}
+                  onBeforePress={onBeforeShareViaChat}
+                />
+              </Menu.ContainerItem>
+              <Menu.Item
+                testID="postDropdownSendViaDMBtn"
+                label={l`Send via chat`}
+                onPress={() => {
+                  ax.metric('share:press:openDmSearch', {})
+                  sendViaChatControl.open()
+                }}>
+                <Menu.ItemText>
+                  <Trans>Send via chat</Trans>
+                </Menu.ItemText>
+                <Menu.ItemIcon icon={PaperPlaneIcon} position="right" />
+              </Menu.Item>
+            </Menu.Group>
+          )}
 
         <Menu.Group>
           <Menu.Item

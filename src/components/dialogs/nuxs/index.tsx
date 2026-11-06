@@ -28,6 +28,7 @@ import {
 import {isSnoozed, snooze, unsnooze} from '#/components/dialogs/nuxs/snoozing'
 import {type EnabledCheckProps} from '#/components/dialogs/nuxs/utils'
 import {useAnalytics} from '#/analytics'
+import {PRODUCT} from '#/config/product'
 import {
   enabled as isMuForYouFeedAnnouncementEnabled,
   MuForYouFeedAnnouncement,
@@ -50,7 +51,8 @@ const queuedNuxs: {
   },
   {
     id: Nux.GroupChatsAnnouncement,
-    enabled: isGroupChatsAnnouncementEnabled,
+    enabled: props =>
+      PRODUCT.capabilities.messaging && isGroupChatsAnnouncementEnabled(props),
   },
   {
     id: Nux.InviteFriendsAnnouncement,

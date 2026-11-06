@@ -17,6 +17,7 @@ import * as Dialog from '#/components/Dialog'
 import {type DialogControlProps} from '#/components/Dialog'
 import {GroupChatJoinDialog} from '#/components/intents/GroupChatJoinDialog'
 import {VerifyEmailIntentDialog} from '#/components/intents/VerifyEmailIntentDialog'
+import {PRODUCT} from '#/config/product'
 
 interface Context {
   verifyEmailDialogControl: DialogControlProps
@@ -48,6 +49,7 @@ export function Provider({children}: {children: React.ReactNode}) {
   const landingHandledRef = useRef(false)
 
   useEffect(() => {
+    if (!PRODUCT.capabilities.messaging) return
     if (hasSession && groupChatLanding && !landingHandledRef.current) {
       landingHandledRef.current = true
       const code = groupChatLanding.code
@@ -99,7 +101,7 @@ export function Provider({children}: {children: React.ReactNode}) {
     <Context.Provider value={value}>
       {children}
       <VerifyEmailIntentDialog />
-      <GroupChatJoinDialog />
+      {PRODUCT.capabilities.messaging && <GroupChatJoinDialog />}
     </Context.Provider>
   )
 }

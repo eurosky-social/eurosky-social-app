@@ -28,7 +28,6 @@ import {
 import {truncateAndInvalidate} from '#/state/queries/util'
 import {useSession} from '#/state/session'
 import {PostFeed} from '#/view/com/posts/PostFeed'
-import {FAB} from '#/view/com/util/fab/FAB'
 import {type ListMethods} from '#/view/com/util/List'
 import {LoadLatestBtn} from '#/view/com/util/load-latest/LoadLatestBtn'
 import {MainScrollProvider} from '#/view/com/util/MainScrollProvider'
@@ -41,6 +40,7 @@ import {
   isFollowingV2Eligible,
   isFollowingV2HomeDotEnabled,
 } from '#/features/followingV2/eligibility'
+import {ComposeFAB as FAB} from '#/features/product/ComposeFAB'
 import {app} from '#/lexicons'
 
 const POLL_FREQ = 60e3 // 60sec

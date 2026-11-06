@@ -23,6 +23,7 @@ import {
 import {type ComposerImage} from '#/state/gallery'
 import {createComposerImage} from '#/state/gallery'
 import {type ChatInvitePreview} from '#/state/queries/join-links'
+import {PRODUCT} from '#/config/product'
 import {type Gif} from '#/features/gifPicker/types'
 import {app, chat, com} from '#/lexicons'
 import {createGIFDescription} from '../gif-alt-text'
@@ -167,6 +168,8 @@ export async function resolveLink(
   }
   const chatInviteCode = getChatInviteCodeFromUrl(uri)
   if (chatInviteCode) {
+    if (!PRODUCT.capabilities.messaging)
+      return {type: 'chat-invite', uri, code: chatInviteCode}
     const data = await chatClient.call(chat.bsky.group.getJoinLinkPreviews, {
       codes: [chatInviteCode],
     })

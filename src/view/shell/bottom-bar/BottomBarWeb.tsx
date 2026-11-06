@@ -46,13 +46,18 @@ import {
 import {Text} from '#/components/Typography'
 import {useAgeAssurance} from '#/ageAssurance'
 import {useAnalytics} from '#/analytics'
+import {type Events} from '#/analytics/metrics/types'
 import {isFollowingV2HomeDotEnabled} from '#/features/followingV2/eligibility'
+import {
+  NavigationItems,
+  NavigationSlot,
+} from '#/features/product/navigation/NavigationItems'
+import {useProductNavigation} from '#/features/product/navigation/useProductNavigation'
 import {styles} from './BottomBarStyles'
 
-type NavItemValue = 'home' | 'search' | 'chat' | 'notifications' | 'profile'
-
 export function BottomBarWeb() {
-  const {_} = useLingui()
+  const {_, i18n} = useLingui()
+  const destinations = useProductNavigation('bottomBar')
   const {hasSession, currentAccount} = useSession()
   const t = useTheme()
   // Eurosky fork: pad the bottom bar past the iOS home indicator when running
@@ -115,122 +120,147 @@ export function BottomBarWeb() {
         ]}
         onLayout={event => footerHeight.set(event.nativeEvent.layout.height)}>
         {hasSession ? (
-          <>
-            <NavItem
-              routeName="Home"
-              href="/"
-              navItem="home"
-              hasNew={hasHomeBadge && isFollowingV2HomeDotEnabled(ax)}>
-              {({isActive}) => {
-                const Icon = isActive ? HomeFilled : Home
-                return (
-                  <Icon
-                    aria-hidden={true}
-                    width={iconWidth + 1}
-                    style={[styles.ctrlIcon, t.atoms.text, styles.homeIcon]}
-                  />
-                )
-              }}
-            </NavItem>
-            <NavItem routeName="Search" href="/search" navItem="search">
-              {({isActive}) => {
-                const Icon = isActive ? MagnifyingGlassFilled : MagnifyingGlass
-                return (
-                  <Icon
-                    aria-hidden={true}
-                    width={iconWidth + 2}
-                    style={[styles.ctrlIcon, t.atoms.text, styles.searchIcon]}
-                  />
-                )
-              }}
-            </NavItem>
-
-            {hasSession && (
-              <>
-                <NavItem
-                  routeName="Messages"
-                  href="/messages"
-                  navItem="chat"
-                  notificationCount={
-                    aa.flags.chatDisabled
-                      ? undefined
-                      : unreadMessageCount.numUnread
-                  }
-                  hasNew={
-                    aa.flags.chatDisabled ? false : unreadMessageCount.hasNew
-                  }>
-                  {({isActive}) => {
-                    const Icon = isActive ? MessageFilled : Message
-                    return (
-                      <Icon
-                        aria-hidden={true}
-                        width={iconWidth - 1}
-                        style={[
-                          styles.ctrlIcon,
-                          t.atoms.text,
-                          styles.messagesIcon,
-                        ]}
+          <NavigationItems
+            destinations={destinations}
+            renderItem={destination => (
+              <NavItem
+                href={destination.href}
+                routeName={destination.routes[0]}
+                relatedRoutes={destination.routes}
+                label={i18n._(destination.bottomLabel ?? destination.label)}
+                navItem={destination.metricItem}>
+                {({isActive}) => {
+                  const Icon = isActive
+                    ? destination.icons.active
+                    : destination.icons.inactive
+                  return (
+                    <Icon
+                      aria-hidden
+                      width={iconWidth}
+                      style={[styles.ctrlIcon, t.atoms.text]}
+                    />
+                  )
+                }}
+              </NavItem>
+            )}>
+            <NavigationSlot id="home">
+              <NavItem
+                routeName="Home"
+                href="/"
+                navItem="home"
+                hasNew={hasHomeBadge && isFollowingV2HomeDotEnabled(ax)}>
+                {({isActive}) => {
+                  const Icon = isActive ? HomeFilled : Home
+                  return (
+                    <Icon
+                      aria-hidden={true}
+                      width={iconWidth + 1}
+                      style={[styles.ctrlIcon, t.atoms.text, styles.homeIcon]}
+                    />
+                  )
+                }}
+              </NavItem>
+            </NavigationSlot>
+            <NavigationSlot id="search">
+              <NavItem routeName="Search" href="/search" navItem="search">
+                {({isActive}) => {
+                  const Icon = isActive
+                    ? MagnifyingGlassFilled
+                    : MagnifyingGlass
+                  return (
+                    <Icon
+                      aria-hidden={true}
+                      width={iconWidth + 2}
+                      style={[styles.ctrlIcon, t.atoms.text, styles.searchIcon]}
+                    />
+                  )
+                }}
+              </NavItem>
+            </NavigationSlot>
+            <NavigationSlot id="chat">
+              <NavItem
+                routeName="Messages"
+                href="/messages"
+                navItem="chat"
+                notificationCount={
+                  aa.flags.chatDisabled
+                    ? undefined
+                    : unreadMessageCount.numUnread
+                }
+                hasNew={
+                  aa.flags.chatDisabled ? false : unreadMessageCount.hasNew
+                }>
+                {({isActive}) => {
+                  const Icon = isActive ? MessageFilled : Message
+                  return (
+                    <Icon
+                      aria-hidden={true}
+                      width={iconWidth - 1}
+                      style={[
+                        styles.ctrlIcon,
+                        t.atoms.text,
+                        styles.messagesIcon,
+                      ]}
+                    />
+                  )
+                }}
+              </NavItem>
+            </NavigationSlot>
+            <NavigationSlot id="notifications">
+              <NavItem
+                routeName="Notifications"
+                href="/notifications"
+                navItem="notifications"
+                notificationCount={notificationCountStr}>
+                {({isActive}) => {
+                  const Icon = isActive ? BellFilled : Bell
+                  return (
+                    <Icon
+                      aria-hidden={true}
+                      width={iconWidth}
+                      style={[styles.ctrlIcon, t.atoms.text, styles.bellIcon]}
+                    />
+                  )
+                }}
+              </NavItem>
+            </NavigationSlot>
+            <NavigationSlot id="profile">
+              <NavItem
+                routeName="Profile"
+                href={
+                  currentAccount
+                    ? makeProfileLink({
+                        did: currentAccount.did,
+                        handle: currentAccount.handle,
+                      })
+                    : '/'
+                }
+                navItem="profile"
+                onLongPress={onLongPressProfile}>
+                {({isActive}) => (
+                  <View style={styles.ctrlIconSizingWrapper}>
+                    <View
+                      style={[
+                        styles.ctrlIcon,
+                        isLabeler
+                          ? styles.profileIconSquare
+                          : styles.profileIcon,
+                        isActive && [
+                          isLabeler ? styles.onProfileSquare : styles.onProfile,
+                          {borderColor: t.atoms.text.color},
+                        ],
+                      ]}>
+                      <UserAvatar
+                        avatar={profile?.avatar}
+                        size={iconWidth - 3}
+                        type={profile?.associated?.labeler ? 'labeler' : 'user'}
                       />
-                    )
-                  }}
-                </NavItem>
-                <NavItem
-                  routeName="Notifications"
-                  href="/notifications"
-                  navItem="notifications"
-                  notificationCount={notificationCountStr}>
-                  {({isActive}) => {
-                    const Icon = isActive ? BellFilled : Bell
-                    return (
-                      <Icon
-                        aria-hidden={true}
-                        width={iconWidth}
-                        style={[styles.ctrlIcon, t.atoms.text, styles.bellIcon]}
-                      />
-                    )
-                  }}
-                </NavItem>
-                <NavItem
-                  routeName="Profile"
-                  href={
-                    currentAccount
-                      ? makeProfileLink({
-                          did: currentAccount.did,
-                          handle: currentAccount.handle,
-                        })
-                      : '/'
-                  }
-                  navItem="profile"
-                  onLongPress={onLongPressProfile}>
-                  {({isActive}) => (
-                    <View style={styles.ctrlIconSizingWrapper}>
-                      <View
-                        style={[
-                          styles.ctrlIcon,
-                          isLabeler
-                            ? styles.profileIconSquare
-                            : styles.profileIcon,
-                          isActive && [
-                            isLabeler
-                              ? styles.onProfileSquare
-                              : styles.onProfile,
-                            {borderColor: t.atoms.text.color},
-                          ],
-                        ]}>
-                        <UserAvatar
-                          avatar={profile?.avatar}
-                          size={iconWidth - 3}
-                          type={
-                            profile?.associated?.labeler ? 'labeler' : 'user'
-                          }
-                        />
-                      </View>
                     </View>
-                  )}
-                </NavItem>
-              </>
-            )}
-          </>
+                  </View>
+                )}
+              </NavItem>
+            </NavigationSlot>
+          </NavigationItems>
         ) : (
           <>
             <View
@@ -287,7 +317,9 @@ const NavItem: React.FC<{
   children: (props: {isActive: boolean}) => React.ReactNode
   href: string
   routeName: string
-  navItem: NavItemValue
+  navItem: Events['nav:click']['item']
+  relatedRoutes?: readonly string[]
+  label?: string
   hasNew?: boolean
   notificationCount?: string
   onLongPress?: () => void
@@ -299,6 +331,8 @@ const NavItem: React.FC<{
   hasNew,
   notificationCount,
   onLongPress,
+  relatedRoutes,
+  label,
 }) => {
   const t = useTheme()
   const {_} = useLingui()
@@ -323,13 +357,14 @@ const NavItem: React.FC<{
       currentAccount?.handle
 
   const isActive =
-    currentRoute.name === 'Profile'
+    !!relatedRoutes?.some(name => isTab(currentRoute.name, name)) ||
+    (currentRoute.name === 'Profile'
       ? isTab(currentRoute.name, routeName) &&
         (currentRoute.params as CommonNavigatorParams['Profile']).name ===
           (routeName === 'Profile'
             ? currentAccount?.handle
             : (currentRoute.params as CommonNavigatorParams['Profile']).name)
-      : isTab(currentRoute.name, routeName)
+      : isTab(currentRoute.name, routeName))
 
   return (
     <Link
@@ -337,7 +372,7 @@ const NavItem: React.FC<{
       style={[styles.ctrl, a.pb_lg]}
       navigationAction={isOnDifferentProfile ? 'push' : 'navigate'}
       aria-role="link"
-      aria-label={routeName}
+      aria-label={label ?? routeName}
       accessible={true}
       onBeforePress={onBeforePress}
       onLongPress={onLongPress}>

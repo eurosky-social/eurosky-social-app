@@ -66,6 +66,7 @@ import {SubtleHover} from '#/components/SubtleHover'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
+import {PRODUCT} from '#/config/product'
 import {IS_WEB} from '#/env'
 import {app, chat} from '#/lexicons'
 import * as bsky from '#/types/bsky'
@@ -898,7 +899,15 @@ function FollowBackButton({
   )
 }
 
-function SayHelloBtn({profile}: {profile: app.bsky.actor.defs.ProfileView}) {
+function SayHelloBtn(props: {profile: app.bsky.actor.defs.ProfileView}) {
+  return PRODUCT.capabilities.messaging ? <SayHelloBtnInner {...props} /> : null
+}
+
+function SayHelloBtnInner({
+  profile,
+}: {
+  profile: app.bsky.actor.defs.ProfileView
+}) {
   const {t: l} = useLingui()
   const client = useChatClient()
   const {currentAccount} = useSession()

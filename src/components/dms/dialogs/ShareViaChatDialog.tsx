@@ -11,9 +11,18 @@ import {SearchablePeopleList} from '#/components/dialogs/SearchablePeopleList'
 import {InitiateChatFlow} from '#/components/dms/InitiateChatFlow'
 import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
+import {PRODUCT} from '#/config/product'
 import {chat} from '#/lexicons'
 
-export function SendViaChatDialog({
+export function SendViaChatDialog(
+  props: React.ComponentProps<typeof SendViaChatDialogOuter>,
+) {
+  return PRODUCT.capabilities.messaging ? (
+    <SendViaChatDialogOuter {...props} />
+  ) : null
+}
+
+function SendViaChatDialogOuter({
   control,
   onSelectChat,
 }: {

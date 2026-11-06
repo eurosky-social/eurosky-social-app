@@ -3,6 +3,7 @@ import {type QueryClient, useQuery} from '@tanstack/react-query'
 import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
 import {useChatClient} from '#/state/session'
+import {PRODUCT} from '#/config/product'
 import {chat} from '#/lexicons'
 
 const RQKEY_ROOT = 'listConvoMembers'
@@ -22,6 +23,7 @@ export function useListConvoMembersQuery({
   const client = useChatClient()
 
   return useQuery({
+    enabled: PRODUCT.capabilities.messaging,
     queryKey: listConvoMembersQueryKey(convoId),
     queryFn: async () => {
       /*

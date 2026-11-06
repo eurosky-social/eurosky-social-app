@@ -5,6 +5,7 @@ import {
 } from '@tanstack/react-query'
 
 import {useChatClient} from '#/state/session'
+import {PRODUCT} from '#/config/product'
 import {chat} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 
@@ -25,7 +26,7 @@ export function useListConvoRequests({
   const client = useChatClient()
 
   return useInfiniteQuery({
-    enabled,
+    enabled: PRODUCT.capabilities.messaging && enabled,
     queryKey: RQKEY(limit),
     queryFn: async ({pageParam}) => {
       return await client.call(chat.bsky.convo.listConvoRequests, {

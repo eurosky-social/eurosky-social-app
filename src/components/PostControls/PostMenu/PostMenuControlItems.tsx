@@ -21,6 +21,7 @@ import {Repost_Stroke2_Corner2_Rounded as RepostIcon} from '#/components/icons/R
 import * as Menu from '#/components/Menu'
 import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
+import {PRODUCT} from '#/config/product'
 import {IS_WEB} from '#/env'
 import {type app} from '#/lexicons'
 import {usePostBookmark} from '../BookmarkButton'
@@ -179,14 +180,16 @@ export function PostMenuControlItems({
           <Menu.ItemText>{repostLabel}</Menu.ItemText>
           <Menu.ItemIcon icon={RepostIcon} position="right" />
         </Menu.Item>
-        <Menu.Item
-          testID="postDropdownQuoteBtn"
-          label={quoteLabel}
-          disabled={embeddingDisabled}
-          onPress={() => requireAuth(onQuote)}>
-          <Menu.ItemText>{quoteLabel}</Menu.ItemText>
-          <Menu.ItemIcon icon={QuoteIcon} position="right" />
-        </Menu.Item>
+        {PRODUCT.capabilities.quotePosting && (
+          <Menu.Item
+            testID="postDropdownQuoteBtn"
+            label={quoteLabel}
+            disabled={embeddingDisabled}
+            onPress={() => requireAuth(onQuote)}>
+            <Menu.ItemText>{quoteLabel}</Menu.ItemText>
+            <Menu.ItemIcon icon={QuoteIcon} position="right" />
+          </Menu.Item>
+        )}
         <Menu.Item
           testID="postDropdownSharePostBtn"
           label={shareLabel}

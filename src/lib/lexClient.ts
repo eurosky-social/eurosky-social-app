@@ -7,7 +7,12 @@ import {
 } from '@atproto/lex'
 
 import {getDeviceId, getSessionId} from '#/analytics/identifiers'
+import {PRODUCT} from '#/config/product'
 import {withAppViewShadowFetch} from '#/features/appView/shadow'
+import {
+  assertMessagingEnabled,
+  isMessagingRequestAllowed,
+} from '#/features/product/messaging'
 
 type CreateLexClientOptions = ClientOptions & {
   /**
@@ -61,8 +66,26 @@ export function createLexClient(
   options: CreateLexClientOptions = {},
 ): Client {
   const {includeDeviceSessionHeaders, ...clientOptions} = options
+  let guardedAgent = agent
+  if (!PRODUCT.capabilities.messaging) {
+    const source = buildAgent(agent)
+    guardedAgent = {
+      get did() {
+        return source.did
+      },
+      fetchHandler(path, init) {
+        /* Cover proxied, public, and ad-hoc chat clients before auth/network I/O. */
+        if (!isMessagingRequestAllowed(path)) {
+          assertMessagingEnabled()
+        }
+        return source.fetchHandler(path, init)
+      },
+    }
+  }
   return new Client(
-    includeDeviceSessionHeaders ? withDeviceSessionHeaders(agent) : agent,
+    includeDeviceSessionHeaders
+      ? withDeviceSessionHeaders(guardedAgent)
+      : guardedAgent,
     {
       strictResponseProcessing: false,
       ...clientOptions,

@@ -31,6 +31,8 @@ import {
   type PostDraft,
   type ThreadDraft,
 } from '#/view/com/composer/state/composer'
+import {PRODUCT} from '#/config/product'
+import {canCreatePost} from '#/features/product/publishing'
 import {app, chat, com} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {createGIFDescription} from '../gif-alt-text'
@@ -65,6 +67,14 @@ interface PostOpts {
 
 export async function post(queryClient: QueryClient, opts: PostOpts) {
   const thread = opts.thread
+  if (
+    !canCreatePost({
+      replyTo: opts.replyTo,
+      hasQuote: thread.posts.some(post => !!post.embed.quote),
+    })
+  ) {
+    throw new Error(t`This posting action is not available in this app.`)
+  }
   opts.onStateChange?.(t`Processing...`)
 
   let replyPromise:
@@ -120,6 +130,19 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
 
     const rt = await rtPromise
     const embed = await embedPromise
+    /* A pasted URL can resolve to a quote after the initial draft check. */
+    if (
+      !PRODUCT.capabilities.quotePosting &&
+      (bsky.isType(app.bsky.embed.record, embed) ||
+        bsky.isType(app.bsky.embed.recordWithMedia, embed))
+    ) {
+      const ref = bsky.isType(app.bsky.embed.record, embed)
+        ? embed.record
+        : embed.record.record
+      if (new AtUri(ref.uri).collection === 'app.bsky.feed.post') {
+        throw new Error(t`Quote posts are not available in this app.`)
+      }
+    }
     const reply = await replyPromise
     const record: app.bsky.feed.post.Main = {
       // IMPORTANT: $type has to exist, CID is calculated with the `$type` field

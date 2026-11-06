@@ -15,6 +15,7 @@ import {useCloseAllActiveElements} from '#/state/util'
 import {useIntentDialogs} from '#/components/intents/IntentDialogs'
 import {getTrendingTopicFeedUri} from '#/components/TrendingTopics'
 import {useAnalytics} from '#/analytics'
+import {PRODUCT} from '#/config/product'
 import {IS_IOS, IS_NATIVE} from '#/env'
 import {
   parseWidgetExploreClick,
@@ -167,7 +168,7 @@ export function useComposeIntent() {
       imageUrisStr: string | null
       videoUri: string | null
     }) => {
-      if (!hasSession) return
+      if (!hasSession || !PRODUCT.capabilities.standalonePosting) return
       closeAllActiveElements()
 
       // Whenever a video URI is present, we don't support adding images right now.
@@ -220,6 +221,7 @@ export function useGroupChatJoinIntent() {
   const prefetchJoinLinkPreviews = usePrefetchJoinLinkPreviews()
   return useCallback(
     (code: string, uri?: string) => {
+      if (!PRODUCT.capabilities.messaging) return
       closeAllActiveElements()
       if (hasSession) {
         setState({code})

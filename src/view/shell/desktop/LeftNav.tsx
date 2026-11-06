@@ -55,51 +55,11 @@ import {
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {type DialogControlProps} from '#/components/Dialog'
 import {ArrowBoxLeft_Stroke2_Corner0_Rounded as LeaveIcon} from '#/components/icons/Arrow'
-import {
-  Bell_Filled_Corner0_Rounded as BellFilledIcon,
-  Bell_Stroke2_Corner0_Rounded as BellIcon,
-} from '#/components/icons/Bell'
-import {
-  Bookmark_Filled_Corner0_Rounded as BookmarkFilledIcon,
-  Bookmark_Stroke2_Corner0_Rounded as BookmarkIcon,
-} from '#/components/icons/Bookmark'
-import {
-  BulletList_Filled_Corner0_Rounded as ListFilledIcon,
-  BulletList_Stroke2_Corner0_Rounded as ListIcon,
-} from '#/components/icons/BulletList'
 import {type Props as SVGIconProps} from '#/components/icons/common'
 import {DotGrid3x1_Stroke2_Corner0_Rounded as EllipsisIcon} from '#/components/icons/DotGrid'
-import {Earth_Stroke2_Corner0_Rounded as EarthIcon} from '#/components/icons/Earth'
 import {EditBig_Stroke2_Corner2_Rounded as EditBigIcon} from '#/components/icons/EditBig'
-import {
-  Hashtag_Filled_Corner0_Rounded as HashtagFilledIcon,
-  Hashtag_Stroke2_Corner0_Rounded as HashtagIcon,
-} from '#/components/icons/Hashtag'
-import {
-  HomeOpen_Filled_Corner0_Rounded as HomeFilledIcon,
-  HomeOpen_Stroke2_Corner0_Rounded as HomeIcon,
-} from '#/components/icons/Home'
-import {
-  MagnifyingGlass_Filled_Stroke2_Corner0_Rounded as MagnifyingGlassFilledIcon,
-  MagnifyingGlass_Stroke2_Corner0_Rounded as MagnifyingGlassIcon,
-} from '#/components/icons/MagnifyingGlass'
-import {
-  Message_Stroke2_Corner0_Rounded as MessageIcon,
-  Message_Stroke2_Corner0_Rounded_Filled as MessageFilledIcon,
-} from '#/components/icons/Message'
-import {
-  Newspaper_Filled_Corner2_Rounded as NewspaperFilledIcon,
-  Newspaper_Stroke2_Corner2_Rounded as NewspaperIcon,
-} from '#/components/icons/Newspaper'
 import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/Plus'
-import {
-  SettingsGear2_Filled_Corner0_Rounded as SettingsFilledIcon,
-  SettingsGear2_Stroke2_Corner0_Rounded as SettingsIcon,
-} from '#/components/icons/Settings'
-import {
-  UserCircle_Filled_Corner0_Rounded as UserCircleFilledIcon,
-  UserCircle_Stroke2_Corner0_Rounded as UserCircleIcon,
-} from '#/components/icons/UserCircle'
+import {UserCircle_Stroke2_Corner0_Rounded as UserCircleIcon} from '#/components/icons/UserCircle'
 import {
   CENTER_COLUMN_OFFSET,
   CENTER_COLUMN_WIDTH,
@@ -110,30 +70,18 @@ import {Text} from '#/components/Typography'
 import {useAgeAssurance} from '#/ageAssurance'
 import {useAnalytics} from '#/analytics'
 import {type Events} from '#/analytics/metrics/types'
+import {PRODUCT} from '#/config/product'
 import {IS_IOS, IS_NATIVE, IS_WEB} from '#/env'
 import {isFollowingV2HomeDotEnabled} from '#/features/followingV2/eligibility'
 import {useActorStatus} from '#/features/liveNow'
-import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
+import {isNavigationActive} from '#/features/product/navigation/model'
+import {useProductNavigation} from '#/features/product/navigation/useProductNavigation'
 import {type app} from '#/lexicons'
 import {router} from '#/routes'
 import {getComposeButtonLayout} from './composeButtonLayout'
 
 const LARGE_ELEMENT_SIZE = 48
 const NAV_ICON_WIDTH = 28
-const NAV_ITEM_TO_TAB: Partial<
-  Record<Events['nav:click']['item'], SidebarTab>
-> = {
-  home: 'Home',
-  search: 'Search',
-  chat: 'Messages',
-  notifications: 'Notifications',
-  profile: 'MyProfile',
-  atmosphere: 'Atmosphere',
-  feeds: 'Feeds',
-  lists: 'Lists',
-  saved: 'Bookmarks',
-  settings: 'Settings',
-}
 
 export const LEFT_NAV_STANDARD_WIDTH = 240
 export const LEFT_NAV_MINIMAL_WIDTH = 80
@@ -438,18 +386,11 @@ interface NavItemProps {
   minimal: boolean
   navItem: Events['nav:click']['item']
   /** Other routes that belong to this item's section, for its active state. */
-  relatedRoutes?: string[]
+  relatedRoutes?: readonly string[]
+  tab?: SidebarTab
+  selected?: boolean
   onNavigateTab?: (tab: SidebarTab) => void
 }
-/** Every route of the news hub, so its nav item stays lit across its tabs. */
-const NEWS_HUB_ROUTES = [
-  'NewsFeed',
-  'NewsSettings',
-  'NewsOutlets',
-  'OutletDirectory',
-  'Frontpage',
-  'NewsArticle',
-]
 
 function NavItem({
   count,
@@ -460,6 +401,8 @@ function NavItem({
   minimal,
   navItem,
   relatedRoutes,
+  tab,
+  selected,
   onNavigateTab,
 }: NavItemProps) {
   const t = useTheme()
@@ -470,7 +413,6 @@ function NavItem({
   const [pathName] = useMemo(() => router.matchPath(href), [href])
   const navigationState = useNavigationState(state => state)
   const currentRouteInfo = getCurrentRoute(navigationState)
-  const tab = NAV_ITEM_TO_TAB[navItem]
   const isCurrent =
     navItem === 'profile'
       ? isCurrentProfileRoute({
@@ -484,9 +426,10 @@ function NavItem({
         })
       : isTab(currentRouteInfo.name, pathName)
   const isSelected =
-    IS_NATIVE && tab
+    selected ??
+    (IS_NATIVE && tab
       ? getTabState(navigationState, tab) !== TabState.Outside
-      : isCurrent
+      : isCurrent)
   const isRelated =
     currentRouteInfo.name.startsWith(pathName) ||
     !!relatedRoutes?.includes(currentRouteInfo.name)
@@ -683,6 +626,8 @@ export function DesktopLeftNav({
   onNavigateTab?: (tab: SidebarTab) => void
 }) {
   const {hasSession, currentAccount} = useSession()
+  const navigationState = useNavigationState(state => state)
+  const destinations = useProductNavigation('sidebar')
   const {i18n, t: l} = useLingui()
   const ax = useAnalytics()
   const {gtMobile} = useBreakpoints()
@@ -718,9 +663,6 @@ export function DesktopLeftNav({
         : i18n.number(moderationInboxUnreadCount)
       : undefined
   const hasHomeBadge = useHomeBadge()
-  const isAtmosphereExploreEnabled = ax.features.enabled(
-    ax.features.AtmosphereScreenEnable,
-  )
   const insets = useSafeAreaInsets()
 
   const leftNavMinimal = isMessagesRelatedScreen || leftNavMinimalBreakpoint
@@ -738,119 +680,44 @@ export function DesktopLeftNav({
           <NavSignupCard />
         </View>
       ) : null}
-      {hasSession && (
-        <>
-          <NavItem
-            label={l`Home`}
-            href="/"
-            navItem="home"
-            onNavigateTab={onNavigateTab}
-            minimal={leftNavMinimal}
-            hasNew={hasHomeBadge && isFollowingV2HomeDotEnabled(ax)}
-            icons={{
-              inactive: HomeIcon,
-              active: HomeFilledIcon,
-            }}
-          />
-          <NavItem
-            label={l`News`}
-            href={NEWS_V2_ENABLED ? '/news/explore' : '/news'}
-            navItem="news"
-            relatedRoutes={NEWS_V2_ENABLED ? NEWS_HUB_ROUTES : undefined}
-            minimal={leftNavMinimal}
-            icons={{
-              inactive: NewspaperIcon,
-              active: NewspaperFilledIcon,
-            }}
-          />
-          <NavItem
-            label={l`Explore`}
-            href="/search"
-            navItem="search"
-            onNavigateTab={onNavigateTab}
-            minimal={leftNavMinimal}
-            icons={{
-              inactive: MagnifyingGlassIcon,
-              active: MagnifyingGlassFilledIcon,
-            }}
-          />
-          <NavItem
-            label={l`Notifications`}
-            href="/notifications"
-            navItem="notifications"
-            onNavigateTab={onNavigateTab}
-            minimal={leftNavMinimal}
-            count={numUnreadNotifications}
-            icons={{inactive: BellIcon, active: BellFilledIcon}}
-          />
-          {isAtmosphereExploreEnabled && (
-            <NavItem
-              label={l`Atmosphere`}
-              href="/atmosphere"
-              navItem="atmosphere"
-              onNavigateTab={onNavigateTab}
-              minimal={leftNavMinimal}
-              icons={{
-                inactive: EarthIcon,
-                active: EarthIcon,
-              }}
-            />
-          )}
-          <NavItem
-            label={l`Chat`}
-            href="/messages"
-            navItem="chat"
-            onNavigateTab={onNavigateTab}
-            minimal={leftNavMinimal}
-            count={
-              aa.flags.chatDisabled ? undefined : numUnreadMessages.numUnread
-            }
-            hasNew={!aa.flags.chatDisabled && numUnreadMessages.hasNew}
-            icons={{inactive: MessageIcon, active: MessageFilledIcon}}
-          />
-          <NavItem
-            label={l`Feeds`}
-            href="/feeds"
-            navItem="feeds"
-            onNavigateTab={onNavigateTab}
-            minimal={leftNavMinimal}
-            icons={{inactive: HashtagIcon, active: HashtagFilledIcon}}
-          />
-          <NavItem
-            label={l`Lists`}
-            href="/lists"
-            navItem="lists"
-            onNavigateTab={onNavigateTab}
-            minimal={leftNavMinimal}
-            icons={{inactive: ListIcon, active: ListFilledIcon}}
-          />
-          <NavItem
-            label={l({message: 'Saved', context: 'link to bookmarks screen'})}
-            href="/saved"
-            navItem="saved"
-            onNavigateTab={onNavigateTab}
-            minimal={leftNavMinimal}
-            icons={{inactive: BookmarkIcon, active: BookmarkFilledIcon}}
-          />
-          <NavItem
-            label={l`Profile`}
-            href={makeProfileLink(currentAccount!)}
-            navItem="profile"
-            onNavigateTab={onNavigateTab}
-            minimal={leftNavMinimal}
-            icons={{inactive: UserCircleIcon, active: UserCircleFilledIcon}}
-          />
-          <NavItem
-            label={l`Settings`}
-            href="/settings"
-            navItem="settings"
-            onNavigateTab={onNavigateTab}
-            minimal={leftNavMinimal}
-            count={numUnreadModerationInbox}
-            icons={{inactive: SettingsIcon, active: SettingsFilledIcon}}
-          />
-          <ComposeBtn minimal={leftNavMinimal} />
-        </>
+      {destinations.map(destination => (
+        <NavItem
+          key={destination.id}
+          label={i18n._(destination.label)}
+          href={destination.href}
+          navItem={destination.metricItem}
+          tab={destination.tab}
+          selected={isNavigationActive(destination, navigationState, {
+            native: IS_NATIVE,
+            handle: currentAccount?.handle,
+            destinations,
+          })}
+          relatedRoutes={destination.routes}
+          onNavigateTab={onNavigateTab}
+          minimal={leftNavMinimal}
+          icons={destination.icons}
+          count={
+            destination.id === 'notifications'
+              ? numUnreadNotifications
+              : destination.id === 'chat'
+                ? aa.flags.chatDisabled
+                  ? undefined
+                  : numUnreadMessages.numUnread
+                : destination.id === 'settings'
+                  ? numUnreadModerationInbox
+                  : undefined
+          }
+          hasNew={
+            destination.id === 'home'
+              ? hasHomeBadge && isFollowingV2HomeDotEnabled(ax)
+              : destination.id === 'chat' &&
+                !aa.flags.chatDisabled &&
+                numUnreadMessages.hasNew
+          }
+        />
+      ))}
+      {hasSession && PRODUCT.capabilities.standalonePosting && (
+        <ComposeBtn minimal={leftNavMinimal} />
       )}
     </>
   )

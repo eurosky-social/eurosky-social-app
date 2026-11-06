@@ -1,0 +1,54 @@
+{
+  "social": {
+    "navigation": {
+      "sidebar": [
+        "home",
+        "news",
+        "search",
+        "notifications",
+        "atmosphere",
+        "chat",
+        "feeds",
+        "lists",
+        "saved",
+        "profile",
+        "settings"
+      ],
+      "drawer": [
+        "search",
+        "home",
+        "news",
+        "chat",
+        "notifications",
+        "atmosphere",
+        "feeds",
+        "lists",
+        "saved",
+        "profile",
+        "settings"
+      ],
+      "bottomBar": ["home", "search", "chat", "notifications", "profile"],
+      "signedOutSidebar": [],
+      "signedOutDrawer": ["home", "feeds", "search"]
+    },
+    "capabilities": {
+      "messaging": true,
+      "standalonePosting": true,
+      "quotePosting": true
+    }
+  },
+  "news": {
+    "navigation": {
+      "sidebar": ["home", "profile", "settings"],
+      "drawer": ["home", "profile", "settings"],
+      "bottomBar": ["home", "profile", "settings"],
+      "signedOutSidebar": [],
+      "signedOutDrawer": ["home"]
+    },
+    "capabilities": {
+      "messaging": false,
+      "standalonePosting": false,
+      "quotePosting": false
+    }
+  }
+}

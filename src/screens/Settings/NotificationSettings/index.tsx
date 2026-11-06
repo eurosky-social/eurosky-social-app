@@ -35,6 +35,7 @@ import {
 } from '#/components/icons/Repost'
 import {Shapes_Stroke2_Corner0_Rounded as ShapesIcon} from '#/components/icons/Shapes'
 import * as Layout from '#/components/Layout'
+import {PRODUCT} from '#/config/product'
 import {IS_ANDROID, IS_IOS, IS_WEB} from '#/env'
 import * as SettingsList from '../components/SettingsList'
 import {ChatNotificationDialogs} from './components/ChatNotificationDialogs'
@@ -258,40 +259,46 @@ export function NotificationSettingsScreen({}: Props) {
                 showSkeleton={!settings}
               />
             </SettingsList.PressableItem>
-            <SettingsList.PressableItem
-              label={l`Settings for notifications for new messages`}
-              onPress={chatDialogControl.open}
-              contentContainerStyle={[a.align_start]}>
-              <SettingsList.ItemIcon icon={MessageIcon} />
-              <ItemTextWithSubtitle
-                titleText={<Trans>New messages</Trans>}
-                subtitleText={
-                  chatError ? (
-                    <Trans>Failed to load notification settings.</Trans>
-                  ) : (
-                    <SettingPreview preference={chatSettings?.chat} />
-                  )
-                }
-                showSkeleton={!chatSettings && !chatError}
-              />
-            </SettingsList.PressableItem>
-            <SettingsList.PressableItem
-              label={l`Settings for notifications for new message requests`}
-              onPress={chatRequestDialogControl.open}
-              contentContainerStyle={[a.align_start]}>
-              <SettingsList.ItemIcon icon={EnvelopeIcon} />
-              <ItemTextWithSubtitle
-                titleText={<Trans>New message requests</Trans>}
-                subtitleText={
-                  chatError ? (
-                    <Trans>Failed to load notification settings.</Trans>
-                  ) : (
-                    <SettingPreview preference={chatSettings?.chatRequest} />
-                  )
-                }
-                showSkeleton={!chatSettings && !chatError}
-              />
-            </SettingsList.PressableItem>
+            {PRODUCT.capabilities.messaging && (
+              <>
+                <SettingsList.PressableItem
+                  label={l`Settings for notifications for new messages`}
+                  onPress={chatDialogControl.open}
+                  contentContainerStyle={[a.align_start]}>
+                  <SettingsList.ItemIcon icon={MessageIcon} />
+                  <ItemTextWithSubtitle
+                    titleText={<Trans>New messages</Trans>}
+                    subtitleText={
+                      chatError ? (
+                        <Trans>Failed to load notification settings.</Trans>
+                      ) : (
+                        <SettingPreview preference={chatSettings?.chat} />
+                      )
+                    }
+                    showSkeleton={!chatSettings && !chatError}
+                  />
+                </SettingsList.PressableItem>
+                <SettingsList.PressableItem
+                  label={l`Settings for notifications for new message requests`}
+                  onPress={chatRequestDialogControl.open}
+                  contentContainerStyle={[a.align_start]}>
+                  <SettingsList.ItemIcon icon={EnvelopeIcon} />
+                  <ItemTextWithSubtitle
+                    titleText={<Trans>New message requests</Trans>}
+                    subtitleText={
+                      chatError ? (
+                        <Trans>Failed to load notification settings.</Trans>
+                      ) : (
+                        <SettingPreview
+                          preference={chatSettings?.chatRequest}
+                        />
+                      )
+                    }
+                    showSkeleton={!chatSettings && !chatError}
+                  />
+                </SettingsList.PressableItem>
+              </>
+            )}
             <SettingsList.PressableItem
               label={l`Settings for notifications for everything else`}
               onPress={miscDialogControl.open}
@@ -378,10 +385,12 @@ export function NotificationSettingsScreen({}: Props) {
           <Trans>Get notifications when people repost your reposts.</Trans>
         }
       />
-      <ChatNotificationDialogs
-        chatControl={chatDialogControl}
-        chatRequestControl={chatRequestDialogControl}
-      />
+      {PRODUCT.capabilities.messaging && (
+        <ChatNotificationDialogs
+          chatControl={chatDialogControl}
+          chatRequestControl={chatRequestDialogControl}
+        />
+      )}
       <NotificationSettingsDialog
         control={miscDialogControl}
         name="starterpackJoined"

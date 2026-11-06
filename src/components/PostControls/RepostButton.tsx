@@ -13,6 +13,7 @@ import {CloseQuote_Stroke2_Corner1_Rounded as QuoteIcon} from '#/components/icon
 import {Repost_Stroke2_Corner3_Rounded as RepostIcon} from '#/components/icons/Repost'
 import {useFormatPostStatCount} from '#/components/PostControls/util'
 import {Text} from '#/components/Typography'
+import {PRODUCT} from '#/config/product'
 import {IS_IPAD} from '#/env'
 import {
   PostControlButton,
@@ -49,7 +50,7 @@ function RepostButtonDialog({
 
   const onLongPress = () =>
     requireAuth(() => {
-      if (embeddingDisabled) {
+      if (embeddingDisabled || !PRODUCT.capabilities.quotePosting) {
         dialogControl.open()
       } else {
         onQuote()
@@ -144,7 +145,12 @@ let RepostButtonDialogInner = ({
   const onPressClose = useCallback(() => control.close(), [control])
 
   return (
-    <Dialog.ScrollableInner label={_(msg`Repost or quote post`)}>
+    <Dialog.ScrollableInner
+      label={
+        PRODUCT.capabilities.quotePosting
+          ? _(msg`Repost or quote post`)
+          : _(msg({message: 'Repost', context: 'action'}))
+      }>
       <View style={a.gap_xl}>
         <View style={a.gap_xs}>
           <Button
@@ -167,43 +173,49 @@ let RepostButtonDialogInner = ({
               )}
             </Text>
           </Button>
-          <Button
-            disabled={embeddingDisabled}
-            testID="quoteBtn"
-            style={[a.justify_start, a.px_md, a.gap_sm]}
-            label={
-              embeddingDisabled
-                ? _(msg`Quote posts disabled`)
-                : _(msg`Quote post`)
-            }
-            onPress={onPressQuote}
-            size="large"
-            variant="ghost"
-            color="primary">
-            <QuoteIcon
-              size="lg"
-              fill={
+          {PRODUCT.capabilities.quotePosting && (
+            <Button
+              disabled={embeddingDisabled}
+              testID="quoteBtn"
+              style={[a.justify_start, a.px_md, a.gap_sm]}
+              label={
                 embeddingDisabled
-                  ? t.atoms.text_contrast_low.color
-                  : t.palette.primary_500
+                  ? _(msg`Quote posts disabled`)
+                  : _(msg`Quote post`)
               }
-            />
-            <Text
-              style={[
-                a.font_semi_bold,
-                a.text_xl,
-                embeddingDisabled && t.atoms.text_contrast_low,
-              ]}>
-              {embeddingDisabled ? (
-                <Trans>Quote posts disabled</Trans>
-              ) : (
-                <Trans>Quote post</Trans>
-              )}
-            </Text>
-          </Button>
+              onPress={onPressQuote}
+              size="large"
+              variant="ghost"
+              color="primary">
+              <QuoteIcon
+                size="lg"
+                fill={
+                  embeddingDisabled
+                    ? t.atoms.text_contrast_low.color
+                    : t.palette.primary_500
+                }
+              />
+              <Text
+                style={[
+                  a.font_semi_bold,
+                  a.text_xl,
+                  embeddingDisabled && t.atoms.text_contrast_low,
+                ]}>
+                {embeddingDisabled ? (
+                  <Trans>Quote posts disabled</Trans>
+                ) : (
+                  <Trans>Quote post</Trans>
+                )}
+              </Text>
+            </Button>
+          )}
         </View>
         <Button
-          label={_(msg`Cancel quote post`)}
+          label={
+            PRODUCT.capabilities.quotePosting
+              ? _(msg`Cancel quote post`)
+              : _(msg`Cancel`)
+          }
           onPress={onPressClose}
           size="large"
           color="secondary">

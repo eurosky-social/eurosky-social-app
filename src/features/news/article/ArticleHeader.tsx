@@ -19,6 +19,7 @@ import * as Menu from '#/components/Menu'
 import * as toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {VerificationCheckButton} from '#/components/verification/VerificationCheckButton'
+import {PRODUCT} from '#/config/product'
 import {
   findFrontpage,
   frontpagePath,
@@ -198,18 +199,20 @@ export function ArticleHeader({
 
         <View style={[a.flex_1]} />
 
-        <Button
-          label={l`Share this story`}
-          size="small"
-          color="primary"
-          variant="solid"
-          onPress={onShare}
-          style={[!!accent && {backgroundColor: accent}]}>
-          <ButtonIcon icon={ComposeIcon} />
-          <ButtonText>
-            <Trans>Share this story</Trans>
-          </ButtonText>
-        </Button>
+        {PRODUCT.capabilities.standalonePosting && (
+          <Button
+            label={l`Share this story`}
+            size="small"
+            color="primary"
+            variant="solid"
+            onPress={onShare}
+            style={[!!accent && {backgroundColor: accent}]}>
+            <ButtonIcon icon={ComposeIcon} />
+            <ButtonText>
+              <Trans>Share this story</Trans>
+            </ButtonText>
+          </Button>
+        )}
         <Link
           to={url}
           label={l`View the article`}

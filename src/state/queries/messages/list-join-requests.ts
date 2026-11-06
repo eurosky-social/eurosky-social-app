@@ -4,6 +4,7 @@ import {useInfiniteQuery, useQueryClient} from '@tanstack/react-query'
 import {useMessagesEventBus} from '#/state/messages/events'
 import {createQueryKey} from '#/state/queries/util'
 import {useChatClient} from '#/state/session'
+import {PRODUCT} from '#/config/product'
 import {chat} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {STALE} from '..'
@@ -25,7 +26,8 @@ export function useListJoinRequestsQuery({
   const client = useChatClient()
   const queryClient = useQueryClient()
   const messagesBus = useMessagesEventBus()
-  const isEnabled = enabled !== false && !!convoId
+  const isEnabled =
+    PRODUCT.capabilities.messaging && enabled !== false && !!convoId
 
   useEffect(() => {
     if (!isEnabled || !convoId) return

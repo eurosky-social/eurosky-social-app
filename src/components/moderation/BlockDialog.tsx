@@ -25,6 +25,7 @@ import {TimesLarge_Stroke2_Corner0_Rounded as XIcon} from '#/components/icons/Ti
 import {Loader} from '#/components/Loader'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
+import {PRODUCT} from '#/config/product'
 import {chat} from '#/lexicons'
 import {type AnyProfileView} from '#/types/bsky/profile'
 
@@ -119,9 +120,11 @@ function BlockDialogInner({
       subject: profile.did,
       enabled: !profile.viewer?.blocking,
     })
-  const items: Item[] = (data?.pages.flatMap(page => page.convos) ?? []).filter(
-    item => !removedConvoIds.has(item.id),
-  )
+  const items: Item[] = PRODUCT.capabilities.messaging
+    ? (data?.pages.flatMap(page => page.convos) ?? []).filter(
+        item => !removedConvoIds.has(item.id),
+      )
+    : []
   const previewItems = items.slice(0, MAX_PREVIEW_GROUP_CHATS)
   const hiddenCount = items.length - previewItems.length
 

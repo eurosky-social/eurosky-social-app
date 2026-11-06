@@ -2,6 +2,7 @@ import {type DidString} from '@atproto/syntax'
 import {useQuery} from '@tanstack/react-query'
 
 import {useChatClient, useSession} from '#/state/session'
+import {PRODUCT} from '#/config/product'
 import {chat} from '#/lexicons'
 import {STALE} from '..'
 
@@ -24,6 +25,6 @@ export function useGetConvoAvailabilityQuery(
       })
     },
     staleTime: STALE.INFINITY,
-    enabled: enabled && hasSession,
+    enabled: PRODUCT.capabilities.messaging && enabled && hasSession,
   })
 }

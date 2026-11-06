@@ -24,7 +24,6 @@ import {FeedFeedbackProvider, useFeedFeedback} from '#/state/feed-feedback'
 import {useSetHomeBadge} from '#/state/home-badge'
 import {type FeedSourceInfo} from '#/state/queries/feed'
 import {useSession} from '#/state/session'
-import {FAB} from '#/view/com/util/fab/FAB'
 import {type ListMethods} from '#/view/com/util/List'
 import {LoadLatestBtn} from '#/view/com/util/load-latest/LoadLatestBtn'
 import {MainScrollProvider} from '#/view/com/util/MainScrollProvider'
@@ -37,6 +36,7 @@ import {
   isFollowingV2Eligible,
   isFollowingV2HomeDotEnabled,
 } from '#/features/followingV2/eligibility'
+import {ComposeFAB as FAB} from '#/features/product/ComposeFAB'
 import {app} from '#/lexicons'
 import {PostFeed, type PostFeedRef} from './PostFeed'
 import {type FeedDescriptor, type FeedParams} from './queries/postFeed'

@@ -22,6 +22,7 @@ import {useSession} from '#/state/session'
 import {useLoggedOutViewControls} from '#/state/shell/logged-out'
 import {useCloseAllActiveElements} from '#/state/util'
 import {useAnalytics} from '#/analytics'
+import {PRODUCT} from '#/config/product'
 import {IS_ANDROID, IS_IOS} from '#/env'
 import {navigateToPath, resetToTab} from '#/Navigation'
 import {router} from '#/routes'
@@ -134,29 +135,33 @@ export function useNotificationsHandler() {
     // assign both chat notifications to a group
     // NOTE: I don't think that it will retroactively move them into the group
     // if the channels already exist. no big deal imo -sfn
-    const CHAT_GROUP = 'chat'
-    void Notifications.setNotificationChannelGroupAsync(CHAT_GROUP, {
-      name: l`Chat`,
-      description: l`You can choose whether chat notifications have sound in the chat settings within the app`,
-    })
-    void Notifications.setNotificationChannelAsync('chat-messages', {
-      name: l`Chat messages - sound`,
-      groupId: CHAT_GROUP,
-      importance: Notifications.AndroidImportance.MAX,
-      sound: 'dm.mp3',
-      showBadge: true,
-      vibrationPattern: [250],
-      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PRIVATE,
-    })
-    void Notifications.setNotificationChannelAsync('chat-messages-muted', {
-      name: l`Chat messages - silent`,
-      groupId: CHAT_GROUP,
-      importance: Notifications.AndroidImportance.MAX,
-      sound: null,
-      showBadge: true,
-      vibrationPattern: [250],
-      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PRIVATE,
-    })
+    if (PRODUCT.capabilities.messaging) {
+      const CHAT_GROUP = 'chat'
+      void Notifications.setNotificationChannelGroupAsync(CHAT_GROUP, {
+        name: l`Chat`,
+        description: l`You can choose whether chat notifications have sound in the chat settings within the app`,
+      })
+      void Notifications.setNotificationChannelAsync('chat-messages', {
+        name: l`Chat messages - sound`,
+        groupId: CHAT_GROUP,
+        importance: Notifications.AndroidImportance.MAX,
+        sound: 'dm.mp3',
+        showBadge: true,
+        vibrationPattern: [250],
+        lockscreenVisibility:
+          Notifications.AndroidNotificationVisibility.PRIVATE,
+      })
+      void Notifications.setNotificationChannelAsync('chat-messages-muted', {
+        name: l`Chat messages - silent`,
+        groupId: CHAT_GROUP,
+        importance: Notifications.AndroidImportance.MAX,
+        sound: null,
+        showBadge: true,
+        vibrationPattern: [250],
+        lockscreenVisibility:
+          Notifications.AndroidNotificationVisibility.PRIVATE,
+      })
+    }
 
     void Notifications.setNotificationChannelAsync(
       'like' satisfies NotificationReason,
@@ -228,6 +233,7 @@ export function useNotificationsHandler() {
       if (!payload) return
 
       if (isChatNotificationPayload(payload)) {
+        if (!PRODUCT.capabilities.messaging) return
         logger.debug(`useNotificationsHandler: handling chat notification`, {
           payload,
         })
@@ -307,6 +313,15 @@ export function useNotificationsHandler() {
         const payload = getNotificationPayload(e)
 
         if (!payload) return Promise.resolve(DEFAULT_HANDLER_OPTIONS)
+        if (
+          !PRODUCT.capabilities.messaging &&
+          isChatNotificationPayload(payload)
+        ) {
+          return Promise.resolve({
+            ...DEFAULT_HANDLER_OPTIONS,
+            shouldSetBadge: false,
+          })
+        }
 
         logger.debug('useNotificationsHandler: incoming', {e, payload})
 
@@ -350,6 +365,14 @@ export function useNotificationsHandler() {
 
         const payload = getNotificationPayload(e.notification)
 
+        if (
+          payload &&
+          !PRODUCT.capabilities.messaging &&
+          isChatNotificationPayload(payload)
+        ) {
+          Notifications.clearLastNotificationResponse()
+          return
+        }
         if (payload) {
           logger.debug(
             'User pressed a notification, opening notifications tab',
@@ -432,6 +455,12 @@ export function useNotificationsHandler() {
 }
 
 export function storePayloadForAccountSwitch(payload: NotificationPayload) {
+  if (
+    !PRODUCT.capabilities.messaging &&
+    payload &&
+    isChatNotificationPayload(payload)
+  )
+    return
   storedAccountSwitchPayload = payload
 }
 

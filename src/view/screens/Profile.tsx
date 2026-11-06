@@ -36,7 +36,6 @@ import {ProfileLists} from '#/view/com/lists/ProfileLists'
 import {PagerWithHeader} from '#/view/com/pager/PagerWithHeader'
 import {type PostFeedRef} from '#/view/com/posts/PostFeed'
 import {ErrorScreen} from '#/view/com/util/error/ErrorScreen'
-import {FAB} from '#/view/com/util/fab/FAB'
 import {type ListRef} from '#/view/com/util/List'
 import {ProfileHeader, ProfileHeaderLoading} from '#/screens/Profile/Header'
 import {getProfileBannerSafeAreaCoverHeight} from '#/screens/Profile/Header/layout'
@@ -52,6 +51,8 @@ import {VideoClip_Stroke1_Corner0_Rounded as VideoIcon} from '#/components/icons
 import * as Layout from '#/components/Layout'
 import {ScreenHider} from '#/components/moderation/ScreenHider'
 import {ProfileStarterPacks} from '#/components/StarterPack/ProfileStarterPacks'
+import {PRODUCT} from '#/config/product'
+import {ComposeFAB as FAB} from '#/features/product/ComposeFAB'
 import {type app} from '#/lexicons'
 import {navigate} from '#/Navigation'
 
@@ -495,7 +496,7 @@ function ProfileScreenLoaded({
                 setScrollViewTag={setScrollViewTag}
                 emptyStateMessage={_(msg`No posts yet`)}
                 emptyStateButton={
-                  isMe
+                  isMe && PRODUCT.capabilities.standalonePosting
                     ? {
                         label: _(msg`Write a post`),
                         text: _(msg`Write a post`),
@@ -537,7 +538,7 @@ function ProfileScreenLoaded({
                 setScrollViewTag={setScrollViewTag}
                 emptyStateMessage={_(msg`No media yet`)}
                 emptyStateButton={
-                  isMe
+                  isMe && PRODUCT.capabilities.standalonePosting
                     ? {
                         label: _(msg`Post a photo`),
                         text: _(msg`Post a photo`),
@@ -564,7 +565,7 @@ function ProfileScreenLoaded({
                 setScrollViewTag={setScrollViewTag}
                 emptyStateMessage={_(msg`No video posts yet`)}
                 emptyStateButton={
-                  isMe
+                  isMe && PRODUCT.capabilities.standalonePosting
                     ? {
                         label: _(msg`Post a video`),
                         text: _(msg`Post a video`),

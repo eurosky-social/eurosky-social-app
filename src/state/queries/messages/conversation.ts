@@ -8,6 +8,7 @@ import {
 import {STALE} from '#/state/queries'
 import {useOnMarkAsRead} from '#/state/queries/messages/list-conversations'
 import {useChatClient} from '#/state/session'
+import {PRODUCT} from '#/config/product'
 import {chat} from '#/lexicons'
 import {
   RQKEY_PARTIAL as UNREAD_COUNTS_PARTIAL_KEY,
@@ -27,6 +28,7 @@ export function useConvoQuery({convoId}: {convoId: string}) {
   const client = useChatClient()
 
   return useQuery({
+    enabled: PRODUCT.capabilities.messaging,
     queryKey: RQKEY(convoId),
     queryFn: async () => {
       const data = await client.call(chat.bsky.convo.getConvo, {convoId})

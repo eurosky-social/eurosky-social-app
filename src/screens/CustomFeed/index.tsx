@@ -29,7 +29,6 @@ import {useSession} from '#/state/session'
 import {PostFeed} from '#/view/com/posts/PostFeed'
 import {EmptyState} from '#/view/com/util/EmptyState'
 import {ErrorScreen} from '#/view/com/util/error/ErrorScreen'
-import {FAB} from '#/view/com/util/fab/FAB'
 import {type ListRef} from '#/view/com/util/List'
 import {LoadLatestBtn} from '#/view/com/util/load-latest/LoadLatestBtn'
 import {useTheme} from '#/alf'
@@ -38,6 +37,7 @@ import {HashtagWide_Stroke1_Corner0_Rounded as HashtagWideIcon} from '#/componen
 import * as Layout from '#/components/Layout'
 import {PostFeedSkeleton} from '#/components/PostFeedSkeleton'
 import {IS_NATIVE} from '#/env'
+import {ComposeFAB as FAB} from '#/features/product/ComposeFAB'
 import {app} from '#/lexicons'
 import {
   CustomFeedHeader,

@@ -15,9 +15,18 @@ import {canBeMessaged} from '#/components/dms/util'
 import {Message_Stroke2_Corner0_Rounded as Message} from '#/components/icons/Message'
 import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
+import {PRODUCT} from '#/config/product'
 import {type app} from '#/lexicons'
 
-export function MessageProfileButton({
+export function MessageProfileButton(
+  props: React.ComponentProps<typeof MessageProfileButtonInner>,
+) {
+  return PRODUCT.capabilities.messaging ? (
+    <MessageProfileButtonInner {...props} />
+  ) : null
+}
+
+function MessageProfileButtonInner({
   profile,
 }: {
   profile: app.bsky.actor.defs.ProfileViewDetailed

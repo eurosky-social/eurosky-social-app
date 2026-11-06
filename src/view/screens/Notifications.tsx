@@ -24,7 +24,6 @@ import {truncateAndInvalidate} from '#/state/queries/util'
 import {NotificationFeed} from '#/view/com/notifications/NotificationFeed'
 import {Pager} from '#/view/com/pager/Pager'
 import {TabBar} from '#/view/com/pager/TabBar'
-import {FAB} from '#/view/com/util/fab/FAB'
 import {type ListMethods} from '#/view/com/util/List'
 import {LoadLatestBtn} from '#/view/com/util/load-latest/LoadLatestBtn'
 import {atoms as a, useTheme, web} from '#/alf'
@@ -36,6 +35,7 @@ import * as Layout from '#/components/Layout'
 import {InlineLinkText, Link} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import {IS_NATIVE} from '#/env'
+import {ComposeFAB as FAB} from '#/features/product/ComposeFAB'
 
 // We don't currently persist this across reloads since
 // you gotta visit All to clear the badge anyway.

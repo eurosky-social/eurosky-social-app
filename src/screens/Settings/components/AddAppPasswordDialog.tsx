@@ -23,6 +23,7 @@ import * as Toggle from '#/components/forms/Toggle'
 import {ChevronRight_Stroke2_Corner0_Rounded as ChevronRight} from '#/components/icons/Chevron'
 import {SquareBehindSquare4_Stroke2_Corner0_Rounded as CopyIcon} from '#/components/icons/SquareBehindSquare4'
 import {Text} from '#/components/Typography'
+import {PRODUCT} from '#/config/product'
 import {IS_WEB} from '#/env'
 import {type com} from '#/lexicons'
 import {CopyButton} from './CopyButton'
@@ -83,7 +84,10 @@ function CreateDialogInner({passwords}: {passwords: string[]}) {
       if (passwords.find(p => p === chosenName)) {
         throw new DisplayableError(_(msg`App password name must be unique`))
       }
-      return await actuallyCreateAppPassword({name: chosenName, privileged})
+      return await actuallyCreateAppPassword({
+        name: chosenName,
+        privileged: PRODUCT.capabilities.messaging && privileged,
+      })
     },
   })
 
@@ -141,19 +145,21 @@ function CreateDialogInner({passwords}: {passwords: string[]}) {
               <Animated.View
                 style={[a.gap_lg]}
                 layout={native(LinearTransition)}>
-                <Toggle.Item
-                  name="privileged"
-                  type="checkbox"
-                  label={_(msg`Allow access to your direct messages`)}
-                  value={privileged}
-                  onChange={setPrivileged}
-                  style={[a.flex_1]}>
-                  <Toggle.Checkbox />
-                  <Toggle.LabelText
-                    style={[a.font_normal, a.text_md, a.leading_snug]}>
-                    <Trans>Allow access to your direct messages</Trans>
-                  </Toggle.LabelText>
-                </Toggle.Item>
+                {PRODUCT.capabilities.messaging && (
+                  <Toggle.Item
+                    name="privileged"
+                    type="checkbox"
+                    label={_(msg`Allow access to your direct messages`)}
+                    value={privileged}
+                    onChange={setPrivileged}
+                    style={[a.flex_1]}>
+                    <Toggle.Checkbox />
+                    <Toggle.LabelText
+                      style={[a.font_normal, a.text_md, a.leading_snug]}>
+                      <Trans>Allow access to your direct messages</Trans>
+                    </Toggle.LabelText>
+                  </Toggle.Item>
+                )}
                 <Button
                   label={_(msg`Next`)}
                   size="large"

@@ -12,6 +12,7 @@ import {useSession} from '#/state/session'
 import {atoms as a, useTheme} from '#/alf'
 import * as Dialog from '#/components/Dialog'
 import {Text} from '#/components/Typography'
+import {PRODUCT} from '#/config/product'
 import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
 import {navigate} from '#/Navigation'
 import {router} from '#/routes'
@@ -301,6 +302,7 @@ export function KeyboardShortcuts() {
         void navigateTo({name: 'Notifications'})
         break
       case 'c':
+        if (!PRODUCT.capabilities.messaging) return false
         void navigateTo({name: 'Messages', params: {}})
         break
       case 'f':

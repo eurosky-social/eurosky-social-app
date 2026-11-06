@@ -9,6 +9,8 @@ import {
 import {logger} from '#/logger'
 import {useAppviewClient, useChatClient} from '#/state/session'
 import * as Toast from '#/components/Toast'
+import {PRODUCT} from '#/config/product'
+import {assertMessagingEnabled} from '#/features/product/messaging'
 import {app, chat} from '#/lexicons'
 
 const RQKEY_ROOT = 'notification-settings'
@@ -86,7 +88,7 @@ export function useChatNotificationSettingsQuery({
       const data = await client.call(chat.bsky.notification.getPreferences)
       return chatPreferencesForSettings(data.preferences)
     },
-    enabled,
+    enabled: PRODUCT.capabilities.messaging && enabled !== false,
   })
 }
 export function useNotificationSettingsUpdateMutation() {
@@ -101,6 +103,7 @@ export function useNotificationSettingsUpdateMutation() {
   return useMutation({
     mutationFn: async (update: NotificationSettingsUpdate) => {
       const {appUpdate, chatUpdate} = splitNotificationSettingsUpdate(update)
+      if (hasUpdates(chatUpdate)) assertMessagingEnabled()
       await Promise.all([
         hasUpdates(appUpdate)
           ? appviewClient.call(
@@ -114,6 +117,8 @@ export function useNotificationSettingsUpdateMutation() {
       ])
     },
     onMutate: update => {
+      if (hasUpdates(splitNotificationSettingsUpdate(update).chatUpdate))
+        assertMessagingEnabled()
       optimisticUpdateNotificationSettings(queryClient, update)
     },
     onError: e => {

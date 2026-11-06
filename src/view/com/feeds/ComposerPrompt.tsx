@@ -22,6 +22,7 @@ import {Image_Stroke2_Corner2_Rounded as ImageIcon} from '#/components/icons/Ima
 import {SubtleHover} from '#/components/SubtleHover'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
+import {PRODUCT} from '#/config/product'
 import {IS_NATIVE} from '#/env'
 
 export function ComposerPrompt() {
@@ -150,7 +151,7 @@ export function ComposerPrompt() {
     }
   }, [ax, openComposer, requestCameraAccessIfNeeded])
 
-  if (!profile) {
+  if (!profile || !PRODUCT.capabilities.standalonePosting) {
     return null
   }
 

@@ -1,6 +1,7 @@
 import {useQuery} from '@tanstack/react-query'
 
 import {useChatClient, useSession} from '#/state/session'
+import {PRODUCT} from '#/config/product'
 import {chat} from '#/lexicons'
 import {STALE} from '..'
 import {createQueryKey} from '../util'
@@ -19,6 +20,6 @@ export function useChatActorStatusQuery() {
     queryFn: async () => {
       return await client.call(chat.bsky.actor.getStatus)
     },
-    enabled: hasSession,
+    enabled: PRODUCT.capabilities.messaging && hasSession,
   })
 }

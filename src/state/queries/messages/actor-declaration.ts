@@ -5,6 +5,7 @@ import {useMutation, useQueryClient} from '@tanstack/react-query'
 import {logger} from '#/logger'
 import {usePdsClient, useSession} from '#/state/session'
 import {resolveAllowGroupInvites} from '#/components/dms/util'
+import {assertMessagingEnabled} from '#/features/product/messaging'
 import {type app, chat, com} from '#/lexicons'
 import {RQKEY as PROFILE_RKEY} from '../profile'
 
@@ -24,6 +25,7 @@ export function useUpdateActorDeclaration({
       allowIncoming?: 'all' | 'none' | 'following'
       allowGroupInvites?: 'all' | 'none' | 'following'
     }) => {
+      assertMessagingEnabled()
       if (!currentAccount) throw new Error('Not signed in')
       const current =
         queryClient.getQueryData<app.bsky.actor.defs.ProfileViewDetailed>(
@@ -52,6 +54,7 @@ export function useUpdateActorDeclaration({
       return result
     },
     onMutate: update => {
+      assertMessagingEnabled()
       if (!currentAccount) return
       queryClient.setQueryData(
         PROFILE_RKEY(currentAccount?.did),
@@ -103,6 +106,7 @@ export function useDeleteActorDeclaration() {
 
   return useMutation({
     mutationFn: async () => {
+      assertMessagingEnabled()
       if (!currentAccount) throw new Error('Not signed in')
       const result = await pdsClient.call(com.atproto.repo.deleteRecord, {
         repo: currentAccount.did,

@@ -83,6 +83,8 @@ an automatic `ours` or `theirs` resolution:
 - Web OAuth sign-in versus native password sign-in
 - mu age assurance and the no-access screen
 - Branding, logos, splash screens, and logged-out navigation
+- Product presets and shell destination slots: review new upstream destinations/actions against `src/features/product/README.md`; do not bypass preset order/visibility or capability guards
+- Messaging route/layout guards, query/polling providers, and `createLexClient`: retain disabled-policy checks before auth/network work, including restored routes and public/service-override clients. Preserve independent account-deletion cleanup and age-safety declarations; do not strip OAuth grants without reviewing those flows
 - Custom settings, routes, pets, and profile decorations
 - Fork-owned links, hosts, app identifiers, and services
 

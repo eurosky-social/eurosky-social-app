@@ -160,6 +160,7 @@ import {
 import {useAnalytics} from '#/analytics'
 import {setNavigationMetadata} from '#/analytics/metadata'
 import {BRAND} from '#/config/brand'
+import {PRODUCT} from '#/config/product'
 import {IS_LIQUID_GLASS, IS_NATIVE, IS_WEB} from '#/env'
 import {HomeScreen} from '#/features/followingV2/home'
 import {OutletDirectoryScreen} from '#/features/frontpages/directory'
@@ -1078,6 +1079,7 @@ function RoutesContainer({children}: React.PropsWithChildren<{}>) {
    */
   const handleChatNotification = useNonReactiveCallback(
     (payload: ChatNotificationPayload) => {
+      if (!PRODUCT.capabilities.messaging) return
       notyLogger.debug(`handleChatNotification`, {payload})
 
       if (payload.recipientDid !== currentAccount?.did) {

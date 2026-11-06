@@ -16,9 +16,14 @@ import {InitiateChatFlow} from '#/components/dms/InitiateChatFlow'
 import {MessagePlus_Stroke2_Corner0_Rounded as NewChatIcon} from '#/components/icons/Message'
 import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
+import {PRODUCT} from '#/config/product'
 import {chat} from '#/lexicons'
 
-export function NewChat({
+export function NewChat(props: React.ComponentProps<typeof NewChatInner>) {
+  return PRODUCT.capabilities.messaging ? <NewChatInner {...props} /> : null
+}
+
+function NewChatInner({
   control,
   onNewChat,
   startInGroupChat = false,

@@ -23,7 +23,6 @@ import {
 } from '#/state/queries/feed'
 import {useSession} from '#/state/session'
 import {ErrorMessage} from '#/view/com/util/error/ErrorMessage'
-import {FAB} from '#/view/com/util/fab/FAB'
 import {List, type ListMethods} from '#/view/com/util/List'
 import {Text} from '#/view/com/util/text/Text'
 import {NoFollowingFeed} from '#/screens/Feeds/NoFollowingFeed'
@@ -45,6 +44,7 @@ import * as Layout from '#/components/Layout'
 import {Link} from '#/components/Link'
 import * as ListCard from '#/components/ListCard'
 import {IS_NATIVE, IS_WEB} from '#/env'
+import {ComposeFAB as FAB} from '#/features/product/ComposeFAB'
 import {type app} from '#/lexicons'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'Feeds'>

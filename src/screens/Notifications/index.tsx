@@ -32,7 +32,6 @@ import {
 import {useUnreadNotificationsApi} from '#/state/queries/notifications/unread'
 import {useAppviewClient} from '#/state/session'
 import {useShellHeaderLayout} from '#/state/shell/shell-layout'
-import {FAB} from '#/view/com/util/fab/FAB'
 import {
   HomeHeaderModeProvider,
   useHomeHeaderMode,
@@ -62,6 +61,7 @@ import {Link} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import {type Metrics, useAnalytics} from '#/analytics'
 import {IS_LIQUID_GLASS, IS_WEB} from '#/env'
+import {ComposeFAB as FAB} from '#/features/product/ComposeFAB'
 
 type Props = NativeStackScreenProps<
   NotificationsTabNavigatorParams,

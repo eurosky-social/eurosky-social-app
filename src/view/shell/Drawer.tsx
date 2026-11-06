@@ -10,18 +10,21 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {plural} from '@lingui/core/macro'
 import {Plural, Trans, useLingui} from '@lingui/react/macro'
 import {type NavigationState} from '@react-navigation/native'
-import {StackActions, useNavigation} from '@react-navigation/native'
+import {
+  StackActions,
+  useNavigation,
+  useNavigationState,
+} from '@react-navigation/native'
 
 import {UNREAD_NOTIFICATION_CAP} from '#/lib/constants'
 import {type PressableScale} from '#/lib/custom-animations/PressableScale'
-import {useNavigationTabState} from '#/lib/hooks/useNavigationTabState'
 import {getTabState, TabState} from '#/lib/routes/helpers'
 import {
   getCommonNavigationAction,
   getTabNavigationAction,
   getTabResetAction,
 } from '#/lib/routes/navigation'
-import {type SharedNavTab, TAB_TO_NAV_ITEM} from '#/lib/routes/tab-to-nav-item'
+import {type SidebarTab, TAB_TO_NAV_ITEM} from '#/lib/routes/tab-to-nav-item'
 import {type RootNavigationProp} from '#/lib/routes/types'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {emitSoftReset} from '#/state/events'
@@ -76,10 +79,18 @@ import {ProfileBadges} from '#/components/ProfileBadges'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {BRAND} from '#/config/brand'
+import {type NavigationId} from '#/config/navigation'
 import {IS_NATIVE, IS_WEB} from '#/env'
 import {InviteFriendsDialog} from '#/features/inviteFriends'
 import {useActorStatus} from '#/features/liveNow'
 import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
+import {type NavigationDestination} from '#/features/product/navigation/destinations'
+import {isNavigationActive} from '#/features/product/navigation/model'
+import {
+  NavigationItems,
+  NavigationSlot,
+} from '#/features/product/navigation/NavigationItems'
+import {useProductNavigation} from '#/features/product/navigation/useProductNavigation'
 
 const iconWidth = 26
 type SecondarySidebarTab =
@@ -207,28 +218,29 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
   const insets = useSafeAreaInsets()
   const setDrawerOpen = useSetDrawerOpen()
   const navigation = useNavigation<RootNavigationProp>()
+  const navigationState = useNavigationState(state => state)
+  const destinations = useProductNavigation('drawer')
+  const {i18n} = useLingui()
   const ax = useAnalytics()
-  const {
-    isAtHome,
-    isAtSearch,
-    isAtAtmosphere,
-    isAtFeeds,
-    isAtBookmarks,
-    isAtNotifications,
-    isAtMyProfile,
-    isAtMessages,
-  } = useNavigationTabState()
+  const isActive = (id: NavigationId) => {
+    const destination = destinations.find(item => item.id === id)
+    return (
+      !!destination &&
+      isNavigationActive(destination, navigationState, {
+        native: IS_NATIVE,
+        handle: currentAccount?.handle,
+        destinations,
+      })
+    )
+  }
   const {hasSession, currentAccount} = useSession()
   const inviteFriendsControl = useDialogControl()
-  const isAtmosphereExploreEnabled = ax.features.enabled(
-    ax.features.AtmosphereScreenEnable,
-  )
 
   // events
   // =
 
   const onPressTab = useCallback(
-    (tab: SharedNavTab, surface: 'drawer' | 'drawerHeader' = 'drawer') => {
+    (tab: SidebarTab, surface: 'drawer' | 'drawerHeader' = 'drawer') => {
       ax.metric('nav:click', {
         item: TAB_TO_NAV_ITEM[tab],
         surface,
@@ -357,6 +369,41 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
     if (IS_WEB) setDrawerOpen(false)
   }, [navigation, navigateToSecondaryTab, setDrawerOpen, ax])
 
+  function renderDestination(destination: NavigationDestination) {
+    const isActive = isNavigationActive(destination, navigationState, {
+      native: IS_NATIVE,
+      handle: currentAccount?.handle,
+      destinations,
+    })
+    const Icon = isActive
+      ? destination.icons.active
+      : destination.icons.inactive
+    return (
+      <MenuItem
+        icon={<Icon style={t.atoms.text} width={iconWidth} />}
+        label={i18n._(destination.label)}
+        bold={isActive}
+        onPress={() => {
+          if (destination.tab) {
+            onPressTab(destination.tab)
+          } else {
+            ax.metric('nav:click', {
+              item: destination.metricItem,
+              surface: 'drawer',
+            })
+            navigation.dispatch(
+              getCommonNavigationAction(
+                destination.target,
+                navigation.getState(),
+              ),
+            )
+            setDrawerOpen(false)
+          }
+        }}
+      />
+    )
+  }
+
   const onPressFeedback = useCallback(() => {
     void Linking.openURL(BRAND.links.feedback)
   }, [])
@@ -408,41 +455,70 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
           <Divider style={[a.mt_xl, a.mb_sm]} />
         </View>
 
-        {hasSession ? (
-          <>
-            <SearchMenuItem isActive={isAtSearch} onPress={onPressSearch} />
-            <HomeMenuItem isActive={isAtHome} onPress={onPressHome} />
-            <NewsMenuItem onPress={onPressNews} />
-            <ChatMenuItem isActive={isAtMessages} onPress={onPressMessages} />
+        <NavigationItems
+          destinations={destinations}
+          renderItem={renderDestination}>
+          <NavigationSlot id="search">
+            <SearchMenuItem
+              isActive={isActive('search')}
+              onPress={onPressSearch}
+            />
+          </NavigationSlot>
+          <NavigationSlot id="home">
+            <HomeMenuItem isActive={isActive('home')} onPress={onPressHome} />
+          </NavigationSlot>
+          <NavigationSlot id="news">
+            <NewsMenuItem isActive={isActive('news')} onPress={onPressNews} />
+          </NavigationSlot>
+          <NavigationSlot id="chat">
+            <ChatMenuItem
+              isActive={isActive('chat')}
+              onPress={onPressMessages}
+            />
+          </NavigationSlot>
+          <NavigationSlot id="notifications">
             <NotificationsMenuItem
-              isActive={isAtNotifications}
+              isActive={isActive('notifications')}
               onPress={onPressNotifications}
             />
-            {isAtmosphereExploreEnabled && (
-              <AtmosphereMenuItem
-                isActive={isAtAtmosphere}
-                onPress={onPressAtmosphere}
-              />
-            )}
-            <FeedsMenuItem isActive={isAtFeeds} onPress={onPressMyFeeds} />
-            <ListsMenuItem onPress={onPressLists} />
+          </NavigationSlot>
+          <NavigationSlot id="atmosphere">
+            <AtmosphereMenuItem
+              isActive={isActive('atmosphere')}
+              onPress={onPressAtmosphere}
+            />
+          </NavigationSlot>
+          <NavigationSlot id="feeds">
+            <FeedsMenuItem
+              isActive={isActive('feeds')}
+              onPress={onPressMyFeeds}
+            />
+          </NavigationSlot>
+          <NavigationSlot id="lists">
+            <ListsMenuItem
+              isActive={isActive('lists')}
+              onPress={onPressLists}
+            />
+          </NavigationSlot>
+          <NavigationSlot id="saved">
             <BookmarksMenuItem
-              isActive={isAtBookmarks}
+              isActive={isActive('saved')}
               onPress={onPressBookmarks}
             />
+          </NavigationSlot>
+          <NavigationSlot id="profile">
             <ProfileMenuItem
-              isActive={isAtMyProfile}
+              isActive={isActive('profile')}
               onPress={onPressProfile}
             />
-            <SettingsMenuItem onPress={onPressSettings} />
-          </>
-        ) : (
-          <>
-            <HomeMenuItem isActive={isAtHome} onPress={onPressHome} />
-            <FeedsMenuItem isActive={isAtFeeds} onPress={onPressMyFeeds} />
-            <SearchMenuItem isActive={isAtSearch} onPress={onPressSearch} />
-          </>
-        )}
+          </NavigationSlot>
+          <NavigationSlot id="settings">
+            <SettingsMenuItem
+              isActive={isActive('settings')}
+              onPress={onPressSettings}
+            />
+          </NavigationSlot>
+        </NavigationItems>
 
         <View style={[a.px_xl]}>
           <Divider style={[a.mb_xl, a.mt_sm]} />
@@ -689,7 +765,13 @@ let FeedsMenuItem = ({
 }
 FeedsMenuItem = memo(FeedsMenuItem)
 
-let ListsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
+let ListsMenuItem = ({
+  onPress,
+  isActive,
+}: {
+  onPress: () => void
+  isActive: boolean
+}): React.ReactNode => {
   const {t: l} = useLingui()
   const t = useTheme()
 
@@ -697,13 +779,20 @@ let ListsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
     <MenuItem
       icon={<ListIcon style={[t.atoms.text]} width={iconWidth} />}
       label={l`Lists`}
+      bold={isActive}
       onPress={onPress}
     />
   )
 }
 ListsMenuItem = memo(ListsMenuItem)
 
-let NewsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
+let NewsMenuItem = ({
+  onPress,
+  isActive,
+}: {
+  onPress: () => void
+  isActive: boolean
+}): React.ReactNode => {
   const {t: l} = useLingui()
   const t = useTheme()
 
@@ -711,6 +800,7 @@ let NewsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
     <MenuItem
       icon={<Newspaper style={[t.atoms.text]} width={iconWidth} />}
       label={l`News`}
+      bold={isActive}
       onPress={onPress}
     />
   )
@@ -768,7 +858,13 @@ let ProfileMenuItem = ({
 }
 ProfileMenuItem = memo(ProfileMenuItem)
 
-let SettingsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
+let SettingsMenuItem = ({
+  onPress,
+  isActive,
+}: {
+  onPress: () => void
+  isActive: boolean
+}): React.ReactNode => {
   const {i18n, t: l} = useLingui()
   const t = useTheme()
   const ax = useAnalytics()
@@ -796,6 +892,7 @@ let SettingsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
     <MenuItem
       icon={<SettingsIcon style={[t.atoms.text]} width={iconWidth} />}
       label={l`Settings`}
+      bold={isActive}
       count={count}
       accessibilityHint={
         unreadCount > 0

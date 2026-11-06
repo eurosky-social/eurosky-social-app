@@ -20,6 +20,7 @@ import {PaperPlane_Stroke2_Corner0_Rounded as Send} from '#/components/icons/Pap
 import * as Menu from '#/components/Menu'
 import {useAgeAssurance} from '#/ageAssurance'
 import {useAnalytics} from '#/analytics'
+import {PRODUCT} from '#/config/product'
 import {IS_WEB} from '#/env'
 import {useDevMode} from '#/storage/hooks/dev-mode'
 import {type ShareMenuItemsProps} from './ShareMenuItems.types'
@@ -71,6 +72,10 @@ let ShareMenuItems = ({
   }
 
   const canEmbed = IS_WEB && gtMobile && !hideInPWI
+  const canSendViaChat =
+    PRODUCT.capabilities.messaging &&
+    hasSession &&
+    aa.state.access === aa.Access.Full
 
   const onShareATURI = () => {
     void simpleShareText(postUri)
@@ -97,7 +102,7 @@ let ShareMenuItems = ({
       <Menu.Outer>
         {!hideInPWI && copyLinkItem}
 
-        {hasSession && aa.state.access === aa.Access.Full && (
+        {canSendViaChat && (
           <Menu.Item
             testID="postDropdownSendViaDMBtn"
             label={l`Send via chat`}
@@ -127,7 +132,7 @@ let ShareMenuItems = ({
 
         {hideInPWI && (
           <>
-            {hasSession && <Menu.Divider />}
+            {canSendViaChat && <Menu.Divider />}
             {copyLinkItem}
             <Menu.LabelText style={{maxWidth: 220}}>
               <Trans>Note: This post is only visible to logged-in users.</Trans>

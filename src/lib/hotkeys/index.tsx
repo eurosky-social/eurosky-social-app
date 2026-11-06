@@ -8,6 +8,7 @@ import {
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {emitFocusSearch} from '#/state/events'
 import {useSession} from '#/state/session'
+import {PRODUCT} from '#/config/product'
 
 enum Hotkeys {
   OPEN_COMPOSER = 'n',
@@ -63,7 +64,11 @@ function useKeyboardShortcuts() {
           requiresSession: true,
         },
       ),
-    {scopes: ['global'], description: l`Compose new post`},
+    {
+      scopes: ['global'],
+      description: l`Compose new post`,
+      enabled: PRODUCT.capabilities.standalonePosting,
+    },
     [openComposer],
   )
 

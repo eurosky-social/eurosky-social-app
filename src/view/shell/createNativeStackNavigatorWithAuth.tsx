@@ -33,11 +33,13 @@ import {
   useLoggedOutViewControls,
 } from '#/state/shell/logged-out'
 import {LoggedOut} from '#/view/com/auth/LoggedOut'
+import {NotFoundScreen} from '#/view/screens/NotFound'
 import {Onboarding} from '#/screens/Onboarding'
 import {SignupQueued} from '#/screens/SignupQueued'
 import {atoms as a, useLayoutBreakpoints} from '#/alf'
 import {PolicyUpdateOverlay} from '#/components/PolicyUpdateOverlay'
 import {IS_NATIVE, IS_WEB} from '#/env'
+import {isProductRouteAvailable} from '#/features/product/messaging'
 import {BottomBarWeb} from './bottom-bar/BottomBarWeb'
 import {DesktopLeftNav} from './desktop/LeftNav'
 import {DesktopRightNav} from './desktop/RightNav'
@@ -121,6 +123,14 @@ function NativeStackNavigator({
   const {setShowLoggedOut} = useLoggedOutViewControls()
   const {isMobile} = useWebMediaQueries()
   const {leftNavMinimal} = useLayoutBreakpoints()
+  /* Reject unavailable routes before auth/onboarding or any screen layout mounts. */
+  if (!isProductRouteAvailable(activeRoute.name)) {
+    return (
+      <NavigationContent>
+        <NotFoundScreen />
+      </NavigationContent>
+    )
+  }
   if (!hasSession && (activeRouteRequiresAuth || IS_NATIVE)) {
     return <LoggedOut />
   }
@@ -181,6 +191,14 @@ function NativeStackNavigator({
           render: () => <View />,
         }
       }
+    }
+  }
+
+  /* Restored/back-stack routes must not mount disabled screens in the background. */
+  for (const [key, descriptor] of Object.entries(finalDescriptors)) {
+    if (!isProductRouteAvailable(descriptor.route.name)) {
+      if (finalDescriptors === descriptors) finalDescriptors = {...descriptors}
+      finalDescriptors[key] = {...descriptor, render: () => <NotFoundScreen />}
     }
   }
 

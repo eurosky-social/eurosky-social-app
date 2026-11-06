@@ -10,6 +10,7 @@ import {EditBig_Stroke2_Corner2_Rounded as ComposeIcon} from '#/components/icons
 import {InlineLinkText, Link} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
+import {PRODUCT} from '#/config/product'
 import {articleViewLinkFor} from '#/features/news/article/articleLink'
 import {ArticleDiscussion} from '#/features/news/components/ArticleDiscussion'
 import {articleSearchPath} from '#/features/news/discussion'
@@ -297,6 +298,8 @@ function ArticleShareButton({
       openComposer({externalUri: item.link, logContext: 'Other'})
     }
   }
+
+  if (!PRODUCT.capabilities.standalonePosting) return null
 
   // The hero's call to action: a full-width primary button to post the lead
   // story into the conversation.

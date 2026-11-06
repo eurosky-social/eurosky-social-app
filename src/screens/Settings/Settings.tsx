@@ -74,6 +74,7 @@ import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {BRAND} from '#/config/brand'
+import {PRODUCT} from '#/config/product'
 import {IS_INTERNAL, IS_IOS, IS_NATIVE} from '#/env'
 import {useActorStatus} from '#/features/liveNow'
 import {type app} from '#/lexicons'
@@ -512,13 +513,15 @@ function DevOptions() {
           <Trans>Debug Moderation</Trans>
         </SettingsList.ItemText>
       </SettingsList.PressableItem>
-      <SettingsList.PressableItem
-        onPress={() => deleteChatDeclarationRecord()}
-        label={l`Delete chat declaration record`}>
-        <SettingsList.ItemText>
-          <Trans>Delete chat declaration record</Trans>
-        </SettingsList.ItemText>
-      </SettingsList.PressableItem>
+      {PRODUCT.capabilities.messaging && (
+        <SettingsList.PressableItem
+          onPress={() => deleteChatDeclarationRecord()}
+          label={l`Delete chat declaration record`}>
+          <SettingsList.ItemText>
+            <Trans>Delete chat declaration record</Trans>
+          </SettingsList.ItemText>
+        </SettingsList.PressableItem>
+      )}
       <SettingsList.PressableItem
         onPress={() => void resetOnboarding()}
         label={l`Reset onboarding state`}>

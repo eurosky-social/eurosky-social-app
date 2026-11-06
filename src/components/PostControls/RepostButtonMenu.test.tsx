@@ -1,8 +1,15 @@
 import {fireEvent, render, within} from '@testing-library/react-native'
 
 import * as Menu from '#/components/Menu'
+import {getProduct, PRODUCT} from '#/config/product'
 import {RepostButtonMenu} from './RepostButtonMenu'
 
+jest.mock('#/config/product', () => {
+  const actual = jest.requireActual<{getProduct: typeof getProduct}>(
+    '#/config/product',
+  )
+  return {...actual, PRODUCT: actual.getProduct('social')}
+})
 jest.mock('#/state/session', () => ({
   useRequireAuth: () => (callback: () => void) => callback(),
   useSession: () => ({hasSession: true}),
@@ -116,10 +123,38 @@ const mockUnanchoredOpen = (
 ).__testUnanchoredOpen
 
 afterEach(() => {
+  jest.restoreAllMocks()
   jest.clearAllMocks()
 })
 
 describe('RepostButtonMenu', () => {
+  it('removes quote actions and long-press-to-quote in news without removing reposts', () => {
+    jest.replaceProperty(
+      PRODUCT,
+      'capabilities',
+      getProduct('news').capabilities,
+    )
+    const onRepost = jest.fn()
+    const onQuote = jest.fn()
+    const screen = render(
+      <RepostButtonMenu
+        isReposted={false}
+        onRepost={onRepost}
+        onQuote={onQuote}
+        embeddingDisabled={false}
+        longPressToQuote
+      />,
+    )
+    expect(screen.queryByTestId('repostDropdownQuoteBtn')).toBeNull()
+    expect(screen.getByTestId('repostBtn').props.accessibilityLabel).toBe(
+      'Repost',
+    )
+    fireEvent.press(screen.getByTestId('repostDropdownRepostBtn'))
+    fireEvent(screen.getByTestId('repostBtn'), 'longPress')
+    expect(onRepost).toHaveBeenCalledTimes(1)
+    expect(onQuote).not.toHaveBeenCalled()
+  })
+
   it('keeps repost and quote together in one group', () => {
     const screen = render(
       <RepostButtonMenu

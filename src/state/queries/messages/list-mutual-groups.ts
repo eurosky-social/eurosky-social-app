@@ -3,6 +3,7 @@ import {useInfiniteQuery} from '@tanstack/react-query'
 
 import {createQueryKey} from '#/state/queries/util'
 import {useChatClient} from '#/state/session'
+import {PRODUCT} from '#/config/product'
 import {chat} from '#/lexicons'
 
 const listMutualGroupsQueryKeyRoot = 'list-mutual-groups'
@@ -20,7 +21,8 @@ export function useListMutualGroupsQuery({
   limit?: number
 }) {
   const client = useChatClient()
-  const isEnabled = enabled !== false && !!subject
+  const isEnabled =
+    PRODUCT.capabilities.messaging && enabled !== false && !!subject
 
   return useInfiniteQuery({
     gcTime: 0,

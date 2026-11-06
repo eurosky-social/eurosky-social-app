@@ -6,13 +6,16 @@ export type SharedNavTab =
 export type SidebarTab =
   SharedNavTab | 'Atmosphere' | 'Feeds' | 'Lists' | 'Bookmarks' | 'Settings'
 
-export const TAB_TO_NAV_ITEM: Record<
-  SharedNavTab,
-  Events['nav:click']['item']
-> = {
-  Home: 'home',
-  Search: 'search',
-  Messages: 'chat',
-  Notifications: 'notifications',
-  MyProfile: 'profile',
-}
+export const TAB_TO_NAV_ITEM: Record<SidebarTab, Events['nav:click']['item']> =
+  {
+    Home: 'home',
+    Search: 'search',
+    Messages: 'chat',
+    Notifications: 'notifications',
+    MyProfile: 'profile',
+    Atmosphere: 'atmosphere',
+    Feeds: 'feeds',
+    Lists: 'lists',
+    Bookmarks: 'saved',
+    Settings: 'settings',
+  }
