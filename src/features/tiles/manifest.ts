@@ -4,6 +4,8 @@ import {
   type StoredResourceEntry,
 } from '@dasl/tile-lexicon'
 
+import {TILES_BLOB_URL} from './constants'
+
 /** A tile's MASL manifest as stored in its AT record. */
 export type TileManifest = StoredMasl
 
@@ -49,8 +51,22 @@ export function tileResourceCid(
   return linkCid(src) ?? ('ref' in src ? linkCid(src.ref) : undefined)
 }
 
-/** The URL of a blob on the PDS hosting a repo. */
-export function tileBlobUrl(pds: string, did: string, cid: string): string {
+/**
+ * The URL of a blob of a repo: on the tile blob CDN when one is configured
+ * (`/blob/<did>/<cid>`, which resolves the DID itself; see `services/tiles`),
+ * otherwise `getBlob` on the PDS hosting the repo.
+ */
+export function tileBlobUrl(
+  pds: string,
+  did: string,
+  cid: string,
+  cdn: string = TILES_BLOB_URL,
+): string {
+  if (cdn) {
+    // A DID keeps its colons: they are fine in a path, and stay readable.
+    const path = `blob/${encodeURIComponent(did).replace(/%3A/gi, ':')}/${encodeURIComponent(cid)}`
+    return new URL(path, cdn.endsWith('/') ? cdn : `${cdn}/`).toString()
+  }
   const url = new URL('/xrpc/com.atproto.sync.getBlob', pds)
   url.searchParams.set('did', did)
   url.searchParams.set('cid', cid)

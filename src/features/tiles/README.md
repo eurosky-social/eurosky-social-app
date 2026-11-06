@@ -111,15 +111,24 @@ response the tile receives regardless of what the server does; the server-side
 half (dead-end origins, the runtime CSP) depends on the server running
 `@dasl/tile-server` 2.1 or later.
 
-## Before landing
+## Blob CDN
 
-- Put tile resources behind a CDN. The loader fetches every blob straight from
-  the author's PDS. Plan: a Bunny Edge Script in `services/` modelled on the RSS
-  proxy (`ALLOWED_ORIGIN` default `*`), `GET /blob/{did}/{cid}` resolving the
-  DID to its PDS and passing `com.atproto.sync.getBlob` through with `*` CORS,
-  an immutable long cache header keyed on the CID, nosniff and an inert
-  disposition or CSP. `tileBlobUrl` in `manifest.ts` is the one place to point
-  at it; make it an env setting.
+Every resource of a tile is a blob on its author's PDS, and the web loader
+fetches each one when the tile runs. With `TILES_BLOB_URL`
+(`EXPO_PUBLIC_TILES_BLOB_URL`, empty by default) set, `tileBlobUrl`
+(`manifest.ts`) points those fetches, and the card screenshot the composer
+composites, at `services/tiles` instead: a Bunny Edge Script that answers
+`GET /blob/<did>/<cid>` by resolving the DID to its PDS and passing
+`com.atproto.sync.getBlob` through, so the pull zone caches each blob by CID
+for good and a tile costs its author's PDS about one fetch per resource per
+edge location rather than one per viewer. The script serves blobs with `*`
+CORS and the same inert headers the reference PDS uses; see its README for
+the deploy and the pull-zone settings to check. Unset, everything is fetched
+from the PDS as before.
+
+The native path does not go through it: the hosted page (`@dasl/tile-host`)
+runs the reference loader, which fetches from the PDS itself. Teaching the
+page a blob base URL is a change to that package.
 
 ## Native
 

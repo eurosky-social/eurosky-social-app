@@ -66,10 +66,48 @@ describe('tileResourceCid', () => {
 })
 
 describe('tileBlobUrl', () => {
-  it('builds a getBlob URL on the PDS', () => {
-    expect(tileBlobUrl('https://pds.test', 'did:plc:a', 'bafyshot')).toBe(
+  it('builds a getBlob URL on the PDS when there is no CDN', () => {
+    expect(tileBlobUrl('https://pds.test', 'did:plc:a', 'bafyshot', '')).toBe(
       'https://pds.test/xrpc/com.atproto.sync.getBlob?did=did%3Aplc%3Aa&cid=bafyshot',
     )
+  })
+
+  it('points at the CDN when one is configured, with or without a slash', () => {
+    expect(
+      tileBlobUrl(
+        'https://pds.test',
+        'did:plc:a',
+        'bafyshot',
+        'https://t.test',
+      ),
+    ).toBe('https://t.test/blob/did:plc:a/bafyshot')
+    expect(
+      tileBlobUrl(
+        'https://pds.test',
+        'did:plc:a',
+        'bafyshot',
+        'https://t.test/cdn/',
+      ),
+    ).toBe('https://t.test/cdn/blob/did:plc:a/bafyshot')
+  })
+
+  it('keeps a did:web readable and escapes anything else', () => {
+    expect(
+      tileBlobUrl(
+        'https://pds.test',
+        'did:web:a.test',
+        'bafy',
+        'https://t.test',
+      ),
+    ).toBe('https://t.test/blob/did:web:a.test/bafy')
+    expect(
+      tileBlobUrl(
+        'https://pds.test',
+        'did:web:a.test%3A8443',
+        'bafy',
+        'https://t.test',
+      ),
+    ).toBe('https://t.test/blob/did:web:a.test%253A8443/bafy')
   })
 })
 

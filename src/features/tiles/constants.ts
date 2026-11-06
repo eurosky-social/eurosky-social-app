@@ -25,6 +25,13 @@ export const TILES_LOAD_DOMAIN =
 export const TILES_HOST_URL =
   process.env.EXPO_PUBLIC_TILES_HOST_URL || 'https://webtil.es/host/'
 
+/**
+ * Base URL of the tile blob CDN (`services/tiles`), which serves a tile's
+ * resources cached at the edge, keyed on their CIDs, instead of each viewer
+ * fetching them from the author's PDS. Empty means fetch from the PDS.
+ */
+export const TILES_BLOB_URL = process.env.EXPO_PUBLIC_TILES_BLOB_URL || ''
+
 /** Aspect ratio of a rendered tile whose manifest requests no size. */
 export const DEFAULT_TILE_ASPECT_RATIO = 16 / 9
 export const MIN_TILE_HEIGHT = 200
