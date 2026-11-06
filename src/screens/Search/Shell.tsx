@@ -7,12 +7,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import {
-  type StyleProp,
-  type TextInput,
-  View,
-  type ViewStyle,
-} from 'react-native'
+import {type TextInput, View} from 'react-native'
 import Animated, {
   Easing,
   FadeInDown,
@@ -25,7 +20,6 @@ import {useQueryClient} from '@tanstack/react-query'
 
 import {HITSLOP_10, HITSLOP_20} from '#/lib/constants'
 import {useNonReactiveCallback} from '#/lib/hooks/useNonReactiveCallback'
-import {MagnifyingGlassIcon} from '#/lib/icons'
 import {
   type CommonNavigatorParams,
   type NavigationProp,
@@ -62,6 +56,7 @@ import {useAutocomplete} from '#/components/Autocomplete'
 import {Button, ButtonIcon} from '#/components/Button'
 import {ArrowLeft_Stroke2_Corner0_Rounded as ArrowLeftIcon} from '#/components/icons/Arrow'
 import {ArrowShareRight_Stroke2_Corner2_Rounded as ShareIcon} from '#/components/icons/ArrowShareRight'
+import {MagnifyingGlass_Stroke2_Corner0_Rounded as MagnifyingGlassIcon} from '#/components/icons/MagnifyingGlass'
 import * as Layout from '#/components/Layout'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
@@ -773,9 +768,8 @@ let SearchScreenInner = ({
 
         <View style={[a.align_center, a.justify_center, a.py_4xl, a.gap_lg]}>
           <MagnifyingGlassIcon
-            strokeWidth={3}
-            size={60}
-            style={t.atoms.text_contrast_medium as StyleProp<ViewStyle>}
+            width={60}
+            style={t.atoms.text_contrast_medium}
           />
           <Text style={[t.atoms.text_contrast_medium, a.text_md]}>
             <Trans>Find posts, users, and feeds on Bluesky</Trans>

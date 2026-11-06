@@ -1,9 +1,9 @@
 import {StyleSheet, View} from 'react-native'
 
 import {usePalette} from '#/lib/hooks/usePalette'
-import {InfoCircleIcon} from '#/lib/icons'
 import {Text} from '#/view/com/util/text/Text'
 import {atoms as a, useTheme} from '#/alf'
+import {CircleInfo_Stroke2_Corner0_Rounded as InfoCircleIcon} from '#/components/icons/Circle'
 
 export function PostPlaceholder({children}: {children: React.ReactNode}) {
   const t = useTheme()
@@ -11,7 +11,7 @@ export function PostPlaceholder({children}: {children: React.ReactNode}) {
   return (
     <View
       style={[styles.errorContainer, a.border, t.atoms.border_contrast_low]}>
-      <InfoCircleIcon size={18} style={pal.text} />
+      <InfoCircleIcon width={18} style={pal.text} />
       <Text type="lg" style={pal.text}>
         {children}
       </Text>

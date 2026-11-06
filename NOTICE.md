@@ -6,20 +6,46 @@ If you distribute this software or a fork of it, these notices need to travel wi
 
 ---
 
-## Phosphor Icons
+## Lucide and Filled Lucide
 
-**Paths:** Phosphor SVGs in `assets/icons/ui/` and `assets/icons/brands/`, their generated
-components under `src/components/icons/`, derived glyphs in `assets/nano-icons/`, and
-`bskyembed/src/icons/Phosphor.tsx`
-**Source:** `@phosphor-icons/core` 2.1.1
-**License:** MIT — full text at [`licenses/PHOSPHOR-MIT.txt`](./licenses/PHOSPHOR-MIT.txt)
+**Paths:** Lucide-derived SVGs in `assets/icons/ui/` and `assets/icons/brands/`, their generated
+components under `src/components/icons/`, derived glyphs in `assets/nano-icons/`,
+`bskyembed/src/icons/Lucide.tsx`, `bskyogcard/src/components/Lucide.tsx`, and
+Lucide-style source additions in `scripts/icons/custom/`.
+**Sources:** `lucide-static` 1.52.0, `@lucide/lab` 0.12.0, and
+[`@filled-lucide/static`](https://github.com/linus-sch/filled-lucide) 1.52.1.
+**Licenses:** ISC, with MIT for Feather-derived icons — full texts at
+[`licenses/LUCIDE-LICENSE.txt`](./licenses/LUCIDE-LICENSE.txt) and
+[`licenses/FILLED-LUCIDE-LICENSE.txt`](./licenses/FILLED-LUCIDE-LICENSE.txt).
 
 ```
-Copyright (c) 2023 Phosphor Icons
+Copyright (c) 2026 Lucide Icons and Contributors
+Copyright (c) 2026 Linus-sch (Filled Lucide)
+Copyright (c) 2013-present Cole Bemis (Feather-derived icons)
 ```
 
-The generated components use Phosphor's regular, bold, and fill weights. Their compatibility
-export names preserve the app's existing icon API; they do not indicate their upstream source.
+Filled Lucide is an independent community project, not affiliated with or endorsed by the
+Lucide team. Outlines are converted to filled stroke geometry for the existing SVG/font
+pipeline; bold states use a 3-unit outline. Filled states use Filled Lucide's solid artwork,
+not an automatic fill of an outline. The list-star addition combines Lucide geometry.
+The GIF exception is attributed separately below. The animated check uses Lucide's
+circle-check geometry. Compatibility export names preserve the app's existing icon API and
+do not describe the source family.
+
+## Tabler Icons — GIF
+
+**Paths:** `scripts/icons/custom/gif.svg`, its generated GIF SVGs under `assets/icons/ui/`,
+components under `src/components/icons/`, and derived glyphs in `assets/nano-icons/`.
+**Source:** [Tabler Icons `gif`](https://github.com/tabler/tabler-icons/blob/ed177a085b652fe04ec4f37ced867c94621e7840/icons/outline/gif.svg),
+revision `ed177a085b652fe04ec4f37ced867c94621e7840`.
+**License:** MIT — full text at [`licenses/TABLER-MIT.txt`](./licenses/TABLER-MIT.txt).
+
+```
+Copyright (c) 2020-2026 Paweł Kuna
+```
+
+This is an explicit exception to the Lucide set. Its 24x24 grid, 2-unit stroke,
+round caps, and round joins match Lucide's outline conventions.
 
 ## Material Icons
 

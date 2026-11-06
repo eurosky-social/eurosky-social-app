@@ -2,14 +2,17 @@ import {app} from '@bsky/sdk/lexicons'
 import {RichText} from '@bsky/sdk/richtext'
 import {ComponentChild, h} from 'preact'
 
+import {isSupportedAppUrl} from '#/brand'
 import {Container} from '#/components/container'
 import {Embed} from '#/components/embed'
 import {Link} from '#/components/link'
 import {VerificationCheck} from '#/components/verification-check'
-import {Like as LikeIcon} from '#/icons/Like'
-import {Reply as ReplyIcon} from '#/icons/Reply'
-import {Repost as RepostIcon} from '#/icons/Repost'
-import {Robot as RobotIcon} from '#/icons/Robot'
+import {
+  Like as LikeIcon,
+  Reply as ReplyIcon,
+  Repost as RepostIcon,
+  Robot as RobotIcon,
+} from '#/icons/Lucide'
 import {CONTENT_LABELS} from '#/labels'
 import {niceDate} from '#/util/nice-date'
 import {prettyNumber} from '#/util/pretty-number'
@@ -17,7 +20,6 @@ import {getRkey} from '#/util/rkey'
 import {getVerificationState} from '#/util/verification-state'
 
 import logo from '../../assets/logo_full_name.svg'
-import {isSupportedAppUrl} from '#/brand'
 
 interface Props {
   post: app.bsky.feed.defs.PostView

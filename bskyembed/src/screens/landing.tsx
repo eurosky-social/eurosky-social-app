@@ -15,7 +15,7 @@ import {
 import {Container} from '#/components/container'
 import {Link} from '#/components/link'
 import {Post} from '#/components/post'
-import {ArrowDown} from '#/icons/Phosphor'
+import {ArrowDown} from '#/icons/Lucide'
 import {niceDate} from '#/util/nice-date'
 
 import logo from '../../assets/logo.svg'

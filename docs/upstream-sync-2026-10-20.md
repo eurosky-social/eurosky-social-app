@@ -6,7 +6,8 @@ Source: `origin/main` at `3f9b9a94e` (1.136.0), merged into
 ## Resolution decisions
 
 - Adopt upstream's SVG icon generator and native `react-native-nano-icons` rendering, using
-  Phosphor artwork instead of Central/Iconists or Bluesky-specific glyphs. Rebuild all native
+  openly licensed artwork instead of Central/Iconists or Bluesky-specific glyphs
+  (now Lucide + Filled Lucide; see [the icon workflow](./icons.md)). Rebuild all native
   fonts from the replacement SVGs. The importer/check rejects unreviewed permanent UI/brand
   sources so future syncs cannot silently restore restricted artwork. See [icons.md](./icons.md).
 - Keep Mu's themed brand-logo pipeline, splash screens, favicons, and external assets.

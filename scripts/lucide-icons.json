@@ -1,0 +1,1271 @@
+{
+  "packages": {
+    "lucide-static": "1.52.0",
+    "@filled-lucide/static": "1.52.1",
+    "@lucide/lab": "0.12.0"
+  },
+  "icons": {
+    "Accessibility_Stroke2_Corner2_Rounded": {
+      "icon": "accessibility",
+      "variant": "outline"
+    },
+    "Alien_Stroke2_Corner0_Rounded": {
+      "icon": "face-alien",
+      "variant": "outline",
+      "source": "lab"
+    },
+    "Apple_Stroke2_Corner0_Rounded": {
+      "icon": "apple",
+      "variant": "outline"
+    },
+    "ArrowBottom_Stroke2_Corner0_Rounded": {
+      "icon": "arrow-down",
+      "variant": "outline"
+    },
+    "ArrowBoxLeft_Stroke2_Corner0_Rounded": {
+      "icon": "square-arrow-left",
+      "variant": "outline"
+    },
+    "ArrowBoxLeft_Stroke2_Corner2_Rounded": {
+      "icon": "log-out",
+      "variant": "outline"
+    },
+    "ArrowBoxRight_Stroke2_Corner3_Rounded": {
+      "icon": "square-arrow-right",
+      "variant": "outline"
+    },
+    "ArrowCornerDownRight_Stroke2_Corner2_Rounded": {
+      "icon": "corner-down-right",
+      "variant": "outline"
+    },
+    "ArrowCornerDownRight_Stroke2_Corner3_Rounded": {
+      "icon": "corner-down-right",
+      "variant": "outline"
+    },
+    "ArrowLeft_Stroke2_Corner0_Rounded": {
+      "icon": "arrow-left",
+      "variant": "outline"
+    },
+    "ArrowOutOfBoxModified_Stroke2_Corner2_Rounded": {
+      "icon": "external-link",
+      "variant": "outline"
+    },
+    "ArrowOutOfBox_Stroke2_Corner0_Rounded": {
+      "icon": "external-link",
+      "variant": "outline"
+    },
+    "ArrowRight_Stroke2_Corner0_Rounded": {
+      "icon": "arrow-right",
+      "variant": "outline"
+    },
+    "ArrowRotateClockwise_Stroke2_Corner0_Rounded": {
+      "icon": "refresh-cw",
+      "variant": "outline"
+    },
+    "ArrowRotateCounterClockwise_Stroke2_Corner0_Rounded": {
+      "icon": "refresh-ccw",
+      "variant": "outline"
+    },
+    "ArrowShareRight_Stroke2_Corner2_Rounded": {
+      "icon": "share-2",
+      "variant": "outline"
+    },
+    "ArrowTopCircle_Stroke2_Corner0_Rounded": {
+      "icon": "circle-arrow-up",
+      "variant": "outline"
+    },
+    "ArrowTopRight_Stroke2_Corner0_Rounded": {
+      "icon": "arrow-up-right",
+      "variant": "outline"
+    },
+    "ArrowTop_Stroke2_Corner0_Rounded": {
+      "icon": "arrow-up",
+      "variant": "outline"
+    },
+    "ArrowTriangleBottom_Stroke2_Corner1_Rounded": {
+      "icon": "chevron-down",
+      "variant": "outline"
+    },
+    "ArrowUUpLeft": {
+      "icon": "undo-2",
+      "variant": "outline"
+    },
+    "ArrowUUpRight": {
+      "icon": "redo-2",
+      "variant": "outline"
+    },
+    "ArrowsDiagonalIn_Stroke2_Corner0_Rounded": {
+      "icon": "minimize-2",
+      "variant": "outline"
+    },
+    "ArrowsDiagonalIn_Stroke2_Corner2_Rounded": {
+      "icon": "minimize",
+      "variant": "outline"
+    },
+    "ArrowsDiagonalOut_Stroke2_Corner0_Rounded": {
+      "icon": "maximize-2",
+      "variant": "outline"
+    },
+    "ArrowsDiagonalOut_Stroke2_Corner2_Rounded": {
+      "icon": "maximize",
+      "variant": "outline"
+    },
+    "AspectRatio11_Stroke2_Corner0_Rounded": {
+      "icon": "square",
+      "variant": "outline"
+    },
+    "AspectRatio34_Stroke2_Corner0_Rounded": {
+      "icon": "rectangle-vertical",
+      "variant": "outline"
+    },
+    "AspectRatio43_Stroke2_Corner0_Rounded": {
+      "icon": "rectangle-horizontal",
+      "variant": "outline"
+    },
+    "At_Stroke2_Corner0_Rounded": {
+      "icon": "at-sign",
+      "variant": "outline"
+    },
+    "At_Stroke2_Corner2_Rounded": {
+      "icon": "at-sign",
+      "variant": "outline"
+    },
+    "Atom_Stroke2_Corner0_Rounded": {
+      "icon": "atom",
+      "variant": "outline"
+    },
+    "Attie_Filled_Corner0_Rounded": {
+      "icon": "sparkles",
+      "variant": "filled"
+    },
+    "Bars3_Stroke2_Corner0_Rounded": {
+      "icon": "menu",
+      "variant": "outline"
+    },
+    "Beaker_Stroke2_Corner2_Rounded": {
+      "icon": "flask-conical",
+      "variant": "outline"
+    },
+    "Bell2Off_Filled_Corner0_Rounded": {
+      "icon": "bell-off",
+      "variant": "filled"
+    },
+    "Bell2Off_Stroke2_Corner0_Rounded": {
+      "icon": "bell-off",
+      "variant": "outline"
+    },
+    "Bell2_Filled_Corner0_Rounded": {
+      "icon": "bell",
+      "variant": "filled"
+    },
+    "Bell2_Stroke2_Corner0_Rounded": {
+      "icon": "bell",
+      "variant": "outline"
+    },
+    "BellPlus_Stroke2_Corner0_Rounded": {
+      "icon": "bell-plus",
+      "variant": "outline"
+    },
+    "BellRinging_Filled_Corner0_Rounded": {
+      "icon": "bell-ring",
+      "variant": "filled"
+    },
+    "BellRinging_Stroke2_Corner0_Rounded": {
+      "icon": "bell-ring",
+      "variant": "outline"
+    },
+    "Bell_Filled_Corner0_Rounded": {
+      "icon": "bell",
+      "variant": "filled"
+    },
+    "Bell_Stroke2_Corner0_Rounded": {
+      "icon": "bell",
+      "variant": "outline"
+    },
+    "BirthdayCake_Stroke2_Corner2_Rounded": {
+      "icon": "cake",
+      "variant": "outline"
+    },
+    "Bookmark": {
+      "icon": "bookmark",
+      "variant": "outline"
+    },
+    "BookmarkDeleteLarge": {
+      "icon": "bookmark-x",
+      "variant": "outline"
+    },
+    "BookmarkDelete_Stroke2_Corner0_Rounded_Large": {
+      "icon": "bookmark-x",
+      "variant": "outline"
+    },
+    "BookmarkFilled": {
+      "icon": "bookmark",
+      "variant": "filled"
+    },
+    "Bookmark_Filled_Corner0_Rounded": {
+      "icon": "bookmark",
+      "variant": "filled"
+    },
+    "Bookmark_Stroke2_Corner0_Rounded": {
+      "icon": "bookmark",
+      "variant": "outline"
+    },
+    "Bot_Filled_Corner0_Rounded": {
+      "icon": "bot",
+      "variant": "filled"
+    },
+    "Bot_Stroke2_Corner0_Rounded": {
+      "icon": "bot",
+      "variant": "outline"
+    },
+    "BroomSparkle_Stroke2_Corner2_Rounded": {
+      "icon": "broom-sparkles",
+      "variant": "outline"
+    },
+    "BubbleInfo_Stroke2_Corner2_Rounded": {
+      "icon": "message-circle-question-mark",
+      "variant": "outline"
+    },
+    "BubbleQuestion_Stroke2_Corner0_Rounded": {
+      "icon": "circle-question-mark",
+      "variant": "outline"
+    },
+    "BubbleSmile_Stroke2_Corner2_Rounded_Large": {
+      "icon": "message-circle-more",
+      "variant": "outline"
+    },
+    "Bubble_Filled_Stroke2_Corner2_Rounded": {
+      "icon": "message-circle",
+      "variant": "filled"
+    },
+    "Bubble_Stroke2_Corner2_Rounded": {
+      "icon": "message-circle",
+      "variant": "outline"
+    },
+    "Bubble_Stroke2_Corner3_Rounded": {
+      "icon": "message-circle",
+      "variant": "outline"
+    },
+    "Bubbles_Stroke2_Corner2_Rounded": {
+      "icon": "messages-square",
+      "variant": "outline"
+    },
+    "BulletList_Filled_Corner0_Rounded": {
+      "icon": "list",
+      "variant": "bold"
+    },
+    "BulletList_Stroke1_Corner0_Rounded": {
+      "icon": "list",
+      "variant": "outline"
+    },
+    "BulletList_Stroke2_Corner0_Rounded": {
+      "icon": "list",
+      "variant": "outline"
+    },
+    "CC_Filled_Corner0_Rounded": {
+      "icon": "closed-caption",
+      "variant": "filled"
+    },
+    "CC_Stroke2_Corner0_Rounded": {
+      "icon": "closed-caption",
+      "variant": "outline"
+    },
+    "CalendarClock_Stroke2_Corner0_Rounded": {
+      "icon": "calendar-clock",
+      "variant": "outline"
+    },
+    "CalendarDays_Stroke2_Corner0_Rounded": {
+      "icon": "calendar-days",
+      "variant": "outline"
+    },
+    "Calendar_Stroke2_Corner0_Rounded": {
+      "icon": "calendar",
+      "variant": "outline"
+    },
+    "Camera_Filled_Stroke2_Corner0_Rounded": {
+      "icon": "camera",
+      "variant": "filled"
+    },
+    "Camera_Stroke2_Corner0_Rounded": {
+      "icon": "camera",
+      "variant": "outline"
+    },
+    "Car_Stroke2_Corner2_Rounded": {
+      "icon": "car",
+      "variant": "outline"
+    },
+    "Celebrate_Stroke2_Corner0_Rounded": {
+      "icon": "party-popper",
+      "variant": "outline"
+    },
+    "ChainLinkBroken_Stroke2_Corner0_Rounded": {
+      "icon": "unlink",
+      "variant": "outline"
+    },
+    "ChainLink_Stroke2_Corner0_Rounded": {
+      "icon": "link",
+      "variant": "outline"
+    },
+    "CheckThick_Stroke2_Corner0_Rounded": {
+      "icon": "check",
+      "variant": "bold"
+    },
+    "Check_Stroke2_Corner0_Rounded": {
+      "icon": "check",
+      "variant": "outline"
+    },
+    "ChevronBottom_Stroke2_Corner0_Rounded": {
+      "icon": "chevron-down",
+      "variant": "outline"
+    },
+    "ChevronLeft_Stroke2_Corner0_Rounded": {
+      "icon": "chevron-left",
+      "variant": "outline"
+    },
+    "ChevronRight_Stroke2_Corner0_Rounded": {
+      "icon": "chevron-right",
+      "variant": "outline"
+    },
+    "ChevronTopBottom_Stroke2_Corner0_Rounded": {
+      "icon": "chevrons-up-down",
+      "variant": "outline"
+    },
+    "ChevronTop_Stroke2_Corner0_Rounded": {
+      "icon": "chevron-up",
+      "variant": "outline"
+    },
+    "CircleBanSign_Stroke2_Corner0_Rounded": {
+      "icon": "ban",
+      "variant": "outline"
+    },
+    "CircleCheck_Stroke2_Corner0_Rounded": {
+      "icon": "circle-check",
+      "variant": "outline"
+    },
+    "CircleInfo_Stroke2_Corner0_Rounded": {
+      "icon": "info",
+      "variant": "outline"
+    },
+    "CirclePlus_Stroke2_Corner0_Rounded": {
+      "icon": "circle-plus",
+      "variant": "outline"
+    },
+    "CircleQuestion_Stroke2_Corner2_Rounded": {
+      "icon": "circle-question-mark",
+      "variant": "outline"
+    },
+    "CircleX_Stroke2_Corner0_Rounded": {
+      "icon": "circle-x",
+      "variant": "outline"
+    },
+    "CircleAndSquare_Stroke1_Corner0_Rounded_Filled": {
+      "icon": "shapes",
+      "variant": "filled"
+    },
+    "Circle_Stroke2_Corner0_Rounded": {
+      "icon": "circle",
+      "variant": "outline"
+    },
+    "Clipboard_Stroke2_Corner2_Rounded": {
+      "icon": "clipboard",
+      "variant": "outline"
+    },
+    "Clock_Stroke2_Corner0_Rounded": {
+      "icon": "clock",
+      "variant": "outline"
+    },
+    "CloseQuote_Filled_Stroke2_Corner0_Rounded": {
+      "icon": "quote",
+      "variant": "filled"
+    },
+    "CloseQuote_Stroke2_Corner0_Rounded": {
+      "icon": "quote",
+      "variant": "outline"
+    },
+    "CloseQuote_Stroke2_Corner1_Rounded": {
+      "icon": "quote",
+      "variant": "outline"
+    },
+    "CodeBrackets_Stroke2_Corner0_Rounded": {
+      "icon": "code",
+      "variant": "outline"
+    },
+    "CodeBrackets_Stroke2_Corner2_Rounded": {
+      "icon": "code",
+      "variant": "outline"
+    },
+    "CodeLines_Stroke2_Corner2_Rounded": {
+      "icon": "square-code",
+      "variant": "outline"
+    },
+    "ColorPalette_Stroke2_Corner0_Rounded": {
+      "icon": "palette",
+      "variant": "outline"
+    },
+    "Contacts_Filled_Corner2_Rounded": {
+      "icon": "contact-round",
+      "variant": "filled"
+    },
+    "Contacts_Stroke2_Corner2_Rounded": {
+      "icon": "contact-round",
+      "variant": "outline"
+    },
+    "Crop_Stroke2_Corner0_Rounded": {
+      "icon": "crop",
+      "variant": "outline"
+    },
+    "DotGrid2x3_Stroke2_Corner0_Rounded": {
+      "icon": "grip-vertical",
+      "variant": "outline"
+    },
+    "DotGrid3x1_Stroke2_Corner0_Rounded": {
+      "icon": "ellipsis",
+      "variant": "outline"
+    },
+    "Download_Stroke2_Corner0_Rounded": {
+      "icon": "download",
+      "variant": "outline"
+    },
+    "Earth_Stroke2_Corner0_Rounded": {
+      "icon": "earth",
+      "variant": "outline"
+    },
+    "Earth_Stroke2_Corner2_Rounded": {
+      "icon": "earth",
+      "variant": "outline"
+    },
+    "EditBig_Stroke1_Corner0_Rounded": {
+      "icon": "pencil",
+      "variant": "outline"
+    },
+    "EditBig_Stroke2_Corner0_Rounded": {
+      "icon": "pencil",
+      "variant": "outline"
+    },
+    "EditBig_Stroke2_Corner2_Rounded": {
+      "icon": "pencil",
+      "variant": "outline"
+    },
+    "EmojiArc_Stroke2_Corner0_Rounded": {
+      "icon": "face-slightly-smiling",
+      "variant": "outline"
+    },
+    "EmojiHeartEyes_Stroke2_Corner0_Rounded": {
+      "icon": "face-grinning",
+      "variant": "outline"
+    },
+    "EmojiSad_Stroke2_Corner0_Rounded": {
+      "icon": "face-slightly-frowning",
+      "variant": "outline"
+    },
+    "EmojiSmile_Stroke2_Corner0_Rounded": {
+      "icon": "face-slightly-smiling",
+      "variant": "outline"
+    },
+    "EnvelopeNotification_Filled_Corner2_Rounded": {
+      "icon": "mail",
+      "variant": "filled"
+    },
+    "EnvelopeOpen_Stroke2_Corner0_Rounded": {
+      "icon": "mail-open",
+      "variant": "outline"
+    },
+    "Envelope_Filled_Stroke2_Corner0_Rounded": {
+      "icon": "mail",
+      "variant": "filled"
+    },
+    "Envelope_Stroke2_Corner0_Rounded": {
+      "icon": "mail",
+      "variant": "outline"
+    },
+    "Envelope_Stroke2_Corner2_Rounded": {
+      "icon": "mail",
+      "variant": "outline"
+    },
+    "Eraser": {
+      "icon": "eraser",
+      "variant": "outline"
+    },
+    "ExclamationCircle_Stroke2_Corner0_Rounded": {
+      "icon": "circle-alert",
+      "variant": "outline"
+    },
+    "Explosion_Stroke2_Corner0_Rounded": {
+      "icon": "bomb",
+      "variant": "outline"
+    },
+    "EyeSlash_Stroke2_Corner0_Rounded": {
+      "icon": "eye-off",
+      "variant": "outline"
+    },
+    "Eye_Stroke2_Corner0_Rounded": {
+      "icon": "eye",
+      "variant": "outline"
+    },
+    "Eye_Stroke2_Corner2_Rounded": {
+      "icon": "eye",
+      "variant": "outline"
+    },
+    "Eyedropper": {
+      "icon": "pipette",
+      "variant": "outline"
+    },
+    "FilterTimeline_Stroke2_Corner0_Rounded": {
+      "icon": "list-filter",
+      "variant": "outline"
+    },
+    "Filter_Stroke2_Corner0_Rounded": {
+      "icon": "funnel",
+      "variant": "outline"
+    },
+    "Flag_Stroke2_Corner0_Rounded": {
+      "icon": "flag",
+      "variant": "outline"
+    },
+    "Flame_Stroke2_Corner1_Rounded": {
+      "icon": "flame",
+      "variant": "outline"
+    },
+    "FlipHorizontal_Stroke2_Corner0_Rounded": {
+      "icon": "flip-horizontal",
+      "variant": "outline"
+    },
+    "FlipVertical_Stroke2_Corner0_Rounded": {
+      "icon": "flip-vertical",
+      "variant": "outline"
+    },
+    "FloppyDisk_Stroke2_Corner0_Rounded": {
+      "icon": "save",
+      "variant": "outline"
+    },
+    "Freeze_Stroke2_Corner2_Rounded": {
+      "icon": "snowflake",
+      "variant": "outline"
+    },
+    "GameController_Stroke2_Corner0_Rounded": {
+      "icon": "gamepad-2",
+      "variant": "outline"
+    },
+    "GifSquare_Stroke2_Corner2_Rounded": {
+      "icon": "gif",
+      "variant": "outline",
+      "source": "custom"
+    },
+    "Gif_Stroke2_Corner0_Rounded": {
+      "icon": "gif",
+      "variant": "outline",
+      "source": "custom"
+    },
+    "Gift1_Filled_Corner0_Rounded": {
+      "icon": "gift",
+      "variant": "filled"
+    },
+    "Gift1_Stroke2_Corner0_Rounded": {
+      "icon": "gift",
+      "variant": "outline"
+    },
+    "Globe_Stroke2_Corner0_Rounded": {
+      "icon": "globe",
+      "variant": "outline"
+    },
+    "GridFour": {
+      "icon": "grid-2x2",
+      "variant": "outline"
+    },
+    "Group3_Stroke2_Corner0_Rounded": {
+      "icon": "users-round",
+      "variant": "outline"
+    },
+    "Growth_Stroke2_Corner0_Rounded": {
+      "icon": "chart-no-axes-combined",
+      "variant": "outline"
+    },
+    "Hand": {
+      "icon": "hand",
+      "variant": "outline"
+    },
+    "Haptic_Stroke2_Corner2_Rounded": {
+      "icon": "vibrate",
+      "variant": "outline"
+    },
+    "HashtagWide_Stroke1_Corner0_Rounded": {
+      "icon": "hash",
+      "variant": "outline"
+    },
+    "Hashtag_Filled_Corner0_Rounded": {
+      "icon": "hash",
+      "variant": "bold"
+    },
+    "Hashtag_Stroke2_Corner0_Rounded": {
+      "icon": "hash",
+      "variant": "outline"
+    },
+    "Heart2_Filled_Stroke2_Corner0_Rounded": {
+      "icon": "heart",
+      "variant": "filled"
+    },
+    "Heart2_Stroke1_Corner0_Rounded": {
+      "icon": "heart",
+      "variant": "outline"
+    },
+    "Heart2_Stroke2_Corner0_Rounded": {
+      "icon": "heart",
+      "variant": "outline"
+    },
+    "HomeOpen_Filled_Corner0_Rounded": {
+      "icon": "house",
+      "variant": "filled"
+    },
+    "HomeOpen_Stroke2_Corner0_Rounded": {
+      "icon": "house",
+      "variant": "outline"
+    },
+    "Home_Filled_Corner0_Rounded": {
+      "icon": "house",
+      "variant": "filled"
+    },
+    "Home_Stroke2_Corner0_Rounded": {
+      "icon": "house",
+      "variant": "outline"
+    },
+    "Home_Stroke2_Corner2_Rounded": {
+      "icon": "house",
+      "variant": "outline"
+    },
+    "Image_Stroke1_Corner0_Rounded": {
+      "icon": "image",
+      "variant": "outline"
+    },
+    "Image_Stroke2_Corner2_Rounded": {
+      "icon": "image",
+      "variant": "outline"
+    },
+    "Inbox_Stroke2_Corner2_Rounded": {
+      "icon": "inbox",
+      "variant": "outline"
+    },
+    "Inbox_Stroke2_Corner2_Rounded_Large": {
+      "icon": "inbox",
+      "variant": "outline"
+    },
+    "Key_Stroke2_Corner2_Rounded": {
+      "icon": "key",
+      "variant": "outline"
+    },
+    "Lab_Stroke2_Corner0_Rounded": {
+      "icon": "flask-conical",
+      "variant": "outline"
+    },
+    "Language_Stroke2_Corner2_Rounded": {
+      "icon": "languages",
+      "variant": "outline"
+    },
+    "Leaf_Stroke2_Corner0_Rounded": {
+      "icon": "leaf",
+      "variant": "outline"
+    },
+    "LikeRepost_Stroke2_Corner2_Rounded": {
+      "icon": "heart",
+      "variant": "outline"
+    },
+    "LineSegment": {
+      "icon": "slash",
+      "variant": "outline"
+    },
+    "ListMagnifyingGlass_Stroke2_Corner0_Rounded": {
+      "icon": "text-search",
+      "variant": "outline"
+    },
+    "ListPlus_Stroke2_Corner0_Rounded": {
+      "icon": "list-plus",
+      "variant": "outline"
+    },
+    "ListSparkle_Stroke2_Corner0_Rounded": {
+      "icon": "list-star",
+      "variant": "outline",
+      "source": "custom"
+    },
+    "Live_Stroke2_Corner0_Rounded": {
+      "icon": "radio",
+      "variant": "outline"
+    },
+    "Loader_Stroke2_Corner0_Rounded": {
+      "icon": "loader-circle",
+      "variant": "outline"
+    },
+    "Lock_Stroke2_Corner0_Rounded": {
+      "icon": "lock",
+      "variant": "outline"
+    },
+    "Lock_Stroke2_Corner2_Rounded": {
+      "icon": "lock",
+      "variant": "outline"
+    },
+    "Macintosh_Stroke2_Corner2_Rounded": {
+      "icon": "computer",
+      "variant": "outline"
+    },
+    "MagnifyingGlassX_Stroke2_Corner0_Rounded": {
+      "icon": "search-x",
+      "variant": "outline"
+    },
+    "MagnifyingGlassX_Stroke2_Corner0_Rounded_Large": {
+      "icon": "search-x",
+      "variant": "outline"
+    },
+    "MagnifyingGlass_Filled_Stroke2_Corner0_Rounded": {
+      "icon": "search",
+      "variant": "filled"
+    },
+    "MagnifyingGlass_Stroke2_Corner0_Rounded": {
+      "icon": "search",
+      "variant": "outline"
+    },
+    "Megaphone_Filled_Corner0_Rounded": {
+      "icon": "megaphone",
+      "variant": "filled"
+    },
+    "Menu_Stroke2_Corner0_Rounded": {
+      "icon": "menu",
+      "variant": "outline"
+    },
+    "MessagePlus_Stroke2_Corner0_Rounded": {
+      "icon": "message-circle-plus",
+      "variant": "outline"
+    },
+    "Message_Stroke1_Corner0_Rounded_Filled": {
+      "icon": "message-circle",
+      "variant": "filled"
+    },
+    "Message_Stroke2_Corner0_Rounded": {
+      "icon": "message-circle",
+      "variant": "outline"
+    },
+    "Message_Stroke2_Corner0_Rounded_Filled": {
+      "icon": "message-circle",
+      "variant": "filled"
+    },
+    "Moon_Stroke2_Corner0_Rounded": {
+      "icon": "moon",
+      "variant": "outline"
+    },
+    "MusicNote_Stroke2_Corner0_Rounded": {
+      "icon": "music",
+      "variant": "outline"
+    },
+    "Mute_Stroke2_Corner0_Rounded": {
+      "icon": "volume-x",
+      "variant": "outline"
+    },
+    "News2_Stroke2_Corner0_Rounded": {
+      "icon": "newspaper",
+      "variant": "outline"
+    },
+    "Newskie": {
+      "icon": "user-plus",
+      "variant": "outline"
+    },
+    "Newspaper2_Stroke2_Corner2_Rounded": {
+      "icon": "newspaper",
+      "variant": "outline"
+    },
+    "Newspaper_Filled_Corner2_Rounded": {
+      "icon": "newspaper",
+      "variant": "filled"
+    },
+    "Newspaper_Stroke2_Corner2_Rounded": {
+      "icon": "newspaper",
+      "variant": "outline"
+    },
+    "NotificationActivitySmall_Filled_Corner0_Rounded": {
+      "icon": "bell-ring",
+      "variant": "filled"
+    },
+    "NotificationFollowSmall_Filled_Corner0_Rounded": {
+      "icon": "user-plus",
+      "variant": "filled"
+    },
+    "NotificationLikeSmall_Filled_Corner0_Rounded": {
+      "icon": "heart",
+      "variant": "filled"
+    },
+    "NotificationMentionSmall_Filled_Corner0_Rounded": {
+      "icon": "at-sign",
+      "variant": "filled"
+    },
+    "NotificationQuoteSmall_Filled_Corner0_Rounded": {
+      "icon": "quote",
+      "variant": "filled"
+    },
+    "NotificationReplySmall_Filled_Corner0_Rounded": {
+      "icon": "message-circle",
+      "variant": "filled"
+    },
+    "NotificationRepostSmall_Filled_Corner0_Rounded": {
+      "icon": "repeat-2",
+      "variant": "filled"
+    },
+    "NotificationStarterPackSmall_Filled_Corner0_Rounded": {
+      "icon": "shopping-bag",
+      "variant": "filled"
+    },
+    "NotificationVerifiedSmall_Filled_Corner0_Rounded": {
+      "icon": "circle-check",
+      "variant": "filled"
+    },
+    "OpenQuote_Filled_Stroke2_Corner0_Rounded": {
+      "icon": "quote",
+      "variant": "filled",
+      "mirror": true
+    },
+    "OpenQuote_Stroke2_Corner0_Rounded": {
+      "icon": "quote",
+      "variant": "outline",
+      "mirror": true
+    },
+    "PageText_Stroke2_Corner0_Rounded": {
+      "icon": "file-text",
+      "variant": "outline"
+    },
+    "PageX_Stroke2_Corner0_Rounded_Large": {
+      "icon": "file-x",
+      "variant": "outline"
+    },
+    "PaintBucket": {
+      "icon": "paint-bucket",
+      "variant": "outline"
+    },
+    "PaintRoller_Stroke2_Corner2_Rounded": {
+      "icon": "paint-roller",
+      "variant": "outline"
+    },
+    "PaperPlaneVertical_Filled_Stroke2_Corner1_Rounded": {
+      "icon": "send",
+      "variant": "filled"
+    },
+    "PaperPlane_Stroke2_Corner0_Rounded": {
+      "icon": "send",
+      "variant": "outline"
+    },
+    "Pause_Filled_Corner0_Rounded": {
+      "icon": "pause",
+      "variant": "filled"
+    },
+    "Pause_Filled_Corner2_Rounded": {
+      "icon": "pause",
+      "variant": "filled"
+    },
+    "Pause_Stroke2_Corner0_Rounded": {
+      "icon": "pause",
+      "variant": "outline"
+    },
+    "Pause_Stroke2_Corner2_Rounded": {
+      "icon": "pause",
+      "variant": "outline"
+    },
+    "PencilLine_Stroke2_Corner0_Rounded": {
+      "icon": "square-pen",
+      "variant": "outline"
+    },
+    "PencilLine_Stroke2_Corner2_Rounded": {
+      "icon": "square-pen",
+      "variant": "outline"
+    },
+    "Pencil_Stroke2_Corner0_Rounded": {
+      "icon": "pencil",
+      "variant": "outline"
+    },
+    "PeopleRemove2_Stroke1_Corner0_Rounded": {
+      "icon": "user-minus",
+      "variant": "outline"
+    },
+    "PeopleRemove2_Stroke2_Corner0_Rounded": {
+      "icon": "user-minus",
+      "variant": "outline"
+    },
+    "PersonCheck_Stroke2_Corner0_Rounded": {
+      "icon": "user-check",
+      "variant": "outline"
+    },
+    "PersonGroup_Stroke2_Corner2_Rounded": {
+      "icon": "users-round",
+      "variant": "outline"
+    },
+    "PersonPlus_Filled_Corner2_Rounded": {
+      "icon": "user-plus",
+      "variant": "filled"
+    },
+    "PersonPlus_Filled_Stroke2_Corner0_Rounded": {
+      "icon": "user-plus",
+      "variant": "filled"
+    },
+    "PersonPlus_Stroke2_Corner0_Rounded": {
+      "icon": "user-plus",
+      "variant": "outline"
+    },
+    "PersonPlus_Stroke2_Corner2_Rounded": {
+      "icon": "user-plus",
+      "variant": "outline"
+    },
+    "PersonX_Stroke2_Corner0_Rounded": {
+      "icon": "user-x",
+      "variant": "outline"
+    },
+    "PersonX_Stroke2_Corner0_Rounded_Large": {
+      "icon": "user-x",
+      "variant": "outline"
+    },
+    "Person_Filled_Corner2_Rounded": {
+      "icon": "user",
+      "variant": "filled"
+    },
+    "Person_Stroke2_Corner0_Rounded": {
+      "icon": "user",
+      "variant": "outline"
+    },
+    "Person_Stroke2_Corner2_Rounded": {
+      "icon": "user",
+      "variant": "outline"
+    },
+    "PhoneHaptic_Stroke2_Corner2_Rounded": {
+      "icon": "vibrate",
+      "variant": "outline"
+    },
+    "Phone_Stroke2_Corner0_Rounded": {
+      "icon": "phone",
+      "variant": "outline"
+    },
+    "PinLocationFilled_Stroke2_Corner0_Rounded": {
+      "icon": "map-pin",
+      "variant": "filled"
+    },
+    "PinLocation_Stroke2_Corner0_Rounded": {
+      "icon": "map-pin",
+      "variant": "outline"
+    },
+    "Pin_Filled_Corner0_Rounded": {
+      "icon": "pin",
+      "variant": "filled"
+    },
+    "Pin_Stroke2_Corner0_Rounded": {
+      "icon": "pin",
+      "variant": "outline"
+    },
+    "Pizza_Stroke2_Corner0_Rounded": {
+      "icon": "pizza",
+      "variant": "outline"
+    },
+    "Play_Filled_Corner0_Rounded": {
+      "icon": "play",
+      "variant": "filled"
+    },
+    "Play_Filled_Corner2_Rounded": {
+      "icon": "play",
+      "variant": "filled"
+    },
+    "Play_Stroke2_Corner0_Rounded": {
+      "icon": "play",
+      "variant": "outline"
+    },
+    "Play_Stroke2_Corner2_Rounded": {
+      "icon": "play",
+      "variant": "outline"
+    },
+    "PlusLarge_Stroke2_Corner0_Rounded": {
+      "icon": "plus",
+      "variant": "outline"
+    },
+    "PlusSmall_Stroke2_Corner0_Rounded": {
+      "icon": "plus",
+      "variant": "outline"
+    },
+    "QrCode_Stroke2_Corner0_Rounded": {
+      "icon": "qr-code",
+      "variant": "outline"
+    },
+    "RaisingHand4Finger_Stroke2_Corner0_Rounded": {
+      "icon": "hand",
+      "variant": "outline"
+    },
+    "RaisingHand4Finger_Stroke2_Corner2_Rounded": {
+      "icon": "hand",
+      "variant": "outline"
+    },
+    "Reply": {
+      "icon": "message-circle",
+      "variant": "outline"
+    },
+    "Reply_Stroke2_Corner0_Rounded": {
+      "icon": "message-circle",
+      "variant": "outline"
+    },
+    "RepostRepost_Stroke2_Corner2_Rounded": {
+      "icon": "repeat-1",
+      "variant": "outline"
+    },
+    "RepostStrike_Stroke2_Corner0_Rounded": {
+      "icon": "repeat-off",
+      "variant": "outline"
+    },
+    "Repost_Stroke2_Corner0_Rounded": {
+      "icon": "repeat-2",
+      "variant": "outline"
+    },
+    "Repost_Stroke2_Corner2_Rounded": {
+      "icon": "repeat-2",
+      "variant": "outline"
+    },
+    "Repost_Stroke2_Corner3_Rounded": {
+      "icon": "repeat-2",
+      "variant": "outline"
+    },
+    "Rose_Stroke2_Corner0_Rounded": {
+      "icon": "rose",
+      "variant": "outline"
+    },
+    "SettingsGear2_Filled_Corner0_Rounded": {
+      "icon": "settings",
+      "variant": "filled"
+    },
+    "SettingsGear2_Stroke2_Corner0_Rounded": {
+      "icon": "settings",
+      "variant": "outline"
+    },
+    "SettingsSliderVertical_Stroke2_Corner0_Rounded": {
+      "icon": "sliders-vertical",
+      "variant": "outline"
+    },
+    "Shaka_Stroke2_Corner0_Rounded": {
+      "icon": "peace-sign",
+      "variant": "outline",
+      "source": "lab"
+    },
+    "Shapes_Stroke2_Corner0_Rounded": {
+      "icon": "shapes",
+      "variant": "outline"
+    },
+    "ShieldCheck_Stroke2_Corner0_Rounded": {
+      "icon": "shield-check",
+      "variant": "outline"
+    },
+    "Shield_Stroke2_Corner0_Rounded": {
+      "icon": "shield",
+      "variant": "outline"
+    },
+    "Sparkle_Stroke2_Corner0_Rounded": {
+      "icon": "sparkles",
+      "variant": "outline"
+    },
+    "SpeakerVolumeFull_Stroke2_Corner0_Rounded": {
+      "icon": "volume-2",
+      "variant": "outline"
+    },
+    "SquareArrowTopRight_Stroke2_Corner0_Rounded": {
+      "icon": "external-link",
+      "variant": "outline"
+    },
+    "SquareBehindSquare4_Stroke2_Corner0_Rounded": {
+      "icon": "copy",
+      "variant": "outline"
+    },
+    "SquareBehindSquare_Stroke2_Corner2_Rounded": {
+      "icon": "layers",
+      "variant": "outline"
+    },
+    "Star_Filled_Corner0_Rounded": {
+      "icon": "star",
+      "variant": "filled"
+    },
+    "Star_Stroke2_Corner0_Rounded": {
+      "icon": "star",
+      "variant": "outline"
+    },
+    "StarterPackMultiPathLarge": {
+      "icon": "shopping-bag",
+      "variant": "outline"
+    },
+    "StarterPack_Stroke2_Corner0_Rounded": {
+      "icon": "shopping-bag",
+      "variant": "outline"
+    },
+    "StreamingLive_Stroke2_Corner0_Rounded": {
+      "icon": "radio",
+      "variant": "outline"
+    },
+    "TextSize_Stroke2_Corner0_Rounded": {
+      "icon": "a-large-small",
+      "variant": "outline"
+    },
+    "Ticket_Stroke2_Corner0_Rounded": {
+      "icon": "ticket",
+      "variant": "outline"
+    },
+    "TimesLarge_Stroke2_Corner0_Rounded": {
+      "icon": "x",
+      "variant": "outline"
+    },
+    "TinyChevronBottom_Stroke2_Corner0_Rounded": {
+      "icon": "chevron-down",
+      "variant": "outline"
+    },
+    "TitleCase_Stroke2_Corner0_Rounded": {
+      "icon": "case-sensitive",
+      "variant": "outline"
+    },
+    "Tote": {
+      "icon": "shopping-bag",
+      "variant": "outline"
+    },
+    "Trash_Stroke2_Corner0_Rounded": {
+      "icon": "trash",
+      "variant": "outline"
+    },
+    "Trash_Stroke2_Corner2_Rounded": {
+      "icon": "trash",
+      "variant": "outline"
+    },
+    "Tree_Stroke2_Corner0_Rounded": {
+      "icon": "tree-deciduous",
+      "variant": "outline"
+    },
+    "Trending2_Stroke2_Corner2_Rounded": {
+      "icon": "chart-no-axes-combined",
+      "variant": "outline"
+    },
+    "Trending3_Stroke2_Corner1_Rounded": {
+      "icon": "trending-up",
+      "variant": "outline"
+    },
+    "TriangleExclamation_Stroke2_Corner2_Rounded": {
+      "icon": "triangle-alert",
+      "variant": "outline"
+    },
+    "Trophy_Stroke2_Corner2_Rounded": {
+      "icon": "trophy",
+      "variant": "outline"
+    },
+    "UFO_Stroke2_Corner0_Rounded": {
+      "icon": "ufo",
+      "variant": "outline",
+      "source": "lab"
+    },
+    "Unlock_Stroke2_Corner2_Rounded": {
+      "icon": "lock-open",
+      "variant": "outline"
+    },
+    "UserCircle_Filled_Corner0_Rounded": {
+      "icon": "circle-user-round",
+      "variant": "filled"
+    },
+    "UserCircle_Stroke2_Corner0_Rounded": {
+      "icon": "circle-user-round",
+      "variant": "outline"
+    },
+    "VerifiedCheck": {
+      "icon": "circle-check",
+      "variant": "filled",
+      "whiteBacking": true
+    },
+    "Verified_Stroke2_Corner2_Rounded": {
+      "icon": "badge-check",
+      "variant": "outline"
+    },
+    "VerifierCheck": {
+      "icon": "badge-check",
+      "variant": "filled",
+      "whiteBacking": true
+    },
+    "VideoClip_Stroke1_Corner0_Rounded": {
+      "icon": "clapperboard",
+      "variant": "outline"
+    },
+    "VideoClip_Stroke2_Corner0_Rounded": {
+      "icon": "video",
+      "variant": "outline"
+    },
+    "Warning_Stroke2_Corner0_Rounded": {
+      "icon": "triangle-alert",
+      "variant": "outline"
+    },
+    "Window_Stroke2_Corner2_Rounded": {
+      "icon": "app-window",
+      "variant": "outline"
+    },
+    "Wrench_Stroke2_Corner2_Rounded": {
+      "icon": "wrench",
+      "variant": "outline"
+    },
+    "Zap_Stroke2_Corner0_Rounded": {
+      "icon": "zap",
+      "variant": "outline"
+    }
+  },
+  "embedIcons": [
+    {
+      "name": "ArrowDown",
+      "icon": "arrow-down",
+      "variant": "outline"
+    },
+    {
+      "name": "Globe",
+      "icon": "globe",
+      "variant": "outline"
+    },
+    {
+      "name": "Info",
+      "icon": "info",
+      "variant": "outline"
+    },
+    {
+      "name": "Play",
+      "icon": "play",
+      "variant": "filled"
+    },
+    {
+      "name": "Tote",
+      "icon": "shopping-bag",
+      "variant": "outline"
+    },
+    {
+      "name": "Like",
+      "icon": "heart",
+      "variant": "outline",
+      "size": 16,
+      "height": 17
+    },
+    {
+      "name": "Reply",
+      "icon": "message-circle",
+      "variant": "outline",
+      "size": 16,
+      "height": 17
+    },
+    {
+      "name": "Repost",
+      "icon": "repeat-2",
+      "variant": "outline",
+      "size": 16,
+      "height": 17
+    },
+    {
+      "name": "Robot",
+      "icon": "bot",
+      "variant": "filled",
+      "size": 14
+    },
+    {
+      "name": "VerifiedCheck",
+      "icon": "circle-check",
+      "variant": "filled",
+      "whiteBacking": true,
+      "fill": "hsl(211, 99%, 53%)"
+    },
+    {
+      "name": "VerifierCheck",
+      "icon": "badge-check",
+      "variant": "filled",
+      "whiteBacking": true,
+      "fill": "hsl(211, 99%, 53%)"
+    }
+  ]
+}
