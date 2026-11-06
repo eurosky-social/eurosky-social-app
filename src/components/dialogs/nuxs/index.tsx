@@ -146,7 +146,7 @@ function Inner({
         continue // comment this out to test
       }
 
-      // then check gate (track exposure)
+      // Then check eligibility.
       if (
         enabled &&
         !enabled({

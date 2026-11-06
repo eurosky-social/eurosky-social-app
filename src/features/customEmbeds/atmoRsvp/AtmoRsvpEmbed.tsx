@@ -36,7 +36,7 @@ export function AtmoRsvpEmbed({
 }: CustomEmbedComponentProps) {
   const t = useTheme()
   const {t: l, i18n} = useLingui()
-  const playHaptic = useHaptics()
+  const haptics = useHaptics()
   const requireAuth = useRequireAuth()
 
   const ref = parseAtmoRsvpEvent(view.uri)
@@ -73,13 +73,13 @@ export function AtmoRsvpEmbed({
   const canRsvp = !!eventUri && !!event?.cid
 
   const onPressCard = () => {
-    playHaptic('Light')
+    haptics.tap()
     onOpen?.()
   }
 
   const onPressStatus = (target: RsvpStatus) => {
     requireAuth(() => {
-      playHaptic('Light')
+      haptics.tap()
       rsvp.mutate(currentStatus === target ? null : target)
     })
   }

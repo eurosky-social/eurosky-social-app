@@ -78,10 +78,10 @@ pnpm brand:gen-raster --compose  # else compose defaults from your mark
 ```
 
 `gen-raster` is optional; the normal `pnpm brand` path does not overwrite the
-app-icon master or `web/og-image.jpg`. It uses the project-installed
+app-icon master or `public/og-image.jpg`. It uses the project-installed
 `@resvg/resvg-js`, with `rsvg-convert` or ImageMagick as fallbacks. It is
 **non-destructive**: it only writes an output when its SVG source exists
-(`icon.svg` → icon master + favicons; `og.svg` → `web/og-image.jpg`), or composes
+(`icon.svg` → icon master + favicons; `og.svg` → `public/og-image.jpg`), or composes
 a default under `--compose`. A brand with hand-designed raster art can omit
 those SVG sources.
 
@@ -105,7 +105,8 @@ Universal SSL and the TLS handshake will fail.
 
 - **Services** — edge services live in `services/`. Read APIs default to
   Bluesky's; override per build via `EXPO_PUBLIC_*` (see `.env.example`).
-  GrowthBook flags + product metrics toggle via `EXPO_PUBLIC_ENABLE_*`.
+  Build-local feature settings in `src/analytics/features/` and product metrics
+  toggle via `EXPO_PUBLIC_ENABLE_METRICS`.
 - **Native build** (separate pass) — bundle IDs, app name, scheme, app groups,
   associated domains, EAS / App Store / Sentry / Firebase IDs live in
   `app.config.js`, `eas.json`, `ios/`, `android/`.

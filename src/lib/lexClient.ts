@@ -1,11 +1,47 @@
 import {
   type Agent,
   type AgentOptions,
+  buildAgent,
   Client,
   type ClientOptions,
 } from '@atproto/lex'
 
+import {getDeviceId, getSessionId} from '#/analytics/identifiers'
 import {withAppViewShadowFetch} from '#/features/appView/shadow'
+
+type CreateLexClientOptions = ClientOptions & {
+  /**
+   * Include the stable device ID and current session ID on every request.
+   * Enable only when the request is bound for a trusted service.
+   */
+  includeDeviceSessionHeaders?: boolean
+}
+
+/**
+ * Adds the current analytics identifiers to every AT Protocol request. Values
+ * are read at dispatch time so session rotation does not require rebuilding
+ * long-lived clients.
+ */
+function withDeviceSessionHeaders(agentOptions: Agent | AgentOptions): Agent {
+  const agent = buildAgent(agentOptions)
+  return {
+    get did() {
+      return agent.did
+    },
+    fetchHandler(path, init) {
+      const headers = new Headers(init.headers)
+      const deviceId = getDeviceId()
+      const sessionId = getSessionId()
+      if (deviceId) {
+        headers.set('x-atproto-device-id', deviceId)
+      }
+      if (sessionId) {
+        headers.set('x-atproto-session-id', sessionId)
+      }
+      return agent.fetchHandler(path, {...init, headers})
+    },
+  }
+}
 
 /**
  * App-standard factory for lex {@link Client}s. Use this instead of `new
@@ -22,9 +58,16 @@ import {withAppViewShadowFetch} from '#/features/appView/shadow'
  */
 export function createLexClient(
   agent: Agent | AgentOptions,
-  options?: ClientOptions,
+  options: CreateLexClientOptions = {},
 ): Client {
-  return new Client(agent, {strictResponseProcessing: false, ...options})
+  const {includeDeviceSessionHeaders, ...clientOptions} = options
+  return new Client(
+    includeDeviceSessionHeaders ? withDeviceSessionHeaders(agent) : agent,
+    {
+      strictResponseProcessing: false,
+      ...clientOptions,
+    },
+  )
 }
 
 /**
@@ -45,10 +88,12 @@ export function createLexClient(
  * only shadows read calls when this factory is deliberately pointed at a
  * canonical Bluesky AppView.
  *
- * `appLabelers: null` suppresses the global `Client.appLabelers` static: these
- * are `com.atproto.server` calls to a host the user typed, which have no use
- * for moderation labels, and the header would disclose the app's configured
- * moderation authorities to an arbitrary third-party server.
+ * The default `includeDeviceSessionHeaders: false` keeps stable analytics IDs
+ * off these requests. `appLabelers: null` also suppresses the global
+ * `Client.appLabelers` static: these are `com.atproto.server` calls to a host the
+ * user typed, which have no use for moderation labels, and the header would
+ * disclose the app's configured moderation authorities to an arbitrary
+ * third-party server.
  */
 export function createServiceClient(service: string): Client {
   return createLexClient(

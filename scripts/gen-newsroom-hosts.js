@@ -2,7 +2,7 @@
  * Emits the static `newsroom-hosts.json` into the web build output.
  *
  * Runs at build time (chained off `build-web`). Extracts the feed URLs from
- * the newsroom publisher registry (src/features/newsrooms/publishers.ts) and
+ * the newsroom publisher registry (src/features/news/publishers.ts) and
  * writes their registrable domains for the production RSS proxy
  * (services/rss/bunny/index.ts) to consume as its host allowlist. Adding a
  * publisher to the registry therefore propagates to the proxy on the next web
@@ -40,7 +40,7 @@ function registrableDomain(hostname) {
 }
 
 const registry = fs.readFileSync(
-  path.join(projectRoot, 'src', 'features', 'newsrooms', 'publishers.ts'),
+  path.join(projectRoot, 'src', 'features', 'news', 'publishers.ts'),
   'utf8',
 )
 // Match any `url: 'http...'` regardless of how prettier wraps the source

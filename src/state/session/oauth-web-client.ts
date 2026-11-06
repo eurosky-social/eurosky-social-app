@@ -38,6 +38,7 @@ import {
 } from '#/config/oauth'
 import {createIdentityResolver} from './identity-resolver'
 import {describeOAuthError} from './oauth-logging'
+import {getOAuthUiLocales} from './oauth-ui-locales'
 import {
   createEuroskyOAuthRuntime,
   createOAuthSessionStore,
@@ -72,11 +73,10 @@ function isLoopback(): boolean {
   )
 }
 
-// Session lifecycle hooks. @atproto/oauth-client-browser ^0.3 exposes
-// onDelete/onUpdate via constructor SessionHooks. "Telemetry dropped" means
-// Blacksky's bespoke OAuth growthbook telemetry was NOT ported - it does NOT
-// mean this logger is inert: logger.* feeds the live Sentry transport, so we
-// must keep PII (DID/sub) and raw error objects out of it (MED-1).
+/*
+ * Session lifecycle hooks. logger.* feeds the live Sentry transport, so keep
+ * PII (DID/sub) and raw error objects out of it (MED-1).
+ */
 const sessionHooks = {
   onDelete(_sub: string, cause: unknown) {
     logger.warn('oauth: session deleted', describeOAuthError(cause))
@@ -133,7 +133,11 @@ function createLoopbackClient(): WebOAuthClient {
     async signIn(input, options) {
       // REQUEST only OAUTH_SCOPE by default even though the metadata DECLARES
       // the wider OAUTH_HANDLE_SCOPE; the step-up overrides via options.scope.
-      await client.signIn(input, {scope: OAUTH_SCOPE, ...options})
+      await client.signIn(input, {
+        scope: OAUTH_SCOPE,
+        ...getOAuthUiLocales(),
+        ...options,
+      })
     },
     init: () => client.init(),
     restore: (sub, refresh) => client.restore(sub, refresh),
@@ -221,6 +225,7 @@ function createConfidentialClient(): WebOAuthClient {
       // future handle-scope step-up).
       const url = await client.authorize(input, {
         scope: OAUTH_SCOPE,
+        ...getOAuthUiLocales(),
         ...options,
       })
       window.location.assign(url.href)

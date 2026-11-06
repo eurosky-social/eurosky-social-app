@@ -33,8 +33,7 @@ const pick = <T,>(arr: readonly T[]): T =>
  * A small companion that wanders along the bottom of the screen (on top of the
  * bottom navbar on mobile) and reacts when you tap it. The species, its art and
  * its behaviour all come from the pet registry, so this director is agnostic to
- * which animal is shown. Gated behind the `petCompanion` preference and an
- * active session so it cleanly unmounts when turned off.
+ * which animal is shown.
  */
 export function PetCompanion() {
   const {enabled, species: speciesId, variant} = usePetCompanion()
@@ -201,7 +200,7 @@ function PetCompanionInner({
     cancelAnimation(tx)
     posRef.current = tx.value
 
-    haptics('Light')
+    haptics.tap()
 
     // Play a random reaction. Looping reactions are held briefly then resumed
     // here; one-shots resume via PetSprite.onAnimationEnd.
@@ -251,6 +250,7 @@ function PetCompanionInner({
 
   return (
     <Animated.View
+      testID="petCompanion"
       pointerEvents="box-none"
       style={[
         {

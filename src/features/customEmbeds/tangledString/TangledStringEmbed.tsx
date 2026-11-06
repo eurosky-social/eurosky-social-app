@@ -35,7 +35,7 @@ export function TangledStringEmbed({
 }: CustomEmbedComponentProps) {
   const t = useTheme()
   const {t: l} = useLingui()
-  const playHaptic = useHaptics()
+  const haptics = useHaptics()
   const panelBg = useCodePanelColor()
   const [expanded, setExpanded] = useState(false)
 
@@ -53,7 +53,7 @@ export function TangledStringEmbed({
   const canExpand = lineCount > PREVIEW_LINES
 
   const onPressCard = () => {
-    playHaptic('Light')
+    haptics.tap()
     onOpen?.()
   }
 

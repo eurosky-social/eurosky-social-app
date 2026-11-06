@@ -9,9 +9,10 @@
 import {memo, useState} from 'react'
 import {ActivityIndicator, StyleSheet} from 'react-native'
 import {
-  Gesture,
   GestureDetector,
   type PanGesture,
+  useExclusiveGestures,
+  useTapGesture,
 } from 'react-native-gesture-handler'
 import Animated, {
   type SharedValue,
@@ -22,10 +23,21 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
 } from 'react-native-reanimated'
-import {useSafeAreaFrame} from 'react-native-safe-area-context'
+import {
+  useSafeAreaFrame,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context'
 import {scheduleOnRN} from 'react-native-worklets'
 import {Image} from 'expo-image'
+import {
+  ScrollEdgeEffect,
+  ScrollEdgeEffectProvider,
+  useScrollEdgeEffectRef,
+} from '@bsky.app/expo-scroll-edge-effect'
 
+import {mergeRefs} from '#/lib/merge-refs'
+import {atoms as a} from '#/alf'
+import {IS_LIQUID_GLASS} from '#/env'
 import {
   type Dimensions as ImageDimensions,
   type ImageSource,
@@ -55,7 +67,15 @@ type Props = {
   transforms: Readonly<SharedValue<LightboxTransforms>>
 }
 
-const ImageItem = ({
+function ImageItem(props: Props) {
+  return (
+    <ScrollEdgeEffectProvider>
+      <ImageItemContent {...props} />
+    </ScrollEdgeEffectProvider>
+  )
+}
+
+const ImageItemContent = ({
   imageSrc,
   onTap,
   onZoom,
@@ -68,6 +88,8 @@ const ImageItem = ({
   transforms,
 }: Props) => {
   const scrollViewRef = useAnimatedRef<Animated.ScrollView>()
+  const scrollEdgeRef = useScrollEdgeEffectRef()
+  const {top: topInset} = useSafeAreaInsets()
   const [scaled, setScaled] = useState(false)
   const isDragging = useSharedValue(false)
   const screenSizeDelayedForJSThreadOnly = useSafeAreaFrame()
@@ -115,14 +137,16 @@ const ImageItem = ({
     })
   }
 
-  const singleTap = Gesture.Tap().onEnd(() => {
-    'worklet'
-    scheduleOnRN(onTap)
+  const singleTap = useTapGesture({
+    onDeactivate: () => {
+      'worklet'
+      scheduleOnRN(onTap)
+    },
   })
 
-  const doubleTap = Gesture.Tap()
-    .numberOfTaps(2)
-    .onEnd(e => {
+  const doubleTap = useTapGesture({
+    numberOfTaps: 2,
+    onDeactivate: e => {
       'worklet'
       const screenSize = measureSafeArea()
       const {absoluteX, absoluteY} = e
@@ -142,9 +166,10 @@ const ImageItem = ({
         )
       }
       scheduleOnRN(zoomTo, nextZoomRect)
-    })
+    },
+  })
 
-  const composedGesture = Gesture.Exclusive(
+  const composedGesture = useExclusiveGestures(
     dismissSwipePan,
     doubleTap,
     singleTap,
@@ -215,47 +240,61 @@ const ImageItem = ({
   }))
 
   return (
-    <GestureDetector gesture={composedGesture}>
-      <Animated.ScrollView
-        ref={scrollViewRef}
-        pinchGestureEnabled
-        showsHorizontalScrollIndicator={false}
-        showsVerticalScrollIndicator={false}
-        maximumZoomScale={maxZoomScale}
-        onScroll={scrollHandler}
-        style={containerStyle}
-        animatedProps={scrollViewProps}
-        centerContent>
-        {showLoader && (
-          <ActivityIndicator size="small" color="#FFF" style={styles.loading} />
-        )}
-        <Animated.View style={[imageCropStyle, imageLayoutStyle]}>
-          <Animated.View style={[imageStyle, imageLayoutStyle]}>
-            <Image
-              contentFit="contain"
-              source={{uri: imageSrc.uri}}
-              placeholderContentFit="contain"
-              placeholder={{uri: imageSrc.thumbUri}}
-              style={{flex: 1, borderRadius}}
-              accessibilityLabel={imageSrc.alt}
-              accessibilityHint=""
-              enableLiveTextInteraction={showControls && !scaled}
-              accessibilityIgnoresInvertColors
-              onLoad={
-                hasLoaded
-                  ? undefined
-                  : e => {
-                      setHasLoaded(true)
-                      onLoad({width: e.source.width, height: e.source.height})
-                    }
-              }
-              cachePolicy="memory"
-              useAppleWebpCodec
+    <>
+      <GestureDetector gesture={composedGesture}>
+        <Animated.ScrollView
+          ref={mergeRefs([scrollViewRef, scrollEdgeRef])}
+          pinchGestureEnabled
+          showsHorizontalScrollIndicator={false}
+          showsVerticalScrollIndicator={false}
+          maximumZoomScale={maxZoomScale}
+          onScroll={scrollHandler}
+          style={containerStyle}
+          animatedProps={scrollViewProps}
+          centerContent>
+          {showLoader && (
+            <ActivityIndicator
+              size="small"
+              color="#FFF"
+              style={styles.loading}
             />
+          )}
+          <Animated.View style={[imageCropStyle, imageLayoutStyle]}>
+            <Animated.View style={[imageStyle, imageLayoutStyle]}>
+              <Image
+                contentFit="contain"
+                source={{uri: imageSrc.uri}}
+                placeholderContentFit="contain"
+                placeholder={{uri: imageSrc.thumbUri}}
+                style={{flex: 1, borderRadius}}
+                accessibilityLabel={imageSrc.alt}
+                accessibilityHint=""
+                enableLiveTextInteraction={showControls && !scaled}
+                accessibilityIgnoresInvertColors
+                onLoad={
+                  hasLoaded
+                    ? undefined
+                    : e => {
+                        setHasLoaded(true)
+                        onLoad({width: e.source.width, height: e.source.height})
+                      }
+                }
+                cachePolicy="memory"
+                useAppleWebpCodec
+              />
+            </Animated.View>
           </Animated.View>
-        </Animated.View>
-      </Animated.ScrollView>
-    </GestureDetector>
+        </Animated.ScrollView>
+      </GestureDetector>
+      {IS_LIQUID_GLASS && (
+        <ScrollEdgeEffect
+          edge="top"
+          effect={showControls ? 'soft' : 'hidden'}
+          pointerEvents="none"
+          style={[a.absolute, a.inset_0, {height: topInset}]}
+        />
+      )}
+    </>
   )
 }
 

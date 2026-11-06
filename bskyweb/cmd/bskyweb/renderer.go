@@ -2,10 +2,10 @@ package main
 
 import (
 	"bytes"
-	"embed"
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"path/filepath"
 
 	"github.com/flosch/pongo2/v6"
@@ -14,13 +14,13 @@ import (
 
 type RendererLoader struct {
 	prefix string
-	fs     *embed.FS
+	fs     fs.FS
 }
 
-func NewRendererLoader(prefix string, fs *embed.FS) pongo2.TemplateLoader {
+func NewRendererLoader(prefix string, fsys fs.FS) pongo2.TemplateLoader {
 	return &RendererLoader{
 		prefix: prefix,
-		fs:     fs,
+		fs:     fsys,
 	}
 }
 func (l *RendererLoader) Abs(_, name string) string {
@@ -35,7 +35,7 @@ func (l *RendererLoader) Abs(_, name string) string {
 }
 
 func (l *RendererLoader) Get(path string) (io.Reader, error) {
-	b, err := l.fs.ReadFile(path)
+	b, err := fs.ReadFile(l.fs, path)
 	if err != nil {
 		return nil, fmt.Errorf("reading template %q failed: %w", path, err)
 	}
@@ -57,8 +57,8 @@ func brandTemplateContext() pongo2.Context {
 	}
 }
 
-func NewRenderer(prefix string, fs *embed.FS, debug bool) *Renderer {
-	templateSet := pongo2.NewSet(prefix, NewRendererLoader(prefix, fs))
+func NewRenderer(prefix string, fsys fs.FS, debug bool) *Renderer {
+	templateSet := pongo2.NewSet(prefix, NewRendererLoader(prefix, fsys))
 	templateSet.Globals = brandTemplateContext()
 	return &Renderer{
 		TemplateSet: templateSet,
@@ -67,6 +67,8 @@ func NewRenderer(prefix string, fs *embed.FS, debug bool) *Renderer {
 }
 
 func (r Renderer) Render(w io.Writer, name string, data any, c echo.Context) error {
+	// A new document load must revalidate both the app bundle and its gate snapshot.
+	c.Response().Header().Set(echo.HeaderCacheControl, "no-cache")
 	var ctx pongo2.Context
 
 	if data != nil {

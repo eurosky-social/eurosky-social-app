@@ -96,6 +96,7 @@ interface PreviewableUserAvatarProps extends BaseUserAvatarProps {
   profile: bsky.profile.AnyProfileView
   disableHoverCard?: boolean
   disableNavigation?: boolean
+  disableLink?: boolean
   onBeforePress?: () => void
 }
 
@@ -564,6 +565,7 @@ let PreviewableUserAvatar = ({
   profile,
   disableHoverCard,
   disableNavigation,
+  disableLink,
   onBeforePress,
   live,
   ...props
@@ -573,7 +575,7 @@ let PreviewableUserAvatar = ({
   const queryClient = useQueryClient()
   const status = useActorStatus(profile)
   const liveControl = useDialogControl()
-  const playHaptic = useHaptics()
+  const haptics = useHaptics()
   const decoration = useAvatarDecoration(profile.did)
 
   const onPress = useCallback(() => {
@@ -582,7 +584,7 @@ let PreviewableUserAvatar = ({
   }, [profile, queryClient, onBeforePress])
 
   const onOpenLiveStatus = () => {
-    playHaptic('Light')
+    haptics.tap()
     ax.metric('live:card:open', {subject: profile.did, from: 'post'})
     liveControl.open()
   }
@@ -626,6 +628,8 @@ let PreviewableUserAvatar = ({
             embed={status.embed}
           />
         </>
+      ) : disableLink ? (
+        avatarEl
       ) : (
         <Link
           label={_(

@@ -2,6 +2,11 @@ import {Client} from '@atproto/lex'
 import {api, getPreferences} from '@bsky/sdk'
 import {afterEach, beforeEach, describe, expect, it, jest} from '@jest/globals'
 
+jest.mock('#/analytics/identifiers', () => ({
+  getDeviceId: jest.fn(),
+  getSessionId: jest.fn(),
+}))
+
 jest.mock('#/storage', () => ({
   account: {
     get: jest.fn(),

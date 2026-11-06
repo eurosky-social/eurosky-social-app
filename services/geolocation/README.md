@@ -42,7 +42,7 @@ it for US state-level age-assurance logic.
 
 ## Wire the app to it
 
-Set both at build time (see `.github/workflows/deploy-web-bunny.yml` and
+Set both at build time (see `.github/environments/common.env` and
 `scripts/bunny_build.sh`):
 
 ```

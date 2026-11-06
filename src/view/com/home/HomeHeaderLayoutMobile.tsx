@@ -11,10 +11,10 @@ import {useHaptics} from '#/lib/haptics'
 import {type NavigationProp} from '#/lib/routes/types'
 import {emitSoftReset} from '#/state/events'
 import {useSession} from '#/state/session'
-import {useShellLayout} from '#/state/shell/shell-layout'
+import {useShellHeaderLayout} from '#/state/shell/shell-layout'
 import {useHomeHeaderTransform} from '#/view/com/util/MainScrollProvider'
 import {Logo} from '#/view/icons/Logo'
-import {atoms as a, useTheme} from '#/alf'
+import {atoms as a, useBreakpoints, useTheme} from '#/alf'
 import {ButtonIcon} from '#/components/Button'
 import {Hashtag_Stroke2_Corner0_Rounded as FeedsIcon} from '#/components/icons/Hashtag'
 import * as Layout from '#/components/Layout'
@@ -31,12 +31,13 @@ export function HomeHeaderLayoutMobile({
   const t = useTheme()
   const {_} = useLingui()
   const ax = useAnalytics()
-  const {headerHeight} = useShellLayout()
+  const {onLayout} = useShellHeaderLayout()
   const insets = useSafeAreaInsets()
   const headerMinimalShellTransform = useHomeHeaderTransform()
   const {hasSession} = useSession()
-  const playHaptic = useHaptics()
+  const haptics = useHaptics()
   const {navigate} = useNavigation<NavigationProp>()
+  const {gtMobile} = useBreakpoints()
 
   return (
     <Animated.View
@@ -44,20 +45,22 @@ export function HomeHeaderLayoutMobile({
         a.fixed,
         a.z_10,
         t.atoms.bg,
-        {
-          top: 0,
-          left: 0,
-          right: 0,
-        },
+        {top: 0},
+        /*
+         * On tablets, stay inside the center column like `NativeCenterBorders`,
+         * so the header doesn't cover the column's borders or swallow touches
+         * on either side of it
+         */
+        gtMobile
+          ? [a.w_full, a.self_center, {maxWidth: Layout.CENTER_COLUMN_WIDTH}]
+          : {left: 0, right: 0},
         // Eurosky fork: the home header is position:fixed at top:0, so on web
         // (incl. standalone PWA) it must pad past the notch/Dynamic Island.
         // Other screens get this via Layout.Screen; the fixed home header does not.
         (IS_LIQUID_GLASS || IS_WEB) && {paddingTop: insets.top},
         headerMinimalShellTransform,
       ]}
-      onLayout={e => {
-        headerHeight.set(e.nativeEvent.layout.height)
-      }}>
+      onLayout={onLayout}>
       <Layout.Header.Outer noBottomBorder>
         <Layout.Header.Slot>
           <Layout.Header.MenuButton />
@@ -70,7 +73,7 @@ export function HomeHeaderLayoutMobile({
               if (IS_DEV) {
                 navigate('Debug')
               } else {
-                playHaptic('Light')
+                haptics.tap()
                 emitSoftReset()
               }
             }}>

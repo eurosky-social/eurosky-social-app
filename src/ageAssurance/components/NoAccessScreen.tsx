@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useEffectEvent} from 'react'
 import {ScrollView, View} from 'react-native'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
+import {BottomSheetOutlet} from '@bsky.app/bottom-sheet'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
@@ -20,7 +21,6 @@ import {createStaticClick, SimpleInlineLinkText} from '#/components/Link'
 import {Outlet as PortalOutlet} from '#/components/Portal'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
-import {BottomSheetOutlet} from '#/../modules/bottom-sheet'
 import {useAgeAssurance} from '#/ageAssurance'
 import {useAgeAssuranceServerDataContext} from '#/ageAssurance/data'
 import {useComputeAgeAssuranceRegionAccess} from '#/ageAssurance/useComputeAgeAssuranceRegionAccess'
@@ -229,10 +229,7 @@ export function NoAccessScreen() {
 
       <MuAgeConfirmDialog control={birthdateControl} />
       <DeactivateAccountDialog control={deactivateAccountControl} />
-      <DeleteAccountDialog
-        control={deleteAccountControl}
-        deactivateDialogControl={deactivateAccountControl}
-      />
+      <DeleteAccountDialog control={deleteAccountControl} />
 
       {/*
        * While this blocking overlay is up, other dialogs in the shell are not

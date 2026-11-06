@@ -19,7 +19,7 @@ import {
   useProgressGuideControls,
 } from '#/state/shell/progress-guide'
 import {atoms as a, useBreakpoints, useTheme} from '#/alf'
-import {Reply as Bubble} from '#/components/icons/Reply'
+import {Reply_Stroke2_Corner0_Rounded as Bubble} from '#/components/icons/Reply'
 import {useFormatPostStatCount} from '#/components/PostControls/util'
 import * as Skele from '#/components/Skeleton'
 import * as Toast from '#/components/Toast'
@@ -69,8 +69,8 @@ let PostControls = ({
   forceGoogleTranslate?: boolean
 }): React.ReactNode => {
   const ax = useAnalytics()
-  const t = useTheme()
   const {t: l} = useLingui()
+  const t = useTheme()
   const {openComposer} = useOpenComposer()
   const {feedDescriptor} = useFeedFeedbackContext()
   const [queueLike, queueUnlike] = usePostLikeMutationQueue(
@@ -272,20 +272,20 @@ let PostControls = ({
             label={
               post.viewer?.like
                 ? l({
-                    message: `Unlike (${plural(post.likeCount || 0, {
+                    message: `Unlike (${plural(post.likeCount ?? 0, {
                       one: '# like',
                       other: '# likes',
                     })})`,
                     comment:
-                      'Accessibility label for the like button when the post has been liked, verb followed by number of likes and noun',
+                      'Like button, liked state: action followed by total likes.',
                   })
                 : l({
-                    message: `Like (${plural(post.likeCount || 0, {
+                    message: `Like (${plural(post.likeCount ?? 0, {
                       one: '# like',
                       other: '# likes',
                     })})`,
                     comment:
-                      'Accessibility label for the like button when the post has not been liked, verb form followed by number of likes and noun form',
+                      'Like button, unliked state: action followed by total likes.',
                   })
             }>
             <AnimatedLikeIcon

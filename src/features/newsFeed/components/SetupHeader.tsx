@@ -6,13 +6,17 @@ import {atoms as a, useTheme} from '#/alf'
 import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
 
-const TOTAL_STEPS = 2
-
 export function SetupHeader({
   step,
+  totalSteps = 2,
+  title,
   onBack,
 }: {
-  step: number
+  /** The current step, from 1; unset hides the step dots. */
+  step?: number
+  totalSteps?: number
+  /** Defaults to “News”. */
+  title?: string
   onBack: () => boolean | void
 }) {
   return (
@@ -27,19 +31,23 @@ export function SetupHeader({
       />
       <Layout.Header.Content align="left">
         <Layout.Header.TitleText>
-          <Trans>News</Trans>
+          {title ?? <Trans>News</Trans>}
         </Layout.Header.TitleText>
       </Layout.Header.Content>
-      <StepDots current={step} />
+      {step !== undefined ? (
+        <StepDots current={step} total={totalSteps} />
+      ) : (
+        <Layout.Header.Slot />
+      )}
     </Layout.Header.Outer>
   )
 }
 
-function StepDots({current}: {current: number}) {
+function StepDots({current, total}: {current: number; total: number}) {
   const t = useTheme()
   return (
     <View style={[a.flex_row, a.align_center, a.gap_sm]}>
-      {Array.from({length: TOTAL_STEPS}).map((_unused, index) => {
+      {Array.from({length: total}).map((_unused, index) => {
         const n = index + 1
         const active = n <= current
         return (

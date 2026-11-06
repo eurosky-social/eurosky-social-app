@@ -3,12 +3,14 @@
 {% block head_title %}{{ brandName }}{% endblock %}
 
 {% block html_head_extra -%}
+  <meta property="og:type" content="website" />
   <meta property="og:title" content="{{ brandName }}" />
   <meta name="twitter:title" content="{{ brandName }}" />
 
   <meta name="description" content="Join the conversation on {{ brandName }}." />
-  <meta name="og:description" content="Join the conversation on {{ brandName }}." />
+  <meta property="og:description" content="Join the conversation on {{ brandName }}." />
   <meta name="twitter:description" content="Join the conversation on {{ brandName }}." />
+
 
   <meta property="og:url" content="{{ brandHomeURL }}" />
   <meta name="twitter:url" content="{{ brandHomeURL }}" />
@@ -21,5 +23,6 @@
 {%- endblock %}
 
 {% block noscript_extra %}
-<p>This is the home page.
+<h1 lang="en">Bluesky</h1>
+<p lang="en">Social media as it should be. Find your community among millions of users, unleash your creativity, and have some fun again.</p>
 {% endblock %}

@@ -36,6 +36,7 @@ import {type Shadow} from '#/state/cache/types'
 import {type ImageMeta} from '#/state/gallery'
 import {STALE} from '#/state/queries'
 import {resetProfilePostsQueries} from '#/state/queries/post-feed'
+import {isProfileUpdateCommitted} from '#/state/queries/profile-commit'
 import {RQKEY as PROFILE_FOLLOWS_RQKEY} from '#/state/queries/profile-follows'
 import {
   unstableCacheProfileView,
@@ -278,6 +279,8 @@ interface ProfileUpdateParams {
       ) => Un$Typed<app.bsky.actor.profile.Main>)
   newUserAvatar?: ImageMeta | undefined | null
   newUserBanner?: ImageMeta | undefined | null
+  /** Fields to await when `updates` is a callback; omitted refs need not be indexed. */
+  commitFields?: Un$Typed<app.bsky.actor.profile.Main>
   checkCommitted?: (
     profile: app.bsky.actor.getProfile.$OutputBody | undefined,
     err: unknown,
@@ -294,6 +297,7 @@ export function useProfileUpdateMutation() {
       updates,
       newUserAvatar,
       newUserBanner,
+      commitFields,
       checkCommitted,
     }) => {
       let newUserAvatarPromise: ReturnType<typeof uploadBlob> | undefined
@@ -328,6 +332,9 @@ export function useProfileUpdateMutation() {
           if ('pinnedPost' in updates) {
             next.pinnedPost = updates.pinnedPost
           }
+          if ('links' in updates) {
+            next.links = updates.links
+          }
         }
         if (newUserAvatarPromise) {
           const res = await newUserAvatarPromise
@@ -347,40 +354,14 @@ export function useProfileUpdateMutation() {
         appviewClient,
         profile.did,
         checkCommitted ||
-          (fresh => {
-            if (!fresh) return false
-            if (typeof newUserAvatar !== 'undefined') {
-              if (newUserAvatar === null && fresh.avatar) {
-                // url hasn't cleared yet
-                return false
-              } else if (fresh.avatar === profile.avatar) {
-                // url hasn't changed yet
-                return false
-              }
-            }
-            if (typeof newUserBanner !== 'undefined') {
-              if (newUserBanner === null && fresh.banner) {
-                // url hasn't cleared yet
-                return false
-              } else if (fresh.banner === profile.banner) {
-                // url hasn't changed yet
-                return false
-              }
-            }
-            if (typeof updates === 'function') {
-              return true
-            }
-            return (
-              fresh.displayName === updates.displayName &&
-              fresh.description === updates.description &&
-              ('pronouns' in updates
-                ? fresh.pronouns === (updates.pronouns || undefined)
-                : true) &&
-              ('website' in updates
-                ? fresh.website === (updates.website || undefined)
-                : true)
-            )
-          }),
+          (fresh =>
+            isProfileUpdateCommitted({
+              fresh,
+              profile,
+              updates: typeof updates === 'function' ? commitFields : updates,
+              newUserAvatar,
+              newUserBanner,
+            })),
       )
     },
     async onSuccess(_, variables) {

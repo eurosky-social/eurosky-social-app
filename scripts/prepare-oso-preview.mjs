@@ -1,5 +1,5 @@
 // Run ONLY in the disposable copy created by build-oso-preview.sh.
-// The existing single-brand generators write into src/, assets/ and web/.
+// The existing single-brand generators write into src/, assets/ and public/.
 import fs from 'node:fs'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
@@ -15,7 +15,7 @@ const base = JSON.parse(fs.readFileSync(config, 'utf8'))
 const override = JSON.parse(
   fs.readFileSync(path.join(brandDir, 'brand.override.json'), 'utf8'),
 )
-if (override.hosts?.[0] !== 'oso.mu.social') {
+if (override.hosts?.[0] !== (process.env.OSO_HOST || 'oso.mu.social')) {
   throw new Error('Unexpected Oso preview host')
 }
 
@@ -49,9 +49,9 @@ fs.copyFileSync(path.join(brandDir, 'mark.svg'), path.join(logos, 'mark.svg'))
 // app's web theme typography selects LeagueSpartan via build-time env.
 fs.copyFileSync(
   path.join(brandDir, 'LeagueSpartan-VF.woff2'),
-  path.join(root, 'web/LeagueSpartan-VF.woff2'),
+  path.join(root, 'public/LeagueSpartan-VF.woff2'),
 )
-const html = path.join(root, 'web/index.html')
+const html = path.join(root, 'public/index.html')
 fs.writeFileSync(
   html,
   fs

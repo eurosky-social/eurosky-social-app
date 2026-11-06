@@ -1,4 +1,4 @@
-import {h} from 'preact'
+import {h, HTMLAttributes} from 'preact'
 
 import {BRAND} from '../brand'
 
@@ -11,7 +11,7 @@ export function Link({
   href: string
   className?: string
   disableTracking?: boolean
-} & h.JSX.HTMLAttributes<HTMLAnchorElement>) {
+} & HTMLAttributes<HTMLAnchorElement>) {
   const searchParam = new URLSearchParams(window.location.search)
   const ref_url = searchParam.get('ref_url')
 

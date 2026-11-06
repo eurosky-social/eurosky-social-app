@@ -1,4 +1,5 @@
 import {type ID as PolicyUpdate202508} from '#/components/PolicyUpdateOverlay/updates/202508/config'
+import {type SessionRecord} from '#/analytics/identifiers/session'
 import {type AppViewPreference} from '#/features/appView/types'
 import {type AppViewTransferCheckpoint} from '#/features/appViewTransfer/types'
 import {type Gif} from '#/features/gifPicker/types'
@@ -14,11 +15,8 @@ export type Device = {
    * device, used with our logging and metrics tracking.
    */
   deviceId?: string
-  /**
-   * Session ID storage for _native only_. On web, use we `sessionStorage`
-   */
-  nativeSessionId?: string
-  nativeSessionIdLastEventAt?: number
+  /** Analytics session ID with creation, native lifecycle, or web activity time. */
+  analyticsSession?: SessionRecord
 
   fontScale: '-2' | '-1' | '0' | '1' | '2'
   fontFamily: 'system' | 'theme'
@@ -74,6 +72,12 @@ export type Device = {
   policyUpdateBannerDismissed?: boolean
   /** Device-wide override for public and authenticated AppView requests. */
   appViewOverride: AppViewPreference | undefined
+  /**
+   * Whether the trending topics widget was installed the last time we checked,
+   * so `trendingWidget:installed` and `trendingWidget:uninstalled` are only
+   * logged when that changes.
+   */
+  trendingWidgetInstalled?: boolean
   pendingOTAUpdate?: {
     attemptedAt: number
     channel: string
@@ -107,18 +111,6 @@ export type Account = {
    * Recently selected GIFs in the GIF picker. Most recent first, capped at 20.
    */
   recentGifs?: Gif[]
-
-  /**
-   * Cached from preferences (`bskyAppState.isBetaUser`) so the GrowthBook
-   * `isBetaUser` attribute can be set synchronously at analytics init, before
-   * beta-gated features (e.g. SearchV2Enable) are first evaluated. Written back
-   * when preferences load.
-   *
-   * Scoped per account, since `isBetaUser` is account-specific preference data.
-   * Reading it globally would let a beta account's value leak into a non-beta
-   * account after a switch, until that account's preferences loaded.
-   */
-  isBetaUser?: boolean
 
   /** The latest resumable private-data transfer between AppViews. */
   appViewTransfer?: AppViewTransferCheckpoint

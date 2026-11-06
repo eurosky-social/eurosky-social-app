@@ -1,4 +1,4 @@
-/** @jest-environment jsdom */
+import {JSDOM} from 'jsdom'
 
 import {
   clickPostAction,
@@ -32,6 +32,23 @@ function createPost({
 }
 
 describe('post keyboard navigation', () => {
+  let dom: JSDOM
+
+  beforeAll(() => {
+    /* RN's setup redefines window, so install the DOM after native setup runs. */
+    dom = new JSDOM('<!doctype html>')
+    Object.defineProperties(globalThis, {
+      window: {configurable: true, writable: true, value: dom.window},
+      document: {
+        configurable: true,
+        writable: true,
+        value: dom.window.document,
+      },
+    })
+  })
+
+  afterAll(() => dom.window.close())
+
   beforeEach(() => {
     document.body.replaceChildren()
   })

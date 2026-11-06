@@ -1,5 +1,5 @@
 import {useRef} from 'react'
-import {InteractionManager, View} from 'react-native'
+import {View} from 'react-native'
 import {type AnimatedRef} from 'react-native-reanimated'
 import {Image} from 'expo-image'
 
@@ -24,9 +24,12 @@ const MAX_GRID_IMAGES = 4
 
 export function ImageEmbed({
   embed,
+  imageLayout,
   ...rest
 }: CommonProps & {
   embed: EmbedType<'images'> | EmbedType<'gallery'>
+  /** Override the default multi-image layout for a specific surface. */
+  imageLayout?: 'grid' | 'carousel'
 }) {
   const ax = useAnalytics()
   const {openLightbox} = useLightboxControls()
@@ -41,8 +44,9 @@ export function ImageEmbed({
             aspectRatio: item.aspectRatio,
           }))
       : embed.view.images
-  const useExpandedLayout =
-    embed.type === 'gallery'
+  const useExpandedLayout = imageLayout
+    ? imageLayout === 'carousel'
+    : embed.type === 'gallery'
       ? images.length > MAX_GRID_IMAGES
       : ax.features.enabled(ax.features.PostGalleryEmbedEnable)
 
@@ -76,6 +80,7 @@ export function ImageEmbed({
       index: number,
       refs: AnimatedRef[],
       fetchedDims: (Dimensions | null)[],
+      onIndexChange?: (index: number) => void,
     ) => {
       if (postContext) {
         ax.metric('post:photoEmbed:open', {
@@ -96,10 +101,11 @@ export function ImageEmbed({
         })),
         index,
         metricsContext,
+        onIndexChange,
       })
     }
     const onPressIn = (_: number) => {
-      InteractionManager.runAfterInteractions(() => {
+      setImmediate(() => {
         void Image.prefetch(
           items.map(i => i.uri),
           'memory',

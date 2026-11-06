@@ -120,22 +120,16 @@ export const HEALTH_PROBE_SERVICE: string =
   process.env.EXPO_PUBLIC_HEALTH_PROBE_SERVICE || OAUTH_SIGNUP_PDS_HOST
 
 /**
+ * The DID of the moderation service to proxy requests to.
+ */
+export const MOD_PROXY_DID: DidString | undefined =
+  process.env.EXPO_PUBLIC_MOD_PROXY_DID
+
+/**
  * Metrics API host
  */
 export const METRICS_API_HOST: string =
   process.env.EXPO_PUBLIC_METRICS_API_HOST || 'https://events.bsky.app'
-
-/**
- * Growthbook API host
- */
-export const GROWTHBOOK_API_HOST: string =
-  process.env.EXPO_PUBLIC_GROWTHBOOK_API_HOST || `${METRICS_API_HOST}/gb`
-
-/**
- * Growthbook client key
- */
-export const GROWTHBOOK_CLIENT_KEY: string =
-  process.env.EXPO_PUBLIC_GROWTHBOOK_CLIENT_KEY || 'sdk-7gkUkGy9wguUjyFe'
 
 /**
  * Plausible Analytics site domain, as configured in Plausible's settings. When
@@ -167,6 +161,16 @@ export const PLAUSIBLE_DEBUG: boolean =
  * Sentry DSN for telemetry
  */
 export const SENTRY_DSN: string | undefined = process.env.EXPO_PUBLIC_SENTRY_DSN
+
+/**
+ * Sentry release name. Sentry only compares releases by version when they're
+ * named `package@version` - a bare version gets ordered by when its release
+ * record was created, which makes "resolved in release" regress on events
+ * from older builds. The package matches the native SDK's default release
+ * name. Source map uploads must use the same name, see `SENTRY_RELEASE` in
+ * the CI workflows, `Dockerfile` and `scripts/post-web-build.js`.
+ */
+export const SENTRY_RELEASE = `xyz.blueskyweb.app@${RELEASE_VERSION}`
 
 /**
  * Bitdrift API key. If undefined, Bitdrift should be disabled.
@@ -230,8 +234,7 @@ export const ENABLE_APP_CONFIG =
 /**
  * Gates the web product-analytics metrics client (the `ax.metric()` pipeline
  * that POSTs to `${METRICS_API_HOST}/t`). Native product analytics are always
- * disabled, regardless of this value. Disabling this client also stops its
- * GrowthBook `experiment:viewed`/`feature:viewed` exposures. GrowthBook flag
- * fetching, Plausible, and feed feedback are independent and unaffected.
+ * disabled, regardless of this value. Plausible and feed feedback are
+ * independent and unaffected.
  */
 export const ENABLE_METRICS = process.env.EXPO_PUBLIC_ENABLE_METRICS !== 'false'

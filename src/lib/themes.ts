@@ -1,10 +1,45 @@
 import {Platform} from 'react-native'
+import {type Theme as AlfTheme} from '@bsky.app/alf'
 
 import {darkPalette, dimPalette, lightPalette} from '#/alf/themes'
 import * as tokens from '#/alf/tokens'
 import {fontWeight} from '#/alf/tokens'
 import {colors} from './styles'
 import {type Theme} from './ThemeContext'
+
+/** Keep legacy feed/composer surfaces in sync with runtime ALF palettes. */
+export function withAlfTheme(
+  base: Theme,
+  current: AlfTheme,
+  inverted: AlfTheme,
+): Theme {
+  const palette = (theme: AlfTheme) => ({
+    background: theme.atoms.bg.backgroundColor,
+    backgroundLight: theme.palette.contrast_25,
+    text: theme.atoms.text.color,
+    textLight: theme.palette.contrast_700,
+    textInverted: theme.palette.contrast_0,
+    link: theme.atoms.text_link.color,
+    border: theme.atoms.border_contrast_low.borderColor,
+  })
+  return {
+    ...base,
+    palette: {
+      ...base.palette,
+      default: palette(current),
+      inverted: palette(inverted),
+      primary: {
+        background: current.palette.primary_500,
+        backgroundLight: current.palette.primary_600,
+        text: current.palette.white,
+        textLight: current.palette.white,
+        textInverted: current.palette.primary_500,
+        link: current.palette.white,
+        border: current.palette.primary_700,
+      },
+    },
+  }
+}
 
 export const defaultTheme: Theme = {
   colorScheme: 'light',

@@ -9,6 +9,7 @@ type AllNavigatableRoutes = Omit<
 export const router = new Router<AllNavigatableRoutes>({
   Home: ['/', '/download'],
   Search: '/search',
+  Atmosphere: '/atmosphere',
   Feeds: '/feeds',
   Notifications: '/notifications',
   NotificationsActivityList: '/notifications/activity',
@@ -16,13 +17,24 @@ export const router = new Router<AllNavigatableRoutes>({
   Settings: '/settings',
   Lists: '/lists',
   NewsFeed: '/news',
-  Newsroom: ['/newsroom/:name', '/newsroom'],
+  NewsSettings: '/news/settings',
+  /*
+   * The `/newsroom` paths are the news hub's old addresses, kept so shared
+   * links still open. The old explore and article paths are matched before
+   * the frontpage route, whose `:name` would otherwise swallow them.
+   */
+  NewsExplore: ['/news/explore', '/newsroom/explore'],
+  NewsArticle: ['/news/article', '/newsroom/article'],
+  NewsOutlets: '/news/outlets',
+  OutletDirectory: ['/outlets', '/newsrooms'],
+  Frontpage: ['/frontpage/:name', '/frontpage', '/newsroom/:name', '/newsroom'],
   // moderation
   Moderation: '/moderation',
   ModerationInbox: '/moderation/inbox',
   ModerationInboxSettings: '/moderation/inbox/settings',
-  ModerationInboxReportDetails: '/moderation/inbox/report/details',
-  ModerationInboxSubjectDetails: '/moderation/inbox/subject/details',
+  ModerationInboxReportDetails:
+    '/moderation/inbox/report/:moderationService/:id',
+  ModerationInboxNoticeDetails: '/moderation/inbox/notice/details',
   ModerationModlists: '/moderation/modlists',
   ModerationMutedAccounts: '/moderation/muted-accounts',
   ModerationBlockedAccounts: '/moderation/blocked-accounts',
@@ -61,7 +73,6 @@ export const router = new Router<AllNavigatableRoutes>({
   AppViewTransferSettings: '/settings/network-services/transfer-app-data',
   PetCompanionSettings: '/settings/pet-companion',
   DecorationsSettings: '/settings/decorations',
-  BetaFeaturesSettings: '/settings/beta-features',
   SavedFeeds: '/settings/saved-feeds',
   AccountSettings: '/settings/account',
   AutomationLabelSettings: '/settings/automation-label',

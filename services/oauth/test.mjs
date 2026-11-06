@@ -16,6 +16,8 @@
  *   WORKER_URL       target instance (default http://localhost:8000)
  *   CLIENT_ID        expected iss/sub
  *   ALLOWED_ORIGIN   expected browser Origin
+ *   PUBLIC_JWKS      public JWKS file the instance's key must match (default
+ *                    src/config/oauth.public-jwks.json)
  *
  * Note: the script stamps iat/exp from its own clock and ignores whatever the
  * caller sends, so there are no iat/exp guardrail cases here - instead we
@@ -40,7 +42,8 @@ const subtle = globalThis.crypto.subtle
 // The public key the script's private counterpart must match (shared kid).
 const publicJwks = JSON.parse(
   readFileSync(
-    join(here, '..', '..', 'src', 'config', 'oauth.public-jwks.json'),
+    process.env.PUBLIC_JWKS ||
+      join(here, '..', '..', 'src', 'config', 'oauth.public-jwks.json'),
     'utf8',
   ),
 )

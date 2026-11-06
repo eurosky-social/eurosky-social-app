@@ -5,7 +5,7 @@
  * ../../../scripts/bunny_upload.sh) and served from the main pull zone (mu.social). A
  * static SPA has no per-route server rendering, so out of the box EVERY shared
  * link - a post, a profile, the homepage - unfurls with the single default card
- * baked into index.html (../../web/index.html). Upstream Bluesky avoids this by
+ * baked into index.html (../../public/index.html). Upstream Bluesky avoids this by
  * serving its HTML through the Go `bskyweb` server, which queries the appview
  * and templates per-post/per-profile og:* tags (see ../../bskyweb/templates/).
  * That server is not in our request path.

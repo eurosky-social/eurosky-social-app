@@ -12,7 +12,7 @@
  * Then point the app at it:
  *   EXPO_PUBLIC_RSS_PROXY_URL=http://localhost:8788
  *
- * The app appends `?url=<feed>` itself (see src/features/newsrooms/rss).
+ * The app appends `?url=<feed>` itself (see src/features/news/rss).
  */
 import http from 'node:http'
 

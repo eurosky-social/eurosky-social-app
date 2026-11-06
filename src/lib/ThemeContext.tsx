@@ -3,7 +3,8 @@ import {createContext, useContext} from 'react'
 import {type TextStyle, type ViewStyle} from 'react-native'
 import {type ThemeName} from '@bsky.app/alf'
 
-import {darkTheme, defaultTheme, dimTheme} from './themes'
+import {useAlf} from '#/alf'
+import {darkTheme, defaultTheme, dimTheme, withAlfTheme} from './themes'
 
 export type ColorScheme = 'light' | 'dark'
 
@@ -104,7 +105,12 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   theme,
   children,
 }) => {
-  const themeValue = getTheme(theme)
+  const {themes} = useAlf()
+  const themeValue = withAlfTheme(
+    getTheme(theme),
+    themes[theme],
+    theme === 'light' ? themes.dark : themes.light,
+  )
 
   return (
     <ThemeContext.Provider value={themeValue}>{children}</ThemeContext.Provider>

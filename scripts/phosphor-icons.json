@@ -87,6 +87,12 @@
         "weight": "regular"
       }
     ],
+    "ArrowUUpLeft": [
+      {"name": "ArrowUUpLeft", "icon": "arrow-u-up-left", "weight": "regular"}
+    ],
+    "ArrowUUpRight": [
+      {"name": "ArrowUUpRight", "icon": "arrow-u-up-right", "weight": "regular"}
+    ],
     "ArrowRotate": [
       {
         "name": "ArrowRotateCounterClockwise_Stroke2_Corner0_Rounded",
@@ -576,6 +582,10 @@
         "weight": "regular"
       }
     ],
+    "Eraser": [{"name": "Eraser", "icon": "eraser", "weight": "regular"}],
+    "Eyedropper": [
+      {"name": "Eyedropper", "icon": "eyedropper", "weight": "regular"}
+    ],
     "Eye": [
       {
         "name": "Eye_Stroke2_Corner0_Rounded",
@@ -639,6 +649,9 @@
         "weight": "regular"
       }
     ],
+    "GridFour": [
+      {"name": "GridFour", "icon": "grid-four", "weight": "regular"}
+    ],
     "Globe": [
       {
         "name": "Globe_Stroke2_Corner0_Rounded",
@@ -694,6 +707,7 @@
         "weight": "bold"
       }
     ],
+    "Hand": [{"name": "Hand", "icon": "hand", "weight": "regular"}],
     "Heart2": [
       {
         "name": "Heart2_Stroke1_Corner0_Rounded",
@@ -945,6 +959,12 @@
         "icon": "file-x",
         "weight": "regular"
       }
+    ],
+    "LineSegment": [
+      {"name": "LineSegment", "icon": "line-segment", "weight": "regular"}
+    ],
+    "PaintBucket": [
+      {"name": "PaintBucket", "icon": "paint-bucket", "weight": "regular"}
     ],
     "PaintRoller": [
       {

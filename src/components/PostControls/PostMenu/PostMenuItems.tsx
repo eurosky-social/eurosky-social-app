@@ -52,7 +52,7 @@ import {
   MaxHiddenRepliesError,
   useToggleReplyVisibilityMutation,
 } from '#/state/queries/threadgate'
-import {useCurrentAccountProfile} from '#/state/queries/useCurrentAccountProfile'
+import {useAccountCreatedAt} from '#/state/queries/useAccountCreatedAt'
 import {useRequireAuth, useSession} from '#/state/session'
 import {useMergedThreadgateHiddenReplies} from '#/state/threadgate-hidden-replies'
 import {useDialogControl} from '#/components/Dialog'
@@ -97,6 +97,7 @@ import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
 import {IS_INTERNAL} from '#/env'
 import {type app} from '#/lexicons'
+import {PostMenuControlItems} from './PostMenuControlItems'
 
 let PostMenuItems = ({
   post,
@@ -108,6 +109,7 @@ let PostMenuItems = ({
   onShowLess,
   logContext,
   forceGoogleTranslate,
+  includeControls = false,
 }: {
   testID: string
   post: Shadow<app.bsky.feed.defs.PostView>
@@ -123,6 +125,11 @@ let PostMenuItems = ({
   onShowLess?: (interaction: app.bsky.feed.defs.Interaction) => void
   logContext: 'FeedItem' | 'PostThreadItem' | 'Post' | 'ImmersiveVideo'
   forceGoogleTranslate: boolean
+  /**
+   * Adds repost, quote, share and save to the top of the menu, for surfaces
+   * that don't render the full `PostControls`.
+   */
+  includeControls?: boolean
 }): React.ReactNode => {
   const {hasSession, currentAccount} = useSession()
   const {t: l} = useLingui()
@@ -172,12 +179,12 @@ let PostMenuItems = ({
   const isPostHidden = hiddenPosts && hiddenPosts.includes(postUri)
   const isAuthor = postAuthor.did === currentAccount?.did
   const {openComposer} = useOpenComposer()
-  const currentProfile = useCurrentAccountProfile()
+  const accountCreatedAt = useAccountCreatedAt()
   const canEdit = canEditPost({
     isAuthor,
     createdAt: record.createdAt,
     updatedAt: getPostEditInfo(record).updatedAt,
-    accountCreatedAt: currentProfile?.createdAt,
+    accountCreatedAt,
   })
   const isRootPostAuthor = new AtUri(rootUri).host === currentAccount?.did
   const threadgateHiddenReplies = useMergedThreadgateHiddenReplies({
@@ -518,6 +525,15 @@ let PostMenuItems = ({
   return (
     <>
       <Menu.Outer>
+        {includeControls && (
+          <PostMenuControlItems
+            post={post}
+            postFeedContext={postFeedContext}
+            postReqId={postReqId}
+            logContext={logContext}
+          />
+        )}
+
         {isAuthor && (
           <>
             <Menu.Group>

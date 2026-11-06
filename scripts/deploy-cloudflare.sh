@@ -86,14 +86,12 @@ if [ "$BUILD" = 1 ]; then
   if [ "$PUBLIC_CLIENT" = 0 ]; then
     export EXPO_PUBLIC_OAUTH_ASSERTION_URL="$OAUTH_ASSERTION_URL"
   fi
-  # build-web = expo export:web + post-web-build + gen-oauth-metadata (emits
+  # build-web = Metro export + post-web-build + gen-oauth-metadata (emits
   # oauth-client-metadata.json into web-build/). No Plausible env -> disabled.
   pnpm build-web
   # Absolute asset paths so deep routes (/profile/x/post/y) load under the
   # Worker SPA fallback. (_redirects is unneeded: wrangler not_found_handling
   # does the SPA routing.)
-  sed -i'' -E 's#"static/#"/static/#g' web-build/index.html
-  rm -f web-build/index.html-E
 fi
 [ -d web-build ] || {
   echo "no web-build/ - run without --no-build to build it" >&2

@@ -269,18 +269,20 @@ function ReaderSeamInner({
             label={
               shadow.viewer?.like
                 ? l({
-                    message: `Unlike (${plural(shadow.likeCount || 0, {
+                    message: `Unlike (${plural(shadow.likeCount ?? 0, {
                       one: '# like',
                       other: '# likes',
                     })})`,
-                    comment: 'Like button, liked state',
+                    comment:
+                      'Like button, liked state: action followed by total likes.',
                   })
                 : l({
-                    message: `Like (${plural(shadow.likeCount || 0, {
+                    message: `Like (${plural(shadow.likeCount ?? 0, {
                       one: '# like',
                       other: '# likes',
                     })})`,
-                    comment: 'Like button, unliked state',
+                    comment:
+                      'Like button, unliked state: action followed by total likes.',
                   })
             }>
             <AnimatedLikeIcon

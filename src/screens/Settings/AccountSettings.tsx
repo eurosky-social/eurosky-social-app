@@ -18,7 +18,7 @@ import {
 } from '#/components/dialogs/EmailDialog'
 import {At_Stroke2_Corner2_Rounded as AtIcon} from '#/components/icons/At'
 import {BirthdayCake_Stroke2_Corner2_Rounded as BirthdayCakeIcon} from '#/components/icons/BirthdayCake'
-import {Bot_Stroke as RobotIcon} from '#/components/icons/Bot'
+import {Bot_Stroke2_Corner0_Rounded as RobotIcon} from '#/components/icons/Bot'
 import {Car_Stroke2_Corner2_Rounded as CarIcon} from '#/components/icons/Car'
 import {Envelope_Stroke2_Corner2_Rounded as EnvelopeIcon} from '#/components/icons/Envelope'
 import {Freeze_Stroke2_Corner2_Rounded as FreezeIcon} from '#/components/icons/Freeze'
@@ -217,10 +217,7 @@ export function AccountSettingsScreen({}: Props) {
       <ChangePasswordDialog control={changePasswordControl} />
       <ExportCarDialog control={exportCarControl} />
       <DeactivateAccountDialog control={deactivateAccountControl} />
-      <DeleteAccountDialog
-        control={deleteAccountControl}
-        deactivateDialogControl={deactivateAccountControl}
-      />
+      <DeleteAccountDialog control={deleteAccountControl} />
     </Layout.Screen>
   )
 }

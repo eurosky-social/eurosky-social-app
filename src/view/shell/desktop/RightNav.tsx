@@ -2,7 +2,9 @@ import {ScrollView, View} from 'react-native'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
+import {useNavigationState} from '@react-navigation/native'
 
+import {getCurrentRoute} from '#/lib/routes/helpers'
 import {useSession} from '#/state/session'
 import {DesktopFeeds} from '#/view/shell/desktop/Feeds'
 import {DesktopSearch} from '#/view/shell/desktop/Search'
@@ -21,20 +23,50 @@ import {CENTER_COLUMN_OFFSET} from '#/components/Layout'
 import {InlineLinkText, Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {BRAND} from '#/config/brand'
-import {NewsFeedRightRail} from '#/features/newsFeed/components/NewsFeedRightRail'
-import {NewsroomRightRail} from '#/features/newsrooms/components/NewsroomRightRail'
+import {FrontpageRightRail} from '#/features/frontpages/components/FrontpageRightRail'
+import {NewsroomRightRail as LegacyFrontpageRightRail} from '#/features/frontpages/legacy/NewsroomRightRail'
+import {NewsArticleRightRail} from '#/features/news/article/NewsArticleRightRail'
+import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
+import {NewsFeedRightRail as LegacyNewsFeedRightRail} from '#/features/newsFeed/legacy/NewsFeedRightRail'
 
 export function DesktopRightNav({routeName}: {routeName: string}) {
   const t = useTheme()
   const {_} = useLingui()
   const {hasSession} = useSession()
   const gutters = useGutters(['base', 0, 'base', 'wide'])
+  const frontpageView = useNavigationState(state =>
+    state
+      ? (getCurrentRoute(state).params as {view?: string} | undefined)?.view
+      : undefined,
+  )
+  const isPublicationSpread =
+    NEWS_V2_ENABLED &&
+    routeName === 'Frontpage' &&
+    frontpageView !== 'conversation'
   const isSearchScreen = routeName === 'Search'
   const isMessagesRelatedScreen = routeName.startsWith('Messages')
   const {rightNavVisible, centerColumnOffset, leftNavMinimal} =
     useLayoutBreakpoints()
 
-  if (!rightNavVisible || isMessagesRelatedScreen) {
+  /*
+   * The news hub pages lay themselves out across the center and right
+   * columns, so the shell leaves the right column to them. The news feed
+   * keeps a right column but draws it itself (see `NewsFeedRailColumn`).
+   */
+  const isNewsExplore =
+    NEWS_V2_ENABLED &&
+    (routeName === 'NewsExplore' ||
+      routeName === 'NewsOutlets' ||
+      routeName === 'OutletDirectory' ||
+      routeName === 'NewsFeed' ||
+      routeName === 'NewsSettings')
+
+  if (
+    !rightNavVisible ||
+    isMessagesRelatedScreen ||
+    isNewsExplore ||
+    isPublicationSpread
+  ) {
     return null
   }
 
@@ -43,10 +75,18 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
   // The news surfaces swap the default search/feeds column for their own
   // rails, each cross-linking the other.
   const railContent =
-    routeName === 'Newsroom' ? (
-      <NewsroomRightRail />
-    ) : routeName === 'NewsFeed' ? (
-      <NewsFeedRightRail />
+    routeName === 'Frontpage' ? (
+      NEWS_V2_ENABLED ? (
+        <FrontpageRightRail />
+      ) : (
+        <LegacyFrontpageRightRail />
+      )
+    ) : !NEWS_V2_ENABLED ? (
+      routeName === 'NewsFeed' ? (
+        <LegacyNewsFeedRightRail />
+      ) : null
+    ) : routeName === 'NewsArticle' ? (
+      <NewsArticleRightRail />
     ) : null
 
   if (railContent) {

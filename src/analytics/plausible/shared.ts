@@ -1,6 +1,6 @@
 import {Platform} from 'react-native'
 
-import {type Metadata} from '#/analytics/metadata'
+import {type MetricMetadata} from '#/analytics/metadata'
 import {type Metrics} from '#/analytics/metrics'
 import * as env from '#/env'
 
@@ -35,7 +35,7 @@ export interface PlausibleClient {
   track(
     event: PlausibleEvent,
     payload: Record<string, unknown>,
-    metadata?: Partial<Metadata>,
+    metadata?: Partial<MetricMetadata>,
   ): void
 }
 
@@ -111,7 +111,7 @@ const DENIED_PROP_KEYS: ReadonlySet<string> = new Set([
  */
 export function buildProps(
   payload: Record<string, unknown>,
-  metadata?: Partial<Metadata>,
+  metadata?: Partial<MetricMetadata>,
 ): Record<string, string> {
   const props: Record<string, string> = {
     platform: Platform.OS,
