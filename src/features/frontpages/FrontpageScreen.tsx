@@ -1,4 +1,3 @@
-import {useEffect} from 'react'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {
@@ -26,7 +25,7 @@ type Props = NativeStackScreenProps<CommonNavigatorParams, 'Frontpage'>
  * directly, a slug one of the aggregator's outlets. Independent of the shared
  * editorial publication renderer.
  */
-export function FrontpageScreen({route, navigation}: Props) {
+export function FrontpageScreen({route}: Props) {
   const {name, view} = route.params
   const {t: l} = useLingui()
   const {
@@ -36,11 +35,7 @@ export function FrontpageScreen({route, navigation}: Props) {
     refetch,
   } = useFrontpage(name)
 
-  useEffect(() => {
-    if (!name) navigation.replace('OutletDirectory')
-  }, [name, navigation])
-
-  if (isLoading || !name) return <PublicationLoading view={view} />
+  if (isLoading) return <PublicationLoading view={view} />
   if (isError)
     return (
       <PublicationStatus>
