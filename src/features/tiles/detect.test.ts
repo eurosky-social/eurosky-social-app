@@ -1,4 +1,4 @@
-import {findTileUris, isTileUri, parseTileUri} from './detect'
+import {findTileUris, isTileUri, parseTileUri, tileUriFromInput} from './detect'
 
 const DID = 'did:plc:izttpdp3l6vss5crelt5kcux'
 const URI = `at://${DID}/ing.dasl.masl/3mcjwwoqjqs2v`
@@ -34,6 +34,23 @@ describe('parseTileUri', () => {
     )
     expect(parseTileUri(`${URI} and more`)).toBe(undefined)
     expect(isTileUri('')).toBe(false)
+  })
+})
+
+describe('tileUriFromInput', () => {
+  it('forgives whitespace, wrapping and trailing punctuation', () => {
+    expect(tileUriFromInput(`  ${URI}\n`)).toBe(URI)
+    expect(tileUriFromInput(`<${URI}>`)).toBe(URI)
+    expect(tileUriFromInput(`"${URI}".`)).toBe(URI)
+  })
+
+  it('wants exactly one tile URI', () => {
+    expect(tileUriFromInput('')).toBe(undefined)
+    expect(tileUriFromInput('https://dasl.ing/')).toBe(undefined)
+    expect(tileUriFromInput(`${URI} ${URI}`)).toBe(undefined)
+    expect(
+      tileUriFromInput(`at://${DID}/app.bsky.feed.post/3mcjwwoqjqs2v`),
+    ).toBe(undefined)
   })
 })
 

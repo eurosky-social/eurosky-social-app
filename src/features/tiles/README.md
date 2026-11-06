@@ -38,10 +38,12 @@ running tile instead of following the link.
 | `thumb(.web).ts` | the card thumbnail; the web build composites the play button |
 | `permissions.ts` | whether a tile's author is trusted, and the error the post pipeline throws |
 | `author.ts` | the author of a tile (the repo in its URI), the trust check, and the hook the card footer uses |
+| `attach.ts` | attaching a tile to a post draft, with the author check; used by the paste path and the toolbar button |
 | `mothership(.web).ts` | the page's one `TileMothership`, with a mu loader that resolves the PDS itself |
 | `sizing.ts` | the rendered height for a manifest's `sizing` and a card width, shared by web and native |
 | `host.ts` | the URL of the hosted page the native player loads (`@dasl/tile-host`) |
 | `components/TileCard.tsx` | the card, shared by the feed embed and the composer preview |
+| `components/AddTileButton.tsx` | the composer toolbar button and its dialog, which asks for a tile's at-URI |
 | `components/TileAuthor.tsx` | the footer line: the author's avatar, name, check and handle |
 | `components/TileEmbed/` | web: card that runs the tile in the page; native: card that runs it in a WebView |
 | `components/TilePlayer.tsx` | native: the WebView on the hosted page, and the message bridge |
@@ -60,7 +62,10 @@ Touchpoints in upstream code, each marked `EUROSKY`:
   detection never sees at-URIs; a paste that is only the URI stays out of the text.
 - `app.config.js`: the host page's domain in `WKAppBoundDomains` (below).
 - `view/com/composer/Composer.tsx`: a pasted tile is resolved and its author
-  checked before it is attached; a tile by an unverified author gets a toast.
+  checked before it is attached (`attach.ts`); a tile by an unverified author
+  gets a toast. The footer toolbar has the add-tile button next to the GIF
+  one, disabled while the post carries a link card or media (one tile per
+  post, and the pipeline prefers media to a card) and back once it is removed.
 - `view/com/composer/ExternalEmbed.tsx`: a tile link previews as its card.
 
 ## Who may post, and whose tiles run

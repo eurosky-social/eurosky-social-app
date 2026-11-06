@@ -145,7 +145,8 @@ import {
   IS_WEB_SAFARI,
 } from '#/env'
 import {type Gif} from '#/features/gifPicker/types'
-import {fetchIsTrustedTile} from '#/features/tiles/author'
+import {useAttachTile} from '#/features/tiles/attach'
+import {AddTileButton} from '#/features/tiles/components/AddTileButton'
 import {isTileUri} from '#/features/tiles/detect'
 import {UntrustedTileAuthorError} from '#/features/tiles/permissions'
 import {app, chat} from '#/lexicons'
@@ -1671,9 +1672,6 @@ let ComposerPost = memo(function ComposerPost({
   const {currentAccount} = useSession()
   const currentDid = currentAccount!.did
   const {t: l} = useLingui()
-  const queryClient = useQueryClient()
-  const appviewClient = useAppviewClient()
-  const chatClient = useChatClient()
   const {data: currentProfile} = useProfileQuery({did: currentDid})
   const richtext = post.richtext
   const isTextOnly = !post.embed.link && !post.embed.quote && !post.embed.media
@@ -1702,44 +1700,17 @@ let ComposerPost = memo(function ComposerPost({
       : 0
   const onImageAdd = useAddImagesWithCap(postImagesCount, dispatchPost)
 
+  // EUROSKY: a tile at-URI in the text goes through the author check.
+  const attachTile = useAttachTile(dispatchPost)
   const onNewLink = useCallback(
     (uri: string) => {
-      /*
-       * EUROSKY: anyone may post a tile, but only a tile whose author is one
-       * of our verified accounts will play, so one by anyone else is refused
-       * here with the reason rather than attached as a card that never
-       * works. The resolution is the same cached one the preview uses; if it
-       * fails, the tile is attached anyway and the preview shows the error.
-       */
       if (isTileUri(uri)) {
-        void (async () => {
-          let tile
-          try {
-            const resolved = await queryClient.fetchQuery(
-              resolveLinkQueryOptions({appviewClient, chatClient}, uri),
-            )
-            tile = resolved.type === 'external' ? resolved.tile : undefined
-          } catch {
-            dispatchPost({type: 'embed_add_uri', uri: uri as UriString})
-            return
-          }
-          if (
-            tile &&
-            !(await fetchIsTrustedTile(queryClient, appviewClient, tile))
-          ) {
-            Toast.show(
-              l`Only tiles published by verified accounts can be posted.`,
-              {type: 'error'},
-            )
-            return
-          }
-          dispatchPost({type: 'embed_add_uri', uri: uri as UriString})
-        })()
+        void attachTile(uri)
         return
       }
       dispatchPost({type: 'embed_add_uri', uri: uri as UriString})
     },
-    [dispatchPost, queryClient, appviewClient, chatClient, l],
+    [dispatchPost, attachTile],
   )
 
   const onPhotoPasted = useCallback(
@@ -2280,6 +2251,8 @@ function ComposerFooter({
   }
 
   const onImageAdd = useAddImagesWithCap(images.length, dispatch)
+  // EUROSKY: the tile button attaches to the active post, like the others.
+  const attachTile = useAttachTile(dispatch)
 
   const onSelectGif = useCallback(
     (gif: Gif) => {
@@ -2372,6 +2345,10 @@ function ComposerFooter({
                     onAdd={onImageAdd}
                   />
                   <SelectGifBtn onSelectGif={onSelectGif} disabled={!!media} />
+                  <AddTileButton
+                    disabled={!!media || !!post.embed.link}
+                    onAttach={attachTile}
+                  />
                 </>
               )}
               {IS_WEB && gtPhone ? (

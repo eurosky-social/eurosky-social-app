@@ -35,6 +35,16 @@ export function isTileUri(input: string): boolean {
   return parseTileUri(input) !== undefined
 }
 
+/**
+ * The tile at-URI in something typed or pasted into a field: whitespace,
+ * wrapping quotes or angle brackets and trailing punctuation are forgiven,
+ * anything that is not one tile URI is not.
+ */
+export function tileUriFromInput(input: string): string | undefined {
+  const bare = input.trim().replace(/^[<"'`]+|[>"'`.,;:!?]+$/g, '')
+  return parseTileUri(bare)?.uri
+}
+
 /** Every distinct tile at-URI in a piece of text, in order of appearance. */
 export function findTileUris(text: string): string[] {
   const found: string[] = []
