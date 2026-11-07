@@ -18,8 +18,10 @@ steps require external accounts and cannot be done from the repo alone.
 | EAS project | `@eurosky/mu-social` (slug `mu-social`, id `52e14cdd-ab10-4b16-a0f4-fc918a9fa323`) |
 | Sentry org | `eurosky` (only used when `SENTRY_AUTH_TOKEN` is set) |
 
-Placeholders that still need real values (search the repo for `REPLACE_WITH_`):
-`eas.json` submit block (`ascAppId` and ASC API key id/issuer).
+| App Store Connect app ID | `6803062360` (`eas.json` `submit.production.ios.ascAppId`) |
+
+The App Store Connect API key for `eas submit` is never committed: `eas.json`
+reads it from the environment (see "Uploading to App Store Connect" below).
 
 ## Prerequisites
 
@@ -46,15 +48,15 @@ or EAS commands error with a slug-mismatch.
      `social.mu.app.BlueskyNSE`.
    - App Group `group.social.mu.app`, and attach it to the main app + Share +
      NSE App IDs.
-2. In **App Store Connect**, create a new app for `social.mu.app`. Copy its
-   numeric **Apple ID** → `eas.json` `submit.production.ios.ascAppId`.
+2. In **App Store Connect**, the app for `social.mu.app` exists; its numeric
+   **Apple ID** `6803062360` is `eas.json` `submit.production.ios.ascAppId`.
    (Also add the numeric ID to any regular App Store smart-banner metadata if
    that is restored.)
 3. Create an **App Store Connect API key** (Users and Access → Integrations →
-   App Store Connect API, role: App Manager). Download the `.p8`. Fill
-   `eas.json`: `ascApiKeyId`, `ascApiKeyIssuerId`, and place the file at
-   `ascApiKeyPath` (`./credentials/asc-api-key.p8`, git-ignored). The Stichting
-   Modal Apple Team ID is already configured in `eas.json`.
+   Team Keys, role: App Manager) and download the `.p8`. Keep it outside the
+   repo, e.g. in `~/.appstoreconnect/private_keys/`, and use it as described in
+   "Uploading to App Store Connect" below. The Stichting Modal Apple Team ID is
+   already configured in `eas.json`.
 4. Let EAS manage signing certs + provisioning profiles:
    `eas credentials -p ios` (or it will prompt on first `eas build`). Sign in
    with the Apple account when asked; EAS creates the distribution cert and
@@ -194,6 +196,9 @@ Android build can still compile, but remote Android push will not work.
 - Trigger via Actions → "Build and Submit iOS" / "Build and Submit Android"
   (`workflow_dispatch`), profile `testflight` / `testflight-android` first, then
   `production`.
+- The iOS upload and TestFlight-group steps use the repo secrets `ASC_KEY_ID`,
+  `ASC_ISSUER_ID` and `ASC_KEY_P8_BASE64` (the `.p8` file, base64-encoded) of an
+  App Manager team key.
 - Still gated to upstream (intentionally left off): the `bskyweb`/`embedr`/
   `ogcard`/`link` AWS/GHCR docker pushes, `sync-internal`, and the OTA
   `bundle-deploy-eas-update` / `nightly-build` (OTA needs a Eurosky-hosted update
@@ -249,9 +254,25 @@ pnpm dlx eas-cli@latest build -p ios --profile testflight
 ```
 
 EAS's `autoIncrement` assigns the next number. Select `testflight`, not the
-implicit `production` profile, to retain the TestFlight icon. Submission still
-requires replacing the `eas.json` ASC placeholders above. Do not use EAS counter
-values to infer the number of a manually archived Xcode build.
+implicit `production` profile, to retain the TestFlight icon. Upload the
+finished build as described below. Do not use EAS counter values to infer the
+number of a manually archived Xcode build.
+
+### Uploading to App Store Connect
+
+`eas.json` reads the App Store Connect API key from three environment
+variables, so neither the key nor its IDs are committed:
+
+```bash
+export ASC_API_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_<key id>.p8"
+export ASC_API_KEY_ID=<key id>
+export ASC_API_KEY_ISSUER_ID=<issuer id, shown above the key list in App Store Connect>
+pnpm dlx eas-cli@latest submit -p ios --id <EAS build id>
+```
+
+All three are required: without them `eas submit -p ios` stops with
+`"ascApiKeyPath" is not allowed to be empty`. The "Build and Submit iOS"
+workflow sets them from the `ASC_*` repo secrets.
 
 ### AppView default
 

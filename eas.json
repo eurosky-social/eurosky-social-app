@@ -107,11 +107,11 @@
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "REPLACE_WITH_EUROSKY_ASC_APP_ID",
+        "ascAppId": "6803062360",
         "appleTeamId": "2472Y2UN4X",
-        "ascApiKeyPath": "./credentials/asc-api-key.p8",
-        "ascApiKeyId": "REPLACE_WITH_ASC_API_KEY_ID",
-        "ascApiKeyIssuerId": "REPLACE_WITH_ASC_API_KEY_ISSUER_ID"
+        "ascApiKeyPath": "$ASC_API_KEY_PATH",
+        "ascApiKeyId": "$ASC_API_KEY_ID",
+        "ascApiKeyIssuerId": "$ASC_API_KEY_ISSUER_ID"
       },
       "android": {
         "track": "production",
