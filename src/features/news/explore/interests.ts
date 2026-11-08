@@ -52,6 +52,42 @@ export function outletCoverage(
 }
 
 /**
+ * The outlets whose posts an interest brings into the news feed: its outlets
+ * less those unticked, and, when it names themes, only those with a current
+ * story on one of them (or that the service says nothing about). An outlet with
+ * no account of its own has no posts to show, so it is left out. Outlets are
+ * placed by country only, so a province keeps every outlet of its country.
+ */
+export function feedOutletsForInterest(
+  interest: NewsInterest,
+  outlets: DutchOutletListing[],
+): DutchOutletListing[] {
+  return outletsForInterest(interest, outlets).filter(
+    outlet =>
+      !!outlet.did &&
+      !interest.excludedOutlets.includes(outlet.slug) &&
+      (interest.themes.length === 0 ||
+        outletCoverage(outlet, interest.themes) !== 0),
+  )
+}
+
+/** The accounts of every interest's feed outlets, once each. */
+export function accountsForInterests(
+  interests: NewsInterest[],
+  outlets: DutchOutletListing[],
+): string[] {
+  const dids = new Set(
+    interests.flatMap(interest =>
+      feedOutletsForInterest(interest, outlets).flatMap(outlet =>
+        outlet.did ? [outlet.did] : [],
+      ),
+    ),
+  )
+  /* Sorted, so the same interests always make the same feed. */
+  return [...dids].sort()
+}
+
+/**
  * The reads of `/api/threads` that make up an interest, or `undefined` while
  * the outlets it narrows by are not known yet.
  *

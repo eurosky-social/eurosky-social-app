@@ -3,6 +3,7 @@ import {describe, expect, it} from '@jest/globals'
 import {type NewsInterest} from '#/features/newsFeed/state/prefs'
 import {type DutchOutletListing} from '../dutch/types'
 import {
+  accountsForInterests,
   countryOfSubLocation,
   filtersForInterest,
   mergeRanked,
@@ -79,6 +80,52 @@ describe('outletCoverage', () => {
 
   it('is undefined when the service did not say', () => {
     expect(outletCoverage({}, ['tech'])).toBeUndefined()
+  })
+})
+
+describe('accountsForInterests', () => {
+  const withAccounts: DutchOutletListing[] = [
+    {...outlet('le-soir', 'be'), did: 'did:plc:lesoir', themes: {politics: 3}},
+    {...outlet('hln', 'be'), did: 'did:plc:hln', themes: {sport: 2}},
+    {...outlet('nos', 'nl'), did: 'did:plc:nos'},
+    outlet('bbc', 'gb'),
+  ]
+
+  it('takes the accounts of the interest’s outlets', () => {
+    expect(
+      accountsForInterests([interest({countries: ['be']})], withAccounts),
+    ).toEqual(['did:plc:hln', 'did:plc:lesoir'])
+  })
+
+  it('leaves out unticked outlets and outlets with no account', () => {
+    expect(
+      accountsForInterests(
+        [interest({excludedOutlets: ['hln']})],
+        withAccounts,
+      ),
+    ).toEqual(['did:plc:lesoir', 'did:plc:nos'])
+  })
+
+  it('keeps outlets covering the themes, or that the service says nothing about', () => {
+    expect(
+      accountsForInterests([interest({themes: ['politics']})], withAccounts),
+    ).toEqual(['did:plc:lesoir', 'did:plc:nos'])
+  })
+
+  it('joins every interest, once each', () => {
+    expect(
+      accountsForInterests(
+        [
+          interest({countries: ['nl']}),
+          interest({id: 'i2', countries: ['be', 'nl']}),
+        ],
+        withAccounts,
+      ),
+    ).toEqual(['did:plc:hln', 'did:plc:lesoir', 'did:plc:nos'])
+  })
+
+  it('is empty without interests', () => {
+    expect(accountsForInterests([], withAccounts)).toEqual([])
   })
 })
 

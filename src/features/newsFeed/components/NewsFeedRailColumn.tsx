@@ -24,11 +24,15 @@ import {NewsFeedRightRail} from './NewsFeedRightRail'
 export function NewsFeedRailColumn({
   top,
   offset,
+  selectedInterestId,
+  onSelectInterest,
 }: {
   /** Height of the pinned header the column sits under. */
   top: number
   /** How far that pinned block has slid up as its title collapses. */
   offset: SharedValue<number>
+  selectedInterestId?: string
+  onSelectInterest: (interestId: string | undefined) => void
 }) {
   const gutters = useGutters(['base', 0, 'base', 'wide'])
   const {centerColumnOffset} = useLayoutBreakpoints()
@@ -70,7 +74,10 @@ export function NewsFeedRailColumn({
           pinStyle,
         ]}>
         <ScrollView showsVerticalScrollIndicator={false}>
-          <NewsFeedRightRail />
+          <NewsFeedRightRail
+            selectedInterestId={selectedInterestId}
+            onSelectInterest={onSelectInterest}
+          />
         </ScrollView>
       </Animated.View>
     </View>
