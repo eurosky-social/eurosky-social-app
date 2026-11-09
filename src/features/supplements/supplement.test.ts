@@ -1,7 +1,6 @@
 import {describe, expect, it} from '@jest/globals'
 
 import {type DutchArticle} from '#/features/news/dutch/types'
-import {parseDids} from './config'
 import {
   addArticle,
   articleFromAggregator,
@@ -241,15 +240,5 @@ describe('supplementRecordSchema', () => {
     expect(
       supplementRecordSchema.safeParse({...record(), version: 2}).success,
     ).toBe(false)
-  })
-})
-
-describe('parseDids', () => {
-  it('reads DIDs, once each, and skips anything else', () => {
-    expect(parseDids('did:plc:a, did:web:b.example\nnos did:plc:a')).toEqual([
-      'did:plc:a',
-      'did:web:b.example',
-    ])
-    expect(parseDids(undefined)).toEqual([])
   })
 })

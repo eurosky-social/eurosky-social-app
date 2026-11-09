@@ -17327,9 +17327,6 @@ msgstr ""
 msgid "Your verifications"
 msgstr ""
 
-msgctxt "News supplements tab"
-msgid "Supplements"
-msgstr "Dossiers"
 
 msgid "Supplement"
 msgstr "Dossier"
@@ -17348,23 +17345,10 @@ msgctxt "A supplement before its start date"
 msgid "Upcoming"
 msgstr "À venir"
 
-msgctxt "Supplements before their start date"
-msgid "Upcoming"
-msgstr "À venir"
 
-msgctxt "Supplements between their dates"
-msgid "Current"
-msgstr "En cours"
 
-msgctxt "Supplements past their end date"
-msgid "Archive"
-msgstr "Archives"
 
-msgid "Couldn’t load the supplements."
-msgstr "Impossible de charger les dossiers."
 
-msgid "No supplements right now."
-msgstr "Aucun dossier pour le moment."
 
 msgid "Add articles"
 msgstr "Ajouter des articles"
@@ -17491,3 +17475,28 @@ msgstr "La date de fin ne peut pas précéder la date de début."
 
 msgid "It moves to the archive after its end date. Without one, it stays current."
 msgstr "Il passe aux archives après sa date de fin. Sans date de fin, il reste d’actualité."
+
+msgctxt "A frontpage's section of supplements"
+msgid "Supplements"
+msgstr "Dossiers"
+
+msgid "Couldn’t load your supplements."
+msgstr "Impossible de charger vos dossiers."
+
+msgid "Supplements gather coverage of a temporary theme, such as an election, and show here."
+msgstr "Les dossiers rassemblent la couverture d’un thème temporaire, comme une élection, et apparaissent ici."
+
+msgid "Hide archived supplements"
+msgstr "Masquer les dossiers archivés"
+
+msgid "Show archived supplements"
+msgstr "Afficher les dossiers archivés"
+
+msgid "Show archived supplements ({0})"
+msgstr "Afficher les dossiers archivés ({0})"
+
+msgid "Open {editorName}’s frontpage"
+msgstr "Ouvrir la une de {editorName}"
+
+msgid "By {editorName}"
+msgstr "Par {editorName}"

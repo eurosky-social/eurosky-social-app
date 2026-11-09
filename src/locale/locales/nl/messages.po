@@ -18090,9 +18090,6 @@ msgstr "Heb je een toegangscode? Maak hier een account aan."
 msgid "Register with an invite code"
 msgstr "Registreren met toegangscode"
 
-msgctxt "News supplements tab"
-msgid "Supplements"
-msgstr "Dossiers"
 
 msgid "Supplement"
 msgstr "Dossier"
@@ -18111,23 +18108,10 @@ msgctxt "A supplement before its start date"
 msgid "Upcoming"
 msgstr "Binnenkort"
 
-msgctxt "Supplements before their start date"
-msgid "Upcoming"
-msgstr "Binnenkort"
 
-msgctxt "Supplements between their dates"
-msgid "Current"
-msgstr "Actueel"
 
-msgctxt "Supplements past their end date"
-msgid "Archive"
-msgstr "Archief"
 
-msgid "Couldn’t load the supplements."
-msgstr "Kan de dossiers niet laden."
 
-msgid "No supplements right now."
-msgstr "Er zijn nu geen dossiers."
 
 msgid "Add articles"
 msgstr "Artikelen toevoegen"
@@ -18254,3 +18238,28 @@ msgstr "De einddatum kan niet voor de startdatum liggen."
 
 msgid "It moves to the archive after its end date. Without one, it stays current."
 msgstr "Het gaat na de einddatum naar het archief. Zonder einddatum blijft het actueel."
+
+msgctxt "A frontpage's section of supplements"
+msgid "Supplements"
+msgstr "Dossiers"
+
+msgid "Couldn’t load your supplements."
+msgstr "Kan je dossiers niet laden."
+
+msgid "Supplements gather coverage of a temporary theme, such as an election, and show here."
+msgstr "Dossiers bundelen berichtgeving over een tijdelijk thema, zoals verkiezingen, en verschijnen hier."
+
+msgid "Hide archived supplements"
+msgstr "Gearchiveerde dossiers verbergen"
+
+msgid "Show archived supplements"
+msgstr "Gearchiveerde dossiers tonen"
+
+msgid "Show archived supplements ({0})"
+msgstr "Gearchiveerde dossiers tonen ({0})"
+
+msgid "Open {editorName}’s frontpage"
+msgstr "Open de frontpage van {editorName}"
+
+msgid "By {editorName}"
+msgstr "Door {editorName}"

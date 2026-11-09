@@ -8,10 +8,15 @@ as a **dossier**.
 
 News v2 only. With news v2 off, these routes are Not Found.
 
-## Routes
+## Where they show
 
-- `/news/supplements` - the hub's tab: upcoming (the editor's own), current,
-  then the archive.
+On their editor's frontpage (`FrontpageSupplements`, below its top bar): the
+current ones, then the archive behind **Show archived supplements**. The
+editor also sees their upcoming ones and **New supplement**. Readers see the
+section only when there is something in it; it is hidden while the front page
+itself is being arranged, and for an account the reader blocks or is blocked
+by. A supplement's page names its editor, linking back to the frontpage.
+
 - `/news/supplements/new` - a new one, as a draft in the editor.
 - `/news/supplements/:name/:rkey` - one supplement, by handle or DID.
 
@@ -60,14 +65,14 @@ name too, for when the vocabulary changes.
 
 ## Finding them
 
-Nothing indexes these records. The tab reads the repositories of the accounts in
-`EXPO_PUBLIC_SUPPLEMENT_EDITORS`, by DID, plus the reader's own. Without that
-setting a reader only finds their own, or one they are linked to.
+Nothing indexes these records, and nothing needs to: a frontpage lists its own
+account's, read from that account's repository. There is no list across
+editors.
 
 ## Not built
 
 - Several editors on one supplement: a record belongs to one account.
 - Posts as items: a supplement holds articles only.
-- Links from a frontpage to its account's supplements.
+- A list of every editor's supplements: they are found through frontpages.
 
 Tests: `pnpm test --runInBand src/features/supplements`.

@@ -5,7 +5,7 @@ import {atoms as a, useTheme, web} from '#/alf'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 
-export type NewsHubTab = 'news' | 'feed' | 'outlets' | 'supplements'
+export type NewsHubTab = 'news' | 'feed' | 'outlets'
 
 /**
  * The hub's tabs: the news itself, the reader's own feed of news accounts, and
@@ -35,12 +35,6 @@ export function NewsHubTabs({active}: {active: NewsHubTab}) {
         label={l({message: 'Outlets', context: 'News outlets tab'})}
         selected={active === 'outlets'}
         testID="newsHubTab-outlets"
-      />
-      <HubTab
-        to="/news/supplements"
-        label={l({message: 'Supplements', context: 'News supplements tab'})}
-        selected={active === 'supplements'}
-        testID="newsHubTab-supplements"
       />
     </View>
   )

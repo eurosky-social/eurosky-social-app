@@ -180,7 +180,6 @@ import {
   NewSupplementScreen as NewsSupplementNewScreen,
   SupplementScreen,
 } from '#/features/supplements/SupplementScreen'
-import {SupplementsScreen} from '#/features/supplements/SupplementsScreen'
 import {router} from '#/routes'
 
 const navigationRef = createNavigationContainerRef<RootNavigatorParams>()
@@ -263,18 +262,6 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
           NEWS_V2_ENABLED ? NewsOutletsScreen : NotFoundScreen
         }
         options={{title: title(msg`Outlets`), requireAuth: true}}
-      />
-      <Stack.Screen
-        name="Supplements"
-        getComponent={() =>
-          NEWS_V2_ENABLED ? SupplementsScreen : NotFoundScreen
-        }
-        options={{
-          title: title(
-            msg({message: 'Supplements', context: 'News supplements tab'}),
-          ),
-          requireAuth: true,
-        }}
       />
       <Stack.Screen
         name="SupplementNew"

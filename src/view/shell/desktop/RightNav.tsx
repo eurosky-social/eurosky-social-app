@@ -51,7 +51,6 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
     NEWS_V2_ENABLED &&
     (routeName === 'NewsExplore' ||
       routeName === 'NewsOutlets' ||
-      routeName === 'Supplements' ||
       routeName === 'SupplementNew' ||
       routeName === 'Supplement' ||
       routeName === 'OutletDirectory' ||
