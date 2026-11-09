@@ -1,0 +1,70 @@
+{
+  "lexicon": 1,
+  "id": "social.mu.supplement",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "tid",
+      "description": "A temporary news theme an editor curates, such as an election or a tournament, with coverage from various outlets. It is archived after its end date, which readers work out from the dates. Articles are kept as they were when picked, so they outlive the news archive they came from.",
+      "record": {
+        "type": "object",
+        "required": ["version", "title", "topic", "startDate", "items", "updatedAt"],
+        "properties": {
+          "version": {"type": "integer", "const": 1},
+          "title": {"type": "string", "maxLength": 120},
+          "topic": {"type": "ref", "ref": "#topic"},
+          "startDate": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "The first day, as YYYY-MM-DD."
+          },
+          "endDate": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "The last day, as YYYY-MM-DD. Without one it stays current."
+          },
+          "items": {
+            "type": "array",
+            "maxLength": 100,
+            "description": "The articles, in the editor's order.",
+            "items": {"type": "ref", "ref": "#article"}
+          },
+          "updatedAt": {"type": "string", "format": "datetime"}
+        }
+      }
+    },
+    "topic": {
+      "type": "object",
+      "required": ["slug", "name"],
+      "properties": {
+        "slug": {
+          "type": "string",
+          "maxLength": 40,
+          "description": "A topic of the news aggregator's vocabulary."
+        },
+        "name": {"type": "string", "maxLength": 100}
+      }
+    },
+    "article": {
+      "type": "object",
+      "required": ["url", "title", "outlet"],
+      "properties": {
+        "url": {"type": "string", "format": "uri"},
+        "title": {"type": "string", "maxLength": 300},
+        "summary": {"type": "string", "maxLength": 500},
+        "imageUrl": {"type": "string", "format": "uri"},
+        "publishedAt": {"type": "string", "format": "datetime"},
+        "outlet": {"type": "ref", "ref": "#outlet"}
+      }
+    },
+    "outlet": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {"type": "string", "maxLength": 100},
+        "slug": {"type": "string", "maxLength": 64},
+        "did": {"type": "string", "format": "did"}
+      }
+    }
+  }
+}

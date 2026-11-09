@@ -27,6 +27,9 @@ export const router = new Router<AllNavigatableRoutes>({
   NewsExplore: ['/news/explore', '/newsroom/explore'],
   NewsArticle: ['/news/article', '/newsroom/article'],
   NewsOutlets: '/news/outlets',
+  Supplements: '/news/supplements',
+  SupplementNew: '/news/supplements/new',
+  Supplement: '/news/supplements/:name/:rkey',
   /*
    * On news v2 a frontpage needs a name, so the bare paths open the directory.
    * Matching them to `Frontpage` would rewrite the URL to the literal

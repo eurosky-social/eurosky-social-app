@@ -1695,7 +1695,7 @@ msgstr ""
 #: src/features/profileLinks/components/LinkFormDialog.tsx:431
 #: src/features/profileLinks/components/ProfileLinksEditor.tsx:149
 msgid "Add link"
-msgstr ""
+msgstr "Ajouter le lien"
 
 #. Accessibility label for button in composer to add images, a video, or a GIF to a post
 #: src/view/com/composer/SelectMediaButton.tsx:520
@@ -4546,7 +4546,7 @@ msgstr ""
 #: src/screens/StarterPack/StarterPackScreen.tsx:743
 #: src/screens/StarterPack/StarterPackScreen.tsx:872
 msgid "Delete"
-msgstr ""
+msgstr "Supprimer"
 
 #: src/screens/Settings/AccountSettings.tsx:187
 #: src/screens/Settings/AccountSettings.tsx:192
@@ -4790,7 +4790,7 @@ msgstr ""
 #: src/view/com/composer/drafts/DraftItem.tsx:243
 #: src/view/com/composer/drafts/DraftsButton.tsx:128
 msgid "Discard"
-msgstr ""
+msgstr "Abandonner"
 
 #: src/components/dialogs/lists/CreateOrEditListDialog.tsx:99
 #: src/screens/Profile/Header/EditProfileDialog.tsx:88
@@ -8132,7 +8132,7 @@ msgstr ""
 #: src/features/profileLinks/components/LinkFormDialog.tsx:318
 #: src/features/profileLinks/components/LinkFormDialog.tsx:324
 msgid "Link"
-msgstr ""
+msgstr "Lien"
 
 #: src/features/profileLinks/components/LinkPreviewSheet.tsx:61
 msgid "Link copied"
@@ -14763,7 +14763,7 @@ msgstr ""
 #: src/components/SendErrorReportDialog.tsx:68
 #: src/features/profileLinks/components/LinkFormDialog.tsx:378
 msgid "Title"
-msgstr ""
+msgstr "Titre"
 
 #: src/components/SendErrorReportDialog.tsx:71
 msgid "Title (100 characters max)"
@@ -14836,7 +14836,7 @@ msgstr ""
 
 #: src/Navigation.tsx:550
 msgid "Topic"
-msgstr ""
+msgstr "Sujet"
 
 #. Description of a feature flag (Moderation inbox)
 #: src/analytics/features/index.ts:155
@@ -17326,3 +17326,168 @@ msgstr ""
 #: src/components/verification/VerificationsDialog.tsx:67
 msgid "Your verifications"
 msgstr ""
+
+msgctxt "News supplements tab"
+msgid "Supplements"
+msgstr "Dossiers"
+
+msgid "Supplement"
+msgstr "Dossier"
+
+msgid "New supplement"
+msgstr "Nouveau dossier"
+
+msgid "Since {start}"
+msgstr "Depuis le {start}"
+
+msgctxt "A supplement past its end date"
+msgid "Archived"
+msgstr "Archivé"
+
+msgctxt "A supplement before its start date"
+msgid "Upcoming"
+msgstr "À venir"
+
+msgctxt "Supplements before their start date"
+msgid "Upcoming"
+msgstr "À venir"
+
+msgctxt "Supplements between their dates"
+msgid "Current"
+msgstr "En cours"
+
+msgctxt "Supplements past their end date"
+msgid "Archive"
+msgstr "Archives"
+
+msgid "Couldn’t load the supplements."
+msgstr "Impossible de charger les dossiers."
+
+msgid "No supplements right now."
+msgstr "Aucun dossier pour le moment."
+
+msgid "Add articles"
+msgstr "Ajouter des articles"
+
+msgid "This supplement is full. Remove an article to add another."
+msgstr "Ce dossier est complet. Retirez un article pour en ajouter un autre."
+
+msgid "Search articles from every outlet"
+msgstr "Rechercher des articles de tous les médias"
+
+msgid "Only this topic and these dates"
+msgstr "Uniquement ce sujet et ces dates"
+
+msgid "Couldn’t search articles. You can still add one by link."
+msgstr "Impossible de rechercher des articles. Vous pouvez toujours en ajouter un par lien."
+
+msgid "No articles found."
+msgstr "Aucun article trouvé."
+
+msgid "Added: {0}"
+msgstr "Ajouté : {0}"
+
+msgid "Add article: {0}"
+msgstr "Ajouter l’article : {0}"
+
+msgctxt "An article in a supplement"
+msgid "Added"
+msgstr "Ajouté"
+
+msgctxt "Add an article"
+msgid "Add"
+msgstr "Ajouter"
+
+msgid "Load more articles"
+msgstr "Charger plus d’articles"
+
+msgid "Add an article by link"
+msgstr "Ajouter un article par lien"
+
+msgid "For a source the search does not cover."
+msgstr "Pour une source que la recherche ne couvre pas."
+
+msgid "Headline"
+msgstr "Titre"
+
+msgid "This article is already in the supplement."
+msgstr "Cet article est déjà dans le dossier."
+
+msgid "Couldn’t load this supplement."
+msgstr "Impossible de charger ce dossier."
+
+msgid "This supplement isn’t available."
+msgstr "Ce dossier n’est pas disponible."
+
+msgid "Supplement published"
+msgstr "Dossier publié"
+
+msgid "This supplement changed in another editor. Reload the published version before editing again."
+msgstr "Ce dossier a été modifié dans un autre éditeur. Rechargez la version publiée avant de le modifier à nouveau."
+
+msgid "Couldn’t publish the supplement. Your changes are still here. Try again."
+msgstr "Impossible de publier le dossier. Vos modifications sont conservées. Réessayez."
+
+msgid "Supplement deleted"
+msgstr "Dossier supprimé"
+
+msgid "Couldn’t delete the supplement. Try again."
+msgstr "Impossible de supprimer le dossier. Réessayez."
+
+msgid "Move up: {0}"
+msgstr "Monter : {0}"
+
+msgid "Move down: {0}"
+msgstr "Descendre : {0}"
+
+msgid "Remove: {0}"
+msgstr "Retirer : {0}"
+
+msgid "Edit supplement"
+msgstr "Modifier le dossier"
+
+msgctxt "Edit a supplement"
+msgid "Edit"
+msgstr "Modifier"
+
+msgid "Publish supplement"
+msgstr "Publier le dossier"
+
+msgid "Publish"
+msgstr "Publier"
+
+msgid "Discard changes"
+msgstr "Abandonner les modifications"
+
+msgid "Delete supplement"
+msgstr "Supprimer le dossier"
+
+msgid "No articles yet."
+msgstr "Aucun article pour le moment."
+
+msgid "Delete this supplement?"
+msgstr "Supprimer ce dossier ?"
+
+msgid "It will be removed for everyone. This can’t be undone. The articles themselves are not affected."
+msgstr "Il sera supprimé pour tout le monde. Cette action est irréversible. Les articles eux-mêmes ne sont pas concernés."
+
+msgid "Select a topic"
+msgstr "Choisir un sujet"
+
+msgid "Couldn’t load the topics."
+msgstr "Impossible de charger les sujets."
+
+msgid "Start date"
+msgstr "Date de début"
+
+msgid "End date (optional)"
+msgstr "Date de fin (facultative)"
+
+msgid "Remove end date"
+msgstr "Retirer la date de fin"
+
+msgid "The end date can’t be before the start date."
+msgstr "La date de fin ne peut pas précéder la date de début."
+
+msgid "It moves to the archive after its end date. Without one, it stays current."
+msgstr "Il passe aux archives après sa date de fin. Sans date de fin, il reste d’actualité."
