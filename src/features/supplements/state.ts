@@ -1,11 +1,6 @@
 import {type Client} from '@atproto/lex'
 import {type DidString} from '@atproto/syntax'
-import {
-  useMutation,
-  useQueries,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query'
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 
 import {createServiceClient} from '#/lib/lexClient'
 import {STALE} from '#/state/queries'
@@ -36,23 +31,14 @@ function useReadClient() {
   }
 }
 
-/** Every account's supplements. One editor's failure leaves the others. */
-export function useSupplementsQueries(dids: string[]) {
+/** One account's supplements, as its frontpage lists them. */
+export function useSupplementsQuery(did: DidString) {
   const readClient = useReadClient()
-  const results = useQueries({
-    queries: dids.map(did => ({
-      queryKey: listKey(did),
-      staleTime: STALE.MINUTES.ONE,
-      queryFn: async () =>
-        listSupplements(await readClient(did as DidString), did as DidString),
-    })),
+  return useQuery({
+    queryKey: listKey(did),
+    staleTime: STALE.MINUTES.ONE,
+    queryFn: async () => listSupplements(await readClient(did), did),
   })
-  return {
-    supplements: results.flatMap(result => result.data ?? []),
-    isLoading: results.some(result => result.isLoading),
-    isError: results.length > 0 && results.every(result => result.isError),
-    refetch: () => Promise.all(results.map(result => result.refetch())),
-  }
 }
 
 export function useSupplementQuery(did: string | undefined, rkey: string) {

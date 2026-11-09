@@ -5,7 +5,7 @@ import {atoms as a, useGutters, useTheme, web} from '#/alf'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 
-export type NewsHubTab = 'news' | 'outlets' | 'supplements'
+export type NewsHubTab = 'news' | 'outlets'
 
 /**
  * The hub's tabs: the news itself, and the outlets behind it. Each is a page
@@ -29,12 +29,6 @@ export function NewsHubTabs({active}: {active: NewsHubTab}) {
         label={l({message: 'Outlets', context: 'News outlets tab'})}
         selected={active === 'outlets'}
         testID="newsHubTab-outlets"
-      />
-      <HubTab
-        to="/news/supplements"
-        label={l({message: 'Supplements', context: 'News supplements tab'})}
-        selected={active === 'supplements'}
-        testID="newsHubTab-supplements"
       />
     </View>
   )

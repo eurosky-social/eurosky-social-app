@@ -23,6 +23,7 @@ import {Pencil_Stroke2_Corner0_Rounded as PencilIcon} from '#/components/icons/P
 import {TimesLarge_Stroke2_Corner0_Rounded as RemoveIcon} from '#/components/icons/Times'
 import {Trash_Stroke2_Corner0_Rounded as TrashIcon} from '#/components/icons/Trash'
 import * as Layout from '#/components/Layout'
+import {InlineLinkText} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import * as Prompt from '#/components/Prompt'
 import * as Select from '#/components/Select'
@@ -93,6 +94,7 @@ export function SupplementScreen({
     return <Status message={l`This supplement isn’t available.`} />
   return (
     <SupplementPage
+      editorName={profile.data?.displayName || profile.data?.handle}
       /* Switching accounts discards a draft, as on a frontpage. */
       key={`${currentAccount?.did}:${query.data.rkey}`}
       did={did}
@@ -175,8 +177,11 @@ function Status({
 function SupplementPage({
   did,
   stored,
+  editorName,
 }: {
   did: DidString
+  /** Who curates it, linking to their frontpage. */
+  editorName?: string
   /** Absent for a supplement being created. */
   stored?: StoredSupplement
 }) {
@@ -217,7 +222,7 @@ function SupplementPage({
     setConflict(false)
     if (stored) setDraft(undefined)
     else if (navigation.canGoBack()) navigation.goBack()
-    else navigation.navigate('Supplements')
+    else navigation.navigate('Frontpage', {name: did})
   }
 
   async function publish() {
@@ -251,7 +256,7 @@ function SupplementPage({
       await remove.mutateAsync(stored)
       Toast.show(l`Supplement deleted`)
       if (navigation.canGoBack()) navigation.goBack()
-      else navigation.navigate('Supplements')
+      else navigation.navigate('Frontpage', {name: did})
     } catch {
       setError(l`Couldn’t delete the supplement. Try again.`)
     }
@@ -340,6 +345,15 @@ function SupplementPage({
                 {topicName(stored.supplement.topic)} ·{' '}
                 {dates(stored.supplement)}
               </Text>
+              {editorName && (
+                <InlineLinkText
+                  testID="supplementEditorLink"
+                  to={{screen: 'Frontpage', params: {name: did}}}
+                  label={l`Open ${editorName}’s frontpage`}
+                  style={[a.text_sm, a.self_start]}>
+                  <Trans>By {editorName}</Trans>
+                </InlineLinkText>
+              )}
             </View>
           )
         )}

@@ -446,7 +446,6 @@ const NEWS_HUB_ROUTES = [
   'NewsFeed',
   'NewsSettings',
   'NewsOutlets',
-  'Supplements',
   'SupplementNew',
   'Supplement',
   'OutletDirectory',
