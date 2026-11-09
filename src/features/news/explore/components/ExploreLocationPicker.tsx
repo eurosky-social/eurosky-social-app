@@ -97,17 +97,17 @@ export function PickerButton({
   testID,
   label,
   icon: Icon,
+  leading,
   text,
-  grouped = false,
 }: {
   /** The trigger props `Menu.Trigger` hands its child. */
   props: TriggerChildProps['props']
   testID: string
   label: string
   icon: React.ComponentType<SVGIconProps>
+  /** Shown in place of the icon, e.g. an interest's outlets. */
+  leading?: React.ReactElement
   text: string
-  /** Inside a `PickerGroup`, which draws the pill around it instead. */
-  grouped?: boolean
 }) {
   const t = useTheme()
   return (
@@ -122,9 +122,10 @@ export function PickerButton({
         a.rounded_full,
         a.px_md,
         a.py_xs,
-        !grouped && [a.border, pillColors(t)],
+        a.border,
+        pillColors(t),
       ]}>
-      <Icon size="sm" style={{color: t.palette.primary_500}} />
+      {leading ?? <Icon size="sm" style={{color: t.palette.primary_500}} />}
       <Text
         emoji
         numberOfLines={1}
@@ -133,40 +134,6 @@ export function PickerButton({
       </Text>
       <ChevronDownIcon size="xs" style={{color: t.palette.primary_500}} />
     </Button>
-  )
-}
-
-/**
- * Pickers that scope the page together - an interest and a place inside it -
- * as one pill, divided by a rule, so they read as one setting.
- */
-export function PickerGroup({children}: {children: React.ReactNode}) {
-  const t = useTheme()
-  return (
-    <View
-      style={[
-        a.flex_row,
-        a.align_stretch,
-        a.rounded_full,
-        a.border,
-        a.overflow_hidden,
-        pillColors(t),
-      ]}>
-      {children}
-    </View>
-  )
-}
-
-/** The rule between two pickers of a `PickerGroup`. */
-export function PickerGroupRule() {
-  const t = useTheme()
-  return (
-    <View
-      style={[
-        a.my_xs,
-        {width: 1, backgroundColor: t.palette.primary_500, opacity: 0.4},
-      ]}
-    />
   )
 }
 
@@ -182,14 +149,22 @@ export function PickerItem({
   name,
   selected,
   onPress,
+  leading,
+  trailing,
 }: {
   name: string
   selected: boolean
   onPress: () => void
+  /** Shown ahead of the name, e.g. an interest's outlets. */
+  leading?: React.ReactNode
+  /** Shown after the name, ahead of the radio, e.g. an edit button. */
+  trailing?: React.ReactNode
 }) {
   return (
     <Menu.Item label={name} onPress={onPress}>
+      {leading}
       <Menu.ItemText>{name}</Menu.ItemText>
+      {trailing}
       <Menu.ItemRadio selected={selected} />
     </Menu.Item>
   )

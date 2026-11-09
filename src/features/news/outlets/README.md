@@ -23,6 +23,11 @@ configured outlet and every listed newsroom.
 `mergeFeaturedOutlets` (`featured.ts`) is the whole rule, and is what the tests
 cover.
 
+With an interest picked on the news page, its band shows that interest's
+outlets instead (`featuredForInterest`): those of its places less the ones it
+unticks, kept to its themes, the generally featured ones among them first and
+the rest by how many current stories they ran on its themes.
+
 ## Articles and links
 
 A card's articles come from where its outlet was named: the aggregator's

@@ -1,4 +1,5 @@
 import {Router} from '#/lib/routes/router'
+import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
 import {type FlatNavigatorParams} from './lib/routes/types'
 
 type AllNavigatableRoutes = Omit<
@@ -26,12 +27,21 @@ export const router = new Router<AllNavigatableRoutes>({
   NewsExplore: ['/news/explore', '/newsroom/explore'],
   NewsArticle: ['/news/article', '/newsroom/article'],
   NewsOutlets: '/news/outlets',
-  OutletDirectory: ['/outlets', '/newsrooms'],
+  /*
+   * On news v2 a frontpage needs a name, so the bare paths open the directory.
+   * Matching them to `Frontpage` would rewrite the URL to the literal
+   * `/frontpage/undefined`. The legacy screen picks a default publisher instead.
+   */
+  OutletDirectory: NEWS_V2_ENABLED
+    ? ['/outlets', '/newsrooms', '/frontpage', '/newsroom']
+    : ['/outlets', '/newsrooms'],
   Events: '/events',
   Event: '/events/:name/:rkey',
   EventRsvps: '/events/:name/:rkey/rsvps',
   OsoStarterPacks: '/starter-packs',
-  Frontpage: ['/frontpage/:name', '/frontpage', '/newsroom/:name', '/newsroom'],
+  Frontpage: NEWS_V2_ENABLED
+    ? ['/frontpage/:name', '/newsroom/:name']
+    : ['/frontpage/:name', '/frontpage', '/newsroom/:name', '/newsroom'],
   // moderation
   Moderation: '/moderation',
   ModerationInbox: '/moderation/inbox',

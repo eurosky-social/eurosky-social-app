@@ -1,9 +1,11 @@
+import {type NewsInterest} from '#/features/newsFeed/state/prefs'
 import {articleItem} from '../dutch/adapt'
 import {
   useDutchOutletArticlesQuery,
   useDutchOutletsByRefQuery,
 } from '../dutch/queries'
-import {type DutchOutletDetail} from '../dutch/types'
+import {type DutchOutletDetail, type DutchOutletListing} from '../dutch/types'
+import {outletCoverage, outletsForInterest} from '../explore/interests'
 import {type RssItem} from '../rss/types'
 import {FEATURED_OUTLET_REFS} from './config'
 import {
@@ -67,6 +69,45 @@ export function mergeFeaturedOutlets(
     })
   }
   return limit === undefined ? featured : featured.slice(0, limit)
+}
+
+/**
+ * The outlets to feature for one interest: its outlets less those unticked,
+ * and, when it names themes, only those with a current story on one of them
+ * (or that the service says nothing about). The generally featured ones among
+ * them lead, then the rest by how many current stories they ran on its themes
+ * (on any, without themes). Outlets are placed by country only, so a province
+ * keeps every outlet of its country.
+ */
+export function featuredForInterest(
+  interest: NewsInterest,
+  outlets: DutchOutletListing[],
+  limit: number,
+  featuredSlugs: string[] = [],
+): FeaturedOutlet[] {
+  const coverage = (outlet: DutchOutletListing) =>
+    outletCoverage(outlet, interest.themes)
+  return outletsForInterest(interest, outlets)
+    .filter(
+      outlet =>
+        outlet.articles > 0 &&
+        !interest.excludedOutlets.includes(outlet.slug) &&
+        (interest.themes.length === 0 || coverage(outlet) !== 0),
+    )
+    .sort(
+      (x, y) =>
+        Number(featuredSlugs.includes(y.slug)) -
+          Number(featuredSlugs.includes(x.slug)) ||
+        (coverage(y) ?? 0) - (coverage(x) ?? 0),
+    )
+    .slice(0, limit)
+    .map(outlet => ({
+      slug: outlet.slug,
+      did: outlet.did ?? undefined,
+      name: outlet.name,
+      site: outlet.domains[0],
+      source: 'config' as const,
+    }))
 }
 
 /**

@@ -10,20 +10,18 @@ import {
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
 import {useShellLayout} from '#/state/shell/shell-layout'
-import {atoms as a, native, useBreakpoints, useTheme, web} from '#/alf'
+import {atoms as a, native, useBreakpoints, web} from '#/alf'
 import * as Layout from '#/components/Layout'
 import {InlineLinkText} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
-import {BRAND} from '#/config/brand'
 import {useFrontpageProfiles} from '#/features/frontpages/frontpages'
 import {
   ExploreColumn,
-  ExploreHeaderOuter,
   ExploreSpreadBorders,
   useExploreSpread,
 } from '../explore/components/ExploreColumn'
-import {NewsHubTabs} from '../hub/NewsHubTabs'
+import {NewsHubHeader} from '../hub/NewsHubHeader'
 import {useCollapsingTitle} from '../hub/useCollapsingTitle'
 import {OutletArticlesCard} from './components/OutletArticlesCard'
 import {type FeaturedOutlet, useFeaturedOutlets} from './featured'
@@ -36,7 +34,6 @@ import {type FeaturedOutlet, useFeaturedOutlets} from './featured'
 export function NewsOutletsScreen(
   _props: NativeStackScreenProps<CommonNavigatorParams, 'NewsOutlets'>,
 ) {
-  const t = useTheme()
   const {t: l} = useLingui()
   const {wide} = useExploreSpread()
   const {gtMobile} = useBreakpoints()
@@ -63,18 +60,7 @@ export function NewsOutletsScreen(
         style={[web([a.sticky, {top: 0}]), native(a.overflow_hidden), a.z_10]}>
         <Animated.View style={titleCollapse.blockStyle}>
           <View onLayout={titleCollapse.onTitleLayout}>
-            <ExploreHeaderOuter>
-              <Layout.Header.BackButton />
-              <Layout.Header.Content>
-                <Layout.Header.TitleText>
-                  <Trans>{BRAND.name} News</Trans>
-                </Layout.Header.TitleText>
-              </Layout.Header.Content>
-            </ExploreHeaderOuter>
-            <ExploreColumn
-              style={[a.border_b, t.atoms.bg, t.atoms.border_contrast_low]}>
-              <NewsHubTabs active="outlets" />
-            </ExploreColumn>
+            <NewsHubHeader active="outlets" />
           </View>
         </Animated.View>
       </View>
