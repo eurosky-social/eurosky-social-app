@@ -151,10 +151,7 @@ export function OsoNoAccessScreen() {
       </View>
 
       <DeactivateAccountDialog control={deactivateAccountControl} />
-      <DeleteAccountDialog
-        control={deleteAccountControl}
-        deactivateDialogControl={deactivateAccountControl}
-      />
+      <DeleteAccountDialog control={deleteAccountControl} />
 
       {/*
        * The shell isn't mounted behind this screen, so dialogs need their own

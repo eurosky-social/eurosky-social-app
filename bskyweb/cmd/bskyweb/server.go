@@ -30,6 +30,8 @@ import (
 	"github.com/bluesky-social/indigo/xrpc"
 	"github.com/bluesky-social/social-app/bskyweb"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/flosch/pongo2/v6"
 	"github.com/klauspost/compress/gzhttp"
 	"github.com/klauspost/compress/gzip"
@@ -48,8 +50,7 @@ type Server struct {
 	chatXrpcc    *xrpc.Client
 	cfg          *Config
 
-	ipccClient   http.Client
-	featureGates *featureGateCache
+	ipccClient http.Client
 
 	// sitemapClient is used for fetching sitemaps from the appview. It has
 	// DisableCompression set to true so that gzipped responses are passed
@@ -83,6 +84,26 @@ func serve(cctx *cli.Context) error {
 	staticCDNHost = strings.TrimSuffix(staticCDNHost, "/")
 	canonicalInstance := cctx.Bool("bsky-canonical-instance")
 	robotsDisallowAll := cctx.Bool("robots-disallow-all")
+	appVersion := cctx.String("bsky-app-version")
+	appStaticsBucket := cctx.String("bsky-app-statics-bucket")
+	appStaticsRegion := cctx.String("bsky-app-statics-region")
+
+	templateFS := fs.FS(bskyweb.TemplateFS)
+	staticFS := fs.FS(bskyweb.StaticFS)
+	if appVersion != "" {
+		if debug {
+			log.Warnf("ignoring app version %s: debug mode serves templates and static files from the local file system", appVersion)
+		} else {
+			// Credentials come from the environment (the IRSA role in production)
+			// and are only fetched on the first download.
+			awsCfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(appStaticsRegion))
+			if err != nil {
+				return fmt.Errorf("loading AWS config: %w", err)
+			}
+			log.Infof("serving app version %s from s3://%s/%s", appVersion, appStaticsBucket, appVersion)
+			templateFS, staticFS = remoteAppFS(s3.NewFromConfig(awsCfg), appStaticsBucket, appVersion)
+		}
+	}
 
 	// Echo
 	e := echo.New()
@@ -156,12 +177,6 @@ func serve(cctx *cli.Context) error {
 			},
 		},
 	}
-	if cctx.Bool("feature-gate-bootstrap") {
-		server.featureGates = newFeatureGateCache(cctx.String("growthbook-api-host"), cctx.String("growthbook-client-key"))
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		go server.featureGates.run(ctx)
-	}
 
 	// Create the HTTP server.
 	server.httpd = &http.Server{
@@ -173,7 +188,7 @@ func serve(cctx *cli.Context) error {
 	}
 
 	e.HideBanner = true
-	e.Renderer = NewRenderer("templates/", &bskyweb.TemplateFS, debug)
+	e.Renderer = NewRenderer("templates/", templateFS, debug)
 	e.HTTPErrorHandler = server.errorHandler
 
 	e.IPExtractor = echo.ExtractIPFromXFFHeader()
@@ -247,17 +262,18 @@ func serve(cctx *cli.Context) error {
 	// configure routes
 	//
 	// static files
-	staticHandler := http.FileServer(func() http.FileSystem {
+	staticRoot := func() fs.FS {
 		if debug {
 			log.Debugf("serving static file from the local file system")
-			return http.FS(os.DirFS("static"))
+			return os.DirFS("static")
 		}
-		fsys, err := fs.Sub(bskyweb.StaticFS, "static")
+		fsys, err := fs.Sub(staticFS, "static")
 		if err != nil {
 			log.Fatal(err)
 		}
-		return http.FS(fsys)
-	}())
+		return fsys
+	}()
+	staticHandler := http.FileServer(http.FS(staticRoot))
 
 	// enable some special endpoints for the "canonical" deployment (bsky.app). not having these enabled should *not* impact regular operation
 	if canonicalInstance {
@@ -274,11 +290,7 @@ func serve(cctx *cli.Context) error {
 	}
 
 	// default to permissive, but Disallow all if flag set
-	if robotsDisallowAll {
-		e.File("/robots.txt", "static/robots-disallow-all.txt")
-	} else {
-		e.GET("/robots.txt", echo.WrapHandler(staticHandler))
-	}
+	e.GET("/robots.txt", robotsHandler(staticRoot, robotsDisallowAll))
 
 	e.GET("/iframe/*", echo.WrapHandler(staticHandler))
 	e.GET("/static/*", echo.WrapHandler(http.StripPrefix("/static/", staticHandler)), func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -313,6 +325,7 @@ func serve(cctx *cli.Context) error {
 	e.GET("/topic/:topic", server.WebGeneric)
 	e.GET("/search", server.WebGenericNoindex)
 	e.GET("/feeds", server.WebGenericNoindex)
+	e.GET("/atmosphere", server.WebGenericNoindex)
 	e.GET("/notifications", server.WebGenericNoindex)
 	e.GET("/notifications/settings", server.WebGenericNoindex)
 	e.GET("/notifications/activity", server.WebGenericNoindex)
@@ -490,11 +503,10 @@ func (srv *Server) Shutdown() error {
 // NewTemplateContext returns a new pongo2 context with some default values.
 func (srv *Server) NewTemplateContext() pongo2.Context {
 	return pongo2.Context{
-		"staticCDNHost":        srv.cfg.staticCDNHost,
-		"featureGateBootstrap": srv.featureGates.snapshot(),
-		"favicon":              fmt.Sprintf("%s/static/favicon.png", srv.cfg.staticCDNHost),
-		"noindex":              false,
-		"nofollow":             false,
+		"staticCDNHost": srv.cfg.staticCDNHost,
+		"favicon":       fmt.Sprintf("%s/static/favicon.png", srv.cfg.staticCDNHost),
+		"noindex":       false,
+		"nofollow":      false,
 	}
 }
 
@@ -506,7 +518,13 @@ func (srv *Server) errorHandler(err error, c echo.Context) {
 	c.Logger().Error(err)
 	data := srv.NewTemplateContext()
 	data["statusCode"] = code
-	c.Render(code, "error.html", data)
+	if err := c.Render(code, "error.html", data); err != nil {
+		// error.html extends base.html, so it fails too when the app's fragments
+		// can't be loaded. Without a response, net/http would send an empty 200,
+		// which the probes on / would take as healthy.
+		c.Logger().Error(err)
+		c.String(code, http.StatusText(code))
+	}
 }
 
 // Handler for redirecting to the download page.
@@ -774,8 +792,8 @@ func (srv *Server) WebStarterPack(c echo.Context) error {
 		return c.Render(http.StatusOK, "starterpack.html", data)
 	}
 	data["title"] = rec.Name
-	data["starterPackURI"] = spv.StarterPack.Uri;
-	
+	data["starterPackURI"] = spv.StarterPack.Uri
+
 	if srv.cfg.ogcardHost != "" {
 		data["imgThumbUrl"] = fmt.Sprintf("%s/start/%s/%s", srv.cfg.ogcardHost, identifier, rkey)
 	}
@@ -820,6 +838,37 @@ func (srv *Server) WebChatInvite(c echo.Context) error {
 	return c.Render(http.StatusOK, "chatinvite.html", data)
 }
 
+func bskyProfileCanonicalURL(handle, tab string) string {
+	canonicalURL := bskyProfileURL(handle)
+	if canonicalURL == "" {
+		return ""
+	}
+
+	switch tab {
+	case "replies", "media", "videos", "feeds", "starter-packs", "lists":
+		query := url.Values{}
+		query.Set("tab", tab)
+		return canonicalURL + "?" + query.Encode()
+	default:
+		return canonicalURL
+	}
+}
+
+func profileAuthorFeedFilter(tab string) (string, bool) {
+	switch tab {
+	case "replies":
+		return "posts_with_replies", true
+	case "media":
+		return "posts_with_media", true
+	case "videos":
+		return "posts_with_video", true
+	case "feeds", "starter-packs", "lists":
+		return "", false
+	default:
+		return "posts_no_replies", true
+	}
+}
+
 func (srv *Server) WebProfile(c echo.Context) error {
 	ctx := c.Request().Context()
 	data := srv.NewTemplateContext()
@@ -844,11 +893,11 @@ func (srv *Server) WebProfile(c echo.Context) error {
 	data["requestURI"] = fmt.Sprintf("https://%s%s", req.Host, req.URL.Path)
 	data["requestHost"] = req.Host
 
-	// Prefer the handle-form URL so JSON-LD `url` and
-	// <link rel="canonical"> match. Template falls back to requestURI
-	// when the handle is unusable.
-	if url := bskyProfileURL(pv.Handle); url != "" {
-		data["canonicalURL"] = url
+	tab := c.QueryParam("tab")
+	// Keep non-default profile tabs distinct for crawlers. `posts`, blank, and
+	// unknown values all render the default Posts tab and share its canonical.
+	if canonicalURL := bskyProfileCanonicalURL(pv.Handle, tab); canonicalURL != "" {
+		data["canonicalURL"] = canonicalURL
 	}
 
 	// Fetch recent posts for ProfilePage.hasPart. Skipped for auth-required
@@ -859,21 +908,23 @@ func (srv *Server) WebProfile(c echo.Context) error {
 	// caching per-profile if upstream load becomes a concern.
 	var recentPosts []*appbsky.FeedDefs_PostView
 	if unauthedViewingOkay {
-		af, err := appbsky.FeedGetAuthorFeed(ctx, srv.xrpcc, pv.Did, "", "posts_no_replies", false, authorFeedFetchLimit)
-		if err != nil {
-			log.Warnf("failed to fetch author feed for: %s\t%v", pv.Did, err)
-		} else {
-			for _, p := range af.Feed {
-				if p == nil || p.Post == nil {
-					continue
-				}
-				// Only the author's own posts (matches RSS handler).
-				if p.Post.Author == nil || p.Post.Author.Did != pv.Did {
-					continue
-				}
-				recentPosts = append(recentPosts, p.Post)
-				if len(recentPosts) >= maxRecentPosts {
-					break
+		if feedFilter, includeFeed := profileAuthorFeedFilter(tab); includeFeed {
+			af, err := appbsky.FeedGetAuthorFeed(ctx, srv.xrpcc, pv.Did, "", feedFilter, false, authorFeedFetchLimit)
+			if err != nil {
+				log.Warnf("failed to fetch author feed for: %s\t%v", pv.Did, err)
+			} else {
+				for _, p := range af.Feed {
+					if p == nil || p.Post == nil {
+						continue
+					}
+					// Only the author's own posts (matches RSS handler).
+					if p.Post.Author == nil || p.Post.Author.Did != pv.Did {
+						continue
+					}
+					recentPosts = append(recentPosts, p.Post)
+					if len(recentPosts) >= maxRecentPosts {
+						break
+					}
 				}
 			}
 		}
@@ -1041,4 +1092,12 @@ func (srv *Server) serveSitemapRequest(c echo.Context, url, sitemapType string) 
 	}
 
 	return nil
+}
+
+func robotsHandler(staticRoot fs.FS, disallowAll bool) echo.HandlerFunc {
+	filename := "robots.txt"
+	if disallowAll {
+		filename = "robots-disallow-all.txt"
+	}
+	return echo.StaticFileHandler(filename, staticRoot)
 }

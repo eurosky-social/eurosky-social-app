@@ -15,9 +15,8 @@ jest.mock('#/state/queries/threadgate', () => ({
   threadgateRecordToAllowUISetting: jest.fn(() => []),
 }))
 
-function createState(halloweenCostumeNumber?: number) {
+function createState() {
   return createComposerState({
-    halloweenCostumeNumber,
     initText: undefined,
     initExternalUri: undefined,
     initEditPost: undefined,
@@ -29,18 +28,6 @@ function createState(halloweenCostumeNumber?: number) {
 }
 
 describe('composerReducer', () => {
-  it('keeps costume metadata on the seeded post only, including when that post is removed', () => {
-    let state = createState(3)
-    expect(state.thread.posts[0].halloweenCostumeNumber).toBe(3)
-    state = composerReducer(state, {type: 'add_post'})
-    expect(state.thread.posts[1].halloweenCostumeNumber).toBeUndefined()
-    state = composerReducer(state, {
-      type: 'remove_post',
-      postId: state.thread.posts[0].id,
-    })
-    expect(state.thread.posts[0].halloweenCostumeNumber).toBeUndefined()
-  })
-
   describe('add_post', () => {
     it('selects the appended post and requests focus', () => {
       const state = createState()

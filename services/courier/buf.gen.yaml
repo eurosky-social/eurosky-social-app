@@ -1,0 +1,11 @@
+version: v2
+inputs:
+  - directory: proto
+plugins:
+  # js+dts rather than ts: generated enums are not erasable syntax, and the
+  # service runs on Node's type stripping without a build step.
+  - local: protoc-gen-es
+    out: src/gen
+    opt:
+      - target=js+dts
+      - import_extension=js

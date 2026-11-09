@@ -66,6 +66,17 @@ export type Device = {
   inviteFriendsFollowersPromoDismissed?: boolean
   /** Device-wide override for public and authenticated AppView requests. */
   appViewOverride: AppViewPreference | undefined
+  /**
+   * Per account DID, the AppView this device's push token was last registered
+   * with, so a switch of AppView can unregister it at the old one.
+   */
+  pushAppViews?: Record<string, string>
+  /**
+   * Whether the trending topics widget was installed the last time we checked,
+   * so `trendingWidget:installed` and `trendingWidget:uninstalled` are only
+   * logged when that changes.
+   */
+  trendingWidgetInstalled?: boolean
   pendingOTAUpdate?: {
     attemptedAt: number
     channel: string
@@ -99,18 +110,6 @@ export type Account = {
    * Recently selected GIFs in the GIF picker. Most recent first, capped at 20.
    */
   recentGifs?: Gif[]
-
-  /**
-   * Cached from preferences (`bskyAppState.isBetaUser`) so the GrowthBook
-   * `isBetaUser` attribute can be set synchronously at analytics init, before
-   * beta-gated features (e.g. SearchV2Enable) are first evaluated. Written back
-   * when preferences load.
-   *
-   * Scoped per account, since `isBetaUser` is account-specific preference data.
-   * Reading it globally would let a beta account's value leak into a non-beta
-   * account after a switch, until that account's preferences loaded.
-   */
-  isBetaUser?: boolean
 
   /** The latest resumable private-data transfer between AppViews. */
   appViewTransfer?: AppViewTransferCheckpoint

@@ -155,7 +155,13 @@ function WizardInner({
   fromDialog?: boolean
   onSuccess?: () => void
 }) {
-  const navigation = useNavigation<NavigationProp>()
+  const navigation =
+    useNavigation<
+      NavigationProp<
+        CommonNavigatorParams,
+        'StarterPackEdit' | 'StarterPackWizard'
+      >
+    >()
   const ax = useAnalytics()
   const {t: l} = useLingui()
   const [state, dispatch] = useWizardState()

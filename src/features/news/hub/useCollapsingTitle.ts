@@ -51,6 +51,13 @@ export function useCollapsingTitle() {
     if (!IS_WEB) return
     const onWindowScroll = () => update(window.scrollY)
     window.addEventListener('scroll', onWindowScroll, {passive: true})
+    /*
+     * A page opened from a scrolled one - the hub's tabs, a "See all" - can
+     * hide its title on the old page's scroll and then land at the top with
+     * no scroll event to bring it back. Checking where the window is now
+     * catches that.
+     */
+    onWindowScroll()
     return () => window.removeEventListener('scroll', onWindowScroll)
   })
 

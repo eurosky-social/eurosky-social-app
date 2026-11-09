@@ -40,8 +40,6 @@ import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
 import {IS_IOS, IS_NATIVE} from '#/env'
 import {useProfileFrontpagePath} from '#/features/frontpages/useProfileFrontpagePath'
-import {CostumeButton} from '#/features/halloween/costumes/Editor'
-import {GiveCandyButton} from '#/features/halloween/GiveCandyButton'
 import {InviteFriendsDialog} from '#/features/inviteFriends'
 import {useActorStatus} from '#/features/liveNow'
 import {ProfileHeaderLinks} from '#/features/profileLinks'
@@ -130,11 +128,6 @@ let ProfileHeaderStandard = ({
               a.flex_wrap,
             ]}
             pointerEvents={IS_IOS ? 'auto' : 'box-none'}>
-            {!isPlaceholderProfile &&
-              !isBlockedUser &&
-              !moderation.ui('profileView').blur && (
-                <GiveCandyButton did={profile.did} />
-              )}
             <HeaderStandardButtons
               profile={profile}
               moderation={moderation}
@@ -261,7 +254,7 @@ export function HeaderStandardButtons({
 
   const isMe = currentAccount?.did === profile.did
 
-  const frontpagePath = useProfileFrontpagePath(profile.did)
+  const frontpagePath = useProfileFrontpagePath(profile)
 
   const onPressFollow = () => {
     haptics.confirm()
@@ -383,7 +376,6 @@ export function HeaderStandardButtons({
               <Trans>Edit Profile</Trans>
             </ButtonText>
           </Button>
-          <CostumeButton profile={profile} />
           {/* Invite friends is a native-only share sheet (the dialog is a
               no-op on web), so gate the entry point to avoid a dead button. */}
           {IS_NATIVE && (

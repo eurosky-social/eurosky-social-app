@@ -30,7 +30,7 @@ import {getPublicAppviewClient} from './clients'
 
 // did:plc documents are fetched from the PLC directory (CORS-friendly). The
 // fork has no custom-PLC-directory preference, so this is the canonical one.
-const PLC_DIRECTORY_URL = 'https://plc.directory'
+export const PLC_DIRECTORY_URL = 'https://plc.directory'
 // DNS-over-HTTPS endpoint for client-side `_atproto.<handle>` TXT lookups
 // (browsers can't do raw DNS). Cloudflare's resolver supports CORS.
 const DOH_ENDPOINT = 'https://cloudflare-dns.com/dns-query'

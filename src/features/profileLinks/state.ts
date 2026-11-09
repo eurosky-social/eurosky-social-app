@@ -32,11 +32,6 @@ import {
 import {type OwnProfileLinks, type ProfileLink} from './types'
 import {createProfileLinkWriteState, writeProfileLinks} from './write'
 
-/** Links replace the fork's Website UI, so they must be available to everyone. */
-export function useProfileLinksEnabled() {
-  return true
-}
-
 /**
  * Someone's links from their profile view, minus any that labels hide for
  * this viewer. Empty until moderation settings load, so a hidden link never
@@ -61,9 +56,8 @@ export function useProfileViewLinks(
  * accounts, like those in Safe mode, still see links but can't add them.
  */
 export function useCanEditProfileLinks() {
-  const enabled = useProfileLinksEnabled()
   const aa = useAgeAssurance()
-  return enabled && !aa.flags.isAgeRestricted
+  return !aa.flags.isAgeRestricted
 }
 
 type StrongRef = {uri: l.AtUriString; cid: l.CidString}
@@ -205,7 +199,14 @@ export function usePrepareProfileLinksSave() {
       snapshot.links.filter(link => link.uri),
     )
     const refs = mergeSavedLinkRefs(snapshot, written.refs) as StrongRef[]
+    const saved = plan.links.map((link, i) => ({
+      ...link,
+      uri: written.refs[i].uri,
+      cid: written.refs[i].cid,
+    }))
     return {
+      /** The links as saved, with their record URIs. */
+      savedLinks: saved,
       updates: (record: Un$Typed<app.bsky.actor.profile.Main>) => {
         assertUnchanged(record)
         return {
@@ -218,11 +219,6 @@ export function usePrepareProfileLinksSave() {
       checkCommitted: () => true,
       onSuccess: async () => {
         written.clearDraftKeys()
-        const saved = plan.links.map((link, i) => ({
-          ...link,
-          uri: written.refs[i].uri,
-          cid: written.refs[i].cid,
-        }))
         const urls = [
           ...saved.map(link => link.url),
           ...snapshot.urls.filter(

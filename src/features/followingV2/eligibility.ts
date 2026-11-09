@@ -52,9 +52,8 @@ export function isFollowingV2HomeForkEnabled(
 }
 
 /**
- * Whether `following_v2:enable` is on. It's always on in e2e builds, where
- * GrowthBook can't target the test accounts, so the e2e suite runs Following
- * v2. The e2e check runs first, so e2e never logs an exposure for the flag.
+ * Whether `following_v2:enable` is on in the local feature policy. E2e builds
+ * always enable it so the suite exercises Following v2.
  */
 function isFollowingV2Enabled(ax: Pick<AnalyticsContextType, 'features'>) {
   return IS_E2E || ax.features.enabled(ax.features.FollowingV2Enable)

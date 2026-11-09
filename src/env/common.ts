@@ -132,18 +132,6 @@ export const METRICS_API_HOST: string =
   process.env.EXPO_PUBLIC_METRICS_API_HOST || 'https://events.bsky.app'
 
 /**
- * Growthbook API host
- */
-export const GROWTHBOOK_API_HOST: string =
-  process.env.EXPO_PUBLIC_GROWTHBOOK_API_HOST || `${METRICS_API_HOST}/gb`
-
-/**
- * Growthbook client key
- */
-export const GROWTHBOOK_CLIENT_KEY: string =
-  process.env.EXPO_PUBLIC_GROWTHBOOK_CLIENT_KEY || 'sdk-7gkUkGy9wguUjyFe'
-
-/**
  * Plausible Analytics site domain, as configured in Plausible's settings. When
  * unset, the Plausible analytics sink is disabled entirely. Plausible is a
  * secondary, privacy-first sink that receives an allowlisted subset of events;
@@ -246,9 +234,8 @@ export const ENABLE_APP_CONFIG =
 /**
  * Gates the web product-analytics metrics client (the `ax.metric()` pipeline
  * that POSTs to `${METRICS_API_HOST}/t`). Native product analytics are always
- * disabled, regardless of this value. Disabling this client also stops its
- * GrowthBook `experiment:viewed`/`feature:viewed` exposures. GrowthBook flag
- * fetching, Plausible, and feed feedback are independent and unaffected.
+ * disabled, regardless of this value. Plausible and feed feedback are
+ * independent and unaffected.
  */
 export const ENABLE_METRICS = process.env.EXPO_PUBLIC_ENABLE_METRICS !== 'false'
 

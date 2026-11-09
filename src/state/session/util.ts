@@ -46,6 +46,7 @@ export async function createTemporaryClientsAndResume(
       )
       return {
         client: createLexClient(session),
+        did: account.did,
         service: session.session.service,
         handle: session.session.handle,
       } satisfies TemporaryPushClient

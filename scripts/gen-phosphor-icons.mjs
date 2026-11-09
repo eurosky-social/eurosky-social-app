@@ -71,7 +71,17 @@ function importAppIcon(entry) {
   const rotation = name.startsWith('AspectRatio34_')
     ? ' rotate(90 128 128)'
     : ''
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" fill="currentColor" fill-rule="evenodd"><g transform="scale(${size / 256})${rotation}">${paths}</g></svg>`
+  /*
+   * Phosphor's verification marks have transparent ticks. Back only their
+   * centers with white so the ticks stay legible on dark surfaces, without
+   * changing the original silhouettes. Use a path so SVGO bakes the viewBox
+   * scale into its geometry before codegen. Both paint layers are preserved
+   * in the SVG components and native font glyphs.
+   */
+  const checkmarkBacking = ['VerifiedCheck', 'VerifierCheck'].includes(name)
+    ? '<path fill="#fff" d="M64 128a64 64 0 1 0 128 0 64 64 0 1 0-128 0Z"/>'
+    : ''
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" fill="currentColor" fill-rule="evenodd"><g transform="scale(${size / 256})${rotation}">${checkmarkBacking}${paths}</g></svg>`
   const relativePath = `assets/icons/${lane}/${name}.svg`
   importedSources.add(relativePath)
   // Stabilize optimization before comparison with the SVG codegen's own pass.

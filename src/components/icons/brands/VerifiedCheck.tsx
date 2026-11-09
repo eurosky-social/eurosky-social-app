@@ -5,6 +5,13 @@ import {createSVG} from '../TEMPLATE'
 export const VerifiedCheck = createSVG({
   elements: [
     {
+      fill: '#fff',
+      stroke: 'none',
+      type: 'path',
+      d: 'M6 12a6 6 0 1 0 12 0 6 6 0 1 0-12 0Z',
+      fillRule: 'evenodd',
+    },
+    {
       fill: 'currentColor',
       stroke: 'none',
       type: 'path',

@@ -12,7 +12,6 @@ export {
   useCanEditProfileLinks,
   useOwnProfileLinksQuery,
   usePrepareProfileLinksSave,
-  useProfileLinksEnabled,
   useProfileViewLinks,
 } from './state'
 export {type OwnProfileLinks, type ProfileLink} from './types'

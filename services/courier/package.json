@@ -1,0 +1,30 @@
+{
+  "name": "courier",
+  "private": true,
+  "description": "Push delivery for mu: stores device tokens and sends AppView notifications to APNs and FCM",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "start": "node src/bin.ts",
+    "test": "node --test 'src/**/*.test.ts'",
+    "typecheck": "tsc --noEmit",
+    "gen": "buf generate"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.16.0",
+    "@connectrpc/connect": "^2.3.0",
+    "@connectrpc/connect-node": "^2.3.0",
+    "@prometheus-io/client": "^0.16.1",
+    "pg": "^8.23.1",
+    "pino": "^10.4.0"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "^1.75.0",
+    "@bufbuild/protoc-gen-es": "^2.16.0",
+    "@types/node": "^22.20.5",
+    "@types/pg": "^8.23.1",
+    "typescript": "^6.0.3"
+  }
+}

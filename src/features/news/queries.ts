@@ -5,13 +5,11 @@ import {useQueries, useQuery} from '@tanstack/react-query'
 import {GCTIME, STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
 import {useAppviewClient} from '#/state/session'
-import {
-  useFrontpageProfiles,
-  useFrontpages,
-} from '#/features/frontpages/frontpages'
+import {useFrontpageProfiles} from '#/features/frontpages/frontpages'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
-import {getPublisherRssUrls, type Publisher, PUBLISHERS} from './publishers'
+import {type ExploreArticle} from './explore/cluster'
+import {getPublisherRssUrls, type Publisher} from './publishers'
 import {buildRssFetchUrl} from './rss/config'
 import {extractOgImage, extractSiteIcon, parseRssFeed} from './rss/parse'
 import {type RssItem} from './rss/types'
@@ -116,14 +114,16 @@ function rssArticlesQueryOptions({
 }
 
 /**
- * The live profiles of the outlets with an account, keyed by DID, for the
- * avatars on story cards. Without the news aggregator there are no frontpages,
- * and the RSS spread's publishers stand in.
+ * The live profiles of the outlets behind the articles a page shows, keyed by
+ * DID, for the avatars beside them. Each article carries its outlet's account,
+ * so this asks for those profiles alone rather than reading every outlet first
+ * to find them.
  */
-export function useFrontpageProfilesQuery() {
-  const {frontpages} = useFrontpages()
+export function useArticleOutletProfilesQuery(
+  articles: Pick<ExploreArticle, 'publisher'>[],
+) {
   return useFrontpageProfiles(
-    frontpages ?? PUBLISHERS.map(publisher => ({did: publisher.did})),
+    articles.map(article => ({did: article.publisher.did})),
   )
 }
 

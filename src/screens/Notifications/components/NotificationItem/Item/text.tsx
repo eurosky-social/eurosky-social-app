@@ -122,11 +122,7 @@ export function Name({profile}: {profile: bsky.profile.AnyProfileView}) {
           web({direction: 'ltr', unicodeBidi: 'isolate'}),
         ]}>
         {forceLTR(name)}
-        <ProfileBadges
-          profile={profile}
-          size="sm"
-          style={[a.px_2xs, {transform: [{translateY: 1}]}]}
-        />
+        <ProfileBadges profile={profile} size="sm" inline />
       </InlineLinkText>
     </ProfileHoverCard>
   )
@@ -145,12 +141,7 @@ export function Timestamp({date}: {date: string}) {
       {({timeElapsed}) => (
         <Text
           title={niceDate(i18n, date)}
-          style={[
-            a.self_start,
-            a.text_sm,
-            t.atoms.text_contrast_low,
-            {color: t.palette.contrast_300},
-          ]}>
+          style={[a.self_start, a.text_sm, t.atoms.text_contrast_medium]}>
           {timeElapsed}
         </Text>
       )}

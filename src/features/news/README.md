@@ -7,6 +7,9 @@ feed it grew out of is `../newsFeed/` (`/news`).
 - `explore/` - the news page: stories clustered across outlets, by section
 - `article/` - an article page, with every outlet's coverage of its story
 - `dutch/` - the news aggregator's API (see its README)
+- `outlets/` - featured outlets: the news page's band and the Outlets tab
+  (see its README)
+- `hub/` - what the hub's pages share: the News/Outlets tabs, the title collapse
 - `rss/` - the RSS/Atom adapter, the source without the aggregator
 - `publishers.ts` - the publisher registry: brand extras and fallback feeds
 - `queries.ts` - RSS articles, article discussion, OG images, site icons

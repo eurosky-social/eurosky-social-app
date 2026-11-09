@@ -73,16 +73,16 @@ const APP_BRAND_MSGIDS = new Set<string>([
   'TFSknO', // Bluesky is more fun with friends. Do you want to invite some of yours?
   'hOIn4s', // I'm on Bluesky as 0 - come find me! https://bsky.app/download
   '8Dlt5o', // You must be at least 13 years old to use Bluesky. Read our Terms of Service...
-  '0SmFVL', // Tap below to allow Bluesky to access your GPS location...
+  'RVBmhM', // Tap below to allow Bluesky to access your approximate location via GPS...
   'zUCFyf', // Unable to access location... enable location services for Bluesky
   'UGGtmB', // ...continue enjoying all the features of Bluesky.
   'E8ogPW', // Your email has not yet been verified... all the features of Bluesky.
   'QfDITI', // Leaving Bluesky
+  'OlMjmi', // Bluesky is part of a growing network of hundreds of social apps...
+  'HmbHpp', // The Atmosphere is the open network Bluesky is built on...
   'SEDOhX', // Opens 0 outside Bluesky (profile links)
   'WqbUOH', // A screenshot of the post composer... "Bluesky has drafts now!!!"
   'dKRV7a', // Post it to Bluesky or share anywhere. (group chats announcement)
-  '6oSz7c', // Bluesky now makes full use of your iPad's screen... (iPad announcement)
-  'SdoOAM', // Bluesky adapts to your iPad's screen... (beta feature settings)
   'pYv2lK', // ...let them scan the code to join you on Bluesky. (invite friends announcement)
   'BZUP5P', // Bluesky needs camera access to scan QR codes from other profiles. (invite scanner)
   'CFvtZB', // Please use the Bluesky mobile app to scan a QR code. (invite scanner, web)
