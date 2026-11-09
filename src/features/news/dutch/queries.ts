@@ -2,6 +2,7 @@ import {type Client} from '@atproto/lex'
 import {useLingui} from '@lingui/react/macro'
 import {
   type QueryClient,
+  useInfiniteQuery,
   useQueries,
   useQuery,
   useQueryClient,
@@ -22,6 +23,7 @@ import {
   IS_DUTCH_API_CONFIGURED,
 } from './config'
 import {
+  type DutchArticleSearchResponse,
   type DutchCategoriesResponse,
   type DutchCategory,
   type DutchOutletArticlesResponse,
@@ -35,6 +37,7 @@ import {
   type DutchThreadResponse,
   type DutchThreadSort,
   type DutchThreadsResponse,
+  type DutchTopicsResponse,
 } from './types'
 import {
   decodeDutchThreadView,
@@ -275,6 +278,83 @@ function localizeThemes(themes: DutchTheme[], locale: string): DutchTheme[] {
   return themes.map(theme =>
     theme.nameNl ? {...theme, name: theme.nameNl} : theme,
   )
+}
+
+/**
+ * The vocabulary of topics, named in the reader's language where the service
+ * has it, in name order. Curated like the themes, so as rarely asked for.
+ */
+export function useDutchTopicsQuery({
+  enabled = true,
+}: {enabled?: boolean} = {}) {
+  const {i18n} = useLingui()
+  const pdsClient = useMaybePdsClient()
+  const query = useQuery({
+    queryKey: createQueryKey('dutchTopics', {scope: DUTCH_WORLD_SCOPE}),
+    staleTime: STALE.HOURS.ONE,
+    enabled: enabled && IS_DUTCH_API_CONFIGURED && !!pdsClient,
+    async queryFn() {
+      const data = await fetchDutchApi<DutchTopicsResponse>(
+        pdsClient!,
+        buildDutchApiUrl('/api/topics', {scope: DUTCH_WORLD_SCOPE}),
+      )
+      return data.topics
+    },
+  })
+  const dutch = i18n.locale === 'nl' || i18n.locale.startsWith('nl-')
+  return {
+    topics: (query.data ?? [])
+      .filter(topic => topic.enabled)
+      .map(topic => ({
+        ...topic,
+        name: dutch && topic.nameNl ? topic.nameNl : topic.name,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, i18n.locale)),
+    isLoading: query.isLoading,
+    isError: query.isError,
+  }
+}
+
+const ARTICLE_SEARCH_PAGE = 20
+
+/**
+ * Every outlet's articles, latest first, for an editor to pick from: by text
+ * or address, topic and days. Unset fields leave that filter open.
+ */
+export function useDutchArticleSearchQuery({
+  q,
+  topic,
+  since,
+  until,
+  enabled = true,
+}: {
+  q?: string
+  topic?: string
+  since?: string
+  until?: string
+  enabled?: boolean
+}) {
+  const pdsClient = useMaybePdsClient()
+  return useInfiniteQuery({
+    queryKey: createQueryKey('dutchArticleSearch', {q, topic, since, until}),
+    staleTime: STALE.MINUTES.FIVE,
+    enabled: enabled && IS_DUTCH_API_CONFIGURED && !!pdsClient,
+    initialPageParam: 0,
+    getNextPageParam: (last: DutchArticleSearchResponse) =>
+      last.hasMore ? last.offset + ARTICLE_SEARCH_PAGE : undefined,
+    queryFn: ({pageParam}) =>
+      fetchDutchApi<DutchArticleSearchResponse>(
+        pdsClient!,
+        buildDutchApiUrl('/api/articles/search', {
+          q,
+          topic,
+          since,
+          until,
+          limit: ARTICLE_SEARCH_PAGE,
+          offset: pageParam,
+        }),
+      ),
+  })
 }
 
 /**
