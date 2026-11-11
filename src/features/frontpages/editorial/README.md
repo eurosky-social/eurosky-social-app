@@ -14,7 +14,7 @@ Small screens stack the spread. Ordinary account profiles remain unchanged.
 `../PublicationScreen.tsx` supplies the account and publication name. With news
 v2 disabled, the original newsroom layout is served instead. The name
 and avatar open the normal profile. Follow appears on the right for other
-accounts. **Edit front page** is temporarily shown for everyone. The masthead has no extra
+accounts. **Edit front page** is shown to the owner (see Editing). The masthead has no extra
 News/Conversation/Profile/refresh/menu action strip. The publication/reporters'
 conversation and contextual rail remain accessible at `?view=conversation`.
 The full bio, follower counts and normal profile actions remain on the profile.
@@ -48,9 +48,11 @@ remain in use. Blocked accounts do not fetch stories.
 
 ## Editing
 
-Everyone can currently open **Edit front page** to try the layout locally. Only
-the signed-in publication owner sees **Publish changes**; other viewers have a
-single **Discard** action, and their previews cannot write a layout. Switching
+Only the signed-in publication owner sees **Edit front page**. Demo builds
+with `EXPO_PUBLIC_ENABLE_FRONTPAGE_DEMO_EDIT=true` (`../config.ts`) show it to
+everyone so they can try the layout locally; there, only the owner sees
+**Publish changes**, other viewers have a single **Discard** action, and their
+previews cannot write a layout. Switching
 accounts discards the draft. In edit mode:
 
 - Desktop editing controls appear on article hover or keyboard focus. Insertion

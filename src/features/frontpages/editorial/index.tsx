@@ -24,6 +24,7 @@ import * as ProfileCard from '#/components/ProfileCard'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {VerificationCheckButton} from '#/components/verification/VerificationCheckButton'
+import {FRONTPAGE_DEMO_EDIT} from '#/features/frontpages/config'
 import {
   ExploreColumn,
   ExploreSpreadBorders,
@@ -125,6 +126,8 @@ export function EditorialFrontpage({
   )
   const {currentAccount} = useSession()
   const isOwner = currentAccount?.did === profile.did
+  /** Others may open a local, unpublishable draft only in demo builds. */
+  const canEdit = isOwner || FRONTPAGE_DEMO_EDIT
   const [draft, setDraft] = useState<{
     source: CurationSnapshot
     curation: Curation
@@ -543,7 +546,7 @@ export function EditorialFrontpage({
             </View>
             {(!editing || !isOwner) && (
               <View style={[a.flex_row, a.align_center, a.gap_sm, a.ml_auto]}>
-                {!editing && (
+                {!editing && canEdit && (
                   <Button
                     testID="editFrontpage"
                     label={l`Edit front page`}

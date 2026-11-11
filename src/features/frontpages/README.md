@@ -27,7 +27,7 @@ remain separate, unchanged surfaces.
   without creating a synthetic aggregator outlet or replacing its profile.
 
 `useProfileFrontpagePath.ts` gives every profile a **Frontpage** shortcut
-with news v2 (temporarily, like editing): an outlet's opens its slug, looked up
+with news v2 (temporarily): an outlet's opens its slug, looked up
 by DID through `/api/outlets/{did}`, and any other account's opens its handle.
 Without news v2 it stays limited to the original publisher registry. News v2's domain-matched post chips and outlet directory still link
 into these routes. Handles resolve to the canonical publication slug/ID.
@@ -38,9 +38,11 @@ With news v2 enabled, `PublicationScreen.tsx` loads the live account and renders
 [`editorial/`](editorial/README.md) for account-backed publications:
 
 - A compact masthead with profile-linked avatar/name and verification badge.
-  Follow is on the right for other accounts. **Edit front page** is temporarily
-  available to everyone: only the publication owner can publish; other viewers
-  get a local preview with **Discard**. There is no extra header action strip.
+  Follow is on the right for other accounts. **Edit front page** is shown only
+  to the publication owner. Demo builds with
+  `EXPO_PUBLIC_ENABLE_FRONTPAGE_DEMO_EDIT=true` (`config.ts`) show it to
+  everyone: other viewers get a local preview with **Discard** and cannot
+  publish. There is no extra header action strip.
 - Own original posts presented as a wide newspaper spread, with real article
   metadata, native post media, rich text and social engagement.
 - Owner-published ordering, sizes, hidden posts, feeds and starter packs in
@@ -71,6 +73,7 @@ scrolling on web. Normal profiles retain their normal shell/right rail.
 - `legacy/NewsroomScreen.tsx` - original registry resolution and switcher.
 - `PublicationScreen.tsx` - news v2 detail, status and conversation shells.
 - `editorial/` - publication layout, rendering, editing, records and tests.
+- `config.ts` - the demo editing build flag.
 - `frontpages.ts` - aggregator mapping, paths, domain lookups and reporters.
 - `components/` - accountless articles/masthead, post link chips and news v2 rail.
 - `directory/` - outlet directory (`/outlets`, `/newsrooms`).
