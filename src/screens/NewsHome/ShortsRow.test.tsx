@@ -29,6 +29,12 @@ jest.mock('#/components/Typography', () => ({
 jest.mock('#/components/Link', () => ({
   Link: (require('react-native') as typeof import('react-native')).View,
 }))
+jest.mock('#/components/ProfileCard', () => ({
+  Avatar: (props: {size: number}) => {
+    const {View} = require('react-native') as typeof import('react-native')
+    return <View testID="homeShortAvatar" {...props} />
+  },
+}))
 jest.mock('#/components/moderation/ContentHider', () => ({
   ContentHider: ({children}: React.PropsWithChildren<{}>) => children,
 }))
@@ -145,4 +151,24 @@ it('does not insert an empty or unmoderated section', () => {
   mockOpts = undefined
   rerender(<HomeShortsRow />)
   expect(screen.toJSON()).toBeNull()
+})
+it('sets captions in three lines of 15px Semibold with the publisher logo', () => {
+  mockSlices = [slice('one')]
+  render(<HomeShortsRow />)
+  const caption = screen.getByTestId('homeShortCaption')
+  expect(caption.props.numberOfLines).toBe(3)
+  expect(caption.props.style).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({fontSize: 15, lineHeight: 19}),
+    ]),
+  )
+  expect(screen.getByTestId('homeShortAvatar').props.size).toBe(16)
+  expect(screen.getByTestId('homeShortsHeading')).toHaveTextContent('Shorts')
+})
+
+it('can leave its heading to the page', () => {
+  mockSlices = [slice('one')]
+  render(<HomeShortsRow heading={false} />)
+  expect(screen.queryByTestId('homeShortsHeading')).toBeNull()
+  expect(screen.getAllByTestId('homeShortCard')).toHaveLength(1)
 })

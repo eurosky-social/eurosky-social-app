@@ -1,3 +1,4 @@
+import {useEffect} from 'react'
 import {View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
@@ -9,28 +10,30 @@ import {Button, ButtonText} from '#/components/Button'
 import * as Layout from '#/components/Layout'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
-import {ArticleList} from '#/features/articles/ArticleList'
-import {type PostArticle} from '#/features/articles/articles'
 import {articleModeration} from '#/features/articles/moderation'
-import {usePageGeometry} from '#/features/product/layout/usePageGeometry'
+import {FrontPageSkeleton} from '#/features/newsCards/FrontPage'
+import {SectionedFrontPage} from '#/features/newsCards/FrontPage/SectionedFrontPage'
+import {SECTION_WINDOW} from '#/features/newsCards/sections'
 import {articlesFromPublisherFeed} from '#/features/publishers/articles'
-import {PublisherByline} from '#/features/publishers/Byline'
 import {publisherFeedDescriptor} from '#/features/publishers/feedDescriptor'
 import {HomeShortsRow} from './ShortsRow'
 
-const SHORTS_AFTER_ARTICLES = 4
+/** Pages fetched up front at most, even if they hold few article posts. */
+const MAX_PREFETCH_PAGES = 3
 
 /** Same public reader surface with or without a session; existing sign-in controls stay in the shell. */
 export function NewsStories({
   publisherDids,
   header,
+  mode = publisherDids ? 'following' : 'discover',
 }: {
   publisherDids?: readonly string[]
   header?: React.ReactNode
+  /** Discover (recommendations), Following, or the all-news Latest page. */
+  mode?: 'discover' | 'following' | 'latest'
 }) {
   const {t: l} = useLingui()
   const opts = useModerationOpts()
-  const {wide} = usePageGeometry()
   const feed = usePostFeedQuery(
     publisherFeedDescriptor('articles', publisherDids),
   )
@@ -38,39 +41,44 @@ export function NewsStories({
   const articles = articlesFromPublisherFeed(
     feed.data?.pages.flatMap(page => page.slices) ?? [],
   ).filter(article => !articleModeration(article, opts).filter)
-  const renderByline = (article: PostArticle) => (
-    <PublisherByline profile={article.item.post.author} />
-  )
+  /*
+   * Discover builds its sections from the first 60 stories, so ask for the
+   * second page straight away instead of waiting for the reader to scroll.
+   */
+  const wantsWindow =
+    mode === 'discover' &&
+    !feed.isPending &&
+    !feed.isError &&
+    !feed.isFetchNextPageError &&
+    articles.length < SECTION_WINDOW &&
+    (feed.data?.pages.length ?? 0) < MAX_PREFETCH_PAGES &&
+    !!feed.hasNextPage &&
+    !feed.isFetchingNextPage
+  const {fetchNextPage} = feed
+  useEffect(() => {
+    if (wantsWindow) void fetchNextPage()
+  }, [wantsWindow, fetchNextPage])
   return (
     <Layout.Content
       webPageScroll
       {...scroll}
       contentContainerStyle={[a.pb_4xl]}>
       {header}
-      <View style={[a.px_lg]}>
+      {/* No side padding: the grid runs edge to edge inside the page column. */}
+      <View>
         {feed.isPending ? (
-          <Status>
-            <Loader size="lg" />
-          </Status>
+          <FrontPageSkeleton />
         ) : (
-          <>
-            <ArticleList
-              articles={articles.slice(0, SHORTS_AFTER_ARTICLES)}
-              wide={wide}
-              density="compact"
-              renderByline={renderByline}
-            />
-            {articles.length >= SHORTS_AFTER_ARTICLES && (
-              <HomeShortsRow publisherDids={publisherDids} />
-            )}
-            <ArticleList
-              articles={articles.slice(SHORTS_AFTER_ARTICLES)}
-              offset={SHORTS_AFTER_ARTICLES}
-              wide={wide}
-              density="compact"
-              renderByline={renderByline}
-            />
-          </>
+          <SectionedFrontPage
+            articles={articles}
+            mode={mode}
+            shorts={
+              mode === 'discover' ? (
+                <HomeShortsRow heading={false} />
+              ) : undefined
+            }
+            complete={feed.hasNextPage === false}
+          />
         )}
         {feed.isError ? (
           <Status>

@@ -27,11 +27,13 @@ export function useThemeName(): ThemeName {
   return getThemeName(colorScheme, colorMode, darkTheme)
 }
 
-function getThemeName(
+export function getThemeName(
   colorScheme: ColorSchemeName | null | undefined,
-  colorMode: 'system' | 'light' | 'dark',
+  storedColorMode: 'system' | 'light' | 'dark',
   darkTheme?: ThemeName,
 ) {
+  /* News has no appearance switch yet, so it always follows the device. */
+  const colorMode = PRODUCT.id === 'news' ? 'system' : storedColorMode
   if (
     (colorMode === 'system' && colorScheme === 'light') ||
     colorMode === 'light'

@@ -29,6 +29,8 @@ export const router = new Router<AllNavigatableRoutes>({
   OutletDirectory: ['/outlets', '/newsrooms'],
   Frontpage: ['/frontpage/:name', '/frontpage', '/newsroom/:name', '/newsroom'],
   PublisherDirectory: ['/publishers', '/publisher'],
+  Following: '/following',
+  LatestNews: '/latest',
   Publisher: '/publisher/:publisher',
   Shorts: '/shorts',
   // moderation

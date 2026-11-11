@@ -32,3 +32,15 @@ it.each(['', 'NEWS', 'unknown', 'toString', '__proto__'])(
     expect(() => getProduct(selection)).toThrow('Unknown EXPO_PUBLIC_PRODUCT')
   },
 )
+
+it('rejects unknown navigation groups', () => {
+  const {validateNavigation} =
+    jest.requireActual<typeof import('./navigation')>('./navigation')
+  const base = getProduct('news').navigation
+  expect(() =>
+    validateNavigation({...base, groups: {home: 'sideways'}}),
+  ).toThrow('Invalid navigation group')
+  expect(() => validateNavigation({...base, groups: {nope: 'forYou'}})).toThrow(
+    'Invalid navigation group',
+  )
+})

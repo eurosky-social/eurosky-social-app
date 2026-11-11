@@ -9,6 +9,7 @@ import {usePostFeedQuery} from '#/state/queries/post-feed'
 import {atoms as a, useBreakpoints, web} from '#/alf'
 import {Link} from '#/components/Link'
 import {ContentHider} from '#/components/moderation/ContentHider'
+import * as ProfileCard from '#/components/ProfileCard'
 import {Text} from '#/components/Typography'
 import {type PostArticle} from '#/features/articles/articles'
 import {articleModeration} from '#/features/articles/moderation'
@@ -19,7 +20,12 @@ import {findPublisherByDid} from '#/features/publishers/publishers'
 /** Share the Shorts query, but mount only thumbnails in the article feed. */
 export function HomeShortsRow({
   publisherDids,
-}: {publisherDids?: readonly string[]} = {}) {
+  heading = true,
+}: {
+  publisherDids?: readonly string[]
+  /** Off when the page draws the section heading itself. */
+  heading?: boolean
+} = {}) {
   const {t: l} = useLingui()
   const opts = useModerationOpts()
   const feed = usePostFeedQuery(publisherFeedDescriptor('videos'))
@@ -37,17 +43,22 @@ export function HomeShortsRow({
     .slice(0, 10)
   if (!opts || !videos.length) return null
   return (
-    <View testID="homeShortsRow" style={[a.gap_md, a.py_xl]}>
-      <View style={[a.flex_row, a.align_center, a.justify_between]}>
-        <Text style={[a.text_2xl, a.font_bold]}>
-          <Trans>Shorts</Trans>
-        </Text>
-        <Link to={{screen: 'Shorts'}} label={l`See all shorts`}>
-          <Text style={[a.text_sm]}>
-            <Trans>See all</Trans>
+    <View testID="homeShortsRow" style={[a.gap_md, heading && a.py_xl]}>
+      {heading && (
+        <View style={[a.flex_row, a.align_center, a.justify_between]}>
+          <Text
+            testID="homeShortsHeading"
+            accessibilityRole="header"
+            style={[a.font_semi_bold, {fontSize: 22, lineHeight: 26}]}>
+            <Trans>Shorts</Trans>
           </Text>
-        </Link>
-      </View>
+          <Link to={{screen: 'Shorts'}} label={l`See all shorts`}>
+            <Text style={[a.text_sm, a.font_medium]}>
+              <Trans>See all</Trans>
+            </Text>
+          </Link>
+        </View>
+      )}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -77,7 +88,7 @@ function ShortCard({article}: {article: PostArticle}) {
     <View
       style={[
         a.overflow_hidden,
-        a.rounded_lg,
+        a.rounded_xs,
         {
           width: gtMobile ? 176 : 148,
           aspectRatio: 9 / 16,
@@ -117,13 +128,29 @@ function ShortCard({article}: {article: PostArticle}) {
             ]}>
             <Text
               emoji
-              numberOfLines={4}
-              style={[a.text_sm, a.font_semi_bold, {color: '#fff'}]}>
+              testID="homeShortCaption"
+              numberOfLines={3}
+              style={[
+                a.font_semi_bold,
+                {fontSize: 15, lineHeight: 19, color: '#fff'},
+              ]}>
               {article.item.record.text}
             </Text>
-            <Text emoji numberOfLines={1} style={[a.text_xs, {color: '#ddd'}]}>
-              {publisher?.name || post.author.handle}
-            </Text>
+            <View style={[a.flex_row, a.align_center, a.gap_xs]}>
+              <ProfileCard.Avatar
+                profile={post.author}
+                moderationOpts={opts}
+                size={16}
+                disabledPreview
+                disableLink
+              />
+              <Text
+                emoji
+                numberOfLines={1}
+                style={[a.text_xs, a.font_semi_bold, {color: '#EDEBE5'}]}>
+                {publisher?.name || post.author.handle}
+              </Text>
+            </View>
           </View>
         </Link>
       </ContentHider>

@@ -43,6 +43,7 @@ import {
   Message_Stroke2_Corner0_Rounded as Message,
   Message_Stroke2_Corner0_Rounded_Filled as MessageFilled,
 } from '#/components/icons/Message'
+import {Sparkle_Stroke2_Corner0_Rounded as Discover} from '#/components/icons/Sparkle'
 import {Text} from '#/components/Typography'
 import {useAgeAssurance} from '#/ageAssurance'
 import {useAnalytics} from '#/analytics'
@@ -149,9 +150,15 @@ export function BottomBarWeb() {
                 routeName="Home"
                 href="/"
                 navItem="home"
+                label={PRODUCT.id === 'news' ? _(msg`Discover`) : undefined}
                 hasNew={hasHomeBadge && isFollowingV2HomeDotEnabled(ax)}>
                 {({isActive}) => {
-                  const Icon = isActive ? HomeFilled : Home
+                  const Icon =
+                    PRODUCT.id === 'news'
+                      ? Discover
+                      : isActive
+                        ? HomeFilled
+                        : Home
                   return (
                     <Icon
                       aria-hidden={true}

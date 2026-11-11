@@ -8,10 +8,16 @@ export function NavigationItems({
   destinations,
   children,
   renderItem,
+  renderBefore,
 }: {
   destinations: readonly NavigationDestination[]
   children?: React.ReactNode
   renderItem: (destination: NavigationDestination) => React.ReactNode
+  /** Content placed ahead of an item, such as a group heading. */
+  renderBefore?: (
+    destination: NavigationDestination,
+    index: number,
+  ) => React.ReactNode
 }) {
   const slots = new Map(
     Children.toArray(children)
@@ -23,8 +29,9 @@ export function NavigationItems({
       )
       .map(child => [child.props.id, child.props.children]),
   )
-  return destinations.map(destination => (
+  return destinations.map((destination, index) => (
     <Fragment key={destination.id}>
+      {renderBefore?.(destination, index)}
       {slots.has(destination.id)
         ? slots.get(destination.id)
         : renderItem(destination)}

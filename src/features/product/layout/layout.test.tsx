@@ -13,6 +13,9 @@ jest.mock('#/config/product', () => {
   return {...actual, PRODUCT: actual.getProduct('social')}
 })
 jest.mock('#/env', () => ({IS_WEB: true}))
+jest.mock('#/state/session', () => ({
+  useSession: () => ({hasSession: true}),
+}))
 jest.mock('react-responsive', () => ({
   useMediaQuery: ({
     minWidth = 0,
@@ -54,14 +57,14 @@ it('updates the shared sidebar visibility without changing standard content widt
     wide: false,
   })
 })
-it('gives Publisher the released column when its rail is hidden', () => {
+it('gives Publisher all the space beside the pinned nav', () => {
   jest.replaceProperty(PRODUCT, 'layout', getProduct('news').layout)
   const {result} = renderHook(usePageGeometry, {
     wrapper: ({children}) => (
       <PageLayoutProvider routeName="Publisher">{children}</PageLayoutProvider>
     ),
   })
-  expect(result.current).toEqual({width: 1220, offset: 310, wide: true})
+  expect(result.current).toEqual({width: 1680, offset: 120, wide: true})
 })
 it('reserves a replacement rail and keeps tablet geometry independent of visibility', () => {
   jest.replaceProperty(PRODUCT, 'layout', {
@@ -107,4 +110,31 @@ it('collapses wide pages on small windows', () => {
     ),
   })
   expect(result.current.wide).toBe(false)
+})
+it('centres news pages beside the pinned nav without the tablet shift', () => {
+  mockWidth = 1200
+  jest.replaceProperty(PRODUCT, 'layout', getProduct('news').layout)
+  const {result} = renderHook(
+    () => ({...useLayoutBreakpoints(), ...usePageGeometry()}),
+    {
+      wrapper: ({children}) => (
+        <PageLayoutProvider routeName="Home">{children}</PageLayoutProvider>
+      ),
+    },
+  )
+  expect(result.current).toMatchObject({
+    centerColumnOffset: false,
+    width: 1120,
+    offset: 40,
+    wide: true,
+  })
+})
+it('keeps the social tablet shift', () => {
+  mockWidth = 1200
+  const {result} = renderHook(useLayoutBreakpoints, {
+    wrapper: ({children}) => (
+      <PageLayoutProvider routeName="Home">{children}</PageLayoutProvider>
+    ),
+  })
+  expect(result.current.centerColumnOffset).toBe(true)
 })

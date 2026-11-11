@@ -46,10 +46,12 @@ import {
   Newspaper_Filled_Corner2_Rounded as NewsFilled,
   Newspaper_Stroke2_Corner2_Rounded as News,
 } from '#/components/icons/Newspaper'
+import {PersonCheck_Stroke2_Corner0_Rounded as Following} from '#/components/icons/Person'
 import {
   SettingsGear2_Filled_Corner0_Rounded as SettingsFilled,
   SettingsGear2_Stroke2_Corner0_Rounded as Settings,
 } from '#/components/icons/Settings'
+import {Sparkle_Stroke2_Corner0_Rounded as Discover} from '#/components/icons/Sparkle'
 import {
   UserCircle_Filled_Corner0_Rounded as ProfileFilled,
   UserCircle_Stroke2_Corner0_Rounded as Profile,
@@ -96,16 +98,35 @@ export function getNavigationDestinations(
   return {
     home: {
       id: 'home',
-      label: msg`Home`,
+      label: product.id === 'news' ? msg`Discover` : msg`Home`,
       href: '/',
       routes: ['Home'],
       icons:
         product.id === 'news'
-          ? {inactive: News, active: NewsFilled}
+          ? {inactive: Discover, active: Discover}
           : {inactive: Home, active: HomeFilled},
       metricItem: 'home',
       tab: 'Home',
       public: true,
+    },
+    following: {
+      id: 'following',
+      label: msg`Following`,
+      href: '/following',
+      routes: ['Following'],
+      icons: {inactive: Following, active: Following},
+      metricItem: 'following',
+      target: {name: 'Following', params: undefined},
+    },
+    latest: {
+      id: 'latest',
+      label: msg({message: 'News', context: 'all news stories, latest first'}),
+      href: '/latest',
+      routes: ['LatestNews'],
+      icons: {inactive: News, active: NewsFilled},
+      metricItem: 'latest',
+      public: true,
+      target: {name: 'LatestNews', params: undefined},
     },
     news: {
       id: 'news',
@@ -128,7 +149,7 @@ export function getNavigationDestinations(
     },
     publisher: {
       id: 'publisher',
-      label: msg`Publisher`,
+      label: product.id === 'news' ? msg`Publishers` : msg`Publisher`,
       href: '/publishers',
       routes: ['PublisherDirectory', 'Publisher'],
       icons:
@@ -141,7 +162,7 @@ export function getNavigationDestinations(
     },
     shorts: {
       id: 'shorts',
-      label: msg`Shorts`,
+      label: product.id === 'news' ? msg`Video` : msg`Shorts`,
       href: '/shorts',
       routes: ['Shorts'],
       icons: {inactive: Video, active: VideoFilled},

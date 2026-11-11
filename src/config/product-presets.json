@@ -41,16 +41,27 @@
   },
   "news": {
     "navigation": {
-      "sidebar": ["home", "publisher", "shorts", "saved", "profile"],
-      "drawer": ["home", "publisher", "shorts", "saved", "profile"],
-      "bottomBar": ["home", "publisher", "shorts", "saved", "profile"],
-      "signedOutSidebar": ["home", "publisher", "shorts"],
-      "signedOutDrawer": ["home", "publisher", "shorts"]
+      "sidebar": ["home", "following", "saved", "latest", "publisher", "shorts"],
+      "drawer": ["home", "following", "saved", "latest", "publisher", "shorts"],
+      "bottomBar": ["home", "following", "latest", "shorts", "saved"],
+      "signedOutSidebar": ["home", "latest", "publisher", "shorts"],
+      "signedOutDrawer": ["home", "latest", "publisher", "shorts"],
+      "groups": {
+        "home": "forYou",
+        "following": "forYou",
+        "saved": "forYou",
+        "latest": "explore",
+        "publisher": "explore",
+        "shorts": "explore"
+      }
     },
     "layout": {
+      "leftNav": "pinned",
       "defaults": {"rightSidebar": "hidden"},
       "pages": {
         "Home": {"contentWidth": "wide"},
+        "LatestNews": {"contentWidth": "wide"},
+        "Following": {"contentWidth": "wide"},
         "Start": {"contentWidth": "wide"},
         "Publisher": {"contentWidth": "wide"},
         "PublisherDirectory": {"contentWidth": "wide"},

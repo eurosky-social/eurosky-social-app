@@ -57,7 +57,6 @@ jest.mock('#/state/preferences/moderation-opts', () => ({
   useModerationOpts: () => undefined,
 }))
 jest.mock('#/alf', () => ({
-  SERIF_FONT_FAMILY: 'Georgia',
   atoms: new Proxy({}, {get: () => ({})}),
   web: (style: unknown) => style,
   useBreakpoints: jest.fn(() => ({gtMobile: true})),
@@ -273,8 +272,12 @@ it('shows four description lines on compact wide news stories, covering companio
     expect(
       screen.getByText('The genuine source description').props.numberOfLines,
     ).toBe(4)
-    expect(screen.getByTestId('articleHeadline').props.style).toContainEqual(
-      expect.objectContaining({fontFamily: 'Georgia'}),
+    const headlineStyle = screen.getByTestId('articleHeadline').props.style
+    expect(headlineStyle).toContainEqual(
+      expect.objectContaining({fontWeight: '600'}),
+    )
+    expect(headlineStyle).not.toContainEqual(
+      expect.objectContaining({fontFamily: expect.anything()}),
     )
     view.rerender(<Article article={story} size="small" compact />)
     expect(screen.queryByText('The genuine source description')).toBeNull()

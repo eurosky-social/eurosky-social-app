@@ -24,3 +24,10 @@ export const CENTER_COLUMN_OFFSET = -105
  * How wide the center column is
  */
 export const CENTER_COLUMN_WIDTH = 600
+
+/**
+ * Pinned left navigation widths: the full nav above the tablet breakpoint and
+ * the icon rail at or below it.
+ */
+export const PINNED_LEFT_NAV_WIDTH = 240
+export const PINNED_LEFT_NAV_RAIL_WIDTH = 80

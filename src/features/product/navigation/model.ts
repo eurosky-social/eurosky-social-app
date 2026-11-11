@@ -8,6 +8,7 @@ import {
 import {type State} from '#/lib/routes/types'
 import {
   type NavigationConfig,
+  type NavigationGroup,
   type NavigationId,
   type NavigationSurface,
 } from '#/config/navigation'
@@ -46,6 +47,18 @@ export function selectNavigation(
         (hasSession || item.public) &&
         (item.feature !== 'atmosphere' || atmosphereEnabled),
     )
+}
+
+/** The group that starts at `index`, when the configured group changes there. */
+export function groupStartingAt(
+  destinations: readonly NavigationDestination[],
+  index: number,
+  config: NavigationConfig,
+): NavigationGroup | undefined {
+  const group = config.groups?.[destinations[index].id]
+  const previous =
+    index > 0 ? config.groups?.[destinations[index - 1].id] : undefined
+  return group && group !== previous ? group : undefined
 }
 
 /** A common screen can be a section without owning an independent native stack. */

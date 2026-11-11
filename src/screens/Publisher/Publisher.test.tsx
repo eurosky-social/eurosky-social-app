@@ -12,7 +12,7 @@ import {PublisherDirectoryScreen} from './Directory'
 import {PublisherScreen} from './index'
 
 jest.mock('#/alf', () => ({
-  atoms: {px_lg: {paddingHorizontal: 16}},
+  atoms: {px_lg: {paddingHorizontal: 16}, border_b: {borderBottomWidth: 1}},
   web: (value: unknown) => value,
   useTheme: () => ({atoms: {}, palette: {contrast_500: '#888'}}),
 }))
@@ -48,14 +48,15 @@ jest.mock('#/features/articles/moderation', () => ({
     filter: article.item.uri.endsWith('filtered'),
   }),
 }))
-jest.mock('#/features/articles/ArticleList', () => ({
-  ArticleList: (props: unknown) => {
-    mockArticleList(props)
+jest.mock('#/features/newsCards/FrontPage', () => ({
+  FrontPage: (props: unknown) => {
+    mockFrontPage(props)
     return null
   },
-}))
-jest.mock('#/features/product/layout/usePageGeometry', () => ({
-  usePageGeometry: () => ({wide: true}),
+  FrontPageSkeleton: () => {
+    const {View} = require('react-native') as typeof import('react-native')
+    return <View testID="frontPageSkeleton" />
+  },
 }))
 jest.mock('#/components/Layout', () => {
   const {View, Text} = require('react-native') as typeof import('react-native')
@@ -139,7 +140,7 @@ jest.mock('#/features/news/dutch/queries', () => {
 const mockProfileLinks = jest.fn()
 const mockFollowButton = jest.fn()
 const mockFeedQuery = jest.fn()
-const mockArticleList = jest.fn()
+const mockFrontPage = jest.fn()
 const mockNavigate = jest.fn()
 const refetch = jest.fn()
 const fetchNextPage = jest.fn()
@@ -267,7 +268,7 @@ it('shows padded publisher identities, avatars and follows without loading stori
     screen.getByTestId('publisherDirectoryList').props.style,
   ).toContainEqual({paddingHorizontal: 16})
   expect(mockFeedQuery).not.toHaveBeenCalled()
-  expect(mockArticleList).not.toHaveBeenCalled()
+  expect(mockFrontPage).not.toHaveBeenCalled()
 })
 it('waits for moderation before showing directory avatars or follow actions', () => {
   mockModerationOpts = undefined
@@ -318,13 +319,12 @@ it('groups the larger identity and follow with profile details, leaving only bac
     undefined,
     {enabled: true},
   )
-  expect(mockArticleList).toHaveBeenCalledWith({
+  expect(mockFrontPage).toHaveBeenCalledWith({
     articles: [
       expect.objectContaining({
         item: expect.objectContaining({uri: item('one').uri}),
       }),
     ],
-    wide: true,
   })
   expect(screen.queryByText('Edit front page')).toBeNull()
 })
@@ -354,7 +354,7 @@ it('never enables a blocked account feed', () => {
   expect(mockFeedQuery).toHaveBeenCalledWith(expect.any(String), undefined, {
     enabled: false,
   })
-  expect(mockArticleList).not.toHaveBeenCalled()
+  expect(mockFrontPage).not.toHaveBeenCalled()
   expect(
     screen.getByText('Posts are unavailable for this account.'),
   ).toBeTruthy()
@@ -391,7 +391,27 @@ it('keeps existing stories visible after a pagination error and retries older st
   mockFeed.isError = true
   mockFeed.isFetchNextPageError = true
   const screen = renderPublisher()
-  expect(mockArticleList).toHaveBeenCalled()
+  expect(mockFrontPage).toHaveBeenCalled()
   fireEvent.press(screen.getByText('Try again'))
   expect(fetchNextPage).toHaveBeenCalledTimes(1)
+})
+
+it('shows skeleton cards while the publisher feed loads', () => {
+  mockFeed = {...mockFeed, isPending: true, data: undefined}
+  const screen = renderPublisher()
+  expect(
+    screen.getByTestId('frontPageSkeleton', {includeHiddenElements: true}),
+  ).toBeTruthy()
+  expect(mockFrontPage).not.toHaveBeenCalled()
+})
+
+it('leaves the line under the profile to the story grid, so there is only one', () => {
+  const screen = renderPublisher()
+  const style = Object.assign(
+    {},
+    ...[screen.getByTestId('publisherProfileDetails').props.style]
+      .flat(Infinity)
+      .filter(Boolean),
+  ) as Record<string, unknown>
+  expect(style.borderBottomWidth ?? 0).toBe(0)
 })

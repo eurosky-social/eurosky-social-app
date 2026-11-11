@@ -20,6 +20,7 @@ jest.mock('#/screens/Notifications/components/PagerView', () => ({}))
 jest.mock('#/screens/Notifications/components/RefreshPill', () => ({}))
 jest.mock('#/components/Link', () => ({}))
 jest.mock('#/analytics', () => ({}))
+jest.mock('#/state/session', () => ({}))
 
 describe('getPlaceholderRow', () => {
   it('shows the skeleton before the first load', () => {

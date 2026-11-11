@@ -34,13 +34,7 @@ export function PublisherProfileDetails({
   return (
     <View
       testID="publisherProfileDetails"
-      style={[
-        a.gap_md,
-        a.py_lg,
-        a.border_b,
-        t.atoms.border_contrast_low,
-        {minWidth: 0},
-      ]}>
+      style={[a.gap_md, a.py_lg, {minWidth: 0}]}>
       <View style={[a.flex_row, a.align_center, a.gap_md]}>
         <Link
           testID="publisherIdentity"

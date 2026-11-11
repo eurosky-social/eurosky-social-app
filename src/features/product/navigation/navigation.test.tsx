@@ -18,7 +18,7 @@ import {VideoClip_Filled_Corner0_Rounded} from '#/components/icons/VideoClip'
 import {NAVIGATION_IDS} from '#/config/navigation'
 import {getProduct} from '#/config/product'
 import {getNavigationDestinations} from './destinations'
-import {isNavigationActive, selectNavigation} from './model'
+import {groupStartingAt, isNavigationActive, selectNavigation} from './model'
 import {NavigationItems, NavigationSlot} from './NavigationItems'
 
 jest.mock('#/alf', () => ({}))
@@ -50,9 +50,9 @@ it('defines every allowed ID once with shared page metadata', () => {
   }
 })
 
-it('uses newspaper/building icons for news and preserves social Home icons', () => {
+it('uses news icons for news destinations and preserves social Home icons', () => {
   const news = getNavigationDestinations({newsV2: true}, getProduct('news'))
-  expect(news.home.icons).toEqual({
+  expect(news.latest.icons).toEqual({
     inactive: Newspaper_Stroke2_Corner2_Rounded,
     active: Newspaper_Filled_Corner2_Rounded,
   })
@@ -123,7 +123,7 @@ it.each(['sidebar', 'drawer', 'bottomBar', 'nativeBottomBar'] as const)(
         definitions,
         signedIn,
       ).map(d => d.id),
-    ).toEqual(['home', 'publisher', 'shorts', 'saved', 'profile'])
+    ).not.toContain('settings')
     if (surface === 'sidebar' || surface === 'drawer') {
       expect(
         selectNavigation(navigation, surface, definitions, signedIn).map(
@@ -276,4 +276,130 @@ it('resolves news v1/v2 and the signed-in profile without changing route registr
   })
   expect(definitions.profile.href).toBe('/profile/alice.test')
   expect(getNavigationDestinations({newsV2: false}).news.href).toBe('/news')
+})
+
+describe('news navigation (#5)', () => {
+  const news = getProduct('news')
+  const newsDestinations = getNavigationDestinations(
+    {newsV2: false, account: {handle: 'alice.test', did: 'did:plc:alice'}},
+    news,
+  )
+  const ids = (
+    hasSession: boolean,
+    surface: 'sidebar' | 'drawer' | 'bottomBar',
+  ) =>
+    selectNavigation(news.navigation, surface, newsDestinations, {
+      hasSession,
+      atmosphereEnabled: false,
+      messagingEnabled: false,
+    }).map(destination => destination.id)
+
+  it('groups the signed-in sidebar into For you and Explore, without Profile', () => {
+    expect(ids(true, 'sidebar')).toEqual([
+      'home',
+      'following',
+      'saved',
+      'latest',
+      'publisher',
+      'shorts',
+    ])
+    expect(news.navigation.groups).toMatchObject({
+      home: 'forYou',
+      following: 'forYou',
+      saved: 'forYou',
+      latest: 'explore',
+      publisher: 'explore',
+      shorts: 'explore',
+    })
+  })
+
+  it('shows signed-out readers only public destinations', () => {
+    expect(ids(false, 'sidebar')).toEqual([
+      'home',
+      'latest',
+      'publisher',
+      'shorts',
+    ])
+    expect(ids(false, 'drawer')).toEqual([
+      'home',
+      'latest',
+      'publisher',
+      'shorts',
+    ])
+  })
+
+  it('puts Discover, Following, News, Video and Saved in the bottom bar', () => {
+    expect(ids(true, 'bottomBar')).toEqual([
+      'home',
+      'following',
+      'latest',
+      'shorts',
+      'saved',
+    ])
+  })
+
+  it('names the news destinations for readers', () => {
+    expect(newsDestinations.home.label.message).toBe('Discover')
+    expect(newsDestinations.publisher.label.message).toBe('Publishers')
+    expect(newsDestinations.shorts.label.message).toBe('Video')
+    expect(newsDestinations.following).toMatchObject({href: '/following'})
+    expect(newsDestinations.latest).toMatchObject({href: '/latest'})
+    expect(newsDestinations.latest.label.message).toBe('News')
+    expect(newsDestinations.following.public).toBeFalsy()
+    expect(newsDestinations.latest.public).toBe(true)
+  })
+
+  it('keeps the social product labels', () => {
+    expect(definitions.home.label.message).toBe('Home')
+    expect(definitions.shorts.label.message).toBe('Shorts')
+  })
+})
+
+describe('navigation groups', () => {
+  const news = getProduct('news')
+  const newsDestinations = getNavigationDestinations({newsV2: false}, news)
+  const sidebar = selectNavigation(
+    news.navigation,
+    'sidebar',
+    newsDestinations,
+    {
+      hasSession: true,
+      atmosphereEnabled: false,
+      messagingEnabled: false,
+    },
+  )
+
+  it('starts a group where the configured group changes', () => {
+    expect(
+      sidebar.map((_, index) =>
+        groupStartingAt(sidebar, index, news.navigation),
+      ),
+    ).toEqual(['forYou', undefined, undefined, 'explore', undefined, undefined])
+  })
+
+  it('has no groups for the social product', () => {
+    const social = getProduct('social')
+    const items = selectNavigation(
+      social.navigation,
+      'sidebar',
+      definitions,
+      signedIn,
+    )
+    expect(
+      items.map((_, index) => groupStartingAt(items, index, social.navigation)),
+    ).toEqual(items.map(() => undefined))
+  })
+
+  it('renders content before an item when asked', () => {
+    const screen = render(
+      <NavigationItems
+        destinations={sidebar}
+        renderBefore={(destination, index) =>
+          index === 3 ? <Text>{`before ${destination.id}`}</Text> : null
+        }
+        renderItem={destination => <Text>{destination.id}</Text>}
+      />,
+    )
+    expect(screen.getByText('before latest')).toBeTruthy()
+  })
 })
