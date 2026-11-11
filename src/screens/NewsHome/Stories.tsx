@@ -18,6 +18,9 @@ import {articlesFromPublisherFeed} from '#/features/publishers/articles'
 import {publisherFeedDescriptor} from '#/features/publishers/feedDescriptor'
 import {HomeShortsRow} from './ShortsRow'
 
+/** Pages fetched up front at most, even if they hold few article posts. */
+const MAX_PREFETCH_PAGES = 3
+
 /** Same public reader surface with or without a session; existing sign-in controls stay in the shell. */
 export function NewsStories({
   publisherDids,
@@ -42,12 +45,16 @@ export function NewsStories({
   const wantsWindow =
     !publisherDids &&
     !feed.isPending &&
+    !feed.isError &&
+    !feed.isFetchNextPageError &&
     articles.length < SECTION_WINDOW &&
+    (feed.data?.pages.length ?? 0) < MAX_PREFETCH_PAGES &&
     !!feed.hasNextPage &&
     !feed.isFetchingNextPage
+  const {fetchNextPage} = feed
   useEffect(() => {
-    if (wantsWindow) void feed.fetchNextPage()
-  }, [wantsWindow, feed])
+    if (wantsWindow) void fetchNextPage()
+  }, [wantsWindow, fetchNextPage])
   return (
     <Layout.Content
       webPageScroll

@@ -195,3 +195,39 @@ it('keeps an already-shown Top stories block when sections are built later', () 
   const elsewhere = sections.slice(1).flatMap(section => uris(section.articles))
   for (const article of top) expect(elsewhere).not.toContain(article.item.uri)
 })
+
+it('never repeats a story when Top stories come from an earlier render', () => {
+  const articles = window60()
+  const shownTop = buildDiscoverSections(articles, NOW, {shorts: false})[0]
+    .articles
+  const fresh = articles.map(article => structuredClone(article))
+  const sections = buildDiscoverSections(fresh, NOW, {
+    shorts: false,
+    top: shownTop,
+  })
+  const shown = sections.flatMap(section => uris(section.articles))
+  expect(new Set(shown).size).toBe(shown.length)
+})
+
+it('keeps the original casing of a topic', () => {
+  next = 0
+  const articles = Array.from({length: 40}, (_, i) =>
+    story({publisher: i % 5, hoursAgo: 1 + i, tag: i % 2 ? 'AI' : undefined}),
+  )
+  const topic = buildDiscoverSections(articles, NOW, {shorts: false}).find(
+    section => section.kind === 'topic',
+  )
+  expect(topic?.title).toBe('AI')
+})
+
+it('keeps Latest in the order given, grouping consecutive days', () => {
+  next = 0
+  const a = story({hoursAgo: 2})
+  const b = story({hoursAgo: 20})
+  const c = story({hoursAgo: 1})
+  expect(latestGroups([a, b, c], NOW).map(group => group.bucket)).toEqual([
+    'today',
+    'yesterday',
+    'today',
+  ])
+})

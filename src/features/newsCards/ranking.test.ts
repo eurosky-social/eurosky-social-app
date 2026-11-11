@@ -49,3 +49,7 @@ it('ranks by score, breaking ties with the newer story', () => {
     rankStories([older, newer, hot], NOW).map(article => article.item.uri),
   ).toEqual([hot.item.uri, newer.item.uri, older.item.uri])
 })
+
+it('does not treat future-dated posts as fresh', () => {
+  expect(storyScore(story('future', {hoursAgo: -5, replies: 9}), NOW)).toBe(0)
+})

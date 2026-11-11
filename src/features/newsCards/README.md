@@ -19,7 +19,7 @@ Every story uses one anatomy: kicker (publisher logo and name, then the first ha
 - `ranking.ts`: `storyScore` = (2 × replies + reposts) / (hours + 2)^1.5 over 24 hours; likes are ignored.
 - `sections.ts`: `buildDiscoverSections`, `buildFollowingSections` and `latestGroups`. Each story appears once, in page order. Publisher and topic sections need three unused stories; a feed under 20 stories shows only Top stories and Latest.
 - `slotting.ts` `planShapes`: lays a section into fixed shapes (Top `[3],[2,1],[1,1,1]`; Popular and Video two rows; publisher and topic one row) with the usual media promotion.
-- `FrontPage/useFrozenSections.ts`: two stages. Top stories freeze from the first page (20+ stories); Home fetches the second page straight away, and the other sections are built from the first 60 (or the end of the feed) below that Top block and freeze. Only Latest grows until a refresh. Page 2 measured at about 0.65 s on fast and slow-4G connections.
+- `FrontPage/useFrozenSections.ts`: two stages. Top stories freeze from the first page (20+ stories); Home fetches the second page straight away, and the other sections are built from the first 60 (or the end of the feed) below that Top block and freeze. Sections remember story URIs and are filled from the current feed, so muted, hidden or deleted posts drop out. Latest keeps the order it was shown in and appends each newly loaded batch (sorted newest-first within the batch), so rows already read never move. A refresh is detected when the first story is one the page has never seen. Home prefetches at most three pages and stops after a failed page. Page 2 measured at about 0.65 s on fast and slow-4G connections.
 
 Publisher pages still use `FrontPage`.
 

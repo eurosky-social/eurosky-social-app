@@ -204,3 +204,71 @@ it('shows Top stories at once and adds the other sections when the second page l
     expect.arrayContaining(['sectionHeading-popular', 'sectionHeading-video']),
   )
 })
+
+it('drops a story from its frozen section when it leaves the feed', () => {
+  const all = feed(60)
+  const view = render(page(all))
+  const popular = screen
+    .getByTestId('section-popular')
+    .findAll(
+      node =>
+        typeof node.props.testID === 'string' &&
+        node.props.testID.startsWith('card:'),
+    )[0].props.testID as string
+  const removed = popular.replace('card:', '')
+  view.rerender(page(all.filter(article => article.item.uri !== removed)))
+  expect(screen.queryByTestId(popular)).toBeNull()
+  expect(headings()[0]).toBe('sectionHeading-top')
+})
+
+it('does not rebuild the page when moderation removes the first story', () => {
+  const all = feed(60)
+  const view = render(page(all))
+  const topBefore = screen
+    .getByTestId('section-top')
+    .findAll(
+      node =>
+        typeof node.props.testID === 'string' &&
+        node.props.testID.startsWith('card:'),
+    )
+    .map(node => node.props.testID as string)
+  view.rerender(page(all.slice(1)))
+  const topAfter = screen
+    .getByTestId('section-top')
+    .findAll(
+      node =>
+        typeof node.props.testID === 'string' &&
+        node.props.testID.startsWith('card:'),
+    )
+    .map(node => node.props.testID as string)
+  expect(topAfter).toEqual(
+    topBefore.filter(id => id !== `card:${all[0].item.uri}`),
+  )
+})
+
+it('appends newly loaded stories to the end of Latest', () => {
+  const first = feed(60)
+  const view = render(page(first))
+  const latest = () =>
+    screen
+      .getByTestId('section-latest')
+      .findAll(
+        node =>
+          typeof node.props.testID === 'string' &&
+          node.props.testID.startsWith('card:'),
+      )
+      .map(node => node.props.testID as string)
+  const before = latest()
+  next = 100
+  const newer = Array.from({length: 6}, (_, i) =>
+    story({publisher: i % 5, hoursAgo: 0.1 + i * 0.01}),
+  )
+  view.rerender(page([...first, ...newer]))
+  expect(latest().slice(0, before.length)).toEqual(before)
+})
+
+it('puts the See all link in a 44px touch area', () => {
+  render(page(feed(60)))
+  const link = screen.getAllByTestId(/^sectionSeeAll-/)[0]
+  expect(link.props.hitSlop).toEqual({top: 10, bottom: 10, left: 8, right: 8})
+})

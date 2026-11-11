@@ -88,6 +88,7 @@ function Section({
     planShapes(section.articles.map(cardHasMedia), shapes),
     columns,
   )
+  const name = section.title ?? ''
   const title =
     section.kind === 'top'
       ? l`Top stories`
@@ -96,7 +97,7 @@ function Section({
         : section.kind === 'video'
           ? l`Video`
           : section.kind === 'publisher'
-            ? l`From ${section.title ?? ''}`
+            ? l`From ${name}`
             : (section.title ?? '')
   const seeAll =
     section.kind === 'publisher' && section.publisherId
@@ -105,13 +106,13 @@ function Section({
             screen: 'Publisher' as const,
             params: {publisher: section.publisherId},
           },
-          label: l`See all stories from ${section.title ?? ''}`,
+          label: l`See all stories from ${name}`,
           text: l`See all →`,
         }
       : section.kind === 'topic' && section.tag
         ? {
             to: {screen: 'Hashtag' as const, params: {tag: section.tag}},
-            label: l`See all stories about ${section.title ?? ''}`,
+            label: l`See all stories about ${name}`,
             text: l`See all →`,
           }
         : undefined
@@ -152,7 +153,7 @@ function Latest({
       <SectionHeading id="latest" title={l`Latest`} />
       {latestGroups(articles, new Date()).map(group => (
         <LatestGroup
-          key={group.date.toDateString()}
+          key={group.articles[0].item.uri}
           bucket={group.bucket}
           date={group.date}
           articles={group.articles}
@@ -186,7 +187,14 @@ function LatestGroup({
       ? l`Earlier today`
       : bucket === 'yesterday'
         ? l`Yesterday`
-        : i18n.date(date, {day: 'numeric', month: 'long'})
+        : i18n.date(date, {
+            day: 'numeric',
+            month: 'long',
+            year:
+              date.getFullYear() === new Date().getFullYear()
+                ? undefined
+                : 'numeric',
+          })
   return (
     <View>
       <Text

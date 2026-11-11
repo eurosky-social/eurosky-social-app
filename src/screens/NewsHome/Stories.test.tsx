@@ -130,3 +130,33 @@ it('does not prefetch for Following', () => {
   )
   expect(fetchNextPage).not.toHaveBeenCalled()
 })
+
+it('does not retry the prefetch after the second page fails', () => {
+  const fetchNextPage = jest.fn()
+  mockArticles = Array.from({length: 30}, (_, i) => ({
+    item: {uri: `at://did:plc:pub/app.bsky.feed.post/${i}`},
+  }))
+  mockFeed = {
+    ...mockFeed,
+    hasNextPage: true,
+    isFetchNextPageError: true,
+    fetchNextPage,
+  }
+  renderStories()
+  expect(fetchNextPage).not.toHaveBeenCalled()
+})
+
+it('stops prefetching after three pages', () => {
+  const fetchNextPage = jest.fn()
+  mockArticles = Array.from({length: 30}, (_, i) => ({
+    item: {uri: `at://did:plc:pub/app.bsky.feed.post/${i}`},
+  }))
+  mockFeed = {
+    ...mockFeed,
+    hasNextPage: true,
+    fetchNextPage,
+    data: {pages: [{slices: []}, {slices: []}, {slices: []}]},
+  }
+  renderStories()
+  expect(fetchNextPage).not.toHaveBeenCalled()
+})

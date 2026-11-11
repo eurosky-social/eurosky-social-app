@@ -39,6 +39,7 @@ export function SectionHeading({
           testID={`sectionSeeAll-${id}`}
           to={seeAll.to}
           label={seeAll.label}
+          hitSlop={{top: 10, bottom: 10, left: 8, right: 8}}
           style={[{minHeight: 24}]}>
           <Text style={[a.text_sm, a.font_medium]}>{seeAll.text}</Text>
         </Link>

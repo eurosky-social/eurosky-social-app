@@ -84,11 +84,12 @@ export function buildDiscoverSections(
   },
 ): FrontSection[] {
   const window = articles.slice(0, SECTION_WINDOW)
-  const used = new Set<PostArticle>()
+  /* By URI: the feed rebuilds story objects on every render. */
+  const used = new Set<string>()
   const unused = (list: readonly PostArticle[]) =>
-    list.filter(article => !used.has(article))
+    list.filter(article => !used.has(article.item.uri))
   const claim = (list: PostArticle[]) => {
-    for (const article of list) used.add(article)
+    for (const article of list) used.add(article.item.uri)
     return list
   }
   const ranked = rankStories(window, now)
@@ -158,7 +159,8 @@ export function buildDiscoverSections(
       sections.push({
         id: `topic-${tag}`,
         kind: 'topic',
-        title: tag.charAt(0).toUpperCase() + tag.slice(1),
+        /* Keep the publisher's casing (#AI stays AI). */
+        title: cardTopic(list[0].item.record) ?? tag,
         tag,
         articles: claim(list.slice(0, ONE_ROW_SIZE)),
       })
@@ -197,7 +199,10 @@ export type LatestGroup = {
   articles: PostArticle[]
 }
 
-/** Newest first, grouped by local calendar day for the Latest subheadings. */
+/**
+ * Group consecutive stories by local calendar day, in the order given. Latest
+ * appends each loaded batch, so a day can appear again further down.
+ */
 export function latestGroups(
   articles: readonly PostArticle[],
   now: Date,
@@ -205,7 +210,7 @@ export function latestGroups(
   const yesterday = new Date(now)
   yesterday.setDate(now.getDate() - 1)
   const groups: LatestGroup[] = []
-  for (const article of newestFirst(articles)) {
+  for (const article of articles) {
     const date = new Date(article.item.record.createdAt)
     const day = date.toDateString()
     const bucket =

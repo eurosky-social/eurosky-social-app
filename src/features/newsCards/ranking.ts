@@ -19,10 +19,11 @@ function postedAt(article: PostArticle) {
  */
 export function storyScore(article: PostArticle, now: Date) {
   const hours = (now.getTime() - postedAt(article)) / HOUR
-  if (!Number.isFinite(hours) || hours > WINDOW_HOURS) return 0
+  /* Future-dated posts are not trusted to stay fresh. */
+  if (!Number.isFinite(hours) || hours < 0 || hours > WINDOW_HOURS) return 0
   const {replyCount = 0, repostCount = 0} = article.item.post
   const engagement = 2 * replyCount + repostCount
-  return engagement / Math.pow(Math.max(hours, 0) + AGE_OFFSET_HOURS, GRAVITY)
+  return engagement / Math.pow(hours + AGE_OFFSET_HOURS, GRAVITY)
 }
 
 /** Highest score first; equal scores put the newer story first. */
