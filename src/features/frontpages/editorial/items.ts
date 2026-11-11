@@ -93,10 +93,15 @@ export function starterPackItem(
   }
 }
 
-/** The picker has a separate feed cache so browsing older posts never adds them to the preview. */
+/**
+ * The picker has a separate feed cache so browsing older posts never adds
+ * them to the preview. Only `author`'s original posts when given; any
+ * account's original posts otherwise, as when browsing a feed or a starter
+ * pack for stories.
+ */
 export function pickerArticles(
   feed: app.bsky.feed.defs.FeedViewPost[],
-  did: string,
+  author: string | undefined,
   opts: ModerationOpts,
 ) {
   const seen = new Set<string>()
@@ -104,7 +109,7 @@ export function pickerArticles(
     const {post} = view
     if (
       view.reason?.$type === 'app.bsky.feed.defs#reasonRepost' ||
-      post.author.did !== did ||
+      (author !== undefined && post.author.did !== author) ||
       !bsky.matches(app.bsky.feed.post, post.record) ||
       post.record.reply ||
       seen.has(post.uri)

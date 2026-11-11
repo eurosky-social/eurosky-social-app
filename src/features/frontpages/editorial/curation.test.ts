@@ -449,8 +449,8 @@ describe('published records', () => {
   it.each([
     ['a post pinned twice', page({pinned: [uri('a')]}, {pinned: [uri('a')]})],
     [
-      'another account’s post',
-      page({pinned: ['at://did:plc:other/app.bsky.feed.post/x']}),
+      'a malformed post reference',
+      page({pinned: ['at://did:plc:other/app.bsky.feed.post/x/extra']}),
     ],
     ['no sections', page()],
     ['a section that is too long', page({length: MAX_SECTION_LENGTH + 1})],
@@ -495,10 +495,18 @@ describe('published records', () => {
     expect(schema.safeParse(posts).success).toBe(false)
   })
 
-  it('accepts only post URIs owned by this repository', () => {
+  it('accepts well-formed post, feed and starter-pack URIs of any account', () => {
     expect(isOwnPostUri(uri('a'), DID)).toBe(true)
     expect(isOwnPostUri(`${uri('a')}/extra`, DID)).toBe(false)
     expect(isOwnPostUri('at://did:plc:other/app.bsky.feed.post/a', DID)).toBe(
+      false,
+    )
+    expect(isAllowedSlotUri(uri('a'), DID)).toBe(true)
+    expect(
+      isAllowedSlotUri('at://did:plc:other/app.bsky.feed.post/a', DID),
+    ).toBe(true)
+    expect(isAllowedSlotUri(`${uri('a')}/extra`, DID)).toBe(false)
+    expect(isAllowedSlotUri('at://not-a-did/app.bsky.feed.post/a', DID)).toBe(
       false,
     )
     expect(isAllowedSlotUri(feed, DID)).toBe(true)

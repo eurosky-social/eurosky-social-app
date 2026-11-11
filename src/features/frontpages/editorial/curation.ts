@@ -103,26 +103,31 @@ export function referenceKind(
 }
 
 /**
- * Posts must be the publisher's own; feeds and starter packs may be curated
- * from other creators. A featured-feeds card is the record's own; that it
- * exists is checked with the whole record.
+ * Posts, feeds and starter packs may belong to any account, so a page can
+ * feature a post found in a feed or a starter pack; the reference must be a
+ * well-formed record URI. A featured-feeds card is the record's own; that it
+ * exists is checked with the whole record. `did` is the page's repository,
+ * kept for callers that want to tell its own posts apart.
  */
-export function isAllowedSlotUri(uri: string, did: string) {
+export function isAllowedSlotUri(uri: string, _did?: string) {
   const kind = referenceKind(uri)
-  if (kind === 'article') return isOwnPostUri(uri, did)
   if (kind === 'featured') return true
   if (!kind) return false
   const author = uri.slice('at://'.length).split('/')[0]
   if (!isDidString(author)) return false
   const collection =
-    kind === 'feed' ? 'app.bsky.feed.generator' : 'app.bsky.graph.starterpack'
+    kind === 'article'
+      ? 'app.bsky.feed.post'
+      : kind === 'feed'
+        ? 'app.bsky.feed.generator'
+        : 'app.bsky.graph.starterpack'
   return isOwnPostUri(
     uri.replace(`/${collection}/`, '/app.bsky.feed.post/'),
     author,
   )
 }
 
-/** A public layout can only refer to posts belonging to its repository. */
+/** Whether a post URI is a well-formed post of the given repository. */
 export function isOwnPostUri(uri: string, did: string) {
   const prefix = `at://${did}/app.bsky.feed.post/`
   const rkey = uri.startsWith(prefix) ? uri.slice(prefix.length) : ''

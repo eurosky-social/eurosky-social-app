@@ -282,13 +282,10 @@ export function ArticleControls({
  * button instead, which returns a post to the automatic ones.
  */
 export function PinToggle({
-  canPin = true,
   title,
   disabled,
   onPin,
 }: {
-  /** False for another account's post from a feed: a layout pins only the account's own posts. */
-  canPin?: boolean
   title: string
   disabled: boolean
   onPin: () => void
@@ -311,18 +308,12 @@ export function PinToggle({
         ]}>
         <Text
           style={[a.text_xs, a.font_semi_bold, t.atoms.text_contrast_medium]}>
-          {canPin ? (
-            <Trans comment="An automatically included story on the front page editor">
-              Automatic
-            </Trans>
-          ) : (
-            <Trans comment="A story filled in from a feed, which cannot be pinned because another account posted it">
-              From a feed
-            </Trans>
-          )}
+          <Trans comment="An automatically included story on the front page editor">
+            Automatic
+          </Trans>
         </Text>
       </View>
-      {canPin && (
+      {
         <Button
           testID="pinFrontpageStory"
           label={l`Pin ${title} here`}
@@ -341,7 +332,7 @@ export function PinToggle({
             <Trans>Pin</Trans>
           </ButtonText>
         </Button>
-      )}
+      }
     </View>
   )
 }

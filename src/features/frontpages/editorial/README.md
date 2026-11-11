@@ -60,10 +60,15 @@ accounts discards the draft. In edit mode:
   Pointer events support mouse and touch; arrow keys, Home and End work from a
   focused grip. Escape or a cancelled pointer gesture leaves the order unchanged.
 - The + buttons between stories open the add dialog in two steps: first what
-  goes in the spot, **Post** (one of the account's posts, a feed or a starter
-  pack) or **Featured feeds**, then that kind's own picker, headed by the
-  kind chosen, with **Change component** leading back to the choice. A carousel skips the choice, since it holds posts only. The post
-  picker offers existing posts, feeds and starter packs. Posts are the account's own originals; the feed picker combines
+  goes in the spot, one of four components, **Post**, **Feed** (the feed's
+  card with its latest posts), **Starter pack** (its people or posts) or
+  **Featured feeds** (several feeds in one card), then that kind's own picker,
+  headed by the kind chosen, with **Change component** leading back to the
+  choice. A carousel skips the choice, since it holds posts only. The post
+  picker finds posts in three places, **Your posts** (the account's
+  originals), **From a feed** and **From a starter pack**: the last two first
+  pick a feed or a starter pack, then list its original posts, by any account,
+  so a story found in a feed can be pinned on the page. The feed lists combine
   pinned feeds (including other creators' feeds) and feeds created by the account.
   Pinned items are disabled; a post on the page automatically can be picked,
   which pins it at that place. Filtering and loading older picker pages
@@ -127,9 +132,8 @@ accounts discards the draft. In edit mode:
   its section fills), and a pencil, which reopens the add dialog at its own
   kind's step to put something else in its place: another post, feed or
   starter pack, a card's new feeds and title, or, after **Change component**,
-  the other kind. Another
-  account's post from a feed is tagged **From a feed** and cannot be pinned or
-  dragged, since a layout only pins the account's own posts. Dropping a story
+  another kind. Another account's post that a feed filled in can be pinned
+  and dragged like the account's own. Dropping a story
   among the pinned ones puts it exactly there; dropping it among the automatic
   ones, or on the end of a section, puts it at the end of the pinned ones. The
   section keeps its length; a story moved out of another section leaves its
@@ -169,8 +173,8 @@ infinite section of the account's posts. Unsized stories vary by their
 place in a section: a lead with companions, pairs, a wide feature and a
 reversed split. Malformed records and network
 failures show a retry state instead of falling back to the default page.
-Post references are limited to the account's own post URIs. Feed and starter-pack
-references, and a featured card's feeds, can belong to other creators; unsupported collections and malformed
+Post, feed and starter-pack references, and a featured card's feeds, can
+belong to any account; unsupported collections and malformed
 URIs are rejected. A page pins at most 100 items, has at most 20 sections and
 60 slots in a section.
 This prototype uses `validate: false` for the custom collection until its

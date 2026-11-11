@@ -45,7 +45,6 @@ import {
   endsWithOwnPosts,
   featuredFeeds,
   fillFeeds,
-  isOwnPostUri,
   layoutSections,
   moveSection,
   ownRoom,
@@ -323,11 +322,6 @@ export function EditorialFrontpage({
 
   const disabled = save.isPending || conflict
 
-  /** Whether a story can be pinned: a post of the account's own, or a feed, starter pack or featured-feeds card. */
-  function pinnable(story: EditorialItem) {
-    return !isArticleItem(story) || isOwnPostUri(story.item.uri, profile.did)
-  }
-
   function reorder(source: string, target: string, edge: 'before' | 'after') {
     let at: {section: string; position: number} | undefined
     if (target.startsWith('end:')) {
@@ -365,14 +359,11 @@ export function EditorialFrontpage({
       ? 'small'
       : articleSize(curation, article.item.uri, lead, position)
     const automatic = arranging && !slot.pinned
-    const canPin = pinnable(article)
     const controls = arranging ? (
       <ArticleControls
         article={article}
         dragHandle={
-          canPin ? (
-            <StoryDragHandle uri={article.item.uri} title={article.title} />
-          ) : null
+          <StoryDragHandle uri={article.item.uri} title={article.title} />
         }
         size={card ? undefined : size}
         lead={lead}
@@ -389,7 +380,6 @@ export function EditorialFrontpage({
             />
           ) : isArticleItem(article) && !slot.pinned ? (
             <PinToggle
-              canPin={canPin}
               title={article.title}
               disabled={disabled}
               onPin={() =>
@@ -469,10 +459,15 @@ export function EditorialFrontpage({
   ) {
     if (!editing || disabled) return
     setInsertion({section, position, replace: story.item.uri})
-    const featured = isFeaturedItem(story)
-    setFeaturedEdit(featured ? story.featured.id : undefined)
+    setFeaturedEdit(isFeaturedItem(story) ? story.featured.id : undefined)
     setSlotStart(current => ({
-      step: featured ? 'featured' : 'posts',
+      step: isFeaturedItem(story)
+        ? 'featured'
+        : isResourceItem(story)
+          ? story.kind === 'feed'
+            ? 'feeds'
+            : 'starterPacks'
+          : 'posts',
       key: current.key + 1,
     }))
     pickerControl.open()
@@ -998,7 +993,7 @@ export function EditorialFrontpage({
           )}
           automatic={placed.flatMap(value =>
             value.slots
-              .filter(slot => !slot.pinned && pinnable(slot.story))
+              .filter(slot => !slot.pinned)
               .map(slot => slot.story.item.uri),
           )}
           postsOnly={insertionSection?.section.kind === 'carousel'}

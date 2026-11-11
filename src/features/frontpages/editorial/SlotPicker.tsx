@@ -17,13 +17,16 @@ import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
 import * as TextField from '#/components/forms/TextField'
 import {ChevronRight_Stroke2_Corner0_Rounded as ChevronIcon} from '#/components/icons/Chevron'
+import {Hashtag_Stroke2_Corner0_Rounded as FeedIcon} from '#/components/icons/Hashtag'
 import {ListSparkle_Stroke2_Corner0_Rounded as FeedsIcon} from '#/components/icons/ListSparkle'
 import {Newspaper_Stroke2_Corner2_Rounded as PostIcon} from '#/components/icons/Newspaper'
 import {PlusSmall_Stroke2_Corner0_Rounded as Plus} from '#/components/icons/Plus'
+import {StarterPack_Stroke2_Corner0_Rounded as StarterPackIcon} from '#/components/icons/StarterPack'
 import {Loader} from '#/components/Loader'
 import {ContentHider} from '#/components/moderation/ContentHider'
 import {Text} from '#/components/Typography'
 import {app} from '#/lexicons'
+import * as bsky from '#/types/bsky'
 import {articleLinkKey} from './articleLinks'
 import {type EditorialArticle} from './articles'
 import {type FeaturedFeeds, referenceKind} from './curation'
@@ -34,6 +37,7 @@ import {
   isArticleItem,
   isResourceItem,
   pickerArticles,
+  type ResourceItem,
   starterPackItem,
 } from './items'
 import {articleModeration} from './moderation'
@@ -41,12 +45,19 @@ import {resourceModeration} from './ResourceSlot'
 import {StepHeading} from './StepHeading'
 
 /**
- * Where the add dialog opens: at the choice of what to add, or straight at
- * one kind's own step, when the spot's button already said which.
+ * Where the add dialog opens: at the choice of what fills the slot, or
+ * straight at one component's own step, when the spot's button or the slot's
+ * pencil already said which.
  */
-export type SlotStep = 'choose' | 'posts' | 'featured'
+export type SlotStep =
+  'choose' | 'posts' | 'feeds' | 'starterPacks' | 'featured'
 
-type Kind = 'posts' | 'feeds' | 'starterPacks'
+/** Where the post step looks for posts. */
+type PostSource =
+  | {type: 'own'}
+  | {type: 'feed'; feed?: app.bsky.feed.defs.GeneratorView}
+  | {type: 'starterPack'; pack?: bsky.starterPack.AnyStarterPackView}
+
 type Page = {
   posts?: app.bsky.feed.defs.FeedViewPost[]
   feeds?: app.bsky.feed.defs.GeneratorView[]
@@ -102,11 +113,11 @@ export function InsertSlotButton({
 }
 
 /**
- * Adds something to a spot, in two steps: what kind of thing, then that kind's
- * own picker. A post is one of the account's posts, a feed or a starter pack;
- * featured feeds are several feeds in one card. Each step has a way back to
- * the choice, except when the spot's button already made it, or a carousel
- * leaves only posts.
+ * Adds something to a spot, in two steps: which component, then that
+ * component's own picker. A post is one of the account's posts, or a post
+ * found in a feed or a starter pack; a feed and a starter pack are shown as
+ * cards of their own; featured feeds are several feeds in one card. Each step
+ * has a way back to the choice, except when a carousel leaves only posts.
  */
 export function SlotPicker({
   control,
@@ -172,8 +183,11 @@ function SlotDialogSteps({
   onSelect,
   onSaveFeatured,
 }: Omit<Parameters<typeof SlotPicker>[0], 'openKey'>) {
+  const t = useTheme()
+  const {t: l} = useLingui()
   const [step, setStep] = useState<SlotStep>(postsOnly ? 'posts' : start)
   const back = postsOnly ? undefined : () => setStep('choose')
+  const select = (item: EditorialItem) => control.close(() => onSelect(item))
   if (step === 'featured')
     return (
       <FeaturedFeedsForm
@@ -186,7 +200,7 @@ function SlotDialogSteps({
     )
   if (step === 'posts')
     return (
-      <SlotPickerInner
+      <PostPicker
         control={control}
         did={did}
         pinned={pinned}
@@ -194,13 +208,45 @@ function SlotDialogSteps({
         postsOnly={postsOnly}
         onBack={back}
         onSplit={postsOnly ? onSplit : undefined}
-        onSelect={onSelect}
+        onSelect={select}
       />
+    )
+  if (step === 'feeds' || step === 'starterPacks')
+    return (
+      <Dialog.ScrollableInner
+        label={step === 'feeds' ? l`Add a feed` : l`Add a starter pack`}
+        style={web({maxWidth: 560})}>
+        <View testID="frontpageSlotPicker" style={[a.gap_md]}>
+          <StepHeading
+            title={step === 'feeds' ? l`Add a feed` : l`Add a starter pack`}
+            kind={step === 'feeds' ? l`Feed` : l`Starter pack`}
+            onBack={back}
+          />
+          <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+            {step === 'feeds' ? (
+              <Trans>
+                The feed's card, with its two latest posts, goes in the spot.
+              </Trans>
+            ) : (
+              <Trans>
+                The starter pack's people, or its latest posts, go in the spot.
+              </Trans>
+            )}
+          </Text>
+          <ResourceList
+            kind={step === 'feeds' ? 'feed' : 'starterPack'}
+            did={did}
+            pinned={pinned}
+            onPick={select}
+          />
+        </View>
+        <Dialog.Close />
+      </Dialog.ScrollableInner>
     )
   return <ChooseKind control={control} onSplit={onSplit} onChoose={setStep} />
 }
 
-/** The first step: what kind of thing goes in the spot. */
+/** The first step: which component goes in the spot. */
 function ChooseKind({
   control,
   onSplit,
@@ -208,7 +254,7 @@ function ChooseKind({
 }: {
   control: Dialog.DialogControlProps
   onSplit?: () => void
-  onChoose: (step: 'posts' | 'featured') => void
+  onChoose: (step: 'posts' | 'feeds' | 'starterPacks' | 'featured') => void
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
@@ -218,7 +264,21 @@ function ChooseKind({
       testID: 'chooseFrontpagePost',
       icon: PostIcon,
       title: l`Post`,
-      description: l`One of your posts, a feed or a starter pack`,
+      description: l`One of your posts, or a post from a feed or a starter pack`,
+    },
+    {
+      step: 'feeds' as const,
+      testID: 'chooseFrontpageFeed',
+      icon: FeedIcon,
+      title: l`Feed`,
+      description: l`A feed's card, with its latest posts`,
+    },
+    {
+      step: 'starterPacks' as const,
+      testID: 'chooseFrontpageStarterPack',
+      icon: StarterPackIcon,
+      title: l`Starter pack`,
+      description: l`A starter pack's people, or its latest posts`,
     },
     {
       step: 'featured' as const,
@@ -326,8 +386,179 @@ function SplitRow({
   )
 }
 
-/** The posts step: the account's own posts, feeds and starter packs. */
-function SlotPickerInner({
+/** The feeds the editor has pinned in the app, to offer among the feeds. */
+function usePinnedFeedUris() {
+  const preferences = usePreferencesQuery()
+  return (preferences.data?.savedFeeds ?? [])
+    .filter(
+      value =>
+        value.pinned &&
+        value.type === 'feed' &&
+        referenceKind(value.value) === 'feed',
+    )
+    .map(value => value.value)
+}
+
+/**
+ * The feeds, or the starter packs, to pick from: for feeds, the editor's
+ * pinned feeds and the account's own; for starter packs, the account's own.
+ * Picking one adds it as a component, or chooses it as a place to find posts.
+ */
+function ResourceList({
+  kind,
+  did,
+  pinned: pinnedSlots,
+  choosing = false,
+  onPick,
+}: {
+  kind: 'feed' | 'starterPack'
+  did: DidString
+  /** Pinned on the page already, so not offered again; empty when only choosing a source. */
+  pinned: EditorialItem[]
+  /** Picking one chooses it as a place to find posts, rather than adding it. */
+  choosing?: boolean
+  onPick: (item: ResourceItem) => void
+}) {
+  const t = useTheme()
+  const {t: l} = useLingui()
+  const [filter, setFilter] = useState('')
+  const client = useAppviewClient()
+  const {currentAccount} = useSession()
+  const pinnedUris = usePinnedFeedUris()
+  const pinnedFeeds = useQuery({
+    queryKey: createQueryKey('editorialPinnedFeeds', {
+      uris: pinnedUris,
+      viewer: currentAccount?.did,
+    }),
+    staleTime: STALE.MINUTES.ONE,
+    enabled: kind === 'feed' && !!pinnedUris.length,
+    queryFn: async () =>
+      (
+        await Promise.all(
+          chunk(pinnedUris, 25).map(uris =>
+            client.call(app.bsky.feed.getFeedGenerators, {
+              feeds: uris as AtUriString[],
+            }),
+          ),
+        )
+      ).flatMap(page => page.feeds),
+  })
+  const query = useInfiniteQuery({
+    queryKey: createQueryKey('editorialSlotPicker', {
+      did,
+      kind,
+      viewer: currentAccount?.did,
+    }),
+    initialPageParam: undefined as string | undefined,
+    staleTime: STALE.MINUTES.ONE,
+    async queryFn({pageParam}): Promise<Page> {
+      if (kind === 'feed') {
+        const result = await client.call(app.bsky.feed.getActorFeeds, {
+          actor: did,
+          limit: 30,
+          cursor: pageParam,
+        })
+        return {feeds: result.feeds, cursor: result.cursor}
+      }
+      const result = await client.call(app.bsky.graph.getActorStarterPacks, {
+        actor: did,
+        limit: 30,
+        cursor: pageParam,
+      })
+      return {starterPacks: result.starterPacks, cursor: result.cursor}
+    },
+    getNextPageParam: page => page.cursor,
+  })
+  const candidates: ResourceItem[] = [
+    ...(kind === 'feed' ? (pinnedFeeds.data ?? []) : []).map(feedItem),
+    ...(query.data?.pages ?? []).flatMap(page => [
+      ...(page.feeds ?? [])
+        .filter(feed => feed.creator.did === did)
+        .map(feedItem),
+      ...(page.starterPacks ?? [])
+        .filter(pack => pack.creator.did === did)
+        .flatMap(pack => {
+          const value = starterPackItem(pack)
+          return value ? [value] : []
+        }),
+    ]),
+  ]
+  const seen = new Set<string>()
+  const needle = filter.trim().toLocaleLowerCase()
+  const matches = candidates.filter(item => {
+    if (seen.has(item.item.uri)) return false
+    seen.add(item.item.uri)
+    return (
+      !needle ||
+      `${item.title} ${item.feed?.description ?? ''}`
+        .toLocaleLowerCase()
+        .includes(needle)
+    )
+  })
+  return (
+    <View style={[a.gap_md]}>
+      <TextField.Root>
+        <Dialog.Input
+          testID="filterFrontpageSlots"
+          label={kind === 'feed' ? l`Filter feeds` : l`Filter starter packs`}
+          placeholder={
+            kind === 'feed' ? l`Filter feeds` : l`Filter starter packs`
+          }
+          value={filter}
+          onChangeText={setFilter}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+      </TextField.Root>
+      {query.isPending ? (
+        <Loader size="lg" />
+      ) : (
+        <View>
+          {matches.map(item => (
+            <PickerRow
+              key={item.item.uri}
+              item={item}
+              pinned={
+                item.kind === 'feed' && pinnedUris.includes(item.item.uri)
+              }
+              automatic={false}
+              included={pinnedSlots.some(
+                value => value.item.uri === item.item.uri,
+              )}
+              choosing={choosing}
+              onSelect={() => onPick(item)}
+            />
+          ))}
+          {!matches.length && !query.isError && (
+            <Text style={[a.py_xl, t.atoms.text_contrast_medium]}>
+              {needle
+                ? l`No matches in the loaded items.`
+                : kind === 'feed'
+                  ? l`No feeds yet. Pin feeds in the app, or create one.`
+                  : l`No starter packs yet.`}
+            </Text>
+          )}
+        </View>
+      )}
+      {kind === 'feed' && pinnedFeeds.isFetching && <Loader size="sm" />}
+      {kind === 'feed' && pinnedFeeds.isError && (
+        <Button
+          label={l`Retry loading pinned feeds`}
+          size="small"
+          color="secondary"
+          onPress={() => void pinnedFeeds.refetch()}>
+          <ButtonText>
+            <Trans>Retry loading pinned feeds</Trans>
+          </ButtonText>
+        </Button>
+      )}
+      <LoadMore query={query} />
+    </View>
+  )
+}
+
+/** The post step: the account's posts, or the posts of a feed or a starter pack it picks first. */
+function PostPicker({
   control,
   did,
   pinned: pinnedSlots,
@@ -348,91 +579,180 @@ function SlotPickerInner({
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
-  const [kind, setKind] = useState<Kind>('posts')
+  const [source, setSource] = useState<PostSource>({type: 'own'})
+  const labels: Record<PostSource['type'], string> = {
+    own: l`Your posts`,
+    feed: l`From a feed`,
+    starterPack: l`From a starter pack`,
+  }
+  const list =
+    source.type === 'feed'
+      ? source.feed && {feed: source.feed.uri}
+      : source.type === 'starterPack'
+        ? source.pack &&
+          bsky.matches(app.bsky.graph.starterpack, source.pack.record)
+          ? {list: source.pack.record.list}
+          : undefined
+        : {author: did}
+  const chosen =
+    source.type === 'feed'
+      ? source.feed?.displayName
+      : source.type === 'starterPack' &&
+          source.pack &&
+          bsky.matches(app.bsky.graph.starterpack, source.pack.record)
+        ? source.pack.record.name
+        : undefined
+  return (
+    <Dialog.ScrollableInner label={l`Add a post`} style={web({maxWidth: 560})}>
+      <View testID="frontpageSlotPicker" style={[a.gap_md]}>
+        <StepHeading
+          title={l`Add a post`}
+          kind={postsOnly ? undefined : l`Post`}
+          onBack={onBack}
+        />
+        {onSplit && <SplitRow control={control} onSplit={onSplit} />}
+        <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
+          {(['own', 'feed', 'starterPack'] as const).map(type => (
+            <Button
+              key={type}
+              testID={`frontpagePostSource-${type}`}
+              label={labels[type]}
+              size="small"
+              color={source.type === type ? 'primary' : 'secondary'}
+              accessibilityState={{selected: source.type === type}}
+              onPress={() => setSource({type})}>
+              <ButtonText>{labels[type]}</ButtonText>
+            </Button>
+          ))}
+        </View>
+        {list ? (
+          <>
+            {!!chosen && (
+              <View style={[a.flex_row, a.align_center, a.gap_sm]}>
+                <Text style={[a.flex_1, a.text_sm, a.font_semi_bold]}>
+                  {source.type === 'feed'
+                    ? l`Posts from ${chosen}`
+                    : l`Posts by the people in ${chosen}`}
+                </Text>
+                <Button
+                  testID="changeFrontpagePostSource"
+                  label={
+                    source.type === 'feed'
+                      ? l`Choose another feed`
+                      : l`Choose another starter pack`
+                  }
+                  size="small"
+                  color="secondary"
+                  onPress={() => setSource({type: source.type})}>
+                  <ButtonText>
+                    <Trans>Change</Trans>
+                  </ButtonText>
+                </Button>
+              </View>
+            )}
+            <PostList
+              key={JSON.stringify(list)}
+              did={did}
+              source={list}
+              pinned={pinnedSlots}
+              automatic={automatic}
+              onSelect={onSelect}
+            />
+          </>
+        ) : (
+          <>
+            <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+              {source.type === 'feed' ? (
+                <Trans>Choose a feed to find posts in.</Trans>
+              ) : (
+                <Trans>Choose a starter pack to find its people's posts.</Trans>
+              )}
+            </Text>
+            <ResourceList
+              kind={source.type === 'feed' ? 'feed' : 'starterPack'}
+              did={did}
+              pinned={[]}
+              choosing
+              onPick={item =>
+                setSource(
+                  item.kind === 'feed'
+                    ? {type: 'feed', feed: item.feed}
+                    : {type: 'starterPack', pack: item.starterPack},
+                )
+              }
+            />
+          </>
+        )}
+      </View>
+      <Dialog.Close />
+    </Dialog.ScrollableInner>
+  )
+}
+
+/** Original posts from one place: the account's own, a feed's, or a starter pack's list. */
+function PostList({
+  did,
+  source,
+  pinned: pinnedSlots,
+  automatic,
+  onSelect,
+}: {
+  did: DidString
+  source: {author: DidString} | {feed: string} | {list: string}
+  pinned: EditorialItem[]
+  automatic: string[]
+  onSelect: (item: EditorialItem) => void
+}) {
+  const t = useTheme()
+  const {t: l} = useLingui()
   const [filter, setFilter] = useState('')
   const opts = useModerationOpts()
   const client = useAppviewClient()
   const {currentAccount} = useSession()
-  const preferences = usePreferencesQuery()
-  const pinnedUris = (preferences.data?.savedFeeds ?? [])
-    .filter(
-      value =>
-        value.pinned &&
-        value.type === 'feed' &&
-        referenceKind(value.value) === 'feed',
-    )
-    .map(value => value.value)
-  const pinned = useQuery({
-    queryKey: createQueryKey('editorialPinnedFeeds', {
-      uris: pinnedUris,
-      viewer: currentAccount?.did,
-    }),
-    staleTime: STALE.MINUTES.ONE,
-    enabled:
-      kind === 'feeds' && !!pinnedUris.length && currentAccount?.did === did,
-    queryFn: async () =>
-      (
-        await Promise.all(
-          chunk(pinnedUris, 25).map(uris =>
-            client.call(app.bsky.feed.getFeedGenerators, {
-              feeds: uris as AtUriString[],
-            }),
-          ),
-        )
-      ).flatMap(page => page.feeds),
-  })
   const query = useInfiniteQuery({
     queryKey: createQueryKey('editorialSlotPicker', {
       did,
-      kind,
+      source,
       viewer: currentAccount?.did,
     }),
     initialPageParam: undefined as string | undefined,
     staleTime: STALE.MINUTES.ONE,
     enabled: !!opts,
     async queryFn({pageParam}): Promise<Page> {
-      if (kind === 'posts') {
+      if ('author' in source) {
         const result = await client.call(app.bsky.feed.getAuthorFeed, {
-          actor: did,
+          actor: source.author,
           filter: 'posts_no_replies',
           limit: 30,
           cursor: pageParam,
         })
         return {posts: result.feed, cursor: result.cursor}
       }
-      if (kind === 'feeds') {
-        const result = await client.call(app.bsky.feed.getActorFeeds, {
-          actor: did,
+      if ('feed' in source) {
+        const result = await client.call(app.bsky.feed.getFeed, {
+          feed: source.feed as AtUriString,
           limit: 30,
           cursor: pageParam,
         })
-        return {feeds: result.feeds, cursor: result.cursor}
+        return {posts: result.feed, cursor: result.cursor}
       }
-      const result = await client.call(app.bsky.graph.getActorStarterPacks, {
-        actor: did,
+      const result = await client.call(app.bsky.feed.getListFeed, {
+        list: source.list as AtUriString,
         limit: 30,
         cursor: pageParam,
       })
-      return {starterPacks: result.starterPacks, cursor: result.cursor}
+      return {posts: result.feed, cursor: result.cursor}
     },
     getNextPageParam: page => page.cursor,
   })
-  const candidates: EditorialItem[] = opts
-    ? [
-        ...(kind === 'feeds' ? (pinned.data ?? []) : []).map(feedItem),
-        ...(query.data?.pages ?? []).flatMap(page => [
-          ...pickerArticles(page.posts ?? [], did, opts),
-          ...(page.feeds ?? [])
-            .filter(feed => feed.creator.did === did)
-            .map(feedItem),
-          ...(page.starterPacks ?? [])
-            .filter(pack => pack.creator.did === did)
-            .flatMap(pack => {
-              const value = starterPackItem(pack)
-              return value ? [value] : []
-            }),
-        ]),
-      ]
+  const candidates = opts
+    ? (query.data?.pages ?? []).flatMap(page =>
+        pickerArticles(
+          page.posts ?? [],
+          'author' in source ? source.author : undefined,
+          opts,
+        ),
+      )
     : []
   const seen = new Set<string>()
   const needle = filter.trim().toLocaleLowerCase()
@@ -441,132 +761,93 @@ function SlotPickerInner({
     seen.add(item.item.uri)
     return (
       !needle ||
-      `${item.title} ${isArticleItem(item) ? item.description : isResourceItem(item) ? (item.feed?.description ?? '') : ''}`
-        .toLocaleLowerCase()
-        .includes(needle)
+      `${item.title} ${item.description}`.toLocaleLowerCase().includes(needle)
     )
   })
-  const labels: Record<Kind, string> = {
-    posts: l`Posts`,
-    feeds: l`Feeds`,
-    starterPacks: l`Starter packs`,
-  }
   return (
-    <Dialog.ScrollableInner
-      label={postsOnly ? l`Add a post` : l`Add a post, feed or starter pack`}
-      style={web({maxWidth: 560})}>
-      <View testID="frontpageSlotPicker" style={[a.gap_md]}>
-        <StepHeading
-          title={
-            postsOnly ? l`Add a post` : l`Add a post, feed or starter pack`
-          }
-          kind={postsOnly ? undefined : l`Post`}
-          onBack={onBack}
+    <View style={[a.gap_md]}>
+      <TextField.Root>
+        <Dialog.Input
+          testID="filterFrontpageSlots"
+          label={l`Filter loaded posts`}
+          placeholder={l`Filter loaded posts`}
+          value={filter}
+          onChangeText={setFilter}
+          autoCapitalize="none"
+          autoCorrect={false}
         />
-        {onSplit && <SplitRow control={control} onSplit={onSplit} />}
-        <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
-          {(postsOnly
-            ? (['posts'] as const)
-            : (['posts', 'feeds', 'starterPacks'] as const)
-          ).map(value => (
-            <Button
-              key={value}
-              label={labels[value]}
-              size="small"
-              color={kind === value ? 'primary' : 'secondary'}
-              accessibilityState={{selected: kind === value}}
-              onPress={() => {
-                setKind(value)
-                setFilter('')
-              }}>
-              <ButtonText>{labels[value]}</ButtonText>
-            </Button>
+      </TextField.Root>
+      {query.isPending ? (
+        <Loader size="lg" />
+      ) : (
+        <View>
+          {matches.map(item => (
+            <PickerRow
+              key={item.item.uri}
+              item={item}
+              pinned={false}
+              automatic={automatic.includes(item.item.uri)}
+              included={pinnedSlots.some(
+                value =>
+                  value.item.uri === item.item.uri ||
+                  (!!item.url &&
+                    !!value.url &&
+                    articleLinkKey(value.url) === articleLinkKey(item.url)),
+              )}
+              onSelect={() => onSelect(item)}
+            />
           ))}
+          {!matches.length && !query.isError && (
+            <Text style={[a.py_xl, t.atoms.text_contrast_medium]}>
+              {needle ? l`No matches in the loaded posts.` : l`No posts found.`}
+            </Text>
+          )}
         </View>
-        <TextField.Root>
-          <Dialog.Input
-            testID="filterFrontpageSlots"
-            label={l`Filter loaded items`}
-            placeholder={l`Filter loaded items`}
-            value={filter}
-            onChangeText={setFilter}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </TextField.Root>
-        {query.isPending ? (
-          <Loader size="lg" />
-        ) : (
-          <View>
-            {matches.map(item => (
-              <PickerRow
-                key={item.item.uri}
-                item={item}
-                pinned={
-                  isResourceItem(item) &&
-                  item.kind === 'feed' &&
-                  pinnedUris.includes(item.item.uri)
-                }
-                automatic={automatic.includes(item.item.uri)}
-                included={pinnedSlots.some(
-                  value =>
-                    value.item.uri === item.item.uri ||
-                    (!!item.url &&
-                      !!value.url &&
-                      articleLinkKey(value.url) === articleLinkKey(item.url)),
-                )}
-                onSelect={() => control.close(() => onSelect(item))}
-              />
-            ))}
-            {!matches.length && !query.isError && (
-              <Text style={[a.py_xl, t.atoms.text_contrast_medium]}>
-                {needle
-                  ? l`No matches in the loaded items.`
-                  : l`No items found.`}
-              </Text>
-            )}
-          </View>
-        )}
-        {kind === 'feeds' && pinned.isFetching && <Loader size="sm" />}
-        {kind === 'feeds' && (preferences.isError || pinned.isError) && (
-          <Button
-            label={l`Retry loading pinned feeds`}
-            size="small"
-            color="secondary"
-            onPress={() =>
-              void Promise.all([preferences.refetch(), pinned.refetch()])
-            }>
-            <ButtonText>
-              <Trans>Retry loading pinned feeds</Trans>
-            </ButtonText>
-          </Button>
-        )}
-        {query.isError && (
-          <Text accessibilityRole="alert">
-            <Trans>Couldn’t load items. Try again.</Trans>
-          </Text>
-        )}
-        {(query.hasNextPage || query.isError) && (
-          <Button
-            label={query.isError ? l`Try again` : l`Load older items`}
-            size="small"
-            color="secondary"
-            disabled={query.isFetching}
-            onPress={() =>
-              void (query.isError ? query.refetch() : query.fetchNextPage())
-            }>
-            <ButtonText>
-              {query.isFetching
-                ? l`Loading…`
-                : query.isError
-                  ? l`Try again`
-                  : l`Load older items`}
-            </ButtonText>
-          </Button>
-        )}
-      </View>
-      <Dialog.Close />
-    </Dialog.ScrollableInner>
+      )}
+      <LoadMore query={query} />
+    </View>
+  )
+}
+
+/** Loads the next page of a picker's list, or retries it. */
+function LoadMore({
+  query,
+}: {
+  query: {
+    isError: boolean
+    isFetching: boolean
+    hasNextPage: boolean
+    refetch: () => unknown
+    fetchNextPage: () => unknown
+  }
+}) {
+  const {t: l} = useLingui()
+  return (
+    <>
+      {query.isError && (
+        <Text accessibilityRole="alert">
+          <Trans>Couldn’t load items. Try again.</Trans>
+        </Text>
+      )}
+      {(query.hasNextPage || query.isError) && (
+        <Button
+          label={query.isError ? l`Try again` : l`Load older items`}
+          size="small"
+          color="secondary"
+          disabled={query.isFetching}
+          onPress={() =>
+            void (query.isError ? query.refetch() : query.fetchNextPage())
+          }>
+          <ButtonText>
+            {query.isFetching
+              ? l`Loading…`
+              : query.isError
+                ? l`Try again`
+                : l`Load older items`}
+          </ButtonText>
+        </Button>
+      )}
+    </>
   )
 }
 
@@ -575,12 +856,15 @@ function PickerRow({
   included,
   automatic,
   pinned,
+  choosing = false,
   onSelect,
 }: {
   item: EditorialItem
   included: boolean
   automatic: boolean
   pinned: boolean
+  /** Picking it chooses where to look for posts, rather than adding it. */
+  choosing?: boolean
   onSelect: () => void
 }) {
   const opts = useModerationOpts()
@@ -604,6 +888,7 @@ function PickerRow({
         image={item.feed?.avatar}
         pinned={pinned}
         included={included}
+        choosing={choosing}
         onSelect={onSelect}
       />
     </ContentHider>
@@ -644,6 +929,7 @@ function PickerRowBody({
   included,
   automatic = false,
   pinned = false,
+  choosing = false,
   onSelect,
 }: {
   title: string
@@ -652,6 +938,8 @@ function PickerRowBody({
   included: boolean
   /** On the page automatically: it can be picked, to pin it here. */
   automatic?: boolean
+  /** Picking it chooses where to look for posts, rather than adding it. */
+  choosing?: boolean
   onSelect: () => void
 }) {
   const t = useTheme()
@@ -661,18 +949,22 @@ function PickerRowBody({
       testID="frontpagePickerItem"
       accessibilityRole="button"
       accessibilityLabel={
-        included
-          ? l`${title}, already pinned on the front page`
-          : automatic
-            ? l`Pin ${title} here`
-            : l`Add ${title}`
+        choosing
+          ? l`Choose ${title}`
+          : included
+            ? l`${title}, already pinned on the front page`
+            : automatic
+              ? l`Pin ${title} here`
+              : l`Add ${title}`
       }
       accessibilityHint={
-        included
-          ? undefined
-          : automatic
-            ? l`Pins this automatic story at the selected position`
-            : l`Inserts this item at the selected position`
+        choosing
+          ? l`Shows its posts to pick from`
+          : included
+            ? undefined
+            : automatic
+              ? l`Pins this automatic story at the selected position`
+              : l`Inserts this item at the selected position`
       }
       disabled={included}
       onPress={onSelect}
