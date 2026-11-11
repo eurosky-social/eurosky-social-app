@@ -1,5 +1,5 @@
 import {StyleSheet} from 'react-native'
-import {render, screen} from '@testing-library/react-native'
+import {fireEvent, render, screen} from '@testing-library/react-native'
 
 import {articleFromPost} from '#/features/articles/articles'
 import {PUBLISHERS} from '#/features/publishers/publishers'
@@ -82,6 +82,9 @@ jest.mock('./CardActions', () => ({
   useCardTime: () => ({label: '2m ago', full: '11 Nov 2026, 09:58'}),
 }))
 
+jest.mock('@bsky/sdk/moderation', () => ({
+  moderatePost: () => ({ui: () => mockQuoteUi}),
+}))
 jest.mock('#/state/preferences', () => ({
   useAutoplayDisabled: () => mockAutoplayDisabled,
 }))
@@ -97,6 +100,7 @@ let mockPostTextUi: {blur: boolean; blurs: unknown[]} = {
   blur: false,
   blurs: [],
 }
+let mockQuoteUi = {filter: false, blur: false}
 let mockAutoplayDisabled = false
 let mockReducedMotion = false
 let mockModeration: {filter: boolean; blur: boolean; blurs: unknown[]} = {
@@ -200,6 +204,7 @@ function headlineStyle() {
 beforeEach(() => {
   mockModeration = {filter: false, blur: false, blurs: []}
   mockPostTextUi = {blur: false, blurs: []}
+  mockQuoteUi = {filter: false, blur: false}
   mockAutoplayDisabled = false
   mockReducedMotion = false
 })
@@ -399,5 +404,82 @@ describe('review fixes', () => {
     expect(
       screen.getByTestId('newsCardMedia', hidden).props.pointerEvents,
     ).toBe('none')
+  })
+})
+
+describe('minor fixes', () => {
+  const quoteWithVideo = story({
+    $type: 'app.bsky.embed.recordWithMedia#view',
+    record: {
+      record: {
+        $type: 'app.bsky.embed.record#viewRecord',
+        uri: 'at://did:plc:other/app.bsky.feed.post/two',
+        cid: 'bafyquote',
+        author: {did: 'did:plc:other', handle: 'other.example'},
+        value: {$type: 'app.bsky.feed.post', text: 'Quoted', createdAt: ''},
+        indexedAt: '2026-11-11T08:00:00Z',
+      },
+    },
+    media: {
+      $type: 'app.bsky.embed.video#view',
+      cid: 'bafyvideo',
+      playlist: 'https://example.com/playlist.m3u8',
+      thumbnail: 'https://example.com/video.jpg',
+    },
+  })
+
+  it('treats a quote with its own video as video', () => {
+    render(<NewsCard article={quoteWithVideo} size="standard" />)
+    expect(screen.getByTestId('newsCardBadge', hidden)).toHaveTextContent(
+      'Video',
+    )
+    expect(screen.getByTestId('newsCardMedia', hidden).props.style).toEqual(
+      expect.arrayContaining([expect.objectContaining({aspectRatio: 16 / 9})]),
+    )
+  })
+
+  it('drops quoted words when the quoted post is moderated', () => {
+    mockQuoteUi = {filter: false, blur: true}
+    render(<NewsCard article={quote} size="standard" />)
+    const line = screen.getByTestId('newsCardQuoteLine', hidden)
+    expect(line).toHaveTextContent(/Quoting @other\.example/)
+    expect(line).not.toHaveTextContent(/EU budget/)
+  })
+
+  it('shows the focus ring only for keyboard focus', () => {
+    render(<NewsCard article={article} size="standard" />)
+    const card = () =>
+      StyleSheet.flatten(screen.getByTestId('newsCard').props.style)
+    fireEvent(screen.getByTestId('newsCardLink'), 'focus', {
+      target: {matches: () => false},
+    })
+    expect(card()).not.toHaveProperty('outlineStyle')
+    fireEvent(screen.getByTestId('newsCardLink'), 'focus', {
+      target: {matches: () => true},
+    })
+    expect(card()).toHaveProperty('outlineStyle', 'solid')
+  })
+
+  it('dims the image while the card is hovered', () => {
+    render(<NewsCard article={article} size="standard" />)
+    expect(screen.queryByTestId('newsCardMediaDim', hidden)).toBeNull()
+    fireEvent(screen.getByTestId('newsCardLink'), 'hoverIn')
+    expect(screen.getByTestId('newsCardMediaDim', hidden)).toBeTruthy()
+  })
+
+  it('caps long post-text headlines on small cards', () => {
+    const long = story(undefined, {text: 'word '.repeat(120)})
+    const {rerender} = render(<NewsCard article={long} size="standard" />)
+    expect(
+      screen.getByTestId('newsCardHeadline', hidden).props.numberOfLines,
+    ).toBe(5)
+    rerender(<NewsCard article={long} size="compact" />)
+    expect(
+      screen.getByTestId('newsCardHeadline', hidden).props.numberOfLines,
+    ).toBe(4)
+    rerender(<NewsCard article={article} size="standard" />)
+    expect(
+      screen.getByTestId('newsCardHeadline', hidden).props.numberOfLines,
+    ).toBeUndefined()
   })
 })

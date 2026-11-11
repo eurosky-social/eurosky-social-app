@@ -41,12 +41,15 @@ export function Media({
   size,
   moderation,
   post,
+  dimmed = false,
 }: {
   article: PostArticle
   kind: CardKind
   size: CardSize
   moderation?: ModerationUI
   post?: app.bsky.feed.defs.PostView
+  /** The card is hovered: darken the picture slightly. */
+  dimmed?: boolean
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
@@ -103,6 +106,16 @@ export function Media({
           <View aria-hidden style={[a.absolute, a.inset_0]}>
             <VideoEmbed embed={article.media.view} post={post} immersive />
           </View>
+        )}
+        {dimmed && !blurred && (
+          <View
+            testID="newsCardMediaDim"
+            style={[
+              a.absolute,
+              a.inset_0,
+              {backgroundColor: 'rgba(0,0,0,0.08)'},
+            ]}
+          />
         )}
         {!blurred && !autoplay && (playable || count > 1) && (
           <View

@@ -1,5 +1,5 @@
 import {StyleSheet} from 'react-native'
-import {fireEvent, render, screen} from '@testing-library/react-native'
+import {act, fireEvent, render, screen} from '@testing-library/react-native'
 
 import {CardActions} from './CardActions'
 
@@ -234,4 +234,32 @@ it('keeps the time whole and out of the tap path', () => {
   expect(StyleSheet.flatten(wrapper.props.style)).toMatchObject({
     flexShrink: 0,
   })
+})
+
+it('refreshes the relative time every minute', () => {
+  const {Provider} = jest.requireActual<
+    typeof import('#/state/shell/tick-every-minute')
+  >('#/state/shell/tick-every-minute')
+  render(
+    <Provider>
+      <CardActions post={post()} createdAt="2026-11-11T09:58:00Z" />
+    </Provider>,
+  )
+  expect(screen.getByTestId('newsCardTime')).toHaveTextContent('2m ago')
+  act(() => {
+    jest.advanceTimersByTime(3 * 60_000)
+  })
+  expect(screen.getByTestId('newsCardTime')).toHaveTextContent('5m ago')
+})
+
+it('keeps each icon and its count from sharing a touch area', () => {
+  render(<CardActions post={post()} createdAt="2026-11-11T09:58:00Z" />)
+  const icon = screen.getByTestId('newsCardCommentIcon', {
+    includeHiddenElements: true,
+  })
+  const count = screen.getByTestId('newsCardCommentCount', {
+    includeHiddenElements: true,
+  })
+  expect((icon.props.hitSlop as {right: number}).right).toBe(0)
+  expect((count.props.hitSlop as {left: number}).left).toBe(0)
 })

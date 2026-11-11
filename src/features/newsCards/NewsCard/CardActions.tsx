@@ -12,6 +12,7 @@ import {
   usePostRepostMutationQueue,
 } from '#/state/queries/post'
 import {useRequireAuth} from '#/state/session'
+import {useTickEveryMinute} from '#/state/shell/tick-every-minute'
 import {atoms as a, useTheme, web} from '#/alf'
 import {
   Heart2_Filled_Stroke2_Corner0_Rounded as Liked,
@@ -30,13 +31,19 @@ import {Text} from '#/components/Typography'
 import {type app} from '#/lexicons'
 import {cardTimeBucket} from '../model'
 
-/** Pointer targets reach 24px with a mouse and 44px on touch. */
-const HIT_SLOP = {top: 10, bottom: 10, left: 6, right: 6}
+/**
+ * Touch targets reach about 44px on native. An icon extends left and its count
+ * right, so neighbouring targets never overlap.
+ */
+const ICON_SLOP = {top: 10, bottom: 10, left: 6, right: 0}
+const COUNT_SLOP = {top: 10, bottom: 10, left: 0, right: 6}
 
 /** "2m ago" under a day, then "Yesterday", then a short date; full date for tooltips. */
 export function useCardTime(createdAt: string) {
   const {t: l, i18n} = useLingui()
   const getTimeAgo = useGetTimeAgo()
+  /* Re-render once a minute so "2m ago" stays true while the page is open. */
+  useTickEveryMinute()
   const created = new Date(createdAt)
   if (Number.isNaN(created.getTime())) return {label: '', full: ''}
   const now = new Date()
@@ -138,7 +145,7 @@ export function CardActions({
       aria-hidden
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      hitSlop={HIT_SLOP}
+      hitSlop={COUNT_SLOP}
       style={[a.pr_sm, {minHeight: 24, minWidth: 16}]}>
       <Text style={countStyle}>{count}</Text>
     </Link>
@@ -176,7 +183,7 @@ export function CardActions({
           aria-hidden
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
-          hitSlop={HIT_SLOP}
+          hitSlop={ICON_SLOP}
           style={[{padding: 5}]}>
           <Comment width={18} fill={t.palette.contrast_500} />
         </Link>
@@ -198,12 +205,12 @@ export function CardActions({
           activeColor={t.palette.pink}
           label={liked ? l`Unlike` : l`Like`}
           accessibilityState={{selected: liked}}
-          hitSlop={HIT_SLOP}
+          hitSlop={ICON_SLOP}
           onPress={onLike}>
           <PostControlButtonIcon icon={liked ? Liked : Like} />
         </PostControlButton>
         {countLink('newsCardLikeCount', post.likeCount ?? 0)}
-        <BookmarkButton post={post} logContext="FeedItem" hitSlop={HIT_SLOP} />
+        <BookmarkButton post={post} logContext="FeedItem" hitSlop={ICON_SLOP} />
       </View>
     </View>
   )

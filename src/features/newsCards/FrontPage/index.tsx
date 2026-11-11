@@ -41,10 +41,10 @@ export function FrontPage({
   )
   return (
     <View testID="frontPage">
-      {rows.map((row, index) =>
+      {rows.map(row =>
         row.type === 'shorts' ? (
           <View
-            key={`shorts-${index}`}
+            key="shorts"
             testID="frontPageShorts"
             style={[{borderTopWidth: 2}, t.atoms.border_contrast_high]}>
             {shorts}

@@ -100,3 +100,19 @@ it('renders four hidden placeholder cards while loading', () => {
   ).toHaveLength(4)
   expect(screen.queryAllByTestId('frontPageSkeletonCard')).toHaveLength(0)
 })
+
+it('keeps the Shorts row mounted when the column count changes', () => {
+  let mounts = 0
+  function Shorts() {
+    const {useEffect} = require('react') as typeof import('react')
+    useEffect(() => {
+      mounts++
+    }, [])
+    return <Text>Shorts row</Text>
+  }
+  mockWidth = 1440
+  const view = render(<FrontPage articles={stories(11)} shorts={<Shorts />} />)
+  mockWidth = 700
+  view.rerender(<FrontPage articles={stories(11)} shorts={<Shorts />} />)
+  expect(mounts).toBe(1)
+})

@@ -1,6 +1,7 @@
 import {useState} from 'react'
 import {View} from 'react-native'
 import {AtUri} from '@atproto/syntax'
+import {moderatePost} from '@bsky/sdk/moderation'
 import {plural} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react/macro'
 
@@ -30,6 +31,7 @@ import {
   STANDFIRST_LINES,
   STANDFIRST_SIZE,
   TEXT_POST_HEADLINE,
+  TEXT_POST_HEADLINE_LINES,
 } from './styles'
 
 /** One front-page story at a given slot size. */
@@ -98,10 +100,33 @@ function NewsCardInner({
     quoted && 'author' in quoted
       ? (quoted.author as {handle: string}).handle
       : undefined
+  /* The quoted words follow the quoted post's own moderation. */
+  const quoteUi =
+    opts && quoted && 'value' in quoted && 'author' in quoted
+      ? moderatePost(
+          {
+            ...(quoted as unknown as app.bsky.feed.defs.PostView),
+            $type: 'app.bsky.feed.defs#postView',
+            record: quoted.value,
+          },
+          opts,
+        ).ui('contentList')
+      : undefined
   const quoteText =
-    quoted && 'value' in quoted && typeof quoted.value === 'object'
+    !quoteUi?.blur &&
+    !quoteUi?.filter &&
+    quoted &&
+    'value' in quoted &&
+    typeof quoted.value === 'object'
       ? (quoted.value as {text?: string}).text
       : undefined
+  /* A quote that carries its own video gets the video treatment. */
+  const mediaKind =
+    kind === 'quote' && article.media?.type === 'video'
+      ? article.media.view.presentation === 'gif'
+        ? 'image'
+        : 'video'
+      : kind
 
   const label = cardAccessibleName({
     publisher: publisherName,
@@ -123,10 +148,11 @@ function NewsCardInner({
   const media = hasMedia && !postText.blur && (
     <Media
       article={article}
-      kind={kind}
+      kind={mediaKind}
       size={size}
       moderation={moderation}
       post={post}
+      dimmed={hovered}
     />
   )
 
@@ -141,6 +167,7 @@ function NewsCardInner({
       <Text
         emoji
         testID="newsCardHeadline"
+        numberOfLines={textLike ? TEXT_POST_HEADLINE_LINES[size] : undefined}
         style={[
           t.atoms.text,
           headline,
@@ -226,7 +253,16 @@ function NewsCardInner({
         label={label}
         onHoverIn={() => setHovered(true)}
         onHoverOut={() => setHovered(false)}
-        onFocus={() => setFocused(true)}
+        onFocus={event =>
+          /* Mouse clicks focus the link too; only keyboard focus shows a ring. */
+          setFocused(
+            (
+              event as unknown as {
+                target?: {matches?: (selector: string) => boolean}
+              }
+            ).target?.matches?.(':focus-visible') ?? true,
+          )
+        }
         onBlur={() => setFocused(false)}
         onPressIn={() => setPressed(true)}
         onPressOut={() => setPressed(false)}

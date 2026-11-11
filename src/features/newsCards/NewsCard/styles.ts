@@ -70,3 +70,9 @@ export function mediaRatio(kind: CardKind, size: CardSize) {
 export const COMPACT_THUMB_WIDTH = 104
 /** Share of the window height the Lead image may take. */
 export const LEAD_MEDIA_MAX_HEIGHT = 0.6
+
+/** Post text can run long; cap it on the smaller slots it may occupy. */
+export const TEXT_POST_HEADLINE_LINES: Partial<Record<CardSize, number>> = {
+  standard: 5,
+  compact: 4,
+}
