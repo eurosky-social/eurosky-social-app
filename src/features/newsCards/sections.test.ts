@@ -231,3 +231,14 @@ it('keeps Latest in the order given, grouping consecutive days', () => {
     'today',
   ])
 })
+
+it('never gives the Lead to a social post, even a popular video', () => {
+  next = 0
+  const viral = story({media: 'video', replies: 99, hoursAgo: 1})
+  const rest = Array.from({length: 30}, (_, i) =>
+    story({publisher: i % 5, hoursAgo: 2 + i}),
+  )
+  const top = buildDiscoverSections([viral, ...rest], NOW, {shorts: false})[0]
+  expect(top.articles[0]).not.toBe(viral)
+  expect(top.articles[0].external?.title).toBeTruthy()
+})

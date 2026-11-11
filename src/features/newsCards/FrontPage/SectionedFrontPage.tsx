@@ -4,7 +4,7 @@ import {useLingui} from '@lingui/react/macro'
 import {atoms as a, useTheme} from '#/alf'
 import {Text} from '#/components/Typography'
 import {type PostArticle} from '#/features/articles/articles'
-import {cardHasMedia} from '../model'
+import {cardCanFeature} from '../model'
 import {NewsCard} from '../NewsCard'
 import {type FrontSection, latestGroups} from '../sections'
 import {
@@ -85,7 +85,7 @@ function Section({
         ? TWO_ROWS
         : ONE_ROW
   const rows = reflowRows(
-    planShapes(section.articles.map(cardHasMedia), shapes),
+    planShapes(section.articles.map(cardCanFeature), shapes),
     columns,
   )
   const name = section.title ?? ''
@@ -179,7 +179,7 @@ function LatestGroup({
   const {t: l, i18n} = useLingui()
   const rows = useFrontPageRows(
     articles.map(article => article.item.uri),
-    articles.map(cardHasMedia),
+    articles.map(cardCanFeature),
     columns,
   )
   const label =

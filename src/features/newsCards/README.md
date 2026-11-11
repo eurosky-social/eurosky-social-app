@@ -2,6 +2,8 @@
 
 The front page for the news product: Home (Discover and Following) and Publisher pages. Design spec: renderghost/eurosky-social-app#2.
 
+Posts are presented two ways (`cardPresentation`). A post whose link card has a real title, on any host (most publishers post through shorteners such as buff.ly or reut.rs), is a **news card**: the article's own title as the headline and its description as the standfirst; the post text is left for the post page. Everything else is a **social post**: the post text at 16px regular (6 lines, 4 in compact rows) with its image or video below. Only news cards with an image take Lead and Feature slots (`cardCanFeature`).
+
 Every story uses one anatomy: kicker (publisher logo and name, then the first hashtag as topic), headline, standfirst, media and actions. The whole card links to the post; publisher, repost, like and bookmark sit above that link as their own controls.
 
 ## Files
@@ -9,7 +11,7 @@ Every story uses one anatomy: kicker (publisher logo and name, then the first ha
 - `model.ts`: `cardKind` (article, link, text, image, gallery, video, youtube, quote), `cardHasMedia`, `cardTopic`, `cardTimeBucket` and `cardAccessibleName`. Pure.
 - `slotting.ts`: `columnsForWidth` (3 at ≥ 960px of content, 2 at 600–959, 1 below), `cardSizeFor`, `continueRows` (the three-column rhythm full, 2+1, 1+1+1, Shorts, 1+2, with media stories promoted at most 3 places into media slots) and `reflowRows` (two and one columns). Pure.
 - `useFrontPageRows.ts`: plans once on three columns and keeps every row but the last when stories are appended, so loading more never reshuffles what is on screen. Column changes reflow the same plan.
-- `NewsCard/`: the card. `styles.ts` holds the type scale (Lead 44/30 Bold, Feature 32/24, Standard 24/20, Compact 17; text posts one step down) and the ratios (16:9 playable, 3:2 photos and articles, 4:3 compact). `Media.tsx` blurs moderated media and plays a muted Lead video unless autoplay is off or reduced motion is on. `CardActions.tsx` shows the time and the post actions.
+- `NewsCard/`: the card. `styles.ts` holds the type scale (Lead 44/30 Bold, Feature 32/24, Standard 24/20, Compact 17) and the ratios (16:9 playable, 3:2 photos and articles, 4:3 compact). `Media.tsx` blurs moderated media and plays a muted Lead video unless autoplay is off or reduced motion is on. `CardActions.tsx` shows the time and the post actions.
 - `FrontPage/`: renders planned rows with hairline rules, the Shorts section, and `FrontPageSkeleton` for the first load.
 
 ## Sectioned Discover (#4)

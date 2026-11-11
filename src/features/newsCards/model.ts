@@ -35,6 +35,21 @@ export function cardKind(article: PostArticle): CardKind {
   return 'text'
 }
 
+/**
+ * A post that links to an article with a real title (any host, since most
+ * publishers post through link shorteners) is presented as a news card: the
+ * article's own title and description. Everything else is a social post shown
+ * as the publisher wrote it.
+ */
+export function cardPresentation(article: PostArticle): 'news' | 'social' {
+  return article.external?.title.trim() ? 'news' : 'social'
+}
+
+/** Lead and Feature slots are editorial: news cards with a picture only. */
+export function cardCanFeature(article: PostArticle) {
+  return cardPresentation(article) === 'news' && !!article.image
+}
+
 /** Only stories with a picture or video may take Lead and Feature slots. */
 export function cardHasMedia(article: PostArticle) {
   const kind = cardKind(article)

@@ -33,13 +33,6 @@ export const HEADLINE: Record<CardSize, HeadlineStyle> = {
   compact: headline(17, 1.25, '600'),
 }
 
-/** Text posts sit one step below articles in the same slot. */
-export const TEXT_POST_HEADLINE: Record<CardSize, HeadlineStyle> = {
-  ...HEADLINE,
-  standard: headline(18, 1.3, '600'),
-  compact: headline(17, 1.3, '600'),
-}
-
 export const STANDFIRST_LINES: Record<CardSize, number> = {
   lead: 3,
   leadTablet: 3,
@@ -70,9 +63,3 @@ export function mediaRatio(kind: CardKind, size: CardSize) {
 export const COMPACT_THUMB_WIDTH = 104
 /** Share of the window height the Lead image may take. */
 export const LEAD_MEDIA_MAX_HEIGHT = 0.6
-
-/** Post text can run long; cap it on the smaller slots it may occupy. */
-export const TEXT_POST_HEADLINE_LINES: Partial<Record<CardSize, number>> = {
-  standard: 5,
-  compact: 4,
-}

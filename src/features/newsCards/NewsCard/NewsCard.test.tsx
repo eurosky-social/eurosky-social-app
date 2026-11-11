@@ -247,9 +247,12 @@ it.each([
   expect(headlineStyle()).toMatchObject({fontSize, fontWeight})
 })
 
-it('sets a text post one step down', () => {
+it('shows a text post as a social post at 16px, not a headline', () => {
   render(<NewsCard article={text} size="standard" />)
-  expect(headlineStyle()).toMatchObject({fontSize: 18})
+  expect(screen.queryByTestId('newsCardHeadline', hidden)).toBeNull()
+  expect(screen.getByTestId('newsCardSocialText', hidden)).toHaveTextContent(
+    'A plain text post',
+  )
 })
 
 it('limits the standfirst to 3 lines on Lead, 2 on Feature, none below', () => {
@@ -328,7 +331,14 @@ it('lets very long words wrap inside the column', () => {
       size="standard"
     />,
   )
-  expect(headlineStyle()).toMatchObject({overflowWrap: 'anywhere'})
+  expect(
+    Object.assign(
+      {},
+      ...[screen.getByTestId('newsCardSocialText', hidden).props.style]
+        .flat(Infinity)
+        .filter(Boolean),
+    ),
+  ).toMatchObject({overflowWrap: 'anywhere'})
 })
 
 describe('Lead video', () => {
@@ -467,19 +477,82 @@ describe('minor fixes', () => {
     expect(screen.getByTestId('newsCardMediaDim', hidden)).toBeTruthy()
   })
 
-  it('caps long post-text headlines on small cards', () => {
+  it('caps long social post text on small cards', () => {
     const long = story(undefined, {text: 'word '.repeat(120)})
     const {rerender} = render(<NewsCard article={long} size="standard" />)
     expect(
-      screen.getByTestId('newsCardHeadline', hidden).props.numberOfLines,
-    ).toBe(5)
+      screen.getByTestId('newsCardSocialText', hidden).props.numberOfLines,
+    ).toBe(6)
     rerender(<NewsCard article={long} size="compact" />)
     expect(
-      screen.getByTestId('newsCardHeadline', hidden).props.numberOfLines,
+      screen.getByTestId('newsCardSocialText', hidden).props.numberOfLines,
     ).toBe(4)
     rerender(<NewsCard article={article} size="standard" />)
     expect(
       screen.getByTestId('newsCardHeadline', hidden).props.numberOfLines,
     ).toBeUndefined()
+  })
+})
+
+describe('social posts', () => {
+  const imagePost = story(
+    {
+      $type: 'app.bsky.embed.images#view',
+      images: [
+        {
+          thumb: 'https://example.com/a.jpg',
+          fullsize: 'https://example.com/a.jpg',
+          alt: '',
+        },
+      ],
+    },
+    {
+      text: 'Breaking news: schools across Italy receive bomb threats https://ft.trib.al/x',
+    },
+  )
+
+  it('shows the post text at 16px regular instead of a headline', () => {
+    render(<NewsCard article={imagePost} size="standard" />)
+    expect(screen.queryByTestId('newsCardHeadline', hidden)).toBeNull()
+    const body = screen.getByTestId('newsCardSocialText', hidden)
+    expect(body).toHaveTextContent(/schools across Italy/)
+    expect(body.props.numberOfLines).toBe(6)
+    expect(
+      Object.assign({}, ...[body.props.style].flat(Infinity).filter(Boolean)),
+    ).toMatchObject({fontSize: 16})
+  })
+
+  it('places the media below the post text', () => {
+    render(<NewsCard article={imagePost} size="standard" />)
+    const all = screen.root.findAll(
+      node =>
+        typeof node.type === 'string' &&
+        (node.props.testID === 'newsCardSocialText' ||
+          node.props.testID === 'newsCardMedia'),
+    )
+    expect(all.map(node => node.props.testID as string)).toEqual([
+      'newsCardSocialText',
+      'newsCardMedia',
+    ])
+  })
+
+  it('caps the post text at four lines in compact rows', () => {
+    render(<NewsCard article={imagePost} size="compact" />)
+    expect(
+      screen.getByTestId('newsCardSocialText', hidden).props.numberOfLines,
+    ).toBe(4)
+  })
+
+  it('reads the post text in the card link name', () => {
+    render(<NewsCard article={imagePost} size="standard" />)
+    expect(screen.getByTestId('newsCardLink').props.label).toContain(
+      'schools across Italy',
+    )
+  })
+
+  it('keeps news cards headline-led', () => {
+    render(<NewsCard article={article} size="standard" />)
+    expect(screen.getByTestId('newsCardHeadline', hidden)).toBeTruthy()
+    expect(screen.queryByTestId('newsCardSocialText', hidden)).toBeNull()
   })
 })

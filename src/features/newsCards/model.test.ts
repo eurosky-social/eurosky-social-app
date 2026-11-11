@@ -1,8 +1,10 @@
 import {articleFromPost} from '#/features/articles/articles'
 import {
   cardAccessibleName,
+  cardCanFeature,
   cardHasMedia,
   cardKind,
+  cardPresentation,
   cardTimeBucket,
   cardTopic,
 } from './model'
@@ -229,5 +231,50 @@ describe('cardAccessibleName', () => {
     ).toBe(
       'Harbour Wire. Headline. 2m ago. 48 comments, 112 reposts, 640 likes.',
     )
+  })
+})
+
+describe('cardPresentation', () => {
+  it('treats any link card with a real title as a news card, shorteners included', () => {
+    expect(
+      cardPresentation(
+        story(
+          external('https://buff.ly/abc', 'A headline', 'https://e.com/t.jpg'),
+        ),
+      ),
+    ).toBe('news')
+    expect(
+      cardPresentation(
+        story(external('https://www.wired.com/x', 'A headline')),
+      ),
+    ).toBe('news')
+  })
+  it('treats everything else as a social post', () => {
+    expect(cardPresentation(story())).toBe('social')
+    expect(cardPresentation(story(images(1)))).toBe('social')
+    expect(cardPresentation(story(video()))).toBe('social')
+    expect(
+      cardPresentation(
+        story(external('https://example.com/a', '  ', 'https://e.com/t.jpg')),
+      ),
+    ).toBe('social')
+    expect(cardPresentation(story(quoteRecord as Embed))).toBe('social')
+  })
+})
+
+describe('cardCanFeature', () => {
+  it('lets only news cards with an image take Lead and Feature slots', () => {
+    expect(
+      cardCanFeature(
+        story(
+          external('https://buff.ly/abc', 'Headline', 'https://e.com/t.jpg'),
+        ),
+      ),
+    ).toBe(true)
+    expect(cardCanFeature(story(external('https://e.com/a', 'Headline')))).toBe(
+      false,
+    )
+    expect(cardCanFeature(story(video()))).toBe(false)
+    expect(cardCanFeature(story(images(1)))).toBe(false)
   })
 })

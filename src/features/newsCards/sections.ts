@@ -1,6 +1,6 @@
 import {type PostArticle} from '#/features/articles/articles'
 import {findPublisherByDid, PUBLISHERS} from '#/features/publishers/publishers'
-import {cardHasMedia, cardKind, cardTopic} from './model'
+import {cardCanFeature, cardKind, cardTopic} from './model'
 import {rankStories, storyScore} from './ranking'
 
 export type SectionKind =
@@ -51,7 +51,7 @@ const PUBLISHER_TAGS = new Set(
  * most two per publisher, relaxed when too few publishers can fill the block.
  */
 function topStories(ranked: readonly PostArticle[]) {
-  const lead = ranked.find(cardHasMedia) ?? ranked[0]
+  const lead = ranked.find(cardCanFeature) ?? ranked[0]
   if (!lead) return []
   const picked = [lead]
   const counts = new Map([[did(lead), 1]])

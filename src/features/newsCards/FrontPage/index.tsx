@@ -2,7 +2,7 @@ import {View} from 'react-native'
 
 import {atoms as a, useTheme} from '#/alf'
 import {type PostArticle} from '#/features/articles/articles'
-import {cardHasMedia} from '../model'
+import {cardCanFeature} from '../model'
 import {NewsCard} from '../NewsCard'
 import {
   cardSizeFor,
@@ -35,7 +35,7 @@ export function FrontPage({
   const columns = useFrontPageColumns()
   const rows = useFrontPageRows(
     articles.map(article => article.item.uri),
-    articles.map(cardHasMedia),
+    articles.map(cardCanFeature),
     columns,
     {shorts: !!shorts},
   )

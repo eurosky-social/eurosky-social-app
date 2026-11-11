@@ -27,7 +27,7 @@ jest.mock('../NewsCard', () => {
   }
 })
 jest.mock('../model', () => ({
-  cardHasMedia: () => true,
+  cardCanFeature: () => true,
 }))
 
 let mockWidth = 1440

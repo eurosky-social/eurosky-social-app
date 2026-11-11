@@ -21,18 +21,18 @@ import {type PostArticle} from '#/features/articles/articles'
 import {articleModeration} from '#/features/articles/moderation'
 import {findPublisherByDid} from '#/features/publishers/publishers'
 import {type app} from '#/lexicons'
-import {cardAccessibleName, cardHasMedia, cardKind, cardTopic} from '../model'
+import {
+  cardAccessibleName,
+  cardHasMedia,
+  cardKind,
+  cardPresentation,
+  cardTopic,
+} from '../model'
 import {type CardSize} from '../slotting'
 import {CardActions, useCardTime} from './CardActions'
 import {Kicker} from './Kicker'
 import {Media} from './Media'
-import {
-  HEADLINE,
-  STANDFIRST_LINES,
-  STANDFIRST_SIZE,
-  TEXT_POST_HEADLINE,
-  TEXT_POST_HEADLINE_LINES,
-} from './styles'
+import {HEADLINE, STANDFIRST_LINES, STANDFIRST_SIZE} from './styles'
 
 /** One front-page story at a given slot size. */
 export function NewsCard({
@@ -84,11 +84,13 @@ function NewsCardInner({
   const publisher = findPublisherByDid(post.author.did)
   const publisherName =
     publisher?.name ?? post.author.displayName ?? post.author.handle
-  const headlineText = article.title
-  const textLike = kind === 'text' || (kind === 'quote' && !hasMedia)
-  const headline = (textLike ? TEXT_POST_HEADLINE : HEADLINE)[size]
+  /* Social posts show what the publisher wrote; news cards the article's title. */
+  const social = cardPresentation(article) === 'social'
+  const postBody = article.item.record.text.trim()
+  const headlineText = social ? postBody : article.title
+  const headline = HEADLINE[size]
   const standfirstLines = STANDFIRST_LINES[size]
-  const isLead = size === 'lead'
+  const isLead = size === 'lead' && !social
   const isCompact = size === 'compact'
   const postText = article.item.moderation.ui('contentList')
   /* A warning on the text hides the whole story, so the link names the warning instead. */
@@ -164,22 +166,37 @@ function NewsCardInner({
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       style={[a.gap_sm]}>
-      <Text
-        emoji
-        testID="newsCardHeadline"
-        numberOfLines={textLike ? TEXT_POST_HEADLINE_LINES[size] : undefined}
-        style={[
-          t.atoms.text,
-          headline,
-          web({
-            overflowWrap: 'anywhere',
-            textWrap: 'balance',
-            textDecorationLine: hovered ? 'underline' : 'none',
-          }),
-        ]}>
-        {headlineText}
-      </Text>
-      {standfirstLines > 0 && !!article.description && (
+      {social ? (
+        <Text
+          emoji
+          testID="newsCardSocialText"
+          numberOfLines={isCompact ? 4 : 6}
+          style={[
+            t.atoms.text,
+            isCompact
+              ? {fontSize: 15, lineHeight: 21}
+              : {fontSize: 16, lineHeight: 22},
+            web({overflowWrap: 'anywhere'}),
+          ]}>
+          {postBody}
+        </Text>
+      ) : (
+        <Text
+          emoji
+          testID="newsCardHeadline"
+          style={[
+            t.atoms.text,
+            headline,
+            web({
+              overflowWrap: 'anywhere',
+              textWrap: 'balance',
+              textDecorationLine: hovered ? 'underline' : 'none',
+            }),
+          ]}>
+          {headlineText}
+        </Text>
+      )}
+      {!social && standfirstLines > 0 && !!article.description && (
         <Text
           emoji
           testID="newsCardStandfirst"
@@ -225,6 +242,7 @@ function NewsCardInner({
       ) : (
         story
       )}
+      {social && !isCompact && media}
       {isLead && <View style={a.flex_1} pointerEvents="none" />}
       <CardActions post={post} createdAt={article.item.record.createdAt} />
     </View>
@@ -283,7 +301,7 @@ function NewsCardInner({
         </>
       ) : (
         <>
-          {media}
+          {!social && media}
           {body}
         </>
       )}
