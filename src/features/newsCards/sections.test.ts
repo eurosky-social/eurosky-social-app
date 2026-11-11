@@ -186,3 +186,12 @@ it('groups Latest by today, yesterday and older dates', () => {
     latestGroups([today, yesterday, older], NOW).map(group => group.bucket),
   ).toEqual(['today', 'yesterday', 'date'])
 })
+
+it('keeps an already-shown Top stories block when sections are built later', () => {
+  const articles = window60()
+  const top = articles.slice(10, 16)
+  const sections = buildDiscoverSections(articles, NOW, {shorts: true, top})
+  expect(sections[0].articles).toEqual(top)
+  const elsewhere = sections.slice(1).flatMap(section => uris(section.articles))
+  for (const article of top) expect(elsewhere).not.toContain(article.item.uri)
+})

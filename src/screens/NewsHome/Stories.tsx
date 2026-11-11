@@ -1,3 +1,4 @@
+import {useEffect} from 'react'
 import {View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
@@ -12,6 +13,7 @@ import {Text} from '#/components/Typography'
 import {articleModeration} from '#/features/articles/moderation'
 import {FrontPageSkeleton} from '#/features/newsCards/FrontPage'
 import {SectionedFrontPage} from '#/features/newsCards/FrontPage/SectionedFrontPage'
+import {SECTION_WINDOW} from '#/features/newsCards/sections'
 import {articlesFromPublisherFeed} from '#/features/publishers/articles'
 import {publisherFeedDescriptor} from '#/features/publishers/feedDescriptor'
 import {HomeShortsRow} from './ShortsRow'
@@ -33,6 +35,19 @@ export function NewsStories({
   const articles = articlesFromPublisherFeed(
     feed.data?.pages.flatMap(page => page.slices) ?? [],
   ).filter(article => !articleModeration(article, opts).filter)
+  /*
+   * Discover builds its sections from the first 60 stories, so ask for the
+   * second page straight away instead of waiting for the reader to scroll.
+   */
+  const wantsWindow =
+    !publisherDids &&
+    !feed.isPending &&
+    articles.length < SECTION_WINDOW &&
+    !!feed.hasNextPage &&
+    !feed.isFetchingNextPage
+  useEffect(() => {
+    if (wantsWindow) void feed.fetchNextPage()
+  }, [wantsWindow, feed])
   return (
     <Layout.Content
       webPageScroll

@@ -106,3 +106,27 @@ it('shows skeleton cards while the first page loads', () => {
   expect(screen.getByTestId('frontPageSkeleton')).toBeTruthy()
   expect(screen.queryByTestId('sectionedFrontPage')).toBeNull()
 })
+
+it('fetches the second page straight away so Discover can build its sections', () => {
+  const fetchNextPage = jest.fn()
+  mockArticles = Array.from({length: 30}, (_, i) => ({
+    item: {uri: `at://did:plc:pub/app.bsky.feed.post/${i}`},
+  }))
+  mockFeed = {...mockFeed, hasNextPage: true, fetchNextPage}
+  renderStories()
+  expect(fetchNextPage).toHaveBeenCalledTimes(1)
+})
+
+it('does not prefetch for Following', () => {
+  const fetchNextPage = jest.fn()
+  mockArticles = Array.from({length: 30}, (_, i) => ({
+    item: {uri: `at://did:plc:pub/app.bsky.feed.post/${i}`},
+  }))
+  mockFeed = {...mockFeed, hasNextPage: true, fetchNextPage}
+  render(
+    <I18nProvider i18n={i18n}>
+      <NewsStories publisherDids={['did:plc:pub']} />
+    </I18nProvider>,
+  )
+  expect(fetchNextPage).not.toHaveBeenCalled()
+})

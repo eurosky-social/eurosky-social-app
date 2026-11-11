@@ -5,26 +5,18 @@ import {
   buildDiscoverSections,
   buildFollowingSections,
   type FrontSection,
+  SECTION_WINDOW,
 } from '../sections'
 
-/** Freeze once this many stories have loaded, so sections do not reshuffle as pages arrive. */
-const FREEZE_AT = 20
+/** Top stories freeze once this many stories have loaded. */
+const TOP_AT = 20
 
 type Frozen = {
   first: string
+  /** Sections above Latest; Top stories only until the full window lands. */
   sections: FrontSection[]
-  claimed: Set<string>
-}
-
-function build(
-  articles: readonly PostArticle[],
-  mode: 'discover' | 'following',
-  shorts: boolean,
-) {
-  const now = new Date()
-  return mode === 'discover'
-    ? buildDiscoverSections(articles, now, {shorts})
-    : buildFollowingSections(articles, now)
+  /** All sections are built; nothing above Latest changes until a refresh. */
+  complete: boolean
 }
 
 function newestFirst(articles: readonly PostArticle[]) {
@@ -35,45 +27,76 @@ function newestFirst(articles: readonly PostArticle[]) {
   )
 }
 
+function withLatest(
+  sections: FrontSection[],
+  articles: readonly PostArticle[],
+): FrontSection[] {
+  const claimed = new Set(
+    sections.flatMap(section => section.articles.map(a => a.item.uri)),
+  )
+  return [
+    ...sections,
+    {
+      id: 'latest',
+      kind: 'latest',
+      articles: newestFirst(
+        articles.filter(article => !claimed.has(article.item.uri)),
+      ),
+    },
+  ]
+}
+
 /**
- * Build the sections once enough stories have loaded and keep them until the
- * feed is refreshed (its first story changes). Only Latest keeps growing.
+ * Two stages, so the page shows at once without anything moving above the
+ * fold: Top stories freeze from the first page, and the other sections are
+ * built and frozen when the full window (or the end of the feed) arrives,
+ * keeping that Top stories block. Only Latest grows after that. A refresh
+ * (a new first story) starts again.
  */
 export function useFrozenSections(
   articles: readonly PostArticle[],
   mode: 'discover' | 'following',
   shorts: boolean,
-  complete = false,
+  feedComplete = false,
 ): FrontSection[] {
   const [frozen, setFrozen] = useState<Frozen | undefined>()
   const first = articles[0]?.item.uri
   const current = frozen && frozen.first === first ? frozen : undefined
+  const now = new Date()
+  const enoughForTop = articles.length >= TOP_AT || feedComplete
+  const enoughForAll = articles.length >= SECTION_WINDOW || feedComplete
 
-  if (!current) {
-    const sections = build(articles, mode, shorts)
-    if (first && (articles.length >= FREEZE_AT || complete)) {
-      const kept = sections.filter(section => section.kind !== 'latest')
-      setFrozen({
-        first,
-        sections: kept,
-        claimed: new Set(
-          kept.flatMap(section => section.articles.map(a => a.item.uri)),
-        ),
-      })
-    } else if (frozen) {
-      setFrozen(undefined)
-    }
-    return sections
+  if (current?.complete) return withLatest(current.sections, articles)
+
+  if (!first || !enoughForTop) {
+    if (frozen) setFrozen(undefined)
+    return mode === 'discover'
+      ? buildDiscoverSections(articles, now, {shorts})
+      : buildFollowingSections(articles, now)
   }
 
-  return [
-    ...current.sections,
-    {
-      id: 'latest',
-      kind: 'latest',
-      articles: newestFirst(
-        articles.filter(article => !current.claimed.has(article.item.uri)),
-      ),
-    },
-  ]
+  if (mode === 'following') {
+    const sections = buildFollowingSections(articles, now).filter(
+      section => section.kind !== 'latest',
+    )
+    setFrozen({first, sections, complete: true})
+    return withLatest(sections, articles)
+  }
+
+  const top = current?.sections.find(section => section.kind === 'top')
+  if (enoughForAll) {
+    const sections = buildDiscoverSections(articles, now, {
+      shorts,
+      top: top?.articles,
+    }).filter(section => section.kind !== 'latest')
+    setFrozen({first, sections, complete: true})
+    return withLatest(sections, articles)
+  }
+
+  if (current) return withLatest(current.sections, articles)
+  const topOnly = buildDiscoverSections(articles, now, {shorts}).filter(
+    section => section.kind === 'top',
+  )
+  setFrozen({first, sections: topOnly, complete: false})
+  return withLatest(topOnly, articles)
 }

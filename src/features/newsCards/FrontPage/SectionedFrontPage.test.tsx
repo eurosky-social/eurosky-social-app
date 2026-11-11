@@ -183,3 +183,24 @@ it('shows only Top stories and Latest on a thin feed', () => {
   render(page(feed(12)))
   expect(headings()).toEqual(['sectionHeading-top', 'sectionHeading-latest'])
 })
+
+it('shows Top stories at once and adds the other sections when the second page lands', () => {
+  const all = feed(60)
+  const view = render(page(all.slice(0, 30)))
+  expect(headings()).toEqual(['sectionHeading-top', 'sectionHeading-latest'])
+  const topCards = () =>
+    screen
+      .getByTestId('section-top')
+      .findAll(
+        node =>
+          typeof node.props.testID === 'string' &&
+          node.props.testID.startsWith('card:'),
+      )
+      .map(node => node.props.testID as string)
+  const before = topCards()
+  view.rerender(page(all))
+  expect(topCards()).toEqual(before)
+  expect(headings()).toEqual(
+    expect.arrayContaining(['sectionHeading-popular', 'sectionHeading-video']),
+  )
+})

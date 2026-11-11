@@ -74,7 +74,14 @@ function topStories(ranked: readonly PostArticle[]) {
 export function buildDiscoverSections(
   articles: readonly PostArticle[],
   now: Date,
-  {shorts}: {shorts: boolean},
+  {
+    shorts,
+    top: shownTop,
+  }: {
+    shorts: boolean
+    /** Top stories already on screen; kept as they are. */
+    top?: readonly PostArticle[]
+  },
 ): FrontSection[] {
   const window = articles.slice(0, SECTION_WINDOW)
   const used = new Set<PostArticle>()
@@ -87,7 +94,7 @@ export function buildDiscoverSections(
   const ranked = rankStories(window, now)
   const sections: FrontSection[] = []
 
-  const top = claim(topStories(ranked))
+  const top = claim(shownTop ? [...shownTop] : topStories(ranked))
   if (top.length) sections.push({id: 'top', kind: 'top', articles: top})
 
   if (window.length >= THIN_FEED) {
