@@ -17,10 +17,9 @@ import {Link} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import {ScreenHider} from '#/components/moderation/ScreenHider'
 import {Text} from '#/components/Typography'
-import {ArticleList} from '#/features/articles/ArticleList'
 import {articlesFromAuthorFeed} from '#/features/articles/articles'
 import {articleModeration} from '#/features/articles/moderation'
-import {usePageGeometry} from '#/features/product/layout/usePageGeometry'
+import {FrontPage, FrontPageSkeleton} from '#/features/newsCards/FrontPage'
 import {findPublisher} from '#/features/publishers/publishers'
 import {type app} from '#/lexicons'
 import {PublisherProfileDetails} from './ProfileDetails'
@@ -138,7 +137,6 @@ function PublisherArticles({
   const profile = useProfileShadow(unshadowedProfile)
   const moderation = moderateProfile(profile, moderationOpts)
   const blocked = !!profile.viewer?.blocking || !!profile.viewer?.blockedBy
-  const {wide} = usePageGeometry()
   const feed = usePostFeedQuery(
     `author|${profile.did}|posts_no_replies`,
     undefined,
@@ -181,11 +179,9 @@ function PublisherArticles({
           ) : (
             <>
               {feed.isPending ? (
-                <Status>
-                  <Loader size="lg" />
-                </Status>
+                <FrontPageSkeleton />
               ) : (
-                <ArticleList articles={articles} wide={wide} />
+                <FrontPage articles={articles} />
               )}
               {feed.isError ? (
                 <Status>
