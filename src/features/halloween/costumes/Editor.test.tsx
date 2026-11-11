@@ -7,10 +7,6 @@ import {CostumeButton} from './Editor'
 const mockNavigate = jest.fn()
 let mockActive = true
 let mockDid = 'did:plc:alice'
-let mockCostume: {costumeNumber: number} | undefined
-jest.mock('@tanstack/react-query', () => ({
-  useQuery: () => ({data: mockCostume}),
-}))
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({navigate: mockNavigate}),
 }))
@@ -38,20 +34,20 @@ beforeEach(() => {
   jest.clearAllMocks()
   mockActive = true
   mockDid = profile.did
-  mockCostume = undefined
 })
 
 it('opens a dedicated drawing screen even with the theme disabled', () => {
   const screen = renderEntry()
+  expect(screen.getByText('Costume')).toBeTruthy()
+  expect(screen.getByTestId('drawCostumeButton').props.label).toBe('Costume')
   fireEvent.press(screen.getByTestId('drawCostumeButton'))
   expect(mockNavigate).toHaveBeenCalledWith('CostumeEditor')
   expect(screen.queryByTestId('costumeEditorDialog')).toBeNull()
 })
 
-it('offers editing for a saved costume only on your own profile during Halloween', () => {
-  mockCostume = {costumeNumber: 1}
+it('offers costumes only on your own profile during Halloween', () => {
   const screen = renderEntry()
-  expect(screen.getByText('Edit costume')).toBeTruthy()
+  expect(screen.getByText('Costume')).toBeTruthy()
   mockActive = false
   screen.rerender(
     <I18nProvider i18n={i18n}>
