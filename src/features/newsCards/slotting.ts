@@ -39,6 +39,59 @@ export function cardSizeFor(span: Span, columns: Columns): CardSize {
 }
 
 /**
+ * Take stories from the front of `queue` into one row of `shape`. A span of 2
+ * or 3 promotes the next media story within the window; with none, the row
+ * falls back to 1+1+1. Mutates `queue`.
+ */
+function placeRow(
+  queue: number[],
+  shape: readonly Span[],
+  hasMedia: readonly boolean[],
+): PlannedRow {
+  const cells: PlannedCell[] = []
+  let fallback = false
+  for (const span of shape) {
+    if (!queue.length) break
+    if (span === 1) {
+      cells.push({index: queue.shift()!, span})
+      continue
+    }
+    const found = queue
+      .slice(0, PROMOTION_WINDOW + 1)
+      .findIndex(index => hasMedia[index])
+    if (found < 0) {
+      fallback = true
+      break
+    }
+    cells.push({index: queue.splice(found, 1)[0], span})
+  }
+  if (fallback) {
+    for (const cell of cells) cell.span = 1
+    while (cells.length < 3 && queue.length)
+      cells.push({index: queue.shift()!, span: 1})
+  }
+  const partial = fallback ? cells.length < 3 : cells.length < shape.length
+  return partial ? {type: 'cards', cells, partial} : {type: 'cards', cells}
+}
+
+/**
+ * Lay stories into a fixed list of row shapes, once, without cycling or
+ * Shorts. Stories that do not fit are left for the caller.
+ */
+export function planShapes(
+  hasMedia: readonly boolean[],
+  shapes: readonly (readonly Span[])[],
+): PlannedRow[] {
+  const queue = hasMedia.map((_, index) => index)
+  const rows: PlannedRow[] = []
+  for (const shape of shapes) {
+    if (!queue.length) break
+    rows.push(placeRow(queue, shape, hasMedia))
+  }
+  return rows
+}
+
+/**
  * Continue the three-column plan after `frozen` rows, placing every story not
  * already placed. Only stories with media take spans of 2 or 3.
  */
@@ -58,33 +111,7 @@ export function continueRows(
   let shortsDone = frozen.some(row => row.type === 'shorts')
 
   while (queue.length) {
-    const cells: PlannedCell[] = []
-    let fallback = false
-    for (const span of SHAPES[cardRows % SHAPES.length]) {
-      if (!queue.length) break
-      if (span === 1) {
-        cells.push({index: queue.shift()!, span})
-        continue
-      }
-      const found = queue
-        .slice(0, PROMOTION_WINDOW + 1)
-        .findIndex(index => hasMedia[index])
-      if (found < 0) {
-        fallback = true
-        break
-      }
-      cells.push({index: queue.splice(found, 1)[0], span})
-    }
-    const shape = SHAPES[cardRows % SHAPES.length]
-    if (fallback) {
-      for (const cell of cells) cell.span = 1
-      while (cells.length < 3 && queue.length)
-        cells.push({index: queue.shift()!, span: 1})
-    }
-    const partial = fallback ? cells.length < 3 : cells.length < shape.length
-    rows.push(
-      partial ? {type: 'cards', cells, partial} : {type: 'cards', cells},
-    )
+    rows.push(placeRow(queue, SHAPES[cardRows % SHAPES.length], hasMedia))
     cardRows++
     if (shorts && !shortsDone && cardRows === SHORTS_AFTER_ROW) {
       rows.push({type: 'shorts'})

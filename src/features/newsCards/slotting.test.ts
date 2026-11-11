@@ -4,6 +4,7 @@ import {
   continueRows,
   type PlannedRow,
   planRows,
+  planShapes,
   reflowRows,
   type Span,
 } from './slotting'
@@ -140,5 +141,42 @@ describe('continueRows', () => {
     const rows = continueRows(frozen, Array(9).fill(true))
     expect(rows.slice(0, frozen.length)).toEqual(frozen)
     expect(shape(rows)).toEqual([[3], [2, 1], [1, 1, 1], [1, 2], [3]])
+  })
+})
+
+describe('planShapes', () => {
+  const TOP: Span[][] = [[3], [2, 1], [1, 1, 1]]
+  const placedCount = (rows: PlannedRow[]) => order(rows).length
+
+  it('falls back to 1+1+1 rows when no story has media', () => {
+    const rows = planShapes(Array(6).fill(false), TOP)
+    expect(shape(rows)).toEqual([
+      [1, 1, 1],
+      [1, 1, 1],
+    ])
+    expect(placedCount(rows)).toBe(6)
+  })
+
+  it('promotes a media story into the Lead', () => {
+    const rows = planShapes([false, true, true, false, false, false], TOP)
+    expect(rows[0]).toEqual({type: 'cards', cells: [{index: 1, span: 3}]})
+  })
+
+  it('fills two rows of 2+1 and 1+1+1 with five stories', () => {
+    const rows = planShapes(Array(7).fill(true), [
+      [2, 1],
+      [1, 1, 1],
+    ])
+    expect(shape(rows)).toEqual([
+      [2, 1],
+      [1, 1, 1],
+    ])
+    expect(placedCount(rows)).toBe(5)
+  })
+
+  it('fills a single row of three', () => {
+    expect(shape(planShapes(Array(5).fill(true), [[1, 1, 1]]))).toEqual([
+      [1, 1, 1],
+    ])
   })
 })
