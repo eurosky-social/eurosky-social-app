@@ -20,10 +20,14 @@ export type FrontSection = {
 export const SECTION_WINDOW = 60
 /** Below this, the page shows only Top stories and Latest. */
 const THIN_FEED = 20
-const TOP_SIZE = 6
 const TOP_PER_PUBLISHER = 2
-const TWO_ROW_SIZE = 5
-const ONE_ROW_SIZE = 3
+/** A section with fewer stories than this is left out. */
+const MIN_ROW = 3
+/** Stories per section, so each section fills its rows on three or four columns. */
+const SIZES = {
+  narrow: {top: 6, twoRows: 5, oneRow: 3},
+  wide: {top: 9, twoRows: 7, oneRow: 4},
+} as const
 const MAX_PUBLISHER_SECTIONS = 3
 const MAX_TOPIC_SECTIONS = 5
 
@@ -50,13 +54,13 @@ const PUBLISHER_TAGS = new Set(
  * Lead is the best-ranked story with media; the rest follow by rank with at
  * most two per publisher, relaxed when too few publishers can fill the block.
  */
-function topStories(ranked: readonly PostArticle[]) {
+function topStories(ranked: readonly PostArticle[], size: number) {
   const lead = ranked.find(cardCanFeature) ?? ranked[0]
   if (!lead) return []
   const picked = [lead]
   const counts = new Map([[did(lead), 1]])
   for (const article of ranked) {
-    if (picked.length >= TOP_SIZE) break
+    if (picked.length >= size) break
     if (article === lead) continue
     const count = counts.get(did(article)) ?? 0
     if (count >= TOP_PER_PUBLISHER) continue
@@ -64,7 +68,7 @@ function topStories(ranked: readonly PostArticle[]) {
     counts.set(did(article), count + 1)
   }
   for (const article of ranked) {
-    if (picked.length >= TOP_SIZE) break
+    if (picked.length >= size) break
     if (!picked.includes(article)) picked.push(article)
   }
   return picked
@@ -77,12 +81,16 @@ export function buildDiscoverSections(
   {
     shorts,
     top: shownTop,
+    wide = false,
   }: {
     shorts: boolean
     /** Top stories already on screen; kept as they are. */
     top?: readonly PostArticle[]
+    /** Four columns: every section takes enough stories to fill its rows. */
+    wide?: boolean
   },
 ): FrontSection[] {
+  const size = SIZES[wide ? 'wide' : 'narrow']
   const window = articles.slice(0, SECTION_WINDOW)
   /* By URI: the feed rebuilds story objects on every render. */
   const used = new Set<string>()
@@ -95,11 +103,11 @@ export function buildDiscoverSections(
   const ranked = rankStories(window, now)
   const sections: FrontSection[] = []
 
-  const top = claim(shownTop ? [...shownTop] : topStories(ranked))
+  const top = claim(shownTop ? [...shownTop] : topStories(ranked, size.top))
   if (top.length) sections.push({id: 'top', kind: 'top', articles: top})
 
   if (window.length >= THIN_FEED) {
-    const popular = claim(unused(ranked).slice(0, TWO_ROW_SIZE))
+    const popular = claim(unused(ranked).slice(0, size.twoRows))
     if (popular.length)
       sections.push({id: 'popular', kind: 'popular', articles: popular})
 
@@ -107,11 +115,11 @@ export function buildDiscoverSections(
       const kind = cardKind(article)
       return kind === 'video' || kind === 'youtube'
     })
-    if (videos.length >= ONE_ROW_SIZE)
+    if (videos.length >= MIN_ROW)
       sections.push({
         id: 'video',
         kind: 'video',
-        articles: claim(videos.slice(0, TWO_ROW_SIZE)),
+        articles: claim(videos.slice(0, size.twoRows)),
       })
 
     if (shorts) sections.push({id: 'shorts', kind: 'shorts', articles: []})
@@ -125,7 +133,7 @@ export function buildDiscoverSections(
     const total = (list: PostArticle[]) =>
       list.reduce((sum, article) => sum + storyScore(article, now), 0)
     const publisherGroups = [...byPublisher.entries()]
-      .filter(([, list]) => list.length >= ONE_ROW_SIZE)
+      .filter(([, list]) => list.length >= MIN_ROW)
       .sort(([, x], [, y]) => total(y) - total(x) || y.length - x.length)
       .slice(0, MAX_PUBLISHER_SECTIONS)
     for (const [publisherDid, list] of publisherGroups) {
@@ -135,7 +143,7 @@ export function buildDiscoverSections(
         kind: 'publisher',
         title: publisher?.name,
         publisherId: publisher?.id,
-        articles: claim(newestFirst(list).slice(0, ONE_ROW_SIZE)),
+        articles: claim(newestFirst(list).slice(0, size.oneRow)),
       })
     }
 
@@ -146,7 +154,7 @@ export function buildDiscoverSections(
       tagCounts.set(topic, (tagCounts.get(topic) ?? 0) + 1)
     }
     const tags = [...tagCounts.entries()]
-      .filter(([, count]) => count >= ONE_ROW_SIZE)
+      .filter(([, count]) => count >= MIN_ROW)
       .sort(([, x], [, y]) => y - x)
       .map(([tag]) => tag)
     let topics = 0
@@ -155,14 +163,14 @@ export function buildDiscoverSections(
       const list = newestFirst(unused(window)).filter(
         article => cardTopic(article.item.record)?.toLowerCase() === tag,
       )
-      if (list.length < ONE_ROW_SIZE) continue
+      if (list.length < MIN_ROW) continue
       sections.push({
         id: `topic-${tag}`,
         kind: 'topic',
         /* Keep the publisher's casing (#AI stays AI). */
         title: cardTopic(list[0].item.record) ?? tag,
         tag,
-        articles: claim(list.slice(0, ONE_ROW_SIZE)),
+        articles: claim(list.slice(0, size.oneRow)),
       })
       topics++
     }
@@ -180,8 +188,12 @@ export function buildDiscoverSections(
 export function buildFollowingSections(
   articles: readonly PostArticle[],
   now: Date,
+  {wide = false}: {wide?: boolean} = {},
 ): FrontSection[] {
-  const top = topStories(rankStories(articles.slice(0, SECTION_WINDOW), now))
+  const top = topStories(
+    rankStories(articles.slice(0, SECTION_WINDOW), now),
+    SIZES[wide ? 'wide' : 'narrow'].top,
+  )
   const shown = new Set(top)
   const sections: FrontSection[] = []
   if (top.length) sections.push({id: 'top', kind: 'top', articles: top})

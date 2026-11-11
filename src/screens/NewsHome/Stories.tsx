@@ -64,7 +64,8 @@ export function NewsStories({
       {...scroll}
       contentContainerStyle={[a.pb_4xl]}>
       {header}
-      <View style={[a.px_lg]}>
+      {/* No side padding: the grid runs edge to edge inside the page column. */}
+      <View>
         {feed.isPending ? (
           <FrontPageSkeleton />
         ) : (

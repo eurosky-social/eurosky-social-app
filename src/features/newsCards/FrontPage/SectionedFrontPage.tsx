@@ -10,6 +10,8 @@ import {type FrontSection, latestGroups} from '../sections'
 import {
   cardSizeFor,
   type Columns,
+  type PlanColumns,
+  planColumnsFor,
   planShapes,
   reflowRows,
   type Span,
@@ -20,12 +22,32 @@ import {SectionHeading} from './SectionHeading'
 import {useFrontPageColumns} from './useFrontPageColumns'
 import {useFrozenSections} from './useFrozenSections'
 
-const TOP: Span[][] = [[3], [2, 1], [1, 1, 1]]
-const TWO_ROWS: Span[][] = [
-  [2, 1],
-  [1, 1, 1],
-]
-const ONE_ROW: Span[][] = [[1, 1, 1]]
+/** Section shapes for three and four columns; sizes match `sections.ts`. */
+const SHAPES: Record<
+  PlanColumns,
+  Record<'top' | 'twoRows' | 'oneRow', Span[][]>
+> = {
+  3: {
+    top: [[3], [2, 1], [1, 1, 1]],
+    twoRows: [
+      [2, 1],
+      [1, 1, 1],
+    ],
+    oneRow: [[1, 1, 1]],
+  },
+  4: {
+    top: [
+      [3, 1],
+      [2, 1, 1],
+      [1, 1, 1, 1],
+    ],
+    twoRows: [
+      [2, 1, 1],
+      [1, 1, 1, 1],
+    ],
+    oneRow: [[1, 1, 1, 1]],
+  },
+}
 
 /**
  * Discover as a newspaper: Top stories, then named sections, then an endless
@@ -46,7 +68,13 @@ export function SectionedFrontPage({
   const t = useTheme()
   const {t: l} = useLingui()
   const columns = useFrontPageColumns()
-  const sections = useFrozenSections(articles, mode, !!shorts, complete)
+  const sections = useFrozenSections(
+    articles,
+    mode,
+    !!shorts,
+    complete,
+    columns === 4,
+  )
   return (
     <View testID="sectionedFrontPage">
       {sections.map(section =>
@@ -64,7 +92,11 @@ export function SectionedFrontPage({
             <View
               testID="shortsBox"
               style={[
-                {borderWidth: 1, padding: CELL_PADDING},
+                {
+                  borderTopWidth: 1,
+                  borderBottomWidth: 1,
+                  padding: CELL_PADDING,
+                },
                 t.atoms.border_contrast_low,
               ]}>
               {shorts}
@@ -93,12 +125,13 @@ function Section({
   columns: Columns
 }) {
   const {t: l} = useLingui()
+  const shape = SHAPES[planColumnsFor(columns)]
   const shapes =
     section.kind === 'top'
-      ? TOP
+      ? shape.top
       : section.kind === 'popular' || section.kind === 'video'
-        ? TWO_ROWS
-        : ONE_ROW
+        ? shape.twoRows
+        : shape.oneRow
   const rows = reflowRows(
     planShapes(section.articles.map(cardCanFeature), shapes),
     columns,
@@ -215,6 +248,7 @@ function LatestGroup({
         style={[
           a.pt_lg,
           a.pb_sm,
+          {paddingHorizontal: CELL_PADDING},
           a.text_sm,
           a.font_semi_bold,
           t.atoms.text_contrast_medium,

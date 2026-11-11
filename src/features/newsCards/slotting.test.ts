@@ -33,6 +33,8 @@ it('chooses columns from the content width', () => {
   expect(columnsForWidth(600)).toBe(2)
   expect(columnsForWidth(959)).toBe(2)
   expect(columnsForWidth(960)).toBe(3)
+  expect(columnsForWidth(1439)).toBe(3)
+  expect(columnsForWidth(1440)).toBe(4)
 })
 
 it('maps spans to card sizes for each column count', () => {
@@ -45,6 +47,37 @@ it('maps spans to card sizes for each column count', () => {
   expect(cardSizeFor(3, 1)).toBe('leadPhone')
   expect(cardSizeFor(2, 1)).toBe('featurePhone')
   expect(cardSizeFor(1, 1)).toBe('compact')
+  expect(cardSizeFor(3, 4)).toBe('lead')
+  expect(cardSizeFor(2, 4)).toBe('feature')
+  expect(cardSizeFor(1, 4)).toBe('standard')
+})
+
+describe('planRows on four columns', () => {
+  it('follows 3+1, 2+1+1, 1+1+1+1, Shorts, 1+1+2, then repeats', () => {
+    const rows = planRows(Array(17).fill(true), 4, {shorts: true})
+    expect(shape(rows)).toEqual([
+      [3, 1],
+      [2, 1, 1],
+      [1, 1, 1, 1],
+      'shorts',
+      [1, 1, 2],
+      [3, 1],
+      [2, 1, 1],
+    ])
+    expect(order(rows)).toHaveLength(17)
+  })
+
+  it('falls back to 1+1+1+1 when the next four stories have no media', () => {
+    expect(shape(planRows(Array(8).fill(false), 4))).toEqual([
+      [1, 1, 1, 1],
+      [1, 1, 1, 1],
+    ])
+  })
+
+  it('shows a four-column plan as it is', () => {
+    const rows = planRows(Array(9).fill(true), 4)
+    expect(reflowRows(rows, 4)).toEqual(rows)
+  })
 })
 
 describe('planRows on three columns', () => {
@@ -172,6 +205,20 @@ describe('planShapes', () => {
       [1, 1, 1],
     ])
     expect(placedCount(rows)).toBe(5)
+  })
+
+  it('fills the four-column Top stories with nine stories', () => {
+    const rows = planShapes(Array(12).fill(true), [
+      [3, 1],
+      [2, 1, 1],
+      [1, 1, 1, 1],
+    ])
+    expect(shape(rows)).toEqual([
+      [3, 1],
+      [2, 1, 1],
+      [1, 1, 1, 1],
+    ])
+    expect(placedCount(rows)).toBe(9)
   })
 
   it('fills a single row of three', () => {

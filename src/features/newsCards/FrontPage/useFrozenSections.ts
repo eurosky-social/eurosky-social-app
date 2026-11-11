@@ -22,6 +22,8 @@ type Frozen = {
   complete: boolean
   /** Latest in the order shown; new batches are appended. */
   latest: string[]
+  /** Built for four columns; crossing the boundary builds the sections again. */
+  wide: boolean
 }
 
 function newestFirst(articles: readonly PostArticle[]) {
@@ -38,11 +40,12 @@ function build(
   mode: 'discover' | 'following' | 'latest',
   shorts: boolean,
   now: Date,
+  wide: boolean,
   top?: PostArticle[],
 ): FrontSection[] {
   if (mode === 'discover')
-    return buildDiscoverSections(articles, now, {shorts, top})
-  if (mode === 'following') return buildFollowingSections(articles, now)
+    return buildDiscoverSections(articles, now, {shorts, top, wide})
+  if (mode === 'following') return buildFollowingSections(articles, now, {wide})
   return [{id: 'latest', kind: 'latest', articles: newestFirst(articles)}]
 }
 
@@ -61,20 +64,23 @@ function freeze(sections: FrontSection[]): FrozenSection[] {
  * built and frozen when the full window (or the end of the feed) arrives.
  * Sections hold URIs and are filled from the current feed, so muted, hidden or
  * deleted posts drop out. Latest keeps the order it was shown in and appends
- * each newly loaded batch. A refresh (an unseen first story) starts again.
+ * each newly loaded batch. A refresh (an unseen first story), or crossing between three and four
+ * columns, starts again.
  */
 export function useFrozenSections(
   articles: readonly PostArticle[],
   mode: 'discover' | 'following' | 'latest',
   shorts: boolean,
   feedComplete = false,
+  wide = false,
 ): FrontSection[] {
   const [frozen, setFrozen] = useState<Frozen | undefined>()
   const byUri = new Map<string, PostArticle>(
     articles.map(article => [article.item.uri, article]),
   )
   const first = articles[0]?.item.uri
-  const refreshed = !!frozen && !!first && !frozen.known.has(first)
+  const refreshed =
+    !!frozen && ((!!first && !frozen.known.has(first)) || frozen.wide !== wide)
   const current = refreshed ? undefined : frozen
   const now = new Date()
   const enoughForTop = articles.length >= TOP_AT || feedComplete
@@ -83,7 +89,7 @@ export function useFrozenSections(
 
   if (!current && (!first || !enoughForTop)) {
     if (frozen) setFrozen(undefined)
-    return build(articles, mode, shorts, now)
+    return build(articles, mode, shorts, now, wide)
   }
 
   let next = current
@@ -91,7 +97,7 @@ export function useFrozenSections(
     const shownTop = next?.sections
       .find(section => section.kind === 'top')
       ?.uris.flatMap(uri => byUri.get(uri) ?? [])
-    const built = build(articles, mode, shorts, now, shownTop)
+    const built = build(articles, mode, shorts, now, wide, shownTop)
     const sections = freeze(
       enoughForAll ? built : built.filter(section => section.kind === 'top'),
     )
@@ -106,6 +112,7 @@ export function useFrozenSections(
       sections,
       complete: enoughForAll,
       latest,
+      wide,
     }
   }
 

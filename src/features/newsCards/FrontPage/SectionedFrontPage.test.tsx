@@ -23,7 +23,13 @@ jest.mock('#/components/Link', () => ({
 }))
 jest.mock('./useFrontPageColumns', () => ({
   useFrontPageColumns: () =>
-    mockWidth - 32 >= 960 ? 3 : mockWidth - 32 >= 600 ? 2 : 1,
+    mockWidth >= 1700
+      ? 4
+      : mockWidth - 32 >= 960
+        ? 3
+        : mockWidth - 32 >= 600
+          ? 2
+          : 1,
 }))
 jest.mock('../NewsCard', () => {
   const {Text: RNText} =
@@ -304,4 +310,48 @@ it('gives Shorts a heading outside its box, with See all', () => {
     screen: 'Shorts',
   })
   expect(screen.getByTestId('shortsBox')).toBeTruthy()
+})
+
+function cardsIn(sectionId: string) {
+  const ids = screen
+    .getByTestId(sectionId)
+    .findAll(
+      node =>
+        typeof node.props.testID === 'string' &&
+        node.props.testID.startsWith('card:'),
+    )
+    .map(node => node.props.testID as string)
+  return [...new Set(ids)]
+}
+
+it('adds a fourth column and more Top stories on very wide screens', () => {
+  mockWidth = 1800
+  render(page(feed(60)))
+  expect(cardsIn('section-top')).toHaveLength(9)
+  expect(screen.getAllByTestId(/^frontPageRow-/)[0].props.testID).toBe(
+    'frontPageRow-3-1',
+  )
+})
+
+it('rebuilds the sections when the window crosses into four columns', () => {
+  const all = feed(60)
+  const view = render(page(all))
+  expect(cardsIn('section-top')).toHaveLength(6)
+  mockWidth = 1800
+  view.rerender(page(all))
+  expect(cardsIn('section-top')).toHaveLength(9)
+})
+
+it('lets the page column own the side lines around Shorts', () => {
+  render(page(feed(60)))
+  const box = Object.assign(
+    {},
+    ...[screen.getByTestId('shortsBox').props.style]
+      .flat(Infinity)
+      .filter(Boolean),
+  ) as Record<string, unknown>
+  expect(box).toMatchObject({borderTopWidth: 1, borderBottomWidth: 1})
+  expect(box.borderLeftWidth ?? 0).toBe(0)
+  expect(box.borderRightWidth ?? 0).toBe(0)
+  expect(box.borderWidth ?? 0).toBe(0)
 })

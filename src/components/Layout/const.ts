@@ -31,8 +31,3 @@ export const CENTER_COLUMN_WIDTH = 600
  */
 export const PINNED_LEFT_NAV_WIDTH = 240
 export const PINNED_LEFT_NAV_RAIL_WIDTH = 80
-
-/**
- * Widest content when the left navigation is pinned to the window edge.
- */
-export const PINNED_MAX_CONTENT_WIDTH = 1440

@@ -178,8 +178,8 @@ describe('pinned left navigation', () => {
     expect(pinned(1000, 'wide')).toEqual({width: 920, offset: 40, wide: true})
   })
 
-  it('caps wide content at 1440px', () => {
-    expect(pinned(2560, 'wide')).toEqual({width: 1440, offset: 120, wide: true})
+  it('fills the whole space beside the nav on large screens, starting at its edge', () => {
+    expect(pinned(2560, 'wide')).toEqual({width: 2320, offset: 120, wide: true})
   })
 
   it('keeps standard pages at 600px, centred beside the nav', () => {

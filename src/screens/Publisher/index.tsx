@@ -162,13 +162,16 @@ function PublisherArticles({
         {...scroll}
         contentContainerStyle={[a.pb_4xl]}>
         <PublisherHeader back={back} />
-        <View style={[a.px_lg]}>
+        {/* Only the profile is padded; the grid runs edge to edge inside the page column. */}
+        <View>
           {!blocked && (
-            <PublisherProfileDetails
-              name={name}
-              profile={profile}
-              moderationOpts={moderationOpts}
-            />
+            <View style={[a.px_lg]}>
+              <PublisherProfileDetails
+                name={name}
+                profile={profile}
+                moderationOpts={moderationOpts}
+              />
+            </View>
           )}
           {blocked ? (
             <Status>

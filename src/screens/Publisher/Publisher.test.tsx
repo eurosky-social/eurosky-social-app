@@ -12,7 +12,7 @@ import {PublisherDirectoryScreen} from './Directory'
 import {PublisherScreen} from './index'
 
 jest.mock('#/alf', () => ({
-  atoms: {px_lg: {paddingHorizontal: 16}},
+  atoms: {px_lg: {paddingHorizontal: 16}, border_b: {borderBottomWidth: 1}},
   web: (value: unknown) => value,
   useTheme: () => ({atoms: {}, palette: {contrast_500: '#888'}}),
 }))
@@ -403,4 +403,15 @@ it('shows skeleton cards while the publisher feed loads', () => {
     screen.getByTestId('frontPageSkeleton', {includeHiddenElements: true}),
   ).toBeTruthy()
   expect(mockFrontPage).not.toHaveBeenCalled()
+})
+
+it('leaves the line under the profile to the story grid, so there is only one', () => {
+  const screen = renderPublisher()
+  const style = Object.assign(
+    {},
+    ...[screen.getByTestId('publisherProfileDetails').props.style]
+      .flat(Infinity)
+      .filter(Boolean),
+  ) as Record<string, unknown>
+  expect(style.borderBottomWidth ?? 0).toBe(0)
 })

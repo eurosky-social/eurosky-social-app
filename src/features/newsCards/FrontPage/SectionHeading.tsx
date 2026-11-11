@@ -3,6 +3,7 @@ import {View} from 'react-native'
 import {atoms as a} from '#/alf'
 import {Link, type LinkProps} from '#/components/Link'
 import {Text} from '#/components/Typography'
+import {CELL_PADDING} from './BoxGrid'
 
 /** The section title above its boxed grid, and "See all" when a destination exists. */
 export function SectionHeading({
@@ -24,6 +25,8 @@ export function SectionHeading({
         a.gap_md,
         a.pt_2xl,
         a.pb_md,
+        /* Grids run edge to edge, so headings line up with the card text. */
+        {paddingHorizontal: CELL_PADDING},
       ]}>
       <Text
         emoji

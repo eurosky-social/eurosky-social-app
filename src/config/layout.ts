@@ -5,7 +5,6 @@ import {
   CENTER_COLUMN_WIDTH,
   PINNED_LEFT_NAV_RAIL_WIDTH,
   PINNED_LEFT_NAV_WIDTH,
-  PINNED_MAX_CONTENT_WIDTH,
 } from '#/components/Layout/const'
 
 /** Auto preserves the route's existing contextual rail; named rails replace it. */
@@ -128,10 +127,9 @@ export function pageGeometry({
   navWidth?: number
 }) {
   if (navWidth !== undefined) {
+    /* Wide pages fill the space from the nav's edge; very wide screens get a fourth column, not a margin. */
     const width =
-      contentWidth === 'wide'
-        ? Math.min(windowWidth - navWidth, PINNED_MAX_CONTENT_WIDTH)
-        : CENTER_COLUMN_WIDTH
+      contentWidth === 'wide' ? windowWidth - navWidth : CENTER_COLUMN_WIDTH
     return {width, offset: navWidth / 2, wide: width > CENTER_COLUMN_WIDTH}
   }
   const wide = contentWidth === 'wide' && windowWidth >= 1100

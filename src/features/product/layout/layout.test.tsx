@@ -57,14 +57,14 @@ it('updates the shared sidebar visibility without changing standard content widt
     wide: false,
   })
 })
-it('gives Publisher the space beside the pinned nav, capped at 1440px', () => {
+it('gives Publisher all the space beside the pinned nav', () => {
   jest.replaceProperty(PRODUCT, 'layout', getProduct('news').layout)
   const {result} = renderHook(usePageGeometry, {
     wrapper: ({children}) => (
       <PageLayoutProvider routeName="Publisher">{children}</PageLayoutProvider>
     ),
   })
-  expect(result.current).toEqual({width: 1440, offset: 120, wide: true})
+  expect(result.current).toEqual({width: 1680, offset: 120, wide: true})
 })
 it('reserves a replacement rail and keeps tablet geometry independent of visibility', () => {
   jest.replaceProperty(PRODUCT, 'layout', {

@@ -47,17 +47,27 @@ beforeEach(() => {
   )
 })
 
-it('draws only the top and left edges on the frame', () => {
-  expect(style('grid')).toMatchObject({borderTopWidth: 1, borderLeftWidth: 1})
-  expect(style('grid')).not.toHaveProperty('borderRightWidth')
-  expect(style('grid')).not.toHaveProperty('borderBottomWidth')
+it('draws only the top line on the grid, leaving the sides to the page column', () => {
+  expect(style('grid')).toMatchObject({borderTopWidth: 1})
+  for (const side of [
+    'borderLeftWidth',
+    'borderRightWidth',
+    'borderBottomWidth',
+  ])
+    expect(style('grid')[side as keyof ViewStyle] ?? 0).toBe(0)
 })
 
-it('gives every cell only its right and bottom edge, so no line is doubled', () => {
-  for (const id of ['boxCell-0', 'boxCell-1', 'boxCell-2', 'boxCell-3']) {
+it('divides cells with a right line except the last in a row, and a bottom line on each', () => {
+  for (const id of ['boxCell-0', 'boxCell-2']) {
     expect(style(id)).toMatchObject({borderRightWidth: 1, borderBottomWidth: 1})
-    expect(style(id)).not.toHaveProperty('borderTopWidth')
-    expect(style(id)).not.toHaveProperty('borderLeftWidth')
+  }
+  for (const id of ['boxCell-1', 'boxCell-3']) {
+    expect(style(id).borderRightWidth ?? 0).toBe(0)
+    expect(style(id)).toMatchObject({borderBottomWidth: 1})
+  }
+  for (const id of ['boxCell-0', 'boxCell-1', 'boxCell-2', 'boxCell-3']) {
+    expect(style(id).borderTopWidth ?? 0).toBe(0)
+    expect(style(id).borderLeftWidth ?? 0).toBe(0)
   }
 })
 

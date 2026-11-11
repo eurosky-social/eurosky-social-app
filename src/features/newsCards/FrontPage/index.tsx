@@ -4,14 +4,20 @@ import {atoms as a, useTheme} from '#/alf'
 import {type PostArticle} from '#/features/articles/articles'
 import {cardCanFeature} from '../model'
 import {NewsCard} from '../NewsCard'
-import {cardSizeFor, type PlannedRow, reflowRows, type Span} from '../slotting'
+import {
+  cardSizeFor,
+  planColumnsFor,
+  type PlannedRow,
+  reflowRows,
+  type Span,
+} from '../slotting'
 import {useFrontPageRows} from '../useFrontPageRows'
 import {BoxGrid} from './BoxGrid'
 import {useFrontPageColumns} from './useFrontPageColumns'
 
 /**
- * A newspaper front page: rows of one to three stories in a boxed hairline
- * grid, with an optional Shorts section after the third row.
+ * A newspaper front page: rows of one to four stories in an edge-to-edge
+ * hairline grid, with an optional Shorts section after the third row.
  */
 export function FrontPage({
   articles,
@@ -45,7 +51,10 @@ export function FrontPage({
           <View
             key="shorts"
             testID="frontPageShorts"
-            style={[{borderWidth: 1}, t.atoms.border_contrast_low]}>
+            style={[
+              {borderTopWidth: 1, borderBottomWidth: 1},
+              t.atoms.border_contrast_low,
+            ]}>
             {shorts}
           </View>
         ) : (
@@ -71,8 +80,15 @@ export function FrontPageSkeleton() {
   const t = useTheme()
   const columns = useFrontPageColumns()
   let next = 0
+  const shapes =
+    planColumnsFor(columns) === 4
+      ? [
+          [3, 1],
+          [1, 1, 1, 1],
+        ]
+      : [[3], [1, 1, 1]]
   const rows = reflowRows(
-    [[3], [1, 1, 1]].map(spans => ({
+    shapes.map(spans => ({
       type: 'cards' as const,
       cells: spans.map(span => ({index: next++, span: span as Span})),
     })),

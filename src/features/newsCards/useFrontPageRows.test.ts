@@ -78,3 +78,15 @@ it('fills a row that was cut short when the stories ran out', () => {
     ],
   })
 })
+
+it('plans again on four columns, and back on three, when the width crosses the boundary', () => {
+  const {result, rerender} = renderHook(
+    ({columns}: {columns: 1 | 2 | 3 | 4}) =>
+      useFrontPageRows(keys(9), media(9), columns),
+    {initialProps: {columns: 3}},
+  )
+  rerender({columns: 4})
+  expect(result.current).toEqual(planRows(media(9), 4))
+  rerender({columns: 3})
+  expect(result.current).toEqual(planRows(media(9), 3))
+})

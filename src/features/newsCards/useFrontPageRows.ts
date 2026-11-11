@@ -3,6 +3,8 @@ import {useState} from 'react'
 import {
   type Columns,
   continueRows,
+  type PlanColumns,
+  planColumnsFor,
   type PlannedRow,
   reflowRows,
 } from './slotting'
@@ -11,11 +13,14 @@ type Layout = {
   keys: readonly string[]
   hasMedia: readonly boolean[]
   shorts: boolean
+  /** Three or four; crossing between them plans again. */
+  base: PlanColumns
   rows: PlannedRow[]
 }
 
 /**
- * Plan rows once on three columns and reflow for the current width. When
+ * Plan rows once on three columns (four on very wide screens) and reflow for
+ * the current width. When
  * stories are only appended, complete rows stay as they were, so loading more
  * never reshuffles what the reader has already seen.
  */
@@ -25,14 +30,17 @@ export function useFrontPageRows(
   columns: Columns,
   {shorts = false}: {shorts?: boolean} = {},
 ): PlannedRow[] {
+  const base = planColumnsFor(columns)
   const [layout, setLayout] = useState<Layout>(() => ({
     keys,
     hasMedia,
     shorts,
-    rows: continueRows([], hasMedia, {shorts}),
+    base,
+    rows: continueRows([], hasMedia, {shorts, columns: base}),
   }))
   const appendOnly =
     layout.shorts === shorts &&
+    layout.base === base &&
     layout.keys.length <= keys.length &&
     layout.keys.every(
       (key, index) =>
@@ -62,7 +70,8 @@ export function useFrontPageRows(
     keys,
     hasMedia,
     shorts,
-    rows: continueRows(frozen, hasMedia, {shorts}),
+    base,
+    rows: continueRows(frozen, hasMedia, {shorts, columns: base}),
   }
   setLayout(next)
   return reflowRows(next.rows, columns)

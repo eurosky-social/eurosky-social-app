@@ -242,3 +242,38 @@ it('never gives the Lead to a social post, even a popular video', () => {
   expect(top.articles[0]).not.toBe(viral)
   expect(top.articles[0].external?.title).toBeTruthy()
 })
+
+describe('on four columns', () => {
+  const wide = () =>
+    buildDiscoverSections(window60(), NOW, {shorts: false, wide: true})
+  const sized = (kind: string) =>
+    wide()
+      .filter(section => section.kind === kind)
+      .map(section => section.articles.length)
+
+  it('fills Top stories with nine, and Popular and Video with seven', () => {
+    expect(sized('top')).toEqual([9])
+    expect(sized('popular')).toEqual([7])
+    expect(sized('video')[0]).toBeGreaterThanOrEqual(3)
+    expect(sized('video')[0]).toBeLessThanOrEqual(7)
+  })
+
+  it('fills one-row sections with up to four stories, from three', () => {
+    for (const size of [...sized('publisher'), ...sized('topic')]) {
+      expect(size).toBeGreaterThanOrEqual(3)
+      expect(size).toBeLessThanOrEqual(4)
+    }
+    expect(sized('publisher')).toContain(4)
+  })
+
+  it('still shows every story exactly once', () => {
+    const shown = wide().flatMap(section => uris(section.articles))
+    expect(new Set(shown).size).toBe(60)
+  })
+
+  it('gives Following nine Top stories', () => {
+    expect(
+      buildFollowingSections(window60(), NOW, {wide: true})[0].articles,
+    ).toHaveLength(9)
+  })
+})

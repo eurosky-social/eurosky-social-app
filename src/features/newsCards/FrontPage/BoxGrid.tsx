@@ -16,11 +16,12 @@ function displaySpan(span: Span, columns: Columns) {
 }
 
 /**
- * A fully boxed grid of 1px hairlines with one owner per line: the frame draws
- * its top and left edges, and every cell its right and bottom edges, so
- * neighbours share a single line and the frame always closes. Cells stretch
- * to the row's height, so vertical lines run from one horizontal line to the
- * next. The last card of a short row fills the row instead of leaving a gap.
+ * A hairline grid that runs edge to edge inside the page column, whose own
+ * left and right borders close it. One owner per line: the grid draws its top
+ * edge, every cell its bottom edge, and every cell but the last in a row its
+ * right edge, so neighbours share a single line and every line meets another.
+ * Cells stretch to the row's height, so vertical lines run from one horizontal
+ * line to the next. The last card of a short row fills the row.
  */
 export function BoxGrid({
   rows,
@@ -38,10 +39,7 @@ export function BoxGrid({
   return (
     <View
       testID={testID}
-      style={[
-        {borderTopWidth: 1, borderLeftWidth: 1},
-        t.atoms.border_contrast_low,
-      ]}>
+      style={[{borderTopWidth: 1}, t.atoms.border_contrast_low]}>
       {rows.map(row => {
         const spans = row.cells.map(cell => displaySpan(cell.span, columns))
         const used = spans.reduce((sum, span) => sum + span, 0)
@@ -51,7 +49,8 @@ export function BoxGrid({
             testID={`frontPageRow-${spans.join('-')}`}
             style={{flexDirection: 'row', alignItems: 'stretch'}}>
             {row.cells.map((cell, position) => {
-              const fills = used < columns && position === row.cells.length - 1
+              const last = position === row.cells.length - 1
+              const fills = used < columns && last
               return (
                 <View
                   key={cell.index}
@@ -63,7 +62,7 @@ export function BoxGrid({
                     {
                       minWidth: 0,
                       padding: CELL_PADDING,
-                      borderRightWidth: 1,
+                      borderRightWidth: last ? 0 : 1,
                       borderBottomWidth: 1,
                     },
                     t.atoms.border_contrast_low,
