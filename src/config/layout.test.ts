@@ -1,5 +1,6 @@
 import {
   type LayoutConfig,
+  leftNavWidth,
   pageGeometry,
   resolvePageLayout,
   validateLayout,
@@ -129,4 +130,68 @@ it('preserves tablet offsets and caps overly large spreads', () => {
       centerColumnOffset: false,
     }).width,
   ).toBe(1500)
+})
+
+describe('pinned left navigation', () => {
+  it('is configured for news only', () => {
+    expect(getProduct('news').layout.leftNav).toBe('pinned')
+    expect(getProduct('social').layout.leftNav).toBeUndefined()
+  })
+
+  it('accepts only known left-nav modes', () => {
+    const base = {defaults: {}, pages: {}}
+    expect(() => validateLayout({...base, leftNav: 'pinned'})).not.toThrow()
+    expect(() => validateLayout({...base, leftNav: 'centred'})).not.toThrow()
+    expect(() => validateLayout({...base, leftNav: 'floating'})).toThrow(
+      'Invalid layout setting leftNav',
+    )
+  })
+
+  it.each([
+    [390, 0],
+    [799, 0],
+    [800, 80],
+    [1300, 80],
+    [1301, 240],
+    [1920, 240],
+  ])('gives a %ipx window a %ipx nav', (windowWidth, width) => {
+    expect(leftNavWidth(windowWidth)).toBe(width)
+  })
+
+  const pinned = (windowWidth: number, contentWidth: 'wide' | 'standard') =>
+    pageGeometry({
+      windowWidth,
+      contentWidth,
+      rightNavVisible: false,
+      centerColumnOffset: false,
+      navWidth: leftNavWidth(windowWidth),
+    })
+
+  it('gives signed-out readers no rail, since they get the bottom bar', () => {
+    expect(leftNavWidth(1100, {signedIn: false})).toBe(0)
+    expect(leftNavWidth(1300, {signedIn: false})).toBe(0)
+    expect(leftNavWidth(1440, {signedIn: false})).toBe(240)
+  })
+
+  it('centres wide content in the space right of the nav', () => {
+    expect(pinned(1440, 'wide')).toEqual({width: 1200, offset: 120, wide: true})
+    expect(pinned(1000, 'wide')).toEqual({width: 920, offset: 40, wide: true})
+  })
+
+  it('caps wide content at 1440px', () => {
+    expect(pinned(2560, 'wide')).toEqual({width: 1440, offset: 120, wide: true})
+  })
+
+  it('keeps standard pages at 600px, centred beside the nav', () => {
+    expect(pinned(1440, 'standard')).toEqual({
+      width: 600,
+      offset: 120,
+      wide: false,
+    })
+  })
+
+  it('uses the whole window when there is no side nav', () => {
+    expect(pinned(768, 'wide')).toEqual({width: 768, offset: 0, wide: true})
+    expect(pinned(390, 'wide')).toEqual({width: 390, offset: 0, wide: false})
+  })
 })

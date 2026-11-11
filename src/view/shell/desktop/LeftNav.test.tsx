@@ -224,3 +224,50 @@ it('does not expose an account control to signed-out visitors', () => {
   const screen = render(<DesktopLeftNav routeName="Home" />)
   expect(screen.queryByTestId('desktop-account-control')).toBeNull()
 })
+
+it.each([
+  [false, 240],
+  [true, 80],
+])(
+  'pins the news nav to the window edge with a hairline (minimal: %s)',
+  (minimal, width) => {
+    mockMinimal = minimal
+    jest.replaceProperty(PRODUCT, 'id', 'news')
+    jest.replaceProperty(PRODUCT, 'layout', getProduct('news').layout)
+    jest.replaceProperty(PRODUCT, 'navigation', getProduct('news').navigation)
+    const screen = render(<DesktopLeftNav routeName="Home" />)
+    const navigation = screen
+      .UNSAFE_getAllByType(View)
+      .find(node => node.props.role === 'navigation')!
+    const style =
+      StyleSheet.flatten(navigation.props.style as ViewStyle[]) ?? {}
+    expect(style).toMatchObject({
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width,
+      borderRightWidth: 1,
+    })
+    expect(style.transform ?? []).toEqual([])
+  },
+)
+
+it('keeps the social nav beside the centre column', () => {
+  const screen = render(<DesktopLeftNav routeName="Home" />)
+  const navigation = screen
+    .UNSAFE_getAllByType(View)
+    .find(node => node.props.role === 'navigation')!
+  expect(StyleSheet.flatten(navigation.props.style)).toMatchObject({
+    left: '50%',
+  })
+})
+
+it('leaves no empty rail for signed-out news readers on narrow desktops', () => {
+  mockMinimal = true
+  mockHasSession = false
+  jest.replaceProperty(PRODUCT, 'id', 'news')
+  jest.replaceProperty(PRODUCT, 'layout', getProduct('news').layout)
+  jest.replaceProperty(PRODUCT, 'navigation', getProduct('news').navigation)
+  const screen = render(<DesktopLeftNav routeName="Home" />)
+  expect(screen.toJSON()).toBeNull()
+})

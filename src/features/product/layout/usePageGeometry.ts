@@ -1,7 +1,9 @@
 import {useWindowDimensions} from 'react-native'
 
+import {useSession} from '#/state/session'
 import {useLayoutBreakpoints} from '#/alf/breakpoints'
-import {pageGeometry} from '#/config/layout'
+import {leftNavWidth, pageGeometry} from '#/config/layout'
+import {PRODUCT} from '#/config/product'
 import {IS_WEB} from '#/env'
 import {usePageLayout} from './context'
 
@@ -10,10 +12,15 @@ export function usePageGeometry() {
   const {width: windowWidth} = useWindowDimensions()
   const {rightNavVisible, centerColumnOffset} = useLayoutBreakpoints()
   const {contentWidth} = usePageLayout()
+  const {hasSession} = useSession()
   return pageGeometry({
     windowWidth,
     contentWidth: IS_WEB ? contentWidth : 'standard',
     rightNavVisible,
     centerColumnOffset,
+    navWidth:
+      IS_WEB && PRODUCT.layout.leftNav === 'pinned'
+        ? leftNavWidth(windowWidth, {signedIn: hasSession})
+        : undefined,
   })
 }

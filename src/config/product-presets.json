@@ -48,6 +48,7 @@
       "signedOutDrawer": ["home", "publisher", "shorts"]
     },
     "layout": {
+      "leftNav": "pinned",
       "defaults": {"rightSidebar": "hidden"},
       "pages": {
         "Home": {"contentWidth": "wide"},

@@ -2,6 +2,7 @@ import {useMemo} from 'react'
 import {useMediaQuery} from 'react-responsive'
 
 import {type Breakpoint, BREAKPOINTS} from '#/alf/breakpoints.shared'
+import {PRODUCT} from '#/config/product'
 import {usePageLayout} from '#/features/product/layout/context'
 
 export {type Breakpoint, BreakpointWidthContext} from '#/alf/breakpoints.shared'
@@ -37,10 +38,12 @@ export function useLayoutBreakpoints() {
   const rightNavAvailable = useMediaQuery({minWidth: BREAKPOINTS.rightNav})
   const {rightSidebar} = usePageLayout()
   const rightNavVisible = rightNavAvailable && rightSidebar !== 'hidden'
-  const centerColumnOffset = useMediaQuery({
+  /* A pinned left nav centres content beside itself, so the tablet shift is off. */
+  const tabletShift = useMediaQuery({
     minWidth: BREAKPOINTS.rightNav,
     maxWidth: BREAKPOINTS.tablet,
   })
+  const centerColumnOffset = tabletShift && PRODUCT.layout.leftNav !== 'pinned'
   const leftNavMinimal = useMediaQuery({maxWidth: BREAKPOINTS.tablet})
 
   return {

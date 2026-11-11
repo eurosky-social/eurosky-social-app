@@ -63,6 +63,10 @@ import {EditBig_Stroke2_Corner2_Rounded as EditBigIcon} from '#/components/icons
 import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/Plus'
 import {UserCircle_Stroke2_Corner0_Rounded as UserCircleIcon} from '#/components/icons/UserCircle'
 import {
+  PINNED_LEFT_NAV_RAIL_WIDTH,
+  PINNED_LEFT_NAV_WIDTH,
+} from '#/components/Layout/const'
+import {
   CENTER_COLUMN_OFFSET,
   CENTER_COLUMN_WIDTH,
 } from '#/components/Layout/const'
@@ -684,8 +688,10 @@ function DesktopLeftNavContent({
 
   const leftNavMinimal = isMessagesRelatedScreen || leftNavMinimalBreakpoint
   const profileAtBottom = PRODUCT.id === 'news'
+  /* Pinned to the window edge, so content can use the rest of the width. */
+  const pinned = !IS_NATIVE && PRODUCT.layout.leftNav === 'pinned'
 
-  if (!hasSession && !gtMobile) {
+  if (!hasSession && (!gtMobile || (pinned && leftNavMinimal))) {
     return null
   }
 
@@ -765,32 +771,57 @@ function DesktopLeftNavContent({
         a.top_0,
         profileAtBottom && a.bottom_0,
         web(a.p_lg),
-        styles.leftNav,
-        native(a.bottom_0),
-        !hasSession && !leftNavMinimal && {width: LEFT_NAV_PWI_WIDTH},
-        leftNavMinimal && [
-          {width: LEFT_NAV_MINIMAL_WIDTH},
-          !IS_NATIVE && a.h_full,
-          a.align_center,
-          web(a.overflow_x_hidden),
-        ],
-        web({maxHeight: '100vh', overflowY: 'auto', scrollbarWidth: 'thin'}),
-        {
-          transform: [
-            {
-              translateX:
-                -(CENTER_COLUMN_WIDTH / 2) +
-                (centerColumnOffset ? CENTER_COLUMN_OFFSET : 0) +
-                (!IS_NATIVE &&
-                isMessagesRelatedScreen &&
-                !leftNavMinimalBreakpoint
-                  ? LEFT_NAV_MINIMAL_WIDTH - LEFT_NAV_STANDARD_WIDTH
-                  : 0),
-            },
-            {translateX: '-100%'},
-            ...a.scrollbar_offset.transform,
-          ],
-        },
+        pinned
+          ? [
+              a.bottom_0,
+              t.atoms.border_contrast_low,
+              {
+                top: 0,
+                left: 0,
+                borderRightWidth: 1,
+                width: leftNavMinimal
+                  ? PINNED_LEFT_NAV_RAIL_WIDTH
+                  : PINNED_LEFT_NAV_WIDTH,
+              },
+              leftNavMinimal && [a.align_center, web(a.overflow_x_hidden)],
+              web({
+                maxHeight: '100vh',
+                overflowY: 'auto',
+                scrollbarWidth: 'thin',
+              }),
+            ]
+          : [
+              styles.leftNav,
+              native(a.bottom_0),
+              !hasSession && !leftNavMinimal && {width: LEFT_NAV_PWI_WIDTH},
+              leftNavMinimal && [
+                {width: LEFT_NAV_MINIMAL_WIDTH},
+                !IS_NATIVE && a.h_full,
+                a.align_center,
+                web(a.overflow_x_hidden),
+              ],
+              web({
+                maxHeight: '100vh',
+                overflowY: 'auto',
+                scrollbarWidth: 'thin',
+              }),
+              {
+                transform: [
+                  {
+                    translateX:
+                      -(CENTER_COLUMN_WIDTH / 2) +
+                      (centerColumnOffset ? CENTER_COLUMN_OFFSET : 0) +
+                      (!IS_NATIVE &&
+                      isMessagesRelatedScreen &&
+                      !leftNavMinimalBreakpoint
+                        ? LEFT_NAV_MINIMAL_WIDTH - LEFT_NAV_STANDARD_WIDTH
+                        : 0),
+                  },
+                  {translateX: '-100%'},
+                  ...a.scrollbar_offset.transform,
+                ],
+              },
+            ],
       ]}>
       {IS_NATIVE ? (
         <ScrollView
