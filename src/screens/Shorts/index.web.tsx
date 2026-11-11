@@ -32,6 +32,7 @@ import {
   type VideoAudioState,
 } from '#/components/Post/Embed/VideoEmbed/VideoVolumeContext'
 import {Text} from '#/components/Typography'
+import {PRODUCT} from '#/config/product'
 import {type PostArticle} from '#/features/articles/articles'
 import {articleModeration} from '#/features/articles/moderation'
 import {articlesFromPublisherFeed} from '#/features/publishers/articles'
@@ -48,7 +49,7 @@ export function ShortsScreen({
   route,
 }: NativeStackScreenProps<CommonNavigatorParams, 'Shorts'>) {
   const {t: l} = useLingui()
-  useSetTitle(l`Shorts`)
+  useSetTitle(PRODUCT.id === 'news' ? l`Video` : l`Shorts`)
   return (
     <ShortsTheme>
       <Layout.Screen minimalShell fullBleed noInsetTop>
@@ -168,7 +169,7 @@ function Shorts({initialPostUri}: {initialPostUri?: string}) {
         data-testid="shortsViewport"
         data-controls-visible={controlsVisible}
         role="region"
-        aria-label={l`Shorts`}
+        aria-label={PRODUCT.id === 'news' ? l`Video` : l`Shorts`}
         tabIndex={0}
         style={{
           height: '100%',

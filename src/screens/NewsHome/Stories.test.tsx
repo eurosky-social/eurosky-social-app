@@ -160,3 +160,21 @@ it('stops prefetching after three pages', () => {
   renderStories()
   expect(fetchNextPage).not.toHaveBeenCalled()
 })
+
+it('shows every story newest first on the News page, without Shorts or prefetch', () => {
+  const fetchNextPage = jest.fn()
+  mockArticles = Array.from({length: 30}, (_, i) => ({
+    item: {uri: `at://did:plc:pub/app.bsky.feed.post/${i}`},
+  }))
+  mockFeed = {...mockFeed, hasNextPage: true, fetchNextPage}
+  render(
+    <I18nProvider i18n={i18n}>
+      <NewsStories mode="latest" />
+    </I18nProvider>,
+  )
+  expect(screen.getByTestId('sectionedFrontPage').props.accessibilityHint).toBe(
+    'latest',
+  )
+  expect(screen.queryByTestId('homeShortsRow')).toBeNull()
+  expect(fetchNextPage).not.toHaveBeenCalled()
+})

@@ -1,6 +1,8 @@
 /** Stable product-facing destination IDs; labels and components live in the UI registry. */
 export const NAVIGATION_IDS = [
   'home',
+  'following',
+  'latest',
   'news',
   'publisher',
   'shorts',
@@ -18,6 +20,9 @@ export const NAVIGATION_IDS = [
 export type NavigationId = (typeof NAVIGATION_IDS)[number]
 export type NavigationSurface =
   'sidebar' | 'drawer' | 'bottomBar' | 'nativeBottomBar'
+/** Sidebar and drawer sections; items keep their order, a heading starts each group. */
+export const NAVIGATION_GROUPS = ['forYou', 'explore'] as const
+export type NavigationGroup = (typeof NAVIGATION_GROUPS)[number]
 export type NavigationConfig = Readonly<
   Record<
     | Exclude<NavigationSurface, 'nativeBottomBar'>
@@ -25,7 +30,10 @@ export type NavigationConfig = Readonly<
     | 'signedOutDrawer',
     readonly NavigationId[]
   >
-> & {readonly nativeBottomBar?: readonly NavigationId[]}
+> & {
+  readonly nativeBottomBar?: readonly NavigationId[]
+  readonly groups?: Readonly<Partial<Record<NavigationId, NavigationGroup>>>
+}
 
 /** Validate JSON presets before they reach any navigation renderer. */
 export function validateNavigation(
@@ -33,6 +41,18 @@ export function validateNavigation(
 ): asserts value is NavigationConfig {
   if (!value || typeof value !== 'object')
     throw new Error('Missing product navigation configuration')
+  const groups: unknown = Reflect.get(value, 'groups')
+  if (groups !== undefined) {
+    if (!groups || typeof groups !== 'object' || Array.isArray(groups))
+      throw new Error('Invalid navigation group')
+    for (const [id, group] of Object.entries(groups)) {
+      if (
+        !NAVIGATION_IDS.includes(id as NavigationId) ||
+        !NAVIGATION_GROUPS.includes(group as NavigationGroup)
+      )
+        throw new Error('Invalid navigation group')
+    }
+  }
   for (const surface of [
     'sidebar',
     'drawer',

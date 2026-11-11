@@ -113,6 +113,9 @@ jest.mock('#/features/followingV2/eligibility', () => ({
 }))
 jest.mock('#/features/liveNow', () => ({useActorStatus: () => ({})}))
 jest.mock('#/features/product/navigation/model', () => ({
+  ...jest.requireActual<typeof import('#/features/product/navigation/model')>(
+    '#/features/product/navigation/model',
+  ),
   isNavigationActive: () => false,
 }))
 jest.mock('#/features/product/navigation/useProductNavigation', () => ({
@@ -159,12 +162,18 @@ it.each([false, true])(
       .find(node => node.props.role === 'navigation')!
     const links = screen
       .UNSAFE_getAllByType(View)
-      .filter(node => node.props.role === 'link')
+      .filter(
+        node =>
+          node.props.role === 'link' &&
+          node.props.testID !== 'sidebar-brand-link',
+      )
     expect(links.map(link => link.props.accessibilityLabel)).toEqual([
       'home',
+      'following',
+      'saved',
+      'latest',
       'publisher',
       'shorts',
-      'profile',
     ])
     const section = screen
       .UNSAFE_getAllByType(View)
@@ -270,4 +279,42 @@ it('leaves no empty rail for signed-out news readers on narrow desktops', () => 
   jest.replaceProperty(PRODUCT, 'navigation', getProduct('news').navigation)
   const screen = render(<DesktopLeftNav routeName="Home" />)
   expect(screen.toJSON()).toBeNull()
+})
+
+it.each([false, true])(
+  'separates the news sidebar into For you and Explore (minimal: %s)',
+  minimal => {
+    mockMinimal = minimal
+    jest.replaceProperty(PRODUCT, 'id', 'news')
+    jest.replaceProperty(PRODUCT, 'layout', getProduct('news').layout)
+    jest.replaceProperty(PRODUCT, 'navigation', getProduct('news').navigation)
+    const screen = render(<DesktopLeftNav routeName="Home" />)
+    if (minimal) {
+      expect(screen.queryByTestId('navGroupHeading-forYou')).toBeNull()
+      expect(screen.queryByTestId('navGroupHeading-explore')).toBeNull()
+    } else {
+      expect(screen.getByTestId('navGroupHeading-forYou')).toBeTruthy()
+      expect(screen.getByTestId('navGroupHeading-explore')).toBeTruthy()
+    }
+    expect(screen.queryByTestId('navGroupDivider-forYou')).toBeNull()
+    expect(screen.getByTestId('navGroupDivider-explore')).toBeTruthy()
+    const nodes = screen.UNSAFE_getAllByType(View)
+    const divider = nodes.find(
+      node => node.props.testID === 'navGroupDivider-explore',
+    )!
+    const latest = nodes.find(
+      node =>
+        node.props.role === 'link' &&
+        node.props.accessibilityLabel === 'latest',
+    )!
+    expect(nodes.indexOf(divider)).toBeLessThan(nodes.indexOf(latest))
+  },
+)
+
+it('links the news logo to Discover', () => {
+  jest.replaceProperty(PRODUCT, 'id', 'news')
+  jest.replaceProperty(PRODUCT, 'layout', getProduct('news').layout)
+  jest.replaceProperty(PRODUCT, 'navigation', getProduct('news').navigation)
+  const screen = render(<DesktopLeftNav routeName="Home" />)
+  expect(screen.getByTestId('sidebar-brand-link').props.href).toBe('/')
 })

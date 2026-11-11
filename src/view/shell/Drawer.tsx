@@ -80,12 +80,17 @@ import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {BRAND} from '#/config/brand'
 import {type NavigationId} from '#/config/navigation'
+import {PRODUCT} from '#/config/product'
 import {IS_NATIVE, IS_WEB} from '#/env'
 import {InviteFriendsDialog} from '#/features/inviteFriends'
 import {useActorStatus} from '#/features/liveNow'
 import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
 import {type NavigationDestination} from '#/features/product/navigation/destinations'
-import {isNavigationActive} from '#/features/product/navigation/model'
+import {
+  groupStartingAt,
+  isNavigationActive,
+} from '#/features/product/navigation/model'
+import {NavGroupHeading} from '#/features/product/navigation/NavGroupHeading'
 import {
   NavigationItems,
   NavigationSlot,
@@ -457,6 +462,18 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
 
         <NavigationItems
           destinations={destinations}
+          renderBefore={(_destination, index) => {
+            const group = groupStartingAt(
+              destinations,
+              index,
+              PRODUCT.navigation,
+            )
+            return group ? (
+              <View style={[a.px_lg]}>
+                <NavGroupHeading group={group} first={index === 0} />
+              </View>
+            ) : null
+          }}
           renderItem={renderDestination}>
           <NavigationSlot id="search">
             <SearchMenuItem
@@ -464,9 +481,12 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
               onPress={onPressSearch}
             />
           </NavigationSlot>
-          <NavigationSlot id="home">
-            <HomeMenuItem isActive={isActive('home')} onPress={onPressHome} />
-          </NavigationSlot>
+          {/* News labels Home as Discover, so it uses the default destination item. */}
+          {PRODUCT.id !== 'news' && (
+            <NavigationSlot id="home">
+              <HomeMenuItem isActive={isActive('home')} onPress={onPressHome} />
+            </NavigationSlot>
+          )}
           <NavigationSlot id="news">
             <NewsMenuItem isActive={isActive('news')} onPress={onPressNews} />
           </NavigationSlot>

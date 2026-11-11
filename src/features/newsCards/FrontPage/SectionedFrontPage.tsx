@@ -38,7 +38,7 @@ export function SectionedFrontPage({
   complete,
 }: {
   articles: readonly PostArticle[]
-  mode: 'discover' | 'following'
+  mode: 'discover' | 'following' | 'latest'
   shorts?: React.ReactNode
   /** The feed has no more pages; build sections from what there is. */
   complete?: boolean
@@ -61,7 +61,12 @@ export function SectionedFrontPage({
             {shorts}
           </View>
         ) : section.kind === 'latest' ? (
-          <Latest key="latest" articles={section.articles} columns={columns} />
+          <Latest
+            key="latest"
+            articles={section.articles}
+            columns={columns}
+            heading={mode !== 'latest'}
+          />
         ) : (
           <Section key={section.id} section={section} columns={columns} />
         ),
@@ -142,15 +147,18 @@ function Section({
 function Latest({
   articles,
   columns,
+  heading,
 }: {
   articles: readonly PostArticle[]
   columns: Columns
+  /** The News page is all Latest; its page title stands in for the heading. */
+  heading: boolean
 }) {
   const {t: l} = useLingui()
   if (!articles.length) return null
   return (
     <View testID="section-latest">
-      <SectionHeading id="latest" title={l`Latest`} />
+      {heading && <SectionHeading id="latest" title={l`Latest`} />}
       {latestGroups(articles, new Date()).map(group => (
         <LatestGroup
           key={group.articles[0].item.uri}

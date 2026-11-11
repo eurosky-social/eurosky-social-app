@@ -107,6 +107,8 @@ import {ModerationInboxNoticeDetailsScreen} from '#/screens/ModerationInbox/Noti
 import {ModerationInboxReportDetailsScreen} from '#/screens/ModerationInbox/Report'
 import {ModerationInboxSettingsScreen} from '#/screens/ModerationInbox/Settings'
 import {Screen as ModerationInteractionSettings} from '#/screens/ModerationInteractionSettings'
+import {NewsFollowingScreen} from '#/screens/NewsFollowing'
+import {NewsLatestScreen} from '#/screens/NewsLatest'
 import {NotificationsScreen} from '#/screens/Notifications'
 import {NotificationsActivityListScreen} from '#/screens/Notifications/ActivityList'
 import {PostLikedByScreen} from '#/screens/Post/PostLikedBy'
@@ -242,9 +244,25 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         options={{title: title(msg`Publisher`)}}
       />
       <Stack.Screen
+        name="Following"
+        getComponent={() => NewsFollowingScreen}
+        options={{title: title(msg`Following`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="LatestNews"
+        getComponent={() => NewsLatestScreen}
+        options={{
+          title: title(
+            msg({message: 'News', context: 'all news stories, latest first'}),
+          ),
+        }}
+      />
+      <Stack.Screen
         name="Shorts"
         getComponent={() => ShortsScreen}
-        options={{title: title(msg`Shorts`)}}
+        options={{
+          title: title(PRODUCT.id === 'news' ? msg`Video` : msg`Shorts`),
+        }}
       />
       <Stack.Screen
         name="Frontpage"

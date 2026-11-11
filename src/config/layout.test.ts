@@ -195,3 +195,12 @@ describe('pinned left navigation', () => {
     expect(pinned(390, 'wide')).toEqual({width: 390, offset: 0, wide: false})
   })
 })
+
+it.each(['LatestNews', 'Following'])(
+  'gives the news %s page the wide front-page width',
+  routeName => {
+    expect(
+      resolvePageLayout(getProduct('news').layout, routeName).contentWidth,
+    ).toBe('wide')
+  },
+)

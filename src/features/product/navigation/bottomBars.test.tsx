@@ -167,19 +167,21 @@ it.each(['native', 'web'] as const)(
 )
 
 it.each(['native', 'web'] as const)(
-  'shows Home, Publisher, Shorts, and Profile without Settings in the news %s bottom bar',
+  'shows Discover, Following, News, Video and Saved in the news %s bottom bar',
   platform => {
+    jest.replaceProperty(PRODUCT, 'id', 'news')
     jest.replaceProperty(PRODUCT, 'navigation', getProduct('news').navigation)
     const screen = renderBar(platform)
     expect(
       screen
-        .getAllByLabelText(/^(Home|Publisher|Shorts|Profile|Settings)$/)
+        .getAllByLabelText(
+          /^(Discover|Following|News|Video|Saved|Profile|Settings)$/,
+        )
         .map(node => node.props.accessibilityLabel ?? node.props['aria-label']),
-    ).toEqual(['Home', 'Publisher', 'Shorts', 'Profile'])
+    ).toEqual(['Discover', 'Following', 'News', 'Video', 'Saved'])
+    expect(screen.queryByLabelText('Profile')).toBeNull()
     expect(screen.queryByLabelText('Settings')).toBeNull()
     expect(screen.queryByLabelText('Search')).toBeNull()
-    expect(screen.queryByLabelText('Chat')).toBeNull()
-    expect(screen.queryByLabelText('Notifications')).toBeNull()
   },
 )
 

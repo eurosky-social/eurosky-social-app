@@ -1,4 +1,4 @@
-import {useCallback, useMemo, useState} from 'react'
+import {Fragment, useCallback, useMemo, useState} from 'react'
 import {
   type GestureResponderEvent,
   ScrollView,
@@ -80,7 +80,11 @@ import {PRODUCT} from '#/config/product'
 import {IS_IOS, IS_NATIVE, IS_WEB} from '#/env'
 import {isFollowingV2HomeDotEnabled} from '#/features/followingV2/eligibility'
 import {useActorStatus} from '#/features/liveNow'
-import {isNavigationActive} from '#/features/product/navigation/model'
+import {
+  groupStartingAt,
+  isNavigationActive,
+} from '#/features/product/navigation/model'
+import {NavGroupHeading} from '#/features/product/navigation/NavGroupHeading'
 import {useProductNavigation} from '#/features/product/navigation/useProductNavigation'
 import {type app} from '#/lexicons'
 import {router} from '#/routes'
@@ -651,6 +655,7 @@ function DesktopLeftNavContent({
   const {i18n, t: l} = useLingui()
   const ax = useAnalytics()
   const {gtMobile} = useBreakpoints()
+  const navigation = useNavigation<NavigationProp>()
   const t = useTheme()
 
   const aa = useAgeAssurance()
@@ -699,13 +704,31 @@ function DesktopLeftNavContent({
     <>
       {hasSession && profileAtBottom && (
         <View style={[leftNavMinimal ? a.py_lg : a.p_lg, a.pb_xl]}>
-          <BrandLogo
-            variant={leftNavMinimal ? 'mark' : 'wordmark'}
-            size={leftNavMinimal ? 28 : 136}
-            fill={t.atoms.text.color}
-            accessibilityLabel="mu news"
+          <PressableWithHover
+            testID="sidebar-brand-link"
+            // @ts-expect-error the function signature differs on web
+            onPress={(event: React.MouseEvent<HTMLAnchorElement>) => {
+              if (event?.ctrlKey || event?.metaKey || event?.altKey) return
+              event?.preventDefault?.()
+              const [screen, params] = router.matchPath('/')
+              // @ts-expect-error matchPath is not typed tightly enough for navigate
+              navigation.navigate(screen, params, {pop: true})
+            }}
+            href="/"
+            dataSet={{noUnderline: 1}}
+            role="link"
+            accessibilityLabel={l`Discover`}
             accessibilityHint=""
-          />
+            hoverStyle={{opacity: 0.8}}
+            style={[a.self_start]}>
+            <BrandLogo
+              variant={leftNavMinimal ? 'mark' : 'wordmark'}
+              size={leftNavMinimal ? 28 : 136}
+              fill={t.atoms.text.color}
+              accessibilityLabel="mu news"
+              accessibilityHint=""
+            />
+          </PressableWithHover>
         </View>
       )}
       {hasSession ? (
@@ -715,41 +738,49 @@ function DesktopLeftNavContent({
           <NavSignupCard />
         </View>
       ) : null}
-      {destinations.map(destination => (
-        <NavItem
-          key={destination.id}
-          label={i18n._(destination.label)}
-          href={destination.href}
-          navItem={destination.metricItem}
-          tab={destination.tab}
-          selected={isNavigationActive(destination, navigationState, {
-            native: IS_NATIVE,
-            handle: currentAccount?.handle,
-            destinations,
-          })}
-          relatedRoutes={destination.routes}
-          onNavigateTab={onNavigateTab}
-          minimal={leftNavMinimal}
-          icons={destination.icons}
-          count={
-            destination.id === 'notifications'
-              ? numUnreadNotifications
-              : destination.id === 'chat'
-                ? aa.flags.chatDisabled
-                  ? undefined
-                  : numUnreadMessages.numUnread
-                : destination.id === 'settings'
-                  ? numUnreadModerationInbox
-                  : undefined
-          }
-          hasNew={
-            destination.id === 'home'
-              ? hasHomeBadge && isFollowingV2HomeDotEnabled(ax)
-              : destination.id === 'chat' &&
-                !aa.flags.chatDisabled &&
-                numUnreadMessages.hasNew
-          }
-        />
+      {destinations.map((destination, index) => (
+        <Fragment key={destination.id}>
+          {groupStartingAt(destinations, index, PRODUCT.navigation) && (
+            <NavGroupHeading
+              group={groupStartingAt(destinations, index, PRODUCT.navigation)!}
+              first={index === 0}
+              minimal={leftNavMinimal}
+            />
+          )}
+          <NavItem
+            label={i18n._(destination.label)}
+            href={destination.href}
+            navItem={destination.metricItem}
+            tab={destination.tab}
+            selected={isNavigationActive(destination, navigationState, {
+              native: IS_NATIVE,
+              handle: currentAccount?.handle,
+              destinations,
+            })}
+            relatedRoutes={destination.routes}
+            onNavigateTab={onNavigateTab}
+            minimal={leftNavMinimal}
+            icons={destination.icons}
+            count={
+              destination.id === 'notifications'
+                ? numUnreadNotifications
+                : destination.id === 'chat'
+                  ? aa.flags.chatDisabled
+                    ? undefined
+                    : numUnreadMessages.numUnread
+                  : destination.id === 'settings'
+                    ? numUnreadModerationInbox
+                    : undefined
+            }
+            hasNew={
+              destination.id === 'home'
+                ? hasHomeBadge && isFollowingV2HomeDotEnabled(ax)
+                : destination.id === 'chat' &&
+                  !aa.flags.chatDisabled &&
+                  numUnreadMessages.hasNew
+            }
+          />
+        </Fragment>
       ))}
       {hasSession && PRODUCT.capabilities.standalonePosting && (
         <ComposeBtn minimal={leftNavMinimal} />

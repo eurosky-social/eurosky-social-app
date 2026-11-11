@@ -272,3 +272,13 @@ it('puts the See all link in a 44px touch area', () => {
   const link = screen.getAllByTestId(/^sectionSeeAll-/)[0]
   expect(link.props.hitSlop).toEqual({top: 10, bottom: 10, left: 8, right: 8})
 })
+
+it('shows only the dated stream, without a Latest heading, in latest mode', () => {
+  render(
+    <I18nProvider i18n={i18n}>
+      <SectionedFrontPage articles={feed(60)} mode="latest" />
+    </I18nProvider>,
+  )
+  expect(headings()).toEqual([])
+  expect(screen.getAllByTestId(/^card:/)).toHaveLength(60)
+})

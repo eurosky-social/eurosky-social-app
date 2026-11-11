@@ -25,9 +25,12 @@ const MAX_PREFETCH_PAGES = 3
 export function NewsStories({
   publisherDids,
   header,
+  mode = publisherDids ? 'following' : 'discover',
 }: {
   publisherDids?: readonly string[]
   header?: React.ReactNode
+  /** Discover (recommendations), Following, or the all-news Latest page. */
+  mode?: 'discover' | 'following' | 'latest'
 }) {
   const {t: l} = useLingui()
   const opts = useModerationOpts()
@@ -43,7 +46,7 @@ export function NewsStories({
    * second page straight away instead of waiting for the reader to scroll.
    */
   const wantsWindow =
-    !publisherDids &&
+    mode === 'discover' &&
     !feed.isPending &&
     !feed.isError &&
     !feed.isFetchNextPageError &&
@@ -67,8 +70,8 @@ export function NewsStories({
         ) : (
           <SectionedFrontPage
             articles={articles}
-            mode={publisherDids ? 'following' : 'discover'}
-            shorts={publisherDids ? undefined : <HomeShortsRow />}
+            mode={mode}
+            shorts={mode === 'discover' ? <HomeShortsRow /> : undefined}
             complete={feed.hasNextPage === false}
           />
         )}

@@ -38,24 +38,48 @@ it('preserves social defaults independently for each surface', () => {
   expect(navigation.signedOutDrawer).toEqual(['home', 'feeds', 'search'])
 })
 
-it.each(['sidebar', 'drawer', 'bottomBar', 'nativeBottomBar'] as const)(
-  'adds Publisher to the minimal news %s',
+it.each(['sidebar', 'drawer'] as const)(
+  'groups the news %s into For you and Explore without Profile',
+  surface => {
+    expect(getProduct('news').navigation[surface]).toEqual([
+      'home',
+      'following',
+      'saved',
+      'latest',
+      'publisher',
+      'shorts',
+    ])
+  },
+)
+
+it.each(['bottomBar', 'nativeBottomBar'] as const)(
+  'puts Discover, Following, News, Video and Saved in the news %s',
   surface => {
     const news = getProduct('news').navigation
     expect(news[surface] ?? news.bottomBar).toEqual([
       'home',
-      'publisher',
+      'following',
+      'latest',
       'shorts',
       'saved',
-      'profile',
     ])
   },
 )
 
 it('exposes only public news destinations in signed-out navigation', () => {
   const news = getProduct('news').navigation
-  expect(news.signedOutSidebar).toEqual(['home', 'publisher', 'shorts'])
-  expect(news.signedOutDrawer).toEqual(['home', 'publisher', 'shorts'])
+  expect(news.signedOutSidebar).toEqual([
+    'home',
+    'latest',
+    'publisher',
+    'shorts',
+  ])
+  expect(news.signedOutDrawer).toEqual([
+    'home',
+    'latest',
+    'publisher',
+    'shorts',
+  ])
 })
 
 it('supports adding and reordering existing destinations on mobile', () => {

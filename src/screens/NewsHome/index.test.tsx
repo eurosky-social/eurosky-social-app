@@ -1,6 +1,6 @@
 import {i18n} from '@lingui/core'
 import {I18nProvider} from '@lingui/react'
-import {fireEvent, render} from '@testing-library/react-native'
+import {render} from '@testing-library/react-native'
 
 import {NewsHomeScreen} from './index'
 
@@ -48,16 +48,10 @@ it('keeps signed-out Home public without Following tabs or the follow graph read
   expect(view.queryByTestId('followingReader')).toBeNull()
   expect(view.queryByTestId('newsFeedTabs')).toBeNull()
 })
-it('offers full-width Following and Discover tabs only after sign-in', () => {
+it('shows Discover without Following tabs, signed in or out', () => {
   mockSignedIn = true
   const view = render(root())
-  expect(view.getByTestId('followingReader')).toBeTruthy()
-  expect(view.getByTestId('newsFeedTabs').props).toMatchObject({
-    items: ['Following', 'Discover'],
-    fullWidth: true,
-    selectedPage: 0,
-  })
-  fireEvent(view.getByTestId('newsFeedTabs'), 'select', 1)
   expect(view.getByTestId('discoverReader')).toBeTruthy()
   expect(view.queryByTestId('followingReader')).toBeNull()
+  expect(view.queryByTestId('newsFeedTabs')).toBeNull()
 })

@@ -32,6 +32,20 @@ function newestFirst(articles: readonly PostArticle[]) {
   )
 }
 
+/** The News page has no sections: every story, newest first, in Latest. */
+function build(
+  articles: readonly PostArticle[],
+  mode: 'discover' | 'following' | 'latest',
+  shorts: boolean,
+  now: Date,
+  top?: PostArticle[],
+): FrontSection[] {
+  if (mode === 'discover')
+    return buildDiscoverSections(articles, now, {shorts, top})
+  if (mode === 'following') return buildFollowingSections(articles, now)
+  return [{id: 'latest', kind: 'latest', articles: newestFirst(articles)}]
+}
+
 function freeze(sections: FrontSection[]): FrozenSection[] {
   return sections
     .filter(section => section.kind !== 'latest')
@@ -51,7 +65,7 @@ function freeze(sections: FrontSection[]): FrozenSection[] {
  */
 export function useFrozenSections(
   articles: readonly PostArticle[],
-  mode: 'discover' | 'following',
+  mode: 'discover' | 'following' | 'latest',
   shorts: boolean,
   feedComplete = false,
 ): FrontSection[] {
@@ -65,13 +79,11 @@ export function useFrozenSections(
   const now = new Date()
   const enoughForTop = articles.length >= TOP_AT || feedComplete
   const enoughForAll =
-    mode === 'following' || articles.length >= SECTION_WINDOW || feedComplete
+    mode !== 'discover' || articles.length >= SECTION_WINDOW || feedComplete
 
   if (!current && (!first || !enoughForTop)) {
     if (frozen) setFrozen(undefined)
-    return mode === 'discover'
-      ? buildDiscoverSections(articles, now, {shorts})
-      : buildFollowingSections(articles, now)
+    return build(articles, mode, shorts, now)
   }
 
   let next = current
@@ -79,10 +91,7 @@ export function useFrozenSections(
     const shownTop = next?.sections
       .find(section => section.kind === 'top')
       ?.uris.flatMap(uri => byUri.get(uri) ?? [])
-    const built =
-      mode === 'discover'
-        ? buildDiscoverSections(articles, now, {shorts, top: shownTop})
-        : buildFollowingSections(articles, now)
+    const built = build(articles, mode, shorts, now, shownTop)
     const sections = freeze(
       enoughForAll ? built : built.filter(section => section.kind === 'top'),
     )

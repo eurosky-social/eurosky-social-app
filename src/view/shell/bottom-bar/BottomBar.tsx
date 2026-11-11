@@ -52,6 +52,7 @@ import {
   Message_Stroke2_Corner0_Rounded as Message,
   Message_Stroke2_Corner0_Rounded_Filled as MessageFilled,
 } from '#/components/icons/Message'
+import {Sparkle_Stroke2_Corner0_Rounded as Discover} from '#/components/icons/Sparkle'
 import * as Menu from '#/components/Menu'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
@@ -252,7 +253,12 @@ export function BottomBar({navigation, state}: BottomTabBarProps) {
                 testID="bottomBarHomeBtn"
                 selected={isAtHome}
                 icon={
-                  isAtHome ? (
+                  PRODUCT.id === 'news' ? (
+                    <Discover
+                      width={iconWidth + 1}
+                      style={[styles.ctrlIcon, t.atoms.text, styles.homeIcon]}
+                    />
+                  ) : isAtHome ? (
                     <HomeFilled
                       width={iconWidth + 1}
                       style={[styles.ctrlIcon, t.atoms.text, styles.homeIcon]}
@@ -267,7 +273,9 @@ export function BottomBar({navigation, state}: BottomTabBarProps) {
                 hasNew={hasHomeBadge && isFollowingV2HomeDotEnabled(ax)}
                 onPress={onPressHome}
                 accessibilityRole="tab"
-                accessibilityLabel={l`Home`}
+                accessibilityLabel={
+                  PRODUCT.id === 'news' ? l`Discover` : l`Home`
+                }
                 accessibilityHint=""
               />
             </NavigationSlot>
