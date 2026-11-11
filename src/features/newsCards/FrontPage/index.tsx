@@ -67,7 +67,7 @@ export function FrontPage({
   )
 }
 
-function Row({
+export function Row({
   row,
   columns,
   renderCell,
