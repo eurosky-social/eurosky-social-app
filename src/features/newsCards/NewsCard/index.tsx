@@ -4,6 +4,7 @@ import {AtUri} from '@atproto/syntax'
 import {plural} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react/macro'
 
+import {useModerationCauseDescription} from '#/lib/moderation/useModerationCauseDescription'
 import {makeProfileLink} from '#/lib/routes/links'
 import {
   POST_TOMBSTONE,
@@ -88,6 +89,10 @@ function NewsCardInner({
   const isLead = size === 'lead'
   const isCompact = size === 'compact'
   const postText = article.item.moderation.ui('contentList')
+  /* A warning on the text hides the whole story, so the link names the warning instead. */
+  const warning = useModerationCauseDescription(
+    postText.blur ? postText.blurs[0] : undefined,
+  )
   const quoted = article.quote?.record
   const quoteAuthor =
     quoted && 'author' in quoted
@@ -102,7 +107,7 @@ function NewsCardInner({
     publisher: publisherName,
     topic,
     format,
-    headline: headlineText,
+    headline: postText.blur ? warning.name : headlineText,
     time: time.label,
     comments: l`${plural(post.replyCount ?? 0, {
       one: '# comment',
@@ -115,19 +120,21 @@ function NewsCardInner({
     likes: l`${plural(post.likeCount ?? 0, {one: '# like', other: '# likes'})}`,
   })
 
-  const media = hasMedia && (
+  const media = hasMedia && !postText.blur && (
     <Media
       article={article}
       kind={kind}
       size={size}
-      moderation={postText.blur ? undefined : moderation}
+      moderation={moderation}
       post={post}
     />
   )
 
   const story = (
     <View
+      testID="newsCardStory"
       pointerEvents="none"
+      aria-hidden
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       style={[a.gap_sm]}>
@@ -185,7 +192,9 @@ function NewsCardInner({
         moderationOpts={opts}
       />
       {postText.blur ? (
-        <ContentHider modui={postText}>{story}</ContentHider>
+        <ContentHider modui={postText} style={{pointerEvents: 'box-none'}}>
+          {story}
+        </ContentHider>
       ) : (
         story
       )}

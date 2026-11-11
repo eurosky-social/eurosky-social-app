@@ -82,6 +82,8 @@ export function Media({
       ]}>
       <View
         testID="newsCardMedia"
+        pointerEvents="none"
+        aria-hidden
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
         style={[
@@ -98,7 +100,7 @@ export function Media({
           style={[a.absolute, a.inset_0]}
         />
         {autoplay && article.media?.type === 'video' && (
-          <View style={[a.absolute, a.inset_0]}>
+          <View aria-hidden style={[a.absolute, a.inset_0]}>
             <VideoEmbed embed={article.media.view} post={post} immersive />
           </View>
         )}

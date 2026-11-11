@@ -61,7 +61,9 @@ export function Kicker({
       )}
       {(!!topic || !!format) && (
         <View
+          testID="newsCardTopicGroup"
           pointerEvents="none"
+          aria-hidden
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
           style={[a.flex_row, a.align_center, a.flex_shrink, {minWidth: 0}]}>

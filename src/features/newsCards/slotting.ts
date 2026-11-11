@@ -12,7 +12,13 @@ export type CardSize =
 
 export type PlannedCell = {index: number; span: Span}
 export type PlannedRow =
-  {type: 'cards'; cells: PlannedCell[]} | {type: 'shorts'}
+  | {
+      type: 'cards'
+      cells: PlannedCell[]
+      /** Set when the stories ran out before the row's shape was filled. */
+      partial?: true
+    }
+  | {type: 'shorts'}
 
 /** Repeating row shapes; Shorts follows the third cards row, once. */
 const SHAPES: readonly (readonly Span[])[] = [[3], [2, 1], [1, 1, 1], [1, 2]]
@@ -69,12 +75,16 @@ export function continueRows(
       }
       cells.push({index: queue.splice(found, 1)[0], span})
     }
+    const shape = SHAPES[cardRows % SHAPES.length]
     if (fallback) {
       for (const cell of cells) cell.span = 1
       while (cells.length < 3 && queue.length)
         cells.push({index: queue.shift()!, span: 1})
     }
-    rows.push({type: 'cards', cells})
+    const partial = fallback ? cells.length < 3 : cells.length < shape.length
+    rows.push(
+      partial ? {type: 'cards', cells, partial} : {type: 'cards', cells},
+    )
     cardRows++
     if (shorts && !shortsDone && cardRows === SHORTS_AFTER_ROW) {
       rows.push({type: 'shorts'})

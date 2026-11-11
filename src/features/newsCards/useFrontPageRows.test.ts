@@ -44,3 +44,37 @@ it('reflows the same plan when the column count changes', () => {
   rerender({columns: 2})
   expect(result.current).toEqual(reflowRows(three, 2))
 })
+
+it('never reshapes a complete trailing row when more stories load', () => {
+  const ids = (count: number) => keys(count)
+  const flags = [true, false, false, false, true, false]
+  const {result, rerender} = renderHook(
+    ({count}: {count: number}) =>
+      useFrontPageRows(ids(count), flags.slice(0, count), 3),
+    {initialProps: {count: 4}},
+  )
+  const before = result.current
+  expect(before).toHaveLength(2)
+  rerender({count: 6})
+  expect(result.current.slice(0, 2)).toEqual(before)
+})
+
+it('fills a row that was cut short when the stories ran out', () => {
+  const {result, rerender} = renderHook(
+    ({count}: {count: number}) =>
+      useFrontPageRows(keys(count), Array(count).fill(true), 3),
+    {initialProps: {count: 2}},
+  )
+  expect(result.current[1]).toMatchObject({
+    type: 'cards',
+    cells: [{index: 1, span: 2}],
+  })
+  rerender({count: 3})
+  expect(result.current[1]).toMatchObject({
+    type: 'cards',
+    cells: [
+      {index: 1, span: 2},
+      {index: 2, span: 1},
+    ],
+  })
+})

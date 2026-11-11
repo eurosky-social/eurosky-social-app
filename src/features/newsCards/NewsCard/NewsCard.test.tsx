@@ -1,3 +1,4 @@
+import {StyleSheet} from 'react-native'
 import {render, screen} from '@testing-library/react-native'
 
 import {articleFromPost} from '#/features/articles/articles'
@@ -43,7 +44,19 @@ jest.mock('#/components/Button', () => ({
 }))
 jest.mock('#/components/ProfileCard', () => ({Avatar: () => null}))
 jest.mock('#/components/moderation/ContentHider', () => ({
-  ContentHider: ({children}: React.PropsWithChildren<{}>) => children,
+  ContentHider: ({
+    children,
+    style,
+  }: React.PropsWithChildren<{
+    style?: import('react-native').StyleProp<import('react-native').ViewStyle>
+  }>) => {
+    const {View} = require('react-native') as typeof import('react-native')
+    return (
+      <View testID="newsCardHider" style={style}>
+        {children}
+      </View>
+    )
+  },
 }))
 jest.mock('#/components/icons/Play', () => ({
   Play_Filled_Corner2_Rounded: () => null,
@@ -80,6 +93,10 @@ jest.mock('#/components/Post/Embed/VideoEmbed', () => {
   return {VideoEmbed: () => <View testID="newsCardVideo" />}
 })
 
+let mockPostTextUi: {blur: boolean; blurs: unknown[]} = {
+  blur: false,
+  blurs: [],
+}
 let mockAutoplayDisabled = false
 let mockReducedMotion = false
 let mockModeration: {filter: boolean; blur: boolean; blurs: unknown[]} = {
@@ -122,7 +139,7 @@ function story(
       })),
     },
     moderation: {
-      ui: () => ({blur: false, blurs: []}),
+      ui: () => mockPostTextUi,
     } as unknown as Parameters<typeof articleFromPost>[0]['moderation'],
   })
 }
@@ -182,6 +199,7 @@ function headlineStyle() {
 
 beforeEach(() => {
   mockModeration = {filter: false, blur: false, blurs: []}
+  mockPostTextUi = {blur: false, blurs: []}
   mockAutoplayDisabled = false
   mockReducedMotion = false
 })
@@ -338,5 +356,48 @@ describe('Lead video', () => {
     mockReducedMotion = true
     render(<NewsCard article={video} size="lead" />)
     expect(screen.queryByTestId('newsCardVideo', hidden)).toBeNull()
+  })
+})
+
+describe('review fixes', () => {
+  it('shows no media and no headline in the link name when the text is warned', () => {
+    mockPostTextUi = {blur: true, blurs: [{type: 'label'}]}
+    mockModeration = {filter: false, blur: true, blurs: [{type: 'label'}]}
+    render(<NewsCard article={article} size="lead" />)
+    expect(screen.queryByTestId('newsCardMedia', hidden)).toBeNull()
+    const label = screen.getByTestId('newsCardLink').props.label as string
+    expect(label).toContain('Graphic media')
+    expect(label).not.toContain('Baltic grid operators')
+  })
+
+  it('lets taps pass through the warning wrapper to the card link', () => {
+    mockPostTextUi = {blur: true, blurs: [{type: 'label'}]}
+    render(<NewsCard article={article} size="standard" />)
+    expect(
+      StyleSheet.flatten(
+        screen.getByTestId('newsCardHider', hidden).props.style,
+      ),
+    ).toMatchObject({pointerEvents: 'box-none'})
+  })
+
+  it('hides the visible story and media from assistive technology on web too', () => {
+    render(<NewsCard article={youtube} size="standard" />)
+    expect(
+      screen.getByTestId('newsCardStory', hidden).props['aria-hidden'],
+    ).toBe(true)
+    expect(
+      screen.getByTestId('newsCardMedia', hidden).props['aria-hidden'],
+    ).toBe(true)
+    expect(
+      screen.getByTestId('newsCardTopicGroup', hidden).props['aria-hidden'],
+    ).toBe(true)
+  })
+
+  it('never lets the media frame catch taps', () => {
+    mockModeration = {filter: false, blur: true, blurs: [{type: 'label'}]}
+    render(<NewsCard article={article} size="standard" />)
+    expect(
+      screen.getByTestId('newsCardMedia', hidden).props.pointerEvents,
+    ).toBe('none')
   })
 })

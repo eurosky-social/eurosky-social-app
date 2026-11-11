@@ -1,3 +1,4 @@
+import {StyleSheet} from 'react-native'
 import {fireEvent, render, screen} from '@testing-library/react-native'
 
 import {CardActions} from './CardActions'
@@ -54,7 +55,10 @@ jest.mock('#/components/icons/Heart2', () => ({
   Heart2_Stroke2_Corner0_Rounded: () => null,
 }))
 jest.mock('#/components/icons/Reply', () => ({
-  Reply_Stroke2_Corner0_Rounded: () => null,
+  Reply_Stroke2_Corner0_Rounded: (props: object) => {
+    mockCommentIconProps(props)
+    return null
+  },
 }))
 jest.mock('#/components/Toast', () => ({
   show: (...args: unknown[]) => mockToast(...args),
@@ -82,6 +86,7 @@ jest.mock('#/state/session', () => ({
 
 const mockRepostProps = jest.fn<void, [{onQuote: () => void}]>()
 const mockToast = jest.fn()
+const mockCommentIconProps = jest.fn()
 const mockOpenComposer = jest.fn()
 const mockLike = jest.fn(async () => {})
 const mockUnlike = jest.fn(async () => {})
@@ -125,6 +130,7 @@ it('links the counts and comment icon to the post, out of the tab order', () => 
     expect(node.props.to).toBe('/profile/pub.example/post/abc')
     expect(node.props.tabIndex).toBe(-1)
     expect(node.props.accessibilityElementsHidden).toBe(true)
+    expect(node.props['aria-hidden']).toBe(true)
   }
   expect(
     screen.getByTestId('newsCardLikeCount', {includeHiddenElements: true}),
@@ -212,4 +218,20 @@ it('labels time relative under a day, then as a short date', () => {
   expect(screen.getByTestId('newsCardTime')).toHaveTextContent('Just now')
   rerender(<CardActions post={post()} createdAt="2026-11-06T09:00:00Z" />)
   expect(screen.getByTestId('newsCardTime')).toHaveTextContent('6 Nov')
+})
+
+it('draws the comment icon in the muted control colour', () => {
+  render(<CardActions post={post()} createdAt="2026-11-11T09:58:00Z" />)
+  expect(mockCommentIconProps).toHaveBeenCalledWith(
+    expect.objectContaining({fill: '#000'}),
+  )
+})
+
+it('keeps the time whole and out of the tap path', () => {
+  render(<CardActions post={post()} createdAt="2026-11-11T09:58:00Z" />)
+  const wrapper = screen.getByTestId('newsCardTimeWrap')
+  expect(wrapper.props.pointerEvents).toBe('none')
+  expect(StyleSheet.flatten(wrapper.props.style)).toMatchObject({
+    flexShrink: 0,
+  })
 })

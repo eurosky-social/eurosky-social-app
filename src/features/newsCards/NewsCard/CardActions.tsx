@@ -135,6 +135,7 @@ export function CardActions({
       to={postLink}
       label={String(count)}
       tabIndex={-1}
+      aria-hidden
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       hitSlop={HIT_SLOP}
@@ -148,17 +149,22 @@ export function CardActions({
       testID="newsCardActions"
       pointerEvents="box-none"
       style={[a.flex_row, a.align_center, a.justify_between, a.gap_sm]}>
-      <Text
-        testID="newsCardTime"
-        title={time.full}
-        style={[
-          a.text_sm,
-          t.atoms.text_contrast_medium,
-          {fontVariant: ['tabular-nums']},
-        ]}
-        numberOfLines={1}>
-        {time.label}
-      </Text>
+      <View
+        testID="newsCardTimeWrap"
+        pointerEvents="none"
+        style={{flexShrink: 0}}>
+        <Text
+          testID="newsCardTime"
+          title={time.full}
+          style={[
+            a.text_sm,
+            t.atoms.text_contrast_medium,
+            {fontVariant: ['tabular-nums']},
+          ]}
+          numberOfLines={1}>
+          {time.label}
+        </Text>
+      </View>
       <View
         pointerEvents="box-none"
         style={[a.flex_row, a.align_center, web({zIndex: 2})]}>
@@ -167,11 +173,12 @@ export function CardActions({
           to={postLink}
           label={l`Open conversation`}
           tabIndex={-1}
+          aria-hidden
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
           hitSlop={HIT_SLOP}
           style={[{padding: 5}]}>
-          <PostControlButtonIcon icon={Comment} />
+          <Comment width={18} fill={t.palette.contrast_500} />
         </Link>
         {countLink('newsCardCommentCount', post.replyCount ?? 0)}
         <RepostButton
