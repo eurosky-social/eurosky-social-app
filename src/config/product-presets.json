@@ -61,7 +61,7 @@
       "messaging": false,
       "bookmarking": true,
       "standalonePosting": false,
-      "quotePosting": false
+      "quotePosting": true
     }
   }
 }

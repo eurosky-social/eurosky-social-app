@@ -12,7 +12,7 @@ import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {usePostQuery} from '#/state/queries/post'
 import {type ComposerOptsPostRef} from '#/state/shell/composer'
 import {PreviewableUserAvatar} from '#/view/com/util/UserAvatar'
-import {atoms as a, SERIF_FONT_FAMILY, useTheme, utils, web} from '#/alf'
+import {atoms as a, useTheme, utils, web} from '#/alf'
 import {ContentHider} from '#/components/moderation/ContentHider'
 import {QuoteEmbed} from '#/components/Post/Embed'
 import {ProfileBadges} from '#/components/ProfileBadges'
@@ -218,7 +218,6 @@ function PublisherReplyArticle({
           <Text
             style={[
               article.external ? a.font_bold : undefined,
-              article.external && {fontFamily: SERIF_FONT_FAMILY},
               a.text_md,
               a.leading_snug,
             ]}

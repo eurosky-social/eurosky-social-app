@@ -13,13 +13,7 @@ import {
   usePostShadow,
 } from '#/state/cache/post-shadow'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
-import {
-  atoms as a,
-  SERIF_FONT_FAMILY,
-  useBreakpoints,
-  useTheme,
-  web,
-} from '#/alf'
+import {atoms as a, useBreakpoints, useTheme, web} from '#/alf'
 import {ButtonIcon, ButtonText} from '#/components/Button'
 import {Bubble_Stroke2_Corner2_Rounded as Comment} from '#/components/icons/Bubble'
 import {Repost_Stroke2_Corner0_Rounded as Repost} from '#/components/icons/Repost'
@@ -352,12 +346,13 @@ export function ArticleContent({
                   {
                     fontSize: hasHeadline ? headlineSize : 14,
                     lineHeight: hasHeadline ? headlineSize * 1.1 : 20,
-                    letterSpacing: hasHeadline && !newspaperHeading ? -0.7 : 0,
-                    fontFamily:
-                      hasHeadline && newspaperHeading
-                        ? SERIF_FONT_FAMILY
-                        : undefined,
+                    letterSpacing: !hasHeadline
+                      ? 0
+                      : newspaperHeading
+                        ? -0.012 * headlineSize
+                        : -0.7,
                   },
+                  hasHeadline && newspaperHeading && {fontWeight: '600'},
                 ]}>
                 {linkTitle}
               </Text>
