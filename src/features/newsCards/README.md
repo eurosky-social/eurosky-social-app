@@ -12,6 +12,17 @@ Every story uses one anatomy: kicker (publisher logo and name, then the first ha
 - `NewsCard/`: the card. `styles.ts` holds the type scale (Lead 44/30 Bold, Feature 32/24, Standard 24/20, Compact 17; text posts one step down) and the ratios (16:9 playable, 3:2 photos and articles, 4:3 compact). `Media.tsx` blurs moderated media and plays a muted Lead video unless autoplay is off or reduced motion is on. `CardActions.tsx` shows the time and the post actions.
 - `FrontPage/`: renders planned rows with hairline rules, the Shorts section, and `FrontPageSkeleton` for the first load.
 
+## Sectioned Discover (#4)
+
+`SectionedFrontPage` lays Discover out as Top stories, Popular, Video, Shorts, up to three publisher and five topic sections, then an endless Latest grouped by day. Following uses the same page in `following` mode: Top stories and Latest only.
+
+- `ranking.ts`: `storyScore` = (2 × replies + reposts) / (hours + 2)^1.5 over 24 hours; likes are ignored.
+- `sections.ts`: `buildDiscoverSections`, `buildFollowingSections` and `latestGroups`. Each story appears once, in page order. Publisher and topic sections need three unused stories; a feed under 20 stories shows only Top stories and Latest.
+- `slotting.ts` `planShapes`: lays a section into fixed shapes (Top `[3],[2,1],[1,1,1]`; Popular and Video two rows; publisher and topic one row) with the usual media promotion.
+- `FrontPage/useFrozenSections.ts`: sections are built the first time 20 stories have loaded (or the feed ends) and stay until a refresh; only Latest grows.
+
+Publisher pages still use `FrontPage`.
+
 ## Accessibility
 
 The card link's name reads the kicker, headline, time and counts, so the visible story text and media are hidden from assistive technology and the counts are skipped by Tab. Each card has five stops: card, publisher, repost, like, bookmark.

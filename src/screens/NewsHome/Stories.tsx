@@ -10,7 +10,8 @@ import * as Layout from '#/components/Layout'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
 import {articleModeration} from '#/features/articles/moderation'
-import {FrontPage, FrontPageSkeleton} from '#/features/newsCards/FrontPage'
+import {FrontPageSkeleton} from '#/features/newsCards/FrontPage'
+import {SectionedFrontPage} from '#/features/newsCards/FrontPage/SectionedFrontPage'
 import {articlesFromPublisherFeed} from '#/features/publishers/articles'
 import {publisherFeedDescriptor} from '#/features/publishers/feedDescriptor'
 import {HomeShortsRow} from './ShortsRow'
@@ -42,9 +43,11 @@ export function NewsStories({
         {feed.isPending ? (
           <FrontPageSkeleton />
         ) : (
-          <FrontPage
+          <SectionedFrontPage
             articles={articles}
-            shorts={<HomeShortsRow publisherDids={publisherDids} />}
+            mode={publisherDids ? 'following' : 'discover'}
+            shorts={publisherDids ? undefined : <HomeShortsRow />}
+            complete={feed.hasNextPage === false}
           />
         )}
         {feed.isError ? (

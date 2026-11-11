@@ -38,6 +38,25 @@ jest.mock('#/features/newsCards/FrontPage', () => {
     FrontPageSkeleton: () => <View testID="frontPageSkeleton" />,
   }
 })
+jest.mock('#/features/newsCards/FrontPage/SectionedFrontPage', () => {
+  const {View} = require('react-native') as typeof import('react-native')
+  return {
+    SectionedFrontPage: ({
+      shorts,
+      mode,
+      complete,
+    }: {
+      shorts?: React.ReactNode
+      mode: string
+      complete?: boolean
+    }) => (
+      <View testID="sectionedFrontPage" accessibilityHint={mode}>
+        {complete ? <View testID="feedComplete" /> : null}
+        {shorts}
+      </View>
+    ),
+  }
+})
 
 let mockArticles: object[] = []
 let mockFeed: Record<string, unknown> = {}
@@ -56,15 +75,34 @@ function renderStories() {
   )
 }
 
-it('lays stories out as a front page with Shorts inside it', () => {
+it('lays Discover out as a sectioned front page with Shorts', () => {
   renderStories()
-  expect(screen.getByTestId('frontPage')).toBeTruthy()
+  const page = screen.getByTestId('sectionedFrontPage')
+  expect(page.props.accessibilityHint).toBe('discover')
   expect(screen.getByTestId('homeShortsRow')).toBeTruthy()
+})
+
+it('keeps Following personal: following mode without Shorts', () => {
+  render(
+    <I18nProvider i18n={i18n}>
+      <NewsStories publisherDids={['did:plc:pub']} />
+    </I18nProvider>,
+  )
+  expect(screen.getByTestId('sectionedFrontPage').props.accessibilityHint).toBe(
+    'following',
+  )
+  expect(screen.queryByTestId('homeShortsRow')).toBeNull()
+})
+
+it('tells the page when the feed has no more stories', () => {
+  mockFeed = {...mockFeed, hasNextPage: false}
+  renderStories()
+  expect(screen.getByTestId('feedComplete')).toBeTruthy()
 })
 
 it('shows skeleton cards while the first page loads', () => {
   mockFeed = {isPending: true}
   renderStories()
   expect(screen.getByTestId('frontPageSkeleton')).toBeTruthy()
-  expect(screen.queryByTestId('frontPage')).toBeNull()
+  expect(screen.queryByTestId('sectionedFrontPage')).toBeNull()
 })
