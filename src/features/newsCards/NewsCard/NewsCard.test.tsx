@@ -69,6 +69,19 @@ jest.mock('./CardActions', () => ({
   useCardTime: () => ({label: '2m ago', full: '11 Nov 2026, 09:58'}),
 }))
 
+jest.mock('#/state/preferences', () => ({
+  useAutoplayDisabled: () => mockAutoplayDisabled,
+}))
+jest.mock('react-native-reanimated', () => ({
+  useReducedMotion: () => mockReducedMotion,
+}))
+jest.mock('#/components/Post/Embed/VideoEmbed', () => {
+  const {View} = require('react-native') as typeof import('react-native')
+  return {VideoEmbed: () => <View testID="newsCardVideo" />}
+})
+
+let mockAutoplayDisabled = false
+let mockReducedMotion = false
 let mockModeration: {filter: boolean; blur: boolean; blurs: unknown[]} = {
   filter: false,
   blur: false,
@@ -169,6 +182,8 @@ function headlineStyle() {
 
 beforeEach(() => {
   mockModeration = {filter: false, blur: false, blurs: []}
+  mockAutoplayDisabled = false
+  mockReducedMotion = false
 })
 
 it('shows the publisher and the hashtag topic in the kicker', () => {
@@ -291,4 +306,37 @@ it('lets very long words wrap inside the column', () => {
     />,
   )
   expect(headlineStyle()).toMatchObject({overflowWrap: 'anywhere'})
+})
+
+describe('Lead video', () => {
+  const video = story({
+    $type: 'app.bsky.embed.video#view',
+    cid: 'bafyvideo',
+    playlist: 'https://example.com/playlist.m3u8',
+    thumbnail: 'https://example.com/video.jpg',
+  })
+
+  it('autoplays in the Lead slot', () => {
+    render(<NewsCard article={video} size="lead" />)
+    expect(screen.getByTestId('newsCardVideo', hidden)).toBeTruthy()
+  })
+
+  it('shows a still with a play badge outside the Lead slot', () => {
+    render(<NewsCard article={video} size="feature" />)
+    expect(screen.queryByTestId('newsCardVideo', hidden)).toBeNull()
+    expect(screen.getByTestId('newsCardBadge', hidden)).toHaveTextContent(
+      'Video',
+    )
+  })
+
+  it('respects the autoplay preference and reduced motion', () => {
+    mockAutoplayDisabled = true
+    const view = render(<NewsCard article={video} size="lead" />)
+    expect(screen.queryByTestId('newsCardVideo', hidden)).toBeNull()
+    view.unmount()
+    mockAutoplayDisabled = false
+    mockReducedMotion = true
+    render(<NewsCard article={video} size="lead" />)
+    expect(screen.queryByTestId('newsCardVideo', hidden)).toBeNull()
+  })
 })

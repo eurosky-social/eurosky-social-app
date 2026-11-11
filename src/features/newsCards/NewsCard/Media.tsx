@@ -1,16 +1,20 @@
 import {useState} from 'react'
 import {useWindowDimensions, View} from 'react-native'
+import {useReducedMotion} from 'react-native-reanimated'
 import {Image} from 'expo-image'
 import {type ModerationUI} from '@bsky/sdk/moderation'
 import {useLingui} from '@lingui/react/macro'
 
 import {useModerationCauseDescription} from '#/lib/moderation/useModerationCauseDescription'
+import {useAutoplayDisabled} from '#/state/preferences'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
 import {Image_Stroke2_Corner2_Rounded as ImagesIcon} from '#/components/icons/Image'
 import {Play_Filled_Corner2_Rounded as PlayIcon} from '#/components/icons/Play'
+import {VideoEmbed} from '#/components/Post/Embed/VideoEmbed'
 import {Text} from '#/components/Typography'
 import {type PostArticle} from '#/features/articles/articles'
+import {type app} from '#/lexicons'
 import {type CardKind} from '../model'
 import {type CardSize} from '../slotting'
 import {COMPACT_THUMB_WIDTH, LEAD_MEDIA_MAX_HEIGHT, mediaRatio} from './styles'
@@ -27,18 +31,22 @@ function mediaCount(article: PostArticle) {
 
 /**
  * Card picture. Decorative for assistive technology, since the card link's
- * name carries the story; only the moderation Show button is interactive.
+ * name carries the story; only the moderation Show button is interactive. A
+ * Lead video plays muted in place unless autoplay is off or the reader prefers
+ * reduced motion; it never takes taps, which open the post.
  */
 export function Media({
   article,
   kind,
   size,
   moderation,
+  post,
 }: {
   article: PostArticle
   kind: CardKind
   size: CardSize
   moderation?: ModerationUI
+  post?: app.bsky.feed.defs.PostView
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
@@ -51,6 +59,15 @@ export function Media({
     size === 'lead' || size === 'leadTablet' || size === 'leadPhone'
   const playable = kind === 'video' || kind === 'youtube'
   const count = kind === 'gallery' ? mediaCount(article) : 0
+  const autoplayDisabled = useAutoplayDisabled()
+  const reducedMotion = useReducedMotion()
+  const autoplay =
+    isLead &&
+    !blurred &&
+    !autoplayDisabled &&
+    !reducedMotion &&
+    article.media?.type === 'video' &&
+    kind === 'video'
   if (!article.image) return null
   return (
     <View
@@ -80,7 +97,12 @@ export function Media({
           transition={150}
           style={[a.absolute, a.inset_0]}
         />
-        {!blurred && (playable || count > 1) && (
+        {autoplay && article.media?.type === 'video' && (
+          <View style={[a.absolute, a.inset_0]}>
+            <VideoEmbed embed={article.media.view} post={post} immersive />
+          </View>
+        )}
+        {!blurred && !autoplay && (playable || count > 1) && (
           <View
             testID="newsCardBadge"
             style={[

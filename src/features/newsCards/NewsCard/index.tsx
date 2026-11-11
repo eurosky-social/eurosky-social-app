@@ -121,6 +121,7 @@ function NewsCardInner({
       kind={kind}
       size={size}
       moderation={postText.blur ? undefined : moderation}
+      post={post}
     />
   )
 
