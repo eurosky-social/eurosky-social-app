@@ -12,7 +12,7 @@ Every story uses one anatomy: kicker (publisher logo and name, then the first ha
 - `slotting.ts`: `columnsForWidth` (3 at ≥ 960px of content, 2 at 600–959, 1 below), `cardSizeFor`, `continueRows` (the three-column rhythm full, 2+1, 1+1+1, Shorts, 1+2, with media stories promoted at most 3 places into media slots) and `reflowRows` (two and one columns). Pure.
 - `useFrontPageRows.ts`: plans once on three columns and keeps every row but the last when stories are appended, so loading more never reshuffles what is on screen. Column changes reflow the same plan.
 - `NewsCard/`: the card. `styles.ts` holds the type scale (Lead 44/30 Bold, Feature 32/24, Standard 24/20, Compact 17) and the ratios (16:9 playable, 3:2 photos and articles, 4:3 compact). `Media.tsx` blurs moderated media and plays a muted Lead video unless autoplay is off or reduced motion is on. `CardActions.tsx` shows the time and the post actions.
-- `FrontPage/`: renders planned rows with hairline rules, the Shorts section, and `FrontPageSkeleton` for the first load.
+- `FrontPage/`: renders planned rows in a boxed hairline grid (`BoxGrid`, one owner per line), the Shorts section, and `FrontPageSkeleton` for the first load.
 
 ## Sectioned Discover (#4)
 

@@ -238,7 +238,7 @@ it.each([
   [false, 240],
   [true, 80],
 ])(
-  'pins the news nav to the window edge with a hairline (minimal: %s)',
+  'pins the news nav to the window edge without a border (minimal: %s)',
   (minimal, width) => {
     mockMinimal = minimal
     jest.replaceProperty(PRODUCT, 'id', 'news')
@@ -255,8 +255,8 @@ it.each([
       top: 0,
       bottom: 0,
       width,
-      borderRightWidth: 1,
     })
+    expect(style.borderRightWidth ?? 0).toBe(0)
     expect(style.transform ?? []).toEqual([])
   },
 )

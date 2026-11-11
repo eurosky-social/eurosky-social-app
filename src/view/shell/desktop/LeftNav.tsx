@@ -805,11 +805,9 @@ function DesktopLeftNavContent({
         pinned
           ? [
               a.bottom_0,
-              t.atoms.border_contrast_low,
               {
                 top: 0,
                 left: 0,
-                borderRightWidth: 1,
                 width: leftNavMinimal
                   ? PINNED_LEFT_NAV_RAIL_WIDTH
                   : PINNED_LEFT_NAV_WIDTH,
