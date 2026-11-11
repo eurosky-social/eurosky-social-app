@@ -71,7 +71,11 @@ export function NewsStories({
           <SectionedFrontPage
             articles={articles}
             mode={mode}
-            shorts={mode === 'discover' ? <HomeShortsRow /> : undefined}
+            shorts={
+              mode === 'discover' ? (
+                <HomeShortsRow heading={false} />
+              ) : undefined
+            }
             complete={feed.hasNextPage === false}
           />
         )}

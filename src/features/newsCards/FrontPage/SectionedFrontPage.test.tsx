@@ -137,11 +137,13 @@ it('renders the sections in order with Shorts after Video', () => {
   expect(screen.getByTestId('shortsRow')).toBeTruthy()
 })
 
-it('offers See all only on publisher and topic sections', () => {
+it('offers See all only on Shorts, publisher and topic sections', () => {
   render(page(feed(60)))
   const links = screen.getAllByTestId(/^sectionSeeAll-/)
   for (const link of links)
-    expect(link.props.testID).toMatch(/^sectionSeeAll-(publisher|topic)-/)
+    expect(link.props.testID).toMatch(
+      /^sectionSeeAll-(shorts$|publisher-|topic-)/,
+    )
   expect(links.length).toBeGreaterThan(0)
 })
 
@@ -281,4 +283,25 @@ it('shows only the dated stream, without a Latest heading, in latest mode', () =
   )
   expect(headings()).toEqual([])
   expect(screen.getAllByTestId(/^card:/)).toHaveLength(60)
+})
+
+it('separates sections with space and a boxed grid, never a heading rule', () => {
+  render(page(feed(60)))
+  for (const heading of screen.getAllByTestId(/^sectionHeading-/)) {
+    const style = Object.assign(
+      {},
+      ...[heading.props.style].flat(Infinity).filter(Boolean),
+    ) as Record<string, unknown>
+    expect(style.borderTopWidth ?? 0).toBe(0)
+  }
+  expect(screen.getAllByTestId(/^sectionGrid-/).length).toBeGreaterThan(2)
+})
+
+it('gives Shorts a heading outside its box, with See all', () => {
+  render(page(feed(60)))
+  expect(headings()).toContain('sectionHeading-shorts')
+  expect(screen.getByTestId('sectionSeeAll-shorts').props.to).toEqual({
+    screen: 'Shorts',
+  })
+  expect(screen.getByTestId('shortsBox')).toBeTruthy()
 })

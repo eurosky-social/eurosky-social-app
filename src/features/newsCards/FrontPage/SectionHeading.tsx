@@ -1,10 +1,10 @@
 import {View} from 'react-native'
 
-import {atoms as a, useTheme} from '#/alf'
+import {atoms as a} from '#/alf'
 import {Link, type LinkProps} from '#/components/Link'
 import {Text} from '#/components/Typography'
 
-/** A 2px rule, the section title, and "See all" when a destination exists. */
+/** The section title above its boxed grid, and "See all" when a destination exists. */
 export function SectionHeading({
   id,
   title,
@@ -14,19 +14,16 @@ export function SectionHeading({
   title: string
   seeAll?: {to: LinkProps['to']; label: string; text: string}
 }) {
-  const t = useTheme()
   return (
     <View
       testID={`sectionHeading-${id}`}
       style={[
         a.flex_row,
-        a.align_center,
+        a.align_end,
         a.justify_between,
         a.gap_md,
-        a.pt_md,
-        a.mt_lg,
-        {borderTopWidth: 2},
-        t.atoms.border_contrast_high,
+        a.pt_2xl,
+        a.pb_md,
       ]}>
       <Text
         emoji

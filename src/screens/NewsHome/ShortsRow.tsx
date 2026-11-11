@@ -20,7 +20,12 @@ import {findPublisherByDid} from '#/features/publishers/publishers'
 /** Share the Shorts query, but mount only thumbnails in the article feed. */
 export function HomeShortsRow({
   publisherDids,
-}: {publisherDids?: readonly string[]} = {}) {
+  heading = true,
+}: {
+  publisherDids?: readonly string[]
+  /** Off when the page draws the section heading itself. */
+  heading?: boolean
+} = {}) {
   const {t: l} = useLingui()
   const opts = useModerationOpts()
   const feed = usePostFeedQuery(publisherFeedDescriptor('videos'))
@@ -38,20 +43,22 @@ export function HomeShortsRow({
     .slice(0, 10)
   if (!opts || !videos.length) return null
   return (
-    <View testID="homeShortsRow" style={[a.gap_md, a.py_xl]}>
-      <View style={[a.flex_row, a.align_center, a.justify_between]}>
-        <Text
-          testID="homeShortsHeading"
-          accessibilityRole="header"
-          style={[a.font_semi_bold, {fontSize: 22, lineHeight: 26}]}>
-          <Trans>Shorts</Trans>
-        </Text>
-        <Link to={{screen: 'Shorts'}} label={l`See all shorts`}>
-          <Text style={[a.text_sm, a.font_medium]}>
-            <Trans>See all</Trans>
+    <View testID="homeShortsRow" style={[a.gap_md, heading && a.py_xl]}>
+      {heading && (
+        <View style={[a.flex_row, a.align_center, a.justify_between]}>
+          <Text
+            testID="homeShortsHeading"
+            accessibilityRole="header"
+            style={[a.font_semi_bold, {fontSize: 22, lineHeight: 26}]}>
+            <Trans>Shorts</Trans>
           </Text>
-        </Link>
-      </View>
+          <Link to={{screen: 'Shorts'}} label={l`See all shorts`}>
+            <Text style={[a.text_sm, a.font_medium]}>
+              <Trans>See all</Trans>
+            </Text>
+          </Link>
+        </View>
+      )}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

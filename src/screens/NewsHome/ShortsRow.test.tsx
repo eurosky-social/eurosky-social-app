@@ -165,3 +165,10 @@ it('sets captions in three lines of 15px Semibold with the publisher logo', () =
   expect(screen.getByTestId('homeShortAvatar').props.size).toBe(16)
   expect(screen.getByTestId('homeShortsHeading')).toHaveTextContent('Shorts')
 })
+
+it('can leave its heading to the page', () => {
+  mockSlices = [slice('one')]
+  render(<HomeShortsRow heading={false} />)
+  expect(screen.queryByTestId('homeShortsHeading')).toBeNull()
+  expect(screen.getAllByTestId('homeShortCard')).toHaveLength(1)
+})

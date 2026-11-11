@@ -15,7 +15,7 @@ import {
   type Span,
 } from '../slotting'
 import {useFrontPageRows} from '../useFrontPageRows'
-import {Row} from './index'
+import {BoxGrid, CELL_PADDING} from './BoxGrid'
 import {SectionHeading} from './SectionHeading'
 import {useFrontPageColumns} from './useFrontPageColumns'
 import {useFrozenSections} from './useFrozenSections'
@@ -44,21 +44,31 @@ export function SectionedFrontPage({
   complete?: boolean
 }) {
   const t = useTheme()
+  const {t: l} = useLingui()
   const columns = useFrontPageColumns()
   const sections = useFrozenSections(articles, mode, !!shorts, complete)
   return (
     <View testID="sectionedFrontPage">
       {sections.map(section =>
         section.kind === 'shorts' ? (
-          <View
-            key="shorts"
-            testID="frontPageShorts"
-            style={[
-              a.mt_lg,
-              {borderTopWidth: 2},
-              t.atoms.border_contrast_high,
-            ]}>
-            {shorts}
+          <View key="shorts" testID="frontPageShorts">
+            <SectionHeading
+              id="shorts"
+              title={l({message: 'Shorts', context: 'section heading'})}
+              seeAll={{
+                to: {screen: 'Shorts'},
+                label: l`See all shorts`,
+                text: l`See all →`,
+              }}
+            />
+            <View
+              testID="shortsBox"
+              style={[
+                {borderWidth: 1, padding: CELL_PADDING},
+                t.atoms.border_contrast_low,
+              ]}>
+              {shorts}
+            </View>
           </View>
         ) : section.kind === 'latest' ? (
           <Latest
@@ -124,22 +134,17 @@ function Section({
   return (
     <View testID={`section-${section.id}`}>
       <SectionHeading id={section.id} title={title} seeAll={seeAll} />
-      {rows.map(
-        row =>
-          row.type === 'cards' && (
-            <Row
-              key={section.articles[row.cells[0].index].item.uri}
-              row={row}
-              columns={columns}
-              renderCell={cell => (
-                <NewsCard
-                  article={section.articles[cell.index]}
-                  size={cardSizeFor(cell.span, columns)}
-                />
-              )}
-            />
-          ),
-      )}
+      <BoxGrid
+        testID={`sectionGrid-${section.id}`}
+        rows={rows.flatMap(row => (row.type === 'cards' ? [row] : []))}
+        columns={columns}
+        renderCell={cell => (
+          <NewsCard
+            article={section.articles[cell.index]}
+            size={cardSizeFor(cell.span, columns)}
+          />
+        )}
+      />
     </View>
   )
 }
@@ -209,28 +214,24 @@ function LatestGroup({
         accessibilityRole="header"
         style={[
           a.pt_lg,
+          a.pb_sm,
           a.text_sm,
           a.font_semi_bold,
           t.atoms.text_contrast_medium,
         ]}>
         {label}
       </Text>
-      {rows.map(
-        row =>
-          row.type === 'cards' && (
-            <Row
-              key={articles[row.cells[0].index].item.uri}
-              row={row}
-              columns={columns}
-              renderCell={cell => (
-                <NewsCard
-                  article={articles[cell.index]}
-                  size={cardSizeFor(cell.span, columns)}
-                />
-              )}
-            />
-          ),
-      )}
+      <BoxGrid
+        testID={`sectionGrid-latest-${articles[0].item.uri}`}
+        rows={rows.flatMap(row => (row.type === 'cards' ? [row] : []))}
+        columns={columns}
+        renderCell={cell => (
+          <NewsCard
+            article={articles[cell.index]}
+            size={cardSizeFor(cell.span, columns)}
+          />
+        )}
+      />
     </View>
   )
 }
