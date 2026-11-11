@@ -5,6 +5,7 @@ import {type FeedPostSliceItem} from '#/state/queries/post-feed'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {articleFromPost, type EditorialArticle} from './articles'
+import {type FeaturedFeeds, featuredUri} from './curation'
 import {articleModeration} from './moderation'
 
 export type ResourceItem = {
@@ -15,10 +16,36 @@ export type ResourceItem = {
   feed?: app.bsky.feed.defs.GeneratorView
   starterPack?: bsky.starterPack.AnyStarterPackView
 }
-export type EditorialItem = EditorialArticle | ResourceItem
+/** Several feeds in one slot; the page's own, so not an AT URI. */
+export type FeaturedItem = {
+  kind: 'featured'
+  item: {uri: string}
+  title: string
+  url?: undefined
+  featured: FeaturedFeeds
+}
+export type EditorialItem = EditorialArticle | ResourceItem | FeaturedItem
 
+export function isArticleItem(item: EditorialItem): item is EditorialArticle {
+  return !('kind' in item)
+}
+
+/** A feed or starter pack, fetched by its AT URI. */
 export function isResourceItem(item: EditorialItem): item is ResourceItem {
-  return 'kind' in item
+  return 'kind' in item && item.kind !== 'featured'
+}
+
+export function isFeaturedItem(item: EditorialItem): item is FeaturedItem {
+  return 'kind' in item && item.kind === 'featured'
+}
+
+export function featuredItem(card: FeaturedFeeds, title: string): FeaturedItem {
+  return {
+    kind: 'featured',
+    item: {uri: featuredUri(card.id)},
+    title: card.title ?? title,
+    featured: card,
+  }
 }
 
 /** Preserve the source feed's ordering, thread links and normal moderation for embedded previews. */

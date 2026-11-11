@@ -14,6 +14,8 @@ export const DEFAULT_SECTION_LENGTH = 24
 export const NEW_SECTION_LENGTH = 6
 export const MAX_SECTION_TITLE = 120
 export const MAX_SECTION_DESCRIPTION = 300
+/** How many feeds one featured-feeds card shows. */
+export const MAX_FEATURED_FEEDS = 12
 
 export type ArticleSize = 'small' | 'medium' | 'big'
 /** How a section lays out its stories: the newspaper grid, or a row of cards that scrolls sideways. */
@@ -51,10 +53,31 @@ export function roomOf(section: Pick<FrontpageSection, 'length'>) {
   return section.length === 'infinite' ? Infinity : section.length
 }
 
+/**
+ * Several feeds shown together as one card in a slot. The slot pins it as
+ * `featured:<id>`; a card nothing pins is dropped.
+ */
+export type FeaturedFeeds = {
+  id: string
+  /** Shown above the feeds; "Featured feeds" when unset. */
+  title?: string
+  /** Feed URIs, in order; any creator's. */
+  feeds: string[]
+}
+
+/** The slot reference of a featured-feeds card. */
+export function featuredUri(id: string) {
+  return `featured:${id}`
+}
+
+const FEATURED_URI = /^featured:([a-z0-9]{1,16})$/
+
 export type Curation = {
   /** Whether the account's banner fills the top of the page. */
   cover: boolean
   sections: FrontpageSection[]
+  /** The featured-feeds cards the sections pin. */
+  featured?: FeaturedFeeds[]
   starterPackViews?: {uri: string; view: StarterPackViewMode}[]
   sizes?: {post: string; size: ArticleSize}[]
 }
@@ -69,19 +92,25 @@ export function defaultCuration(): Curation {
 
 export function referenceKind(
   uri: string,
-): 'article' | 'feed' | 'starterPack' | undefined {
+): 'article' | 'feed' | 'starterPack' | 'featured' | undefined {
   if (/^at:\/\/did:[^/]+\/app\.bsky\.feed\.post\/[^/]+$/.test(uri))
     return 'article'
+  if (FEATURED_URI.test(uri)) return 'featured'
   if (/^at:\/\/did:[^/]+\/app\.bsky\.feed\.generator\/[^/]+$/.test(uri))
     return 'feed'
   if (/^at:\/\/did:[^/]+\/app\.bsky\.graph\.starterpack\/[^/]+$/.test(uri))
     return 'starterPack'
 }
 
-/** Posts must be the publisher's own; feeds and starter packs may be curated from other creators. */
+/**
+ * Posts must be the publisher's own; feeds and starter packs may be curated
+ * from other creators. A featured-feeds card is the record's own; that it
+ * exists is checked with the whole record.
+ */
 export function isAllowedSlotUri(uri: string, did: string) {
   const kind = referenceKind(uri)
   if (kind === 'article') return isOwnPostUri(uri, did)
+  if (kind === 'featured') return true
   if (!kind) return false
   const author = uri.slice('at://'.length).split('/')[0]
   if (!isDidString(author)) return false
@@ -112,6 +141,12 @@ export function newSectionId() {
 /** Every story the page pins, across its sections. */
 export function pinnedUris(curation: Curation) {
   return new Set(curation.sections.flatMap(section => section.pinned))
+}
+
+/** The featured-feeds card a slot reference names, if the page has it. */
+export function featuredFeeds(curation: Curation, uri: string) {
+  const id = FEATURED_URI.exec(uri)?.[1]
+  return id ? curation.featured?.find(card => card.id === id) : undefined
 }
 
 /** The feeds the page fills sections from. */
@@ -173,12 +208,36 @@ function pinnedAcross(sections: {pinned: string[]}[]) {
   )
 }
 
+/** The feed URI a featured-feeds card may hold: any creator's feed. */
+function feedUri(did: string) {
+  return z
+    .string()
+    .max(2048)
+    .refine(
+      value => referenceKind(value) === 'feed' && isAllowedSlotUri(value, did),
+    )
+}
+
+/**
+ * The published record: version 3, or version 4 once the page has
+ * featured-feeds cards, which earlier builds cannot show.
+ */
 export function curationRecordSchema(did: string) {
   return z
     .object({
       $type: z.literal(FRONTPAGE_COLLECTION),
-      version: z.literal(3),
+      version: z.union([z.literal(3), z.literal(4)]),
       cover: z.boolean(),
+      featured: z
+        .array(
+          z.object({
+            id: z.string().regex(SECTION_ID),
+            title: z.string().trim().min(1).max(MAX_SECTION_TITLE).optional(),
+            feeds: z.array(feedUri(did)).min(1).max(MAX_FEATURED_FEEDS),
+          }),
+        )
+        .max(MAX_CURATED_POSTS)
+        .optional(),
       sections: z
         .array(
           z
@@ -186,16 +245,7 @@ export function curationRecordSchema(did: string) {
               ...sectionText,
               fill: z.union([
                 z.enum(['none', 'own']),
-                z.object({
-                  feed: z
-                    .string()
-                    .max(2048)
-                    .refine(
-                      value =>
-                        referenceKind(value) === 'feed' &&
-                        isAllowedSlotUri(value, did),
-                    ),
-                }),
+                z.object({feed: feedUri(did)}),
               ]),
               pinned: z.array(slotUri(did)).max(MAX_SECTION_LENGTH),
               length: z.union([
@@ -224,8 +274,35 @@ export function curationRecordSchema(did: string) {
         pinnedAcross(value.sections) &&
         value.sections
           .slice(0, -1)
-          .every(section => section.length !== 'infinite'),
+          .every(section => section.length !== 'infinite') &&
+        featuredMatch(value),
     )
+}
+
+/**
+ * Whether every featured-feeds reference names a card the record has, each
+ * card once, and version 4 is used exactly when there are cards.
+ */
+function featuredMatch(value: {
+  version: 3 | 4
+  featured?: FeaturedFeeds[]
+  sections: {pinned: string[]}[]
+}) {
+  const cards = value.featured ?? []
+  const ids = new Set(cards.map(card => card.id))
+  const refs = value.sections
+    .flatMap(section => section.pinned)
+    .filter(uri => referenceKind(uri) === 'featured')
+  return (
+    ids.size === cards.length &&
+    refs.every(uri => ids.has(FEATURED_URI.exec(uri)![1])) &&
+    (value.version === 4) === cards.length > 0
+  )
+}
+
+/** The record version a page needs: 4 with featured-feeds cards, else 3. */
+export function recordVersion(curation: Curation): 3 | 4 {
+  return curation.featured?.length ? 4 : 3
 }
 
 /**
@@ -494,7 +571,15 @@ function updateSections(
   )
   if (sections.flatMap(section => section.pinned).length > MAX_CURATED_POSTS)
     throw new Error('CurationLimit')
-  return {...curation, sections}
+  /* A featured-feeds card nothing pins any more leaves the page. */
+  const pinned = new Set(sections.flatMap(section => section.pinned))
+  const featured = curation.featured?.filter(card =>
+    pinned.has(featuredUri(card.id)),
+  )
+  const next: Curation = {...curation, sections}
+  if (featured?.length) next.featured = featured
+  else delete next.featured
+  return next
 }
 
 function findSection(sections: FrontpageSection[], sectionId: string) {
@@ -561,6 +646,53 @@ export function unpinStory(curation: Curation, uri: string): Curation {
       pinned: section.pinned.filter(value => value !== uri),
     })),
   )
+}
+
+/**
+ * Pins a new featured-feeds card in a section at a position among its stories,
+ * like a story. A carousel takes posts only.
+ */
+export function addFeaturedFeeds(
+  curation: Curation,
+  sectionId: string,
+  position: number,
+  value: {title?: string; feeds: string[]},
+): Curation {
+  const card = featuredCard(newSectionId(), value)
+  return placeStory(
+    {...curation, featured: [...(curation.featured ?? []), card]},
+    featuredUri(card.id),
+    sectionId,
+    position,
+  )
+}
+
+/** Changes a featured-feeds card's title or feeds. */
+export function updateFeaturedFeeds(
+  curation: Curation,
+  id: string,
+  value: {title?: string; feeds: string[]},
+): Curation {
+  const card = featuredCard(id, value)
+  return {
+    ...curation,
+    featured: (curation.featured ?? []).map(current =>
+      current.id === id ? card : current,
+    ),
+  }
+}
+
+function featuredCard(
+  id: string,
+  value: {title?: string; feeds: string[]},
+): FeaturedFeeds {
+  const feeds = [...new Set(value.feeds)]
+  if (!feeds.length || feeds.length > MAX_FEATURED_FEEDS)
+    throw new Error('CurationLimit')
+  if (feeds.some(uri => referenceKind(uri) !== 'feed'))
+    throw new Error('FeaturedTakesFeeds')
+  const title = value.title?.trim()
+  return {id, ...(title ? {title} : {}), feeds}
 }
 
 /**

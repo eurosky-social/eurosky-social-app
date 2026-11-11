@@ -3,7 +3,8 @@ import {useEffect, useRef} from 'react'
 const styles = `
 @media (hover: hover) and (pointer: fine) {
   [data-testid="editorialFrontpage"] [data-testid="articleControls"],
-  [data-testid="editorialFrontpage"] [data-testid="insertFrontpageSlot"] {
+  [data-testid="editorialFrontpage"] [data-testid="insertFrontpageSlot"],
+  [data-testid="editorialFrontpage"] [data-testid="frontpageEmptySlotActions"] {
     opacity: 0;
     transition: opacity 120ms ease;
   }
@@ -12,13 +13,16 @@ const styles = `
   [data-testid="editorialFrontpage"] [data-editorial-story]:has([aria-expanded="true"]) [data-testid="articleControls"],
   [data-testid="editorialFrontpage"] [data-testid="insertFrontpageSlot"][data-insertion-near],
   [data-testid="editorialFrontpage"] [data-testid="insertFrontpageSlot"]:hover,
-  [data-testid="editorialFrontpage"] [data-testid="insertFrontpageSlot"]:focus {
+  [data-testid="editorialFrontpage"] [data-testid="insertFrontpageSlot"]:focus,
+  [data-testid="editorialFrontpage"] [data-testid="frontpageEmptySlot"]:hover [data-testid="frontpageEmptySlotActions"],
+  [data-testid="editorialFrontpage"] [data-testid="frontpageEmptySlot"]:focus-within [data-testid="frontpageEmptySlotActions"] {
     opacity: 1;
   }
 }
 @media (prefers-reduced-motion: reduce) {
   [data-testid="editorialFrontpage"] [data-testid="articleControls"],
-  [data-testid="editorialFrontpage"] [data-testid="insertFrontpageSlot"] {
+  [data-testid="editorialFrontpage"] [data-testid="insertFrontpageSlot"],
+  [data-testid="editorialFrontpage"] [data-testid="frontpageEmptySlotActions"] {
     transition: none;
   }
 }

@@ -16,6 +16,9 @@ import {atoms as a, useTheme, web} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
 import * as TextField from '#/components/forms/TextField'
+import {ChevronRight_Stroke2_Corner0_Rounded as ChevronIcon} from '#/components/icons/Chevron'
+import {ListSparkle_Stroke2_Corner0_Rounded as FeedsIcon} from '#/components/icons/ListSparkle'
+import {Newspaper_Stroke2_Corner2_Rounded as PostIcon} from '#/components/icons/Newspaper'
 import {PlusSmall_Stroke2_Corner0_Rounded as Plus} from '#/components/icons/Plus'
 import {Loader} from '#/components/Loader'
 import {ContentHider} from '#/components/moderation/ContentHider'
@@ -23,16 +26,25 @@ import {Text} from '#/components/Typography'
 import {app} from '#/lexicons'
 import {articleLinkKey} from './articleLinks'
 import {type EditorialArticle} from './articles'
-import {referenceKind} from './curation'
+import {type FeaturedFeeds, referenceKind} from './curation'
+import {FeaturedFeedsForm, type FeaturedValue} from './FeaturedFeeds'
 import {
   type EditorialItem,
   feedItem,
+  isArticleItem,
   isResourceItem,
   pickerArticles,
   starterPackItem,
 } from './items'
 import {articleModeration} from './moderation'
 import {resourceModeration} from './ResourceSlot'
+import {StepHeading} from './StepHeading'
+
+/**
+ * Where the add dialog opens: at the choice of what to add, or straight at
+ * one kind's own step, when the spot's button already said which.
+ */
+export type SlotStep = 'choose' | 'posts' | 'featured'
 
 type Kind = 'posts' | 'feeds' | 'starterPacks'
 type Page = {
@@ -89,14 +101,25 @@ export function InsertSlotButton({
   )
 }
 
+/**
+ * Adds something to a spot, in two steps: what kind of thing, then that kind's
+ * own picker. A post is one of the account's posts, a feed or a starter pack;
+ * featured feeds are several feeds in one card. Each step has a way back to
+ * the choice, except when the spot's button already made it, or a carousel
+ * leaves only posts.
+ */
 export function SlotPicker({
   control,
   did,
   pinned,
   automatic,
   postsOnly = false,
+  start,
+  openKey,
+  featured,
   onSplit,
   onSelect,
+  onSaveFeatured,
 }: {
   control: Dialog.DialogControlProps
   did: DidString
@@ -106,35 +129,223 @@ export function SlotPicker({
   automatic: string[]
   /** For a carousel, which holds posts only. */
   postsOnly?: boolean
+  /** The step the dialog opens at. */
+  start: SlotStep
+  /** Changes with every opening, so the dialog starts over. */
+  openKey: number
+  /** The featured-feeds card being edited in place. */
+  featured?: FeaturedFeeds
   /** Offered between two stories of a section: ends it there, the stories below moving into a new one. */
   onSplit?: () => void
   onSelect: (item: EditorialItem) => void
+  onSaveFeatured: (value: FeaturedValue) => void
 }) {
   return (
     <Dialog.Outer control={control} nativeOptions={{fullHeight: true}}>
       <Dialog.Handle />
+      <SlotDialogSteps
+        key={openKey}
+        control={control}
+        did={did}
+        pinned={pinned}
+        automatic={automatic}
+        postsOnly={postsOnly}
+        start={start}
+        featured={featured}
+        onSplit={onSplit}
+        onSelect={onSelect}
+        onSaveFeatured={onSaveFeatured}
+      />
+    </Dialog.Outer>
+  )
+}
+
+function SlotDialogSteps({
+  control,
+  did,
+  pinned,
+  automatic,
+  postsOnly = false,
+  start,
+  featured,
+  onSplit,
+  onSelect,
+  onSaveFeatured,
+}: Omit<Parameters<typeof SlotPicker>[0], 'openKey'>) {
+  const [step, setStep] = useState<SlotStep>(postsOnly ? 'posts' : start)
+  const back = postsOnly ? undefined : () => setStep('choose')
+  if (step === 'featured')
+    return (
+      <FeaturedFeedsForm
+        control={control}
+        did={did}
+        initial={featured}
+        onBack={back}
+        onSave={onSaveFeatured}
+      />
+    )
+  if (step === 'posts')
+    return (
       <SlotPickerInner
         control={control}
         did={did}
         pinned={pinned}
         automatic={automatic}
         postsOnly={postsOnly}
-        onSplit={onSplit}
+        onBack={back}
+        onSplit={postsOnly ? onSplit : undefined}
         onSelect={onSelect}
       />
-    </Dialog.Outer>
+    )
+  return <ChooseKind control={control} onSplit={onSplit} onChoose={setStep} />
+}
+
+/** The first step: what kind of thing goes in the spot. */
+function ChooseKind({
+  control,
+  onSplit,
+  onChoose,
+}: {
+  control: Dialog.DialogControlProps
+  onSplit?: () => void
+  onChoose: (step: 'posts' | 'featured') => void
+}) {
+  const t = useTheme()
+  const {t: l} = useLingui()
+  const options = [
+    {
+      step: 'posts' as const,
+      testID: 'chooseFrontpagePost',
+      icon: PostIcon,
+      title: l`Post`,
+      description: l`One of your posts, a feed or a starter pack`,
+    },
+    {
+      step: 'featured' as const,
+      testID: 'chooseFrontpageFeaturedFeeds',
+      icon: FeedsIcon,
+      title: l`Featured feeds`,
+      description: l`Several feeds together in one card`,
+    },
+  ]
+  return (
+    <Dialog.ScrollableInner
+      label={l`Add to front page`}
+      style={web({maxWidth: 560})}>
+      <View testID="frontpageSlotKinds" style={[a.gap_md]}>
+        <StepHeading title={l`Add to front page`} />
+        <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+          <Trans>Choose how to fill this slot.</Trans>
+        </Text>
+        <View style={[a.gap_sm]}>
+          {options.map(option => (
+            <Pressable
+              key={option.step}
+              testID={option.testID}
+              accessibilityRole="button"
+              accessibilityLabel={option.title}
+              accessibilityHint={option.description}
+              onPress={() => onChoose(option.step)}
+              style={({pressed}) => [
+                a.flex_row,
+                a.align_center,
+                a.gap_md,
+                a.p_md,
+                a.rounded_md,
+                a.border,
+                t.atoms.border_contrast_low,
+                pressed && t.atoms.bg_contrast_25,
+              ]}>
+              <option.icon size="lg" fill={t.atoms.text.color} />
+              <View style={[a.flex_1, a.gap_2xs]}>
+                <Text style={[a.text_md, a.font_semi_bold]}>
+                  {option.title}
+                </Text>
+                <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+                  {option.description}
+                </Text>
+              </View>
+              <ChevronIcon
+                size="sm"
+                fill={t.atoms.text_contrast_medium.color}
+              />
+            </Pressable>
+          ))}
+        </View>
+        {onSplit && <SplitRow control={control} onSplit={onSplit} />}
+      </View>
+      <Dialog.Close />
+    </Dialog.ScrollableInner>
   )
 }
 
+/** Ends the section at the insertion point instead, the stories below moving into a new one. */
+function SplitRow({
+  control,
+  onSplit,
+}: {
+  control: Dialog.DialogControlProps
+  onSplit: () => void
+}) {
+  const t = useTheme()
+  const {t: l} = useLingui()
+  return (
+    <View
+      style={[
+        a.flex_row,
+        a.flex_wrap,
+        a.align_center,
+        a.justify_between,
+        a.gap_md,
+        a.p_md,
+        a.rounded_md,
+        t.atoms.bg_contrast_25,
+      ]}>
+      <Text
+        style={[
+          a.flex_1,
+          a.text_sm,
+          t.atoms.text_contrast_medium,
+          {minWidth: 180},
+        ]}>
+        <Trans>
+          Or end the section here: the stories below move into a new section.
+        </Trans>
+      </Text>
+      <Button
+        testID="splitFrontpageSection"
+        label={l`Split into a new section here`}
+        size="small"
+        color="secondary"
+        onPress={() => control.close(onSplit)}>
+        <ButtonText>
+          <Trans>Split into new section</Trans>
+        </ButtonText>
+      </Button>
+    </View>
+  )
+}
+
+/** The posts step: the account's own posts, feeds and starter packs. */
 function SlotPickerInner({
   control,
   did,
   pinned: pinnedSlots,
   automatic,
   postsOnly = false,
+  onBack,
   onSplit,
   onSelect,
-}: Parameters<typeof SlotPicker>[0]) {
+}: {
+  control: Dialog.DialogControlProps
+  did: DidString
+  pinned: EditorialItem[]
+  automatic: string[]
+  postsOnly?: boolean
+  onBack?: () => void
+  onSplit?: () => void
+  onSelect: (item: EditorialItem) => void
+}) {
   const t = useTheme()
   const {t: l} = useLingui()
   const [kind, setKind] = useState<Kind>('posts')
@@ -230,7 +441,7 @@ function SlotPickerInner({
     seen.add(item.item.uri)
     return (
       !needle ||
-      `${item.title} ${!isResourceItem(item) ? item.description : (item.feed?.description ?? '')}`
+      `${item.title} ${isArticleItem(item) ? item.description : isResourceItem(item) ? (item.feed?.description ?? '') : ''}`
         .toLocaleLowerCase()
         .includes(needle)
     )
@@ -242,48 +453,17 @@ function SlotPickerInner({
   }
   return (
     <Dialog.ScrollableInner
-      label={l`Add to front page`}
+      label={postsOnly ? l`Add a post` : l`Add a post, feed or starter pack`}
       style={web({maxWidth: 560})}>
       <View testID="frontpageSlotPicker" style={[a.gap_md]}>
-        <Text style={[a.text_2xl, a.font_bold]}>
-          <Trans>Add to front page</Trans>
-        </Text>
-        {onSplit && (
-          <View
-            style={[
-              a.flex_row,
-              a.flex_wrap,
-              a.align_center,
-              a.justify_between,
-              a.gap_md,
-              a.p_md,
-              a.rounded_md,
-              t.atoms.bg_contrast_25,
-            ]}>
-            <Text
-              style={[
-                a.flex_1,
-                a.text_sm,
-                t.atoms.text_contrast_medium,
-                {minWidth: 180},
-              ]}>
-              <Trans>
-                Or end the section here: the stories below move into a new
-                section.
-              </Trans>
-            </Text>
-            <Button
-              testID="splitFrontpageSection"
-              label={l`Split into a new section here`}
-              size="small"
-              color="secondary"
-              onPress={() => control.close(onSplit)}>
-              <ButtonText>
-                <Trans>Split into new section</Trans>
-              </ButtonText>
-            </Button>
-          </View>
-        )}
+        <StepHeading
+          title={
+            postsOnly ? l`Add a post` : l`Add a post, feed or starter pack`
+          }
+          kind={postsOnly ? undefined : l`Post`}
+          onBack={onBack}
+        />
+        {onSplit && <SplitRow control={control} onSplit={onSplit} />}
         <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
           {(postsOnly
             ? (['posts'] as const)
@@ -404,7 +584,7 @@ function PickerRow({
   onSelect: () => void
 }) {
   const opts = useModerationOpts()
-  if (!isResourceItem(item))
+  if (isArticleItem(item))
     return (
       <PostPickerRow
         item={item}
@@ -413,6 +593,8 @@ function PickerRow({
         onSelect={onSelect}
       />
     )
+  /* A featured-feeds card is made in its own dialog, never picked. */
+  if (!isResourceItem(item)) return null
   const modui = opts ? resourceModeration(item, opts) : undefined
   if (modui?.filter) return null
   return (

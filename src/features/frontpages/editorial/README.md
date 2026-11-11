@@ -59,8 +59,11 @@ accounts discards the draft. In edit mode:
 - Drag the top-left grip to reorder stories. The first story becomes the lead.
   Pointer events support mouse and touch; arrow keys, Home and End work from a
   focused grip. Escape or a cancelled pointer gesture leaves the order unchanged.
-- The + buttons between stories open a picker for existing posts, feeds and
-  starter packs. Posts are the account's own originals; the feed picker combines
+- The + buttons between stories open the add dialog in two steps: first what
+  goes in the spot, **Post** (one of the account's posts, a feed or a starter
+  pack) or **Featured feeds**, then that kind's own picker, headed by the
+  kind chosen, with **Change component** leading back to the choice. A carousel skips the choice, since it holds posts only. The post
+  picker offers existing posts, feeds and starter packs. Posts are the account's own originals; the feed picker combines
   pinned feeds (including other creators' feeds) and feeds created by the account.
   Pinned items are disabled; a post on the page automatically can be picked,
   which pins it at that place. Filtering and loading older picker pages
@@ -90,12 +93,27 @@ accounts discards the draft. In edit mode:
   the first story in the page's first non-empty grid.
 - In the editor each section is framed, with its name, **Spots**, **Fill**,
   rename (title, description, and grid or carousel), move up/down and remove
-  above its stories. **Spots** is a fixed number, or, for the page's last
+  above its stories. **Spots** is a fixed number, with a **−** and **+** either
+  side of it for one spot fewer or more, or, for the page's last
   section only, **Infinite**: every story its source has, with **More stories**
   loading older posts when it fills with the account's own. A section that
   stops being last gets 24 spots. A fixed section's bottom edge is a bar to drag
   down for more spots and up for fewer (or use the arrow keys on it); it cannot
-  hold fewer stories than it pins. **Add section** adds one above the first or
+  hold fewer stories than it pins.
+- A fixed section that **doesn't fill** shows its open spots in the editor as
+  empty, dashed story shapes after its stories, so a section of five spots
+  looks like one. Over each, on hover or focus with a mouse and always on
+  touch, are **Add a story** and **Feature feeds**, which open the add dialog
+  already at that kind's step; **Change component** still leads back to the choice. Stories are pinned in order, so a
+  new one takes the first open spot whichever empty spot was used. Readers
+  never see empty spots.
+- A **featured-feeds card** is a slot holding several feeds: a heading (its
+  title, or *Featured feeds*) and each feed with its avatar, name, creator and
+  pin button, opening the feed. Its step of the add dialog picks from the
+  editor's pinned feeds and the account's own feeds, in the order chosen, up
+  to twelve, with an optional title; the card's pencil reopens that step with
+  the card's feeds and title. The card can be dragged, sized
+  and removed with its X like a feed slot, and never goes in a carousel. **Add section** adds one above the first or
   below any section; a page always keeps one. Older posts load as needed to
   fill fixed sections with your posts.
 - The **+** between two stories of a grid section also offers **Split into new
@@ -104,7 +122,12 @@ accounts discards the draft. In edit mode:
   on the page moves. An infinite section's lower part stays infinite.
 - Automatic stories are grey and faded. One of the account's own posts has an
   **Automatic** tag and **Pin**, which moves it to the end of the section's
-  pinned stories; pinned stories have **Pinned**, which unpins them. Another
+  pinned stories. A pinned story, feed, starter pack or card has a top-right
+  trash button, which removes it (a post goes back to the automatic ones when
+  its section fills), and a pencil, which reopens the add dialog at its own
+  kind's step to put something else in its place: another post, feed or
+  starter pack, a card's new feeds and title, or, after **Change component**,
+  the other kind. Another
   account's post from a feed is tagged **From a feed** and cannot be pinned or
   dragged, since a layout only pins the account's own posts. Dropping a story
   among the pinned ones puts it exactly there; dropping it among the automatic
@@ -114,8 +137,7 @@ accounts discards the draft. In edit mode:
 - **Show cover photo at the top** fills the top of the page, edge to edge of
   the spread, with the account's banner at 3:1. It is on for a page nobody has
   arranged, needs a banner, and is never shown for a banner the reader's moderation would blur.
-- There is no hiding: a post is pinned or automatic. A feed or starter pack has
-  a top-right X that removes it from its slot.
+- There is no hiding: a post is pinned or automatic.
 - Reordering, pinning and resizing animate with FLIP transitions, even
   across columns. Reduced-motion preferences disable these transitions. The page
   uses document scrolling only, including edge auto-scroll while dragging.
@@ -128,7 +150,11 @@ accounts discards the draft. In edit mode:
 Published choices live in the owner's public `social.mu.frontpage/self` record,
 version 3: `cover`, and `sections`, each with `pinned` (URIs, in order),
 `length` (a number, or `infinite` for the last section), `fill` (`none`, `own`
-or `{feed}`) and, for a carousel, `kind`.
+or `{feed}`) and, for a carousel, `kind`. A page with featured-feeds cards is
+written as version 4, which adds `featured`, the cards (`id`, optional `title`,
+`feeds`), each pinned as `featured:<id>`; a card nothing pins is dropped, and
+builds before version 4 show the retry state for such a page. A page without
+cards is still written as version 3.
 Earlier shapes are read and rewritten on publishing: version 2 sections of
 slots become their pinned slots first, at the same length, filled with the
 account's posts or not at all; version 1's single `order` list, with
@@ -144,7 +170,7 @@ place in a section: a lead with companions, pairs, a wide feature and a
 reversed split. Malformed records and network
 failures show a retry state instead of falling back to the default page.
 Post references are limited to the account's own post URIs. Feed and starter-pack
-references can belong to other creators; unsupported collections and malformed
+references, and a featured card's feeds, can belong to other creators; unsupported collections and malformed
 URIs are rejected. A page pins at most 100 items, has at most 20 sections and
 60 slots in a section.
 This prototype uses `validate: false` for the custom collection until its

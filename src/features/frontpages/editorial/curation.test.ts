@@ -1,6 +1,7 @@
 import {describe, expect, it} from '@jest/globals'
 
 import {
+  addFeaturedFeeds,
   addSection,
   articleSize,
   type Curation,
@@ -8,6 +9,8 @@ import {
   DEFAULT_SECTION_LENGTH,
   defaultCuration,
   endsWithOwnPosts,
+  featuredFeeds,
+  featuredUri,
   fillFeeds,
   fromLegacyRecord,
   fromSlotsRecord,
@@ -22,6 +25,8 @@ import {
   ownRoom,
   pinStory,
   placeStory,
+  recordVersion,
+  referenceKind,
   removeSection,
   setArticleSize,
   setSectionFill,
@@ -32,6 +37,7 @@ import {
   splitSection,
   starterPackView,
   unpinStory,
+  updateFeaturedFeeds,
   updateSection,
 } from './curation'
 
@@ -69,11 +75,12 @@ function shown(curation: Curation, own: Story[] = posts) {
 function record(curation: Curation) {
   return {
     $type: FRONTPAGE_COLLECTION,
-    version: 3,
+    version: recordVersion(curation),
     ...curation,
     updatedAt: '2026-10-29T12:00:00Z',
   }
 }
+const otherFeed = 'at://did:plc:other/app.bsky.feed.generator/picks'
 
 describe('a page nobody has arranged', () => {
   it('has the cover and one infinite section of the newest posts', () => {
@@ -227,6 +234,88 @@ describe('pinning and placing stories', () => {
   })
 })
 
+describe('featured-feeds cards', () => {
+  it('pins a new card like a story and keeps its feeds in order', () => {
+    const curation = addFeaturedFeeds(
+      page({fill: 'none', pinned: [uri('a')]}),
+      's0',
+      1,
+      {
+        title: ' Our picks ',
+        feeds: [feed, otherFeed, feed],
+      },
+    )
+    const ref = curation.sections[0].pinned[1]
+    expect(referenceKind(ref)).toBe('featured')
+    expect(featuredFeeds(curation, ref)).toEqual({
+      id: ref.slice('featured:'.length),
+      title: 'Our picks',
+      feeds: [feed, otherFeed],
+    })
+    expect(featuredUri(featuredFeeds(curation, ref)!.id)).toBe(ref)
+    expect(curation.sections[0].pinned[0]).toBe(uri('a'))
+  })
+
+  it('shows the card among the section’s stories', () => {
+    const curation = addFeaturedFeeds(page({fill: 'own'}), 's0', 0, {
+      feeds: [feed],
+    })
+    const ref = curation.sections[0].pinned[0]
+    const [section] = layoutSections(
+      {own: posts, resources: [{item: {uri: ref}}], feeds: {}},
+      curation,
+    )
+    expect(section.slots.map(slot => slot.story.item.uri)).toEqual([
+      ref,
+      uri('a'),
+      uri('b'),
+      uri('c'),
+    ])
+    expect(section.slots[0].pinned).toBe(true)
+  })
+
+  it('changes a card’s title and feeds', () => {
+    const curation = addFeaturedFeeds(page({fill: 'none'}), 's0', 0, {
+      feeds: [feed],
+    })
+    const id = curation.featured![0].id
+    const changed = updateFeaturedFeeds(curation, id, {feeds: [otherFeed]})
+    expect(changed.featured).toEqual([{id, feeds: [otherFeed]}])
+    expect(changed.sections[0].pinned).toEqual([featuredUri(id)])
+  })
+
+  it('drops the card when its slot is removed, with its section, or into a carousel', () => {
+    const curation = addFeaturedFeeds(page({fill: 'none'}, {}), 's0', 0, {
+      feeds: [feed],
+    })
+    const ref = curation.sections[0].pinned[0]
+    expect(unpinStory(curation, ref).featured).toBeUndefined()
+    expect(removeSection(curation, 's0').featured).toBeUndefined()
+    expect(setSectionKind(curation, 's0', 'carousel').featured).toBeUndefined()
+    expect(() =>
+      addFeaturedFeeds(page({kind: 'carousel'}), 's0', 0, {feeds: [feed]}),
+    ).toThrow('CarouselTakesPosts')
+  })
+
+  it('takes one to twelve feeds, and nothing else', () => {
+    const empty = page({fill: 'none'})
+    expect(() => addFeaturedFeeds(empty, 's0', 0, {feeds: []})).toThrow(
+      'CurationLimit',
+    )
+    expect(() => addFeaturedFeeds(empty, 's0', 0, {feeds: [uri('a')]})).toThrow(
+      'FeaturedTakesFeeds',
+    )
+    const many = Array.from({length: 13}, (_, i) => `${feed}${i}`)
+    expect(() => addFeaturedFeeds(empty, 's0', 0, {feeds: many})).toThrow(
+      'CurationLimit',
+    )
+    expect(
+      addFeaturedFeeds(empty, 's0', 0, {feeds: many.slice(0, 12)}).featured![0]
+        .feeds,
+    ).toHaveLength(12)
+  })
+})
+
 describe('splitting a section', () => {
   it('splits among automatic stories, keeping every story where it was', () => {
     const curation = page({pinned: [uri('f')], length: 5, title: 'News'})
@@ -377,8 +466,33 @@ describe('published records', () => {
 
   it('rejects other versions', () => {
     expect(
-      schema.safeParse({...record(defaultCuration()), version: 4}).success,
+      schema.safeParse({...record(defaultCuration()), version: 5}).success,
     ).toBe(false)
+  })
+
+  it('is version 4 exactly when the page has featured-feeds cards', () => {
+    const plain = page({fill: 'none'})
+    expect(recordVersion(plain)).toBe(3)
+    expect(schema.safeParse({...record(plain), version: 4}).success).toBe(false)
+    const featured = addFeaturedFeeds(plain, 's0', 0, {feeds: [feed]})
+    expect(recordVersion(featured)).toBe(4)
+    expect(schema.safeParse(record(featured)).success).toBe(true)
+    expect(schema.safeParse({...record(featured), version: 3}).success).toBe(
+      false,
+    )
+  })
+
+  it('requires every featured reference to name a card the record has', () => {
+    const featured = addFeaturedFeeds(page({fill: 'none'}), 's0', 0, {
+      feeds: [feed],
+    })
+    const dangling = {...record(featured), featured: []}
+    expect(schema.safeParse(dangling).success).toBe(false)
+    const posts = {
+      ...record(featured),
+      featured: featured.featured!.map(card => ({...card, feeds: [uri('a')]})),
+    }
+    expect(schema.safeParse(posts).success).toBe(false)
   })
 
   it('accepts only post URIs owned by this repository', () => {

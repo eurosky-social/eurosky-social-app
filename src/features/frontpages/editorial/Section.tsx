@@ -239,7 +239,7 @@ export function SectionResizeBar({
       ? undefined
       : fill
         ? l`${shown} of ${length} filled – there are no more posts to fill it, so it collapses for readers.`
-        : l`Open spots stay empty while this section doesn’t fill.`
+        : l`Open spots show above with what can go in them, since this section doesn’t fill itself.`
   if (!IS_WEB)
     return (
       <View
@@ -352,8 +352,9 @@ export function SectionResizeBar({
 }
 
 /**
- * How many spots a section has, at its top in the editor: a fixed number, or,
- * for the page's last section, infinite.
+ * How many spots a section has, at its top in the editor: a fixed number, with
+ * a button either side for one fewer or one more, or, for the page's last
+ * section, infinite.
  */
 export function SpotsMenu({
   length,
@@ -372,61 +373,97 @@ export function SpotsMenu({
   const t = useTheme()
   const {t: l} = useLingui()
   const label = length === 'infinite' ? '∞' : String(length)
+  const step = [
+    t.atoms.bg,
+    a.border,
+    t.atoms.border_contrast_low,
+    {width: 32, height: 32},
+  ]
   return (
-    <Menu.Root>
-      <Menu.Trigger label={l`Spots: ${label}`}>
-        {({props}) => (
-          <Button
-            {...props}
-            testID="frontpageSectionSpots"
-            label={l`Spots: ${label}`}
-            size="small"
-            color="secondary"
-            disabled={disabled}
-            style={[
-              t.atoms.bg,
-              a.border,
-              t.atoms.border_contrast_low,
-              {height: 32},
-            ]}>
-            <ButtonText style={[a.text_sm]}>{l`Spots: ${label}`}</ButtonText>
-            <ButtonIcon icon={DownIcon} size="sm" />
-          </Button>
-        )}
-      </Menu.Trigger>
-      <Menu.Outer>
-        <Menu.Group>
-          <Menu.Item
-            label={l`Infinite: every post its source has`}
-            disabled={!isLast}
-            onPress={() => onChange('infinite')}>
-            <Menu.ItemText>
-              {isLast ? l`Infinite` : l`Infinite (last section only)`}
-            </Menu.ItemText>
-            <Menu.ItemRadio selected={length === 'infinite'} />
-          </Menu.Item>
-          <Menu.Item
-            label={l`A fixed number of spots`}
-            onPress={() =>
-              onChange(
-                length === 'infinite'
-                  ? Math.max(pinned, DEFAULT_SECTION_LENGTH)
-                  : length,
-              )
-            }>
-            <Menu.ItemText>
-              {length === 'infinite'
-                ? l`Fixed number of spots`
-                : plural(length, {
-                    one: 'Fixed: # spot',
-                    other: 'Fixed: # spots',
-                  })}
-            </Menu.ItemText>
-            <Menu.ItemRadio selected={length !== 'infinite'} />
-          </Menu.Item>
-        </Menu.Group>
-      </Menu.Outer>
-    </Menu.Root>
+    <View
+      testID="frontpageSectionSpotsControl"
+      style={[a.flex_row, a.align_center, a.gap_xs]}>
+      {typeof length === 'number' && (
+        <Button
+          testID="frontpageSectionFewerSpots"
+          label={l`Fewer spots`}
+          size="small"
+          shape="round"
+          color="secondary"
+          disabled={disabled || length <= Math.max(1, pinned)}
+          style={step}
+          onPress={() => onChange(length - 1)}>
+          <ButtonText>−</ButtonText>
+        </Button>
+      )}
+      <Menu.Root>
+        <Menu.Trigger label={l`Spots: ${label}`}>
+          {({props}) => (
+            <Button
+              {...props}
+              testID="frontpageSectionSpots"
+              label={l`Spots: ${label}`}
+              size="small"
+              color="secondary"
+              disabled={disabled}
+              style={[
+                t.atoms.bg,
+                a.border,
+                t.atoms.border_contrast_low,
+                {height: 32},
+              ]}>
+              <ButtonText style={[a.text_sm]}>{l`Spots: ${label}`}</ButtonText>
+              <ButtonIcon icon={DownIcon} size="sm" />
+            </Button>
+          )}
+        </Menu.Trigger>
+        <Menu.Outer>
+          <Menu.Group>
+            <Menu.Item
+              label={l`Infinite: every post its source has`}
+              disabled={!isLast}
+              onPress={() => onChange('infinite')}>
+              <Menu.ItemText>
+                {isLast ? l`Infinite` : l`Infinite (last section only)`}
+              </Menu.ItemText>
+              <Menu.ItemRadio selected={length === 'infinite'} />
+            </Menu.Item>
+            <Menu.Item
+              label={l`A fixed number of spots`}
+              onPress={() =>
+                onChange(
+                  length === 'infinite'
+                    ? Math.max(pinned, DEFAULT_SECTION_LENGTH)
+                    : length,
+                )
+              }>
+              <Menu.ItemText>
+                {length === 'infinite'
+                  ? l`Fixed number of spots`
+                  : plural(length, {
+                      one: 'Fixed: # spot',
+                      other: 'Fixed: # spots',
+                    })}
+              </Menu.ItemText>
+              <Menu.ItemRadio selected={length !== 'infinite'} />
+            </Menu.Item>
+          </Menu.Group>
+        </Menu.Outer>
+      </Menu.Root>
+      {typeof length === 'number' && (
+        <Button
+          testID="frontpageSectionMoreSpots"
+          label={l`More spots`}
+          size="small"
+          shape="round"
+          color="secondary"
+          disabled={disabled || length >= MAX_SECTION_LENGTH}
+          style={step}
+          onPress={() => onChange(length + 1)}>
+          <ButtonText>+</ButtonText>
+        </Button>
+      )}
+    </View>
   )
 }
 
