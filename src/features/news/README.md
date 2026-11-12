@@ -9,7 +9,7 @@ feed it grew out of is `../newsFeed/` (`/news`).
 - `dutch/` - the news aggregator's API (see its README)
 - `outlets/` - featured outlets: the news page's band and the Outlets tab
   (see its README)
-- `hub/` - what the hub's pages share: the News/Outlets tabs, the title collapse
+- `hub/` - what the hub's pages share: the header with the logo and the News/Latest/Outlets tabs, the title collapse
 - `rss/` - the RSS/Atom adapter, the source without the aggregator
 - `publishers.ts` - the publisher registry: brand extras and fallback feeds
 - `queries.ts` - RSS articles, article discussion, OG images, site icons
@@ -51,10 +51,11 @@ expands into each other outlet's own headline.
 
 ### Boosting from the news settings
 
-The header's Settings button opens `/news/settings`, the news feed's own setup
-(topics, regions, then the accounts they select), so both surfaces share the one
-set of news prefs (`newsFeed/state/prefs.ts`). The page reads it to reorder stories, never
-to hide them (`explore/boost.ts`): each kind of interest a story matches - its
+The header's Preferences button opens `/news/settings`, where the reader's
+interests are set (see `newsFeed/README.md`). Without interests, the page falls
+back on the news feed's former setup - topics, regions and the accounts they
+select, still in the prefs of readers who made one (`newsFeed/state/prefs.ts`).
+It reads them to reorder stories, never to hide them (`explore/boost.ts`): each kind of interest a story matches - its
 section is one of the reader's topics, it is placed in a picked province (or
 is Dutch at all, with the Netherlands picked), or one of its outlets is a selected account (by DID, or by the
 account's handle as the outlet's domain) - moves it a fixed number of places up.

@@ -13,11 +13,12 @@ import {makeDefaultNewsFeedPrefs, useNewsFeedPrefsQuery} from './state/prefs'
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'NewsSettings'>
 
 /**
- * The news page's settings: its languages and the reader's interests, each a
- * tab on the page, so saving returns there. They are kept in the news feed's
- * record. Without the news aggregator the page reads RSS, which interests
- * cannot filter, so it falls back to the news feed's topics, regions and
- * accounts, which the page boosts the stories that match.
+ * The hub's settings: the reader's interests, which shape both the news page
+ * (each a tab there) and the news feed (the accounts of their outlets), so
+ * saving returns to whichever opened it. Without the news aggregator the page
+ * reads RSS, which interests cannot filter, so it falls back to the news
+ * feed's topics, regions and accounts, which the page boosts the stories that
+ * match.
  */
 export function NewsSettingsScreen({navigation}: Props) {
   const {data: prefs, isLoading} = useNewsFeedPrefsQuery()

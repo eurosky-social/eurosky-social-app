@@ -22,11 +22,10 @@ page's sections are them. The app keeps no topic list of its own; `ALL_TOPICS`
 is every topic. Records written before carry the old topic ids, which
 `topicsAsThemes` reads as themes (`sports` as `sport`, `general` dropped).
 
-Topic matching is account-level (a source is tagged with the themes it covers;
-an account tagged with none is general news, shown for every topic only).
-`languages` narrows the accounts to those publishing in one of them, and on the
-news page keeps only the stories with an article in one of them, led by that
-article. The feed still also applies the app's content language preference
+In the former setup, topic matching is account-level (a source is tagged with
+the themes it covers; an account tagged with none is general news, shown for
+every topic only), and `languages` narrows the accounts to those publishing in
+one of them. The feed also applies the app's content language preference
 (`languagePrefs.contentLanguages`) at feed-assembly time.
 
 ### Why `app.bsky.news.prefs`
@@ -45,30 +44,46 @@ record, so an account that saves here loses its legacy news setup.
 
 ## Flow
 
+With news v2 the feed is set by the reader's **interests**, the same ones the
+news page is shaped by (see below): `/news/settings` edits them, and both hub
+tabs link there. The feed reads the outlets each interest covers from the
+aggregator (`/api/outlets`), drops the unticked ones and, for an interest with
+themes, those with no current story on them, and shows the posts of the
+outlets' own accounts (`accountsForInterests` in
+`news/explore/interests.ts`, read through `state/interestAccounts.ts`). An
+outlet with no account has nothing to show. The feed reads every interest at
+once until one is picked from the cards in its right column, which narrows it
+to that interest until it is picked again (not saved). Without interests the feed asks the
+reader to choose some. A NewsFeedAPI pulls each account's author feed and
+round-robins across them, filtered by the user's content languages.
+
+The former setup - topics and regions, then the accounts they select from the
+registry - is `NewsFeedSetup`. It is still what `/news/settings` opens when the
+news aggregator is not configured, which news v2 does not allow:
+
 1. Topic / region picker -> chooses `topics` and `regions` into a draft. Nothing
    is written yet.
 2. Source review -> `selectSources(selection, {applyExclusions: false})` lists
    the matching accounts so the user can toggle individual ones into
    `excludedDids`. Finishing saves the full draft as the prefs.
-3. Feed -> `selectSources(selection)` resolves the source set; a FeedAPI pulls
-   each source's author feed and round-robins across them so every source gets
-   equal representation, filtered by the user's content languages.
 
-## Interests (news page)
+## Interests
 
-The news page reads the news aggregator, so its settings (`/news/settings`,
+The hub reads the news aggregator, so its settings (`/news/settings`,
 `components/interests/`) are interests rather than topics and accounts: each a
 slice of the news by countries, the aggregator's themes, and the outlets of
 those countries, every one of them in until unticked. They are set in a
 three-step wizard, which the settings open on while there are none, and
 stored as `interests` in the same prefs.
 
-On the page a dropdown ahead of the topic chips picks one interest, the first
-by default. When it covers the Netherlands, a second dropdown narrows it to a
-province; that choice is not saved. The page's languages are the app's content
-languages (`languagePrefs.contentLanguages`), which the settings link to
-rather than keeping a list of their own; the record's `languages` is the news
-feed's.
+On the page a dropdown ahead of the topic chips picks one interest, opening on
+the default: the first, which the settings mark with a star (starring another
+moves it to the top). An interest that covers the Netherlands can be narrowed
+to some of its provinces in the settings, where they appear once the
+Netherlands is picked; the page has no picker of its own for them. The page's
+languages are the app's content languages (`languagePrefs.contentLanguages`),
+which the settings link to rather than keeping a list of their own; the
+record's `languages` belongs to the former setup.
 
 `news/explore/interests.ts` turns an interest into reads of
 `/api/threads`. The API takes several countries and outlets per read but one
@@ -81,7 +96,7 @@ Unticking outlets boosts the ones left: every read sends them as `boost=`, so
 their stories come first and their articles lead each story. With
 `strictOutlets` ("Only show these outlets") they are sent as `outlet=`
 instead, which drops the stories none of them covered. Without the aggregator
-configured, the settings fall back to the news feed's setup below.
+configured, the settings fall back to the former setup above.
 
 ## Feature flag (news v2)
 
@@ -116,15 +131,15 @@ not. Once the hub ships everywhere, delete both `legacy/` directories,
   the Dutch provinces, which select the same accounts as the Netherlands; the
   news page's location picker offers the regions picked here
 - `state/prefs.ts` - prefs record schema + read/write hooks
-- `NewsFeedScreen.tsx` - shows the setup, then the feed; an unconfigured feed
-  drops straight into setup
-- `NewsSettingsScreen.tsx` - the same setup at `/news/settings` (route
-  `NewsSettings`), opened from the news page's header; it returns there on save
-- `components/` - `NewsFeedSetup` (step 1 topics/regions -> step 2 sources ->
-  save, shared by both screens), `SetupHeader` (step indicator), `SetupTopics`
+- `state/interestAccounts.ts` - the accounts of the interests' outlets
+- `NewsFeedScreen.tsx` - the hub's Latest tab (`NewsFeedTab`)
+- `NewsSettingsScreen.tsx` - the interests setup at `/news/settings` (route
+  `NewsSettings`), opened from either tab's header; it returns there on save
+- `components/` - `interests/` (the interests setup), `NewsFeedSetup` (the
+  former setup: step 1 topics/regions -> step 2 sources -> save), `SetupHeader` (step indicator), `SetupTopics`
   (chip picker),
   `SetupSources` (opt-out list + consent), `SetupFooter` (bottom action bar),
-  `NewsFeedTab` (header + feed)
+  `NewsFeedTab` (header + feed, or what to do without one)
 
 The feed itself renders through the standard `PostFeed` via a `newsfeed|<dids>`
 `FeedDescriptor`; the aggregation lives in `src/lib/api/feed/news.ts`

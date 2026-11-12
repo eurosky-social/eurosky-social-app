@@ -1,5 +1,5 @@
 import {useState} from 'react'
-import {Pressable, View} from 'react-native'
+import {View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {nanoid} from 'nanoid/non-secure'
 
@@ -8,14 +8,21 @@ import {useLanguagePrefs} from '#/state/preferences/languages'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {Divider} from '#/components/Divider'
-import {ChevronRight_Stroke2_Corner0_Rounded as ChevronRightIcon} from '#/components/icons/Chevron'
 import {Earth_Stroke2_Corner2_Rounded as EarthIcon} from '#/components/icons/Globe'
+import {Pencil_Stroke2_Corner0_Rounded as PencilIcon} from '#/components/icons/Pencil'
 import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/Plus'
+import {
+  Star_Filled_Corner0_Rounded as StarFilledIcon,
+  Star_Stroke2_Corner0_Rounded as StarIcon,
+} from '#/components/icons/Star'
+import {Trash_Stroke2_Corner0_Rounded as TrashIcon} from '#/components/icons/Trash'
 import * as Layout from '#/components/Layout'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
-import {useDutchThemesQuery} from '#/features/news/dutch/queries'
-import {useInterestTitle} from '#/features/news/explore/useInterestTitle'
+import {
+  useInterestSubtitle,
+  useInterestTitle,
+} from '#/features/news/explore/useInterestTitle'
 import {
   type NewsFeedPrefs,
   type NewsInterest,
@@ -49,8 +56,7 @@ export function NewsInterestsSetup({
   const t = useTheme()
   const {t: l} = useLingui()
   const titleOf = useInterestTitle()
-  const {themes} = useDutchThemesQuery()
-  const themeNames = new Map(themes.map(theme => [theme.slug, theme.name]))
+  const subtitleOf = useInterestSubtitle()
   const {mutateAsync: savePrefs} = useNewsFeedPrefsMutation()
   const {contentLanguages, appLanguage} = useLanguagePrefs()
   const languageNames = contentLanguages
@@ -69,13 +75,19 @@ export function NewsInterestsSetup({
       : undefined,
   )
 
-  async function finish() {
+  async function save(prefs: NewsFeedPrefs) {
     onSaved()
     try {
-      await savePrefs(draft)
+      await savePrefs(prefs)
     } catch {
       // surfaced + logged by the mutation
     }
+  }
+
+  /** Back to the list with the change, kept once the settings are saved. */
+  function apply(next: NewsFeedPrefs) {
+    setDraft(next)
+    setEditing(undefined)
   }
 
   if (editing) {
@@ -94,20 +106,18 @@ export function NewsInterestsSetup({
           }
         }}
         onDelete={() => {
-          setDraft({
+          apply({
             ...draft,
             interests: draft.interests.filter(i => i.id !== interest.id),
           })
-          setEditing(undefined)
         }}
         onDone={next => {
-          setDraft({
+          apply({
             ...draft,
             interests: isNew
               ? [...draft.interests, next]
               : draft.interests.map(i => (i.id === next.id ? next : i)),
           })
-          setEditing(undefined)
         }}
       />
     )
@@ -137,14 +147,38 @@ export function NewsInterestsSetup({
                 from anywhere, or everything from Belgian outlets.
               </Trans>
             </Text>
+            <Text
+              style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
+              <Trans>
+                The News tab opens on your default interest. Star another to
+                make it the default.
+              </Trans>
+            </Text>
             <View style={[a.gap_sm]}>
-              {draft.interests.map(interest => (
+              {draft.interests.map((interest, index) => (
                 <InterestRow
                   key={interest.id}
                   title={titleOf(interest)}
-                  themeNames={themeNames}
-                  interest={interest}
-                  onPress={() => setEditing({interest, isNew: false})}
+                  subtitle={subtitleOf(interest)}
+                  isDefault={index === 0}
+                  onMakeDefault={() =>
+                    setDraft({
+                      ...draft,
+                      interests: [
+                        interest,
+                        ...draft.interests.filter(i => i.id !== interest.id),
+                      ],
+                    })
+                  }
+                  onEdit={() => setEditing({interest, isNew: false})}
+                  onDelete={() =>
+                    setDraft({
+                      ...draft,
+                      interests: draft.interests.filter(
+                        i => i.id !== interest.id,
+                      ),
+                    })
+                  }
                 />
               ))}
             </View>
@@ -204,48 +238,45 @@ export function NewsInterestsSetup({
 
       <SetupDone
         onDone={() => {
-          void finish()
+          void save(draft)
         }}
       />
     </Layout.Screen>
   )
 }
 
+/**
+ * One interest in the list. The first is the default, which the news page
+ * opens on; starring another moves it to the top. Deleting, like any change
+ * here, is only kept once the settings are saved.
+ */
 function InterestRow({
   title,
-  interest,
-  themeNames,
-  onPress,
+  subtitle,
+  isDefault,
+  onMakeDefault,
+  onEdit,
+  onDelete,
 }: {
   title: string
-  interest: NewsInterest
-  /** Theme names by slug. */
-  themeNames: Map<string, string>
-  onPress: () => void
+  subtitle: string
+  isDefault: boolean
+  onMakeDefault: () => void
+  onEdit: () => void
+  onDelete: () => void
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
-  const topics = interest.themes
-    .map(slug => themeNames.get(slug) ?? slug)
-    .join(' · ')
-  /*
-   * An interest from everywhere is already titled by its topics, so the
-   * subtitle says where instead of repeating them.
-   */
-  const titledByTopics =
-    interest.countries.length === 0 && interest.themes.length > 0
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={l`Edit ${title}`}
-      accessibilityHint={l`Opens the interest’s places, topics and outlets`}
-      onPress={onPress}
+    <View
       style={[
         a.flex_row,
         a.align_center,
-        a.gap_md,
-        a.p_md,
+        a.gap_sm,
+        a.py_sm,
+        a.pl_md,
+        a.pr_sm,
         a.rounded_md,
         a.border,
         t.atoms.border_contrast_low,
@@ -258,17 +289,45 @@ function InterestRow({
         <Text
           style={[a.text_sm, t.atoms.text_contrast_medium]}
           numberOfLines={1}>
-          {titledByTopics ? (
-            <Trans>Everywhere</Trans>
-          ) : topics ? (
-            topics
-          ) : (
-            <Trans>All topics</Trans>
-          )}
+          {isDefault ? l`Default · ${subtitle}` : subtitle}
         </Text>
       </View>
-      <ChevronRightIcon size="sm" style={t.atoms.text_contrast_medium} />
-    </Pressable>
+      <Button
+        testID="newsInterestDefaultBtn"
+        label={
+          isDefault
+            ? l`${title} is your default interest`
+            : l`Make ${title} your default interest`
+        }
+        /* Not disabled, which would fade the star that marks the default. */
+        onPress={() => {
+          if (!isDefault) onMakeDefault()
+        }}
+        size="small"
+        color={isDefault ? 'primary_subtle' : 'secondary'}
+        shape="square">
+        <ButtonIcon icon={isDefault ? StarFilledIcon : StarIcon} />
+      </Button>
+      <Button
+        testID="newsInterestEditBtn"
+        label={l`Edit ${title}`}
+        onPress={onEdit}
+        size="small"
+        color="secondary"
+        shape="square">
+        <ButtonIcon icon={PencilIcon} />
+      </Button>
+      <Button
+        testID="newsInterestRowDeleteBtn"
+        label={l`Delete ${title}`}
+        onPress={onDelete}
+        size="small"
+        color="secondary"
+        variant="ghost"
+        shape="square">
+        <ButtonIcon icon={TrashIcon} />
+      </Button>
+    </View>
   )
 }
 

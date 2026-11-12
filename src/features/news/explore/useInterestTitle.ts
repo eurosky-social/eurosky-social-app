@@ -36,6 +36,27 @@ export function useInterestTitle(): (interest: NewsInterest) => string {
   }
 }
 
+/**
+ * The line under an interest's title: its topics, or “All topics”. An
+ * interest from everywhere is already titled by its topics, so it says where
+ * instead of repeating them.
+ */
+export function useInterestSubtitle(): (interest: NewsInterest) => string {
+  const {t: l} = useLingui()
+  const themeName = useThemeName()
+
+  return interest => {
+    const titledByTopics =
+      interest.countries.length === 0 &&
+      interest.subLocations.length === 0 &&
+      interest.themes.length > 0
+    if (titledByTopics) return l`Everywhere`
+    return interest.themes.length > 0
+      ? interest.themes.map(themeName).join(' · ')
+      : l`All topics`
+  }
+}
+
 /** A country's name in the app's language, or its code where unavailable. */
 export function countryName(code: string, locale: string): string {
   try {

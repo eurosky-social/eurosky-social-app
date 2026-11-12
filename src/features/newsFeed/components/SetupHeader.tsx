@@ -43,7 +43,8 @@ export function SetupHeader({
   )
 }
 
-function StepDots({current, total}: {current: number; total: number}) {
+/** Which of a wizard's steps is current, as numbered dots. */
+export function StepDots({current, total}: {current: number; total: number}) {
   const t = useTheme()
   return (
     <View style={[a.flex_row, a.align_center, a.gap_sm]}>
