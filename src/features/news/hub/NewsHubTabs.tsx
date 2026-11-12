@@ -1,28 +1,34 @@
 import {View} from 'react-native'
 import {useLingui} from '@lingui/react/macro'
 
-import {atoms as a, useGutters, useTheme, web} from '#/alf'
+import {atoms as a, useTheme, web} from '#/alf'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 
-export type NewsHubTab = 'news' | 'outlets'
+export type NewsHubTab = 'news' | 'feed' | 'outlets'
 
 /**
- * The hub's tabs: the news itself, and the outlets behind it. Each is a page
- * of its own, so these are links rather than a pager, and a tab can be shared
- * or opened in a new window like any other page.
+ * The hub's tabs: the news itself, the reader's own feed of news accounts, and
+ * the outlets behind it. Each is a page of its own, so these are links rather
+ * than a pager, and a tab can be shared or opened in a new window like any
+ * other page.
  */
 export function NewsHubTabs({active}: {active: NewsHubTab}) {
   const {t: l} = useLingui()
-  const gutters = useGutters([0, 'base'])
 
   return (
-    <View accessibilityRole="tablist" style={[a.flex_row, a.gap_lg, gutters]}>
+    <View accessibilityRole="tablist" style={[a.flex_1, a.flex_row, a.gap_lg]}>
       <HubTab
         to="/news/explore"
         label={l`News`}
         selected={active === 'news'}
         testID="newsHubTab-news"
+      />
+      <HubTab
+        to="/news"
+        label={l({message: 'Latest', context: 'News feed tab'})}
+        selected={active === 'feed'}
+        testID="newsHubTab-feed"
       />
       <HubTab
         to="/news/outlets"
@@ -58,7 +64,8 @@ function HubTab({
       {({hovered, pressed}) => (
         <View
           style={[
-            a.py_sm,
+            a.self_stretch,
+            a.justify_center,
             a.border_b,
             {
               borderBottomWidth: 2,

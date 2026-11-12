@@ -3,9 +3,11 @@ import {View} from 'react-native'
 import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 
-import {atoms as a, useTheme} from '#/alf'
-import {Button, ButtonText} from '#/components/Button'
+import {atoms as a, useBreakpoints, useTheme, web} from '#/alf'
+import {Button, ButtonIcon, ButtonText} from '#/components/Button'
+import * as Dialog from '#/components/Dialog'
 import * as Toggle from '#/components/forms/Toggle'
+import {ArrowLeft_Stroke2_Corner0_Rounded as ArrowLeftIcon} from '#/components/icons/Arrow'
 import * as Layout from '#/components/Layout'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
@@ -18,38 +20,46 @@ import {OutletIcon} from '#/features/news/explore/components/OutletIcon'
 import {
   outletCoverage,
   outletsForInterest,
+  SUB_LOCATIONS,
 } from '#/features/news/explore/interests'
 import {countryName} from '#/features/news/explore/useInterestTitle'
 import {type NewsInterest} from '../../state/prefs'
 import {SetupFooter} from '../SetupFooter'
-import {SetupHeader} from '../SetupHeader'
+import {SetupHeader, StepDots} from '../SetupHeader'
 
 const STEPS = ['places', 'themes', 'outlets'] as const
 type Step = (typeof STEPS)[number]
 
 /**
- * One interest as a short wizard: which countries the news is from, what it
- * is about, then which outlets. A place inside a country is not set here but
- * picked on the news page. Its tab is named after its places (see
- * `useInterestTitle`). Every step starts open - nothing
+ * One interest as a short wizard: which countries the news is from (and, for
+ * the Netherlands, which provinces), what it is about, then which outlets. Its
+ * tab is named after its places (see `useInterestTitle`). Every step starts open - nothing
  * picked is everything - so pressing Next through it gives all the news from
  * everywhere. Nothing reaches the settings until Done; backing out of the
  * first step leaves the interest as it was.
+ *
+ * As a `dialog` it fills a `Dialog.Outer` instead of a screen, for editing an
+ * interest without leaving the page it is shown on.
  */
 export function InterestEditor({
   initial,
   isNew,
+  variant = 'screen',
   onDone,
   onCancel,
   onDelete,
 }: {
   initial: NewsInterest
   isNew: boolean
+  variant?: 'screen' | 'dialog'
   onDone: (interest: NewsInterest) => void
   onCancel: () => void
-  onDelete: () => void
+  /** Offers Delete on the last step, for an interest that is not new. */
+  onDelete?: () => void
 }) {
+  const t = useTheme()
   const {t: l, i18n} = useLingui()
+  const {gtMobile} = useBreakpoints()
   const [interest, setInterest] = useState(initial)
   const [step, setStep] = useState<Step>('places')
   const outletsQuery = useDutchOutletsQuery()
@@ -77,18 +87,129 @@ export function InterestEditor({
     const offered = new Set(placeOutlets.map(outlet => outlet.slug))
     onDone({
       ...interest,
-      /* Places inside a country are picked on the news page instead. */
-      subLocations: [],
       excludedOutlets: outletsQuery.outlets
         ? interest.excludedOutlets.filter(slug => offered.has(slug))
         : interest.excludedOutlets,
     })
   }
 
+  const title = isNew ? l`New interest` : l`Edit interest`
+
+  const body =
+    step === 'places' ? (
+      <PlacesStep
+        interest={interest}
+        outlets={outlets}
+        isLoading={outletsQuery.isLoading}
+        isError={outletsQuery.isError}
+        onRetry={() => void outletsQuery.refetch()}
+        onChange={setInterest}
+      />
+    ) : step === 'themes' ? (
+      <ThemesStep interest={interest} onChange={setInterest} />
+    ) : (
+      <OutletsStep
+        interest={interest}
+        placeOutlets={placeOutlets}
+        isLoading={outletsQuery.isLoading}
+        isError={outletsQuery.isError}
+        onRetry={() => void outletsQuery.refetch()}
+        onChange={setInterest}
+      />
+    )
+
+  const actions = (
+    <View style={[a.flex_row, a.gap_sm]}>
+      {step === 'outlets' && !isNew && onDelete && (
+        <Button
+          testID="newsInterestDeleteBtn"
+          label={l`Delete this interest`}
+          size="large"
+          color="negative_subtle"
+          onPress={onDelete}>
+          <ButtonText>
+            <Trans>Delete</Trans>
+          </ButtonText>
+        </Button>
+      )}
+      {step === 'outlets' ? (
+        <Button
+          testID="newsInterestDoneBtn"
+          label={l`Keep this interest`}
+          size="large"
+          color="primary"
+          onPress={done}
+          style={[a.flex_1]}>
+          <ButtonText>
+            <Trans>Done</Trans>
+          </ButtonText>
+        </Button>
+      ) : (
+        <Button
+          testID="newsInterestNextBtn"
+          label={l`Next`}
+          size="large"
+          color="primary"
+          onPress={() => setStep(STEPS[index + 1])}
+          style={[a.flex_1]}>
+          <ButtonText>
+            <Trans>Next</Trans>
+          </ButtonText>
+        </Button>
+      )}
+    </View>
+  )
+
+  if (variant === 'dialog') {
+    return (
+      <Dialog.ScrollableInner
+        label={title}
+        footer={
+          <View
+            style={[
+              gtMobile ? a.px_2xl : a.px_xl,
+              a.py_md,
+              a.border_t,
+              t.atoms.border_contrast_low,
+              t.atoms.bg,
+            ]}>
+            {actions}
+          </View>
+        }>
+        <View style={[a.gap_lg]}>
+          <View
+            style={[
+              a.flex_row,
+              a.align_center,
+              a.gap_sm,
+              /* Clear of the close button the web dialog pins top right. */
+              web({paddingRight: 40}),
+            ]}>
+            {index > 0 && (
+              <Button
+                label={l`Back to the previous step`}
+                size="small"
+                color="secondary"
+                variant="ghost"
+                shape="round"
+                onPress={back}>
+                <ButtonIcon icon={ArrowLeftIcon} size="lg" />
+              </Button>
+            )}
+            <Text style={[a.flex_1, a.text_xl, a.font_bold]}>{title}</Text>
+            <StepDots current={index + 1} total={STEPS.length} />
+          </View>
+          {body}
+        </View>
+        <Dialog.Close />
+      </Dialog.ScrollableInner>
+    )
+  }
+
   return (
     <Layout.Screen testID="newsInterestEditor">
       <SetupHeader
-        title={isNew ? l`New interest` : l`Edit interest`}
+        title={title}
         step={index + 1}
         totalSteps={STEPS.length}
         onBack={back}
@@ -97,72 +218,10 @@ export function InterestEditor({
       <Layout.Content
         style={[a.flex_1]}
         contentContainerStyle={[{paddingBottom: 120}]}>
-        <View style={[a.px_xl, a.pt_xl, a.pb_lg, a.gap_lg]}>
-          {step === 'places' ? (
-            <PlacesStep
-              interest={interest}
-              outlets={outlets}
-              isLoading={outletsQuery.isLoading}
-              isError={outletsQuery.isError}
-              onRetry={() => void outletsQuery.refetch()}
-              onChange={setInterest}
-            />
-          ) : step === 'themes' ? (
-            <ThemesStep interest={interest} onChange={setInterest} />
-          ) : (
-            <OutletsStep
-              interest={interest}
-              placeOutlets={placeOutlets}
-              isLoading={outletsQuery.isLoading}
-              isError={outletsQuery.isError}
-              onRetry={() => void outletsQuery.refetch()}
-              onChange={setInterest}
-            />
-          )}
-        </View>
+        <View style={[a.px_xl, a.pt_xl, a.pb_lg, a.gap_lg]}>{body}</View>
       </Layout.Content>
 
-      <SetupFooter>
-        <View style={[a.flex_row, a.gap_sm]}>
-          {step === 'outlets' && !isNew && (
-            <Button
-              testID="newsInterestDeleteBtn"
-              label={l`Delete this interest`}
-              size="large"
-              color="negative_subtle"
-              onPress={onDelete}>
-              <ButtonText>
-                <Trans>Delete</Trans>
-              </ButtonText>
-            </Button>
-          )}
-          {step === 'outlets' ? (
-            <Button
-              testID="newsInterestDoneBtn"
-              label={l`Keep this interest`}
-              size="large"
-              color="primary"
-              onPress={done}
-              style={[a.flex_1]}>
-              <ButtonText>
-                <Trans>Done</Trans>
-              </ButtonText>
-            </Button>
-          ) : (
-            <Button
-              testID="newsInterestNextBtn"
-              label={l`Next`}
-              size="large"
-              color="primary"
-              onPress={() => setStep(STEPS[index + 1])}
-              style={[a.flex_1]}>
-              <ButtonText>
-                <Trans>Next</Trans>
-              </ButtonText>
-            </Button>
-          )}
-        </View>
-      </SetupFooter>
+      <SetupFooter>{actions}</SetupFooter>
     </Layout.Screen>
   )
 }
@@ -198,9 +257,34 @@ function PlacesStep({
         x.name.localeCompare(y.name, i18n.locale),
     )
 
+  /* A province goes with its country. */
   function setCountries(next: string[]) {
-    onChange({...interest, countries: next})
+    onChange({
+      ...interest,
+      countries: next,
+      subLocations: interest.subLocations.filter(id =>
+        next.some(country =>
+          SUB_LOCATIONS[country]?.some(region => region.id === id),
+        ),
+      ),
+    })
   }
+
+  function setSubLocations(country: string, next: string[]) {
+    const inCountry = new Set(SUB_LOCATIONS[country].map(region => region.id))
+    onChange({
+      ...interest,
+      subLocations: [
+        ...interest.subLocations.filter(id => !inCountry.has(id)),
+        ...next,
+      ],
+    })
+  }
+
+  /* The picked countries a place inside can narrow: for now the Netherlands. */
+  const narrowable = interest.countries.filter(
+    country => SUB_LOCATIONS[country],
+  )
 
   return (
     <>
@@ -234,7 +318,65 @@ function PlacesStep({
           ))}
         </Toggle.Group>
       )}
+      {!isLoading &&
+        !isError &&
+        narrowable.map(country => {
+          const name = countryName(country, i18n.locale)
+          const regions = SUB_LOCATIONS[country]
+          const picked = interest.subLocations.filter(id =>
+            regions.some(region => region.id === id),
+          )
+          return (
+            <View key={country} style={[a.gap_sm]}>
+              <SubStepTitle
+                titleText={<Trans>Where in {name}?</Trans>}
+                hintText={<Trans>Pick nothing for the whole country.</Trans>}
+              />
+              <Toggle.Group
+                type="checkbox"
+                label={l`Places in ${name}`}
+                values={picked}
+                onChange={next => setSubLocations(country, next)}
+                style={CHIP_ROW}>
+                <AllChip
+                  label={l`All of ${name}`}
+                  active={picked.length === 0}
+                  onPress={() => setSubLocations(country, [])}
+                />
+                {regions.map(region => (
+                  <Toggle.Item
+                    key={region.id}
+                    name={region.id}
+                    label={region.label}>
+                    <CompactChip label={region.label} />
+                  </Toggle.Item>
+                ))}
+              </Toggle.Group>
+            </View>
+          )
+        })}
     </>
+  )
+}
+
+/** A heading within a step, for a facet that narrows the one above it. */
+function SubStepTitle({
+  titleText,
+  hintText,
+}: {
+  titleText: ReactNode
+  hintText: ReactNode
+}) {
+  const t = useTheme()
+  return (
+    <View style={[a.gap_2xs, a.pt_sm]}>
+      <Text style={[a.text_md, a.font_semi_bold, a.leading_tight]}>
+        {titleText}
+      </Text>
+      <Text style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
+        {hintText}
+      </Text>
+    </View>
   )
 }
 

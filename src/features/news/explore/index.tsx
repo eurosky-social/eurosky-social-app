@@ -12,18 +12,17 @@ import {
 } from '#/lib/routes/types'
 import {useLanguagePrefs} from '#/state/preferences/languages'
 import {useShellLayout} from '#/state/shell/shell-layout'
-import {atoms as a, native, useTheme, web} from '#/alf'
+import {atoms as a, native, useBreakpoints, useTheme, web} from '#/alf'
 import {ButtonIcon, ButtonText} from '#/components/Button'
 import {SettingsGear2_Stroke2_Corner0_Rounded as SettingsGearIcon} from '#/components/icons/SettingsGear2'
 import * as Layout from '#/components/Layout'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
-import {BRAND} from '#/config/brand'
 import {IS_WEB} from '#/env'
 import {useNewsFeedPrefsQuery} from '#/features/newsFeed/state/prefs'
 import {DUTCH_WORLD_SCOPE, IS_DUTCH_API_CONFIGURED} from '../dutch/config'
 import {useDutchOutletsQuery} from '../dutch/queries'
-import {NewsHubTabs} from '../hub/NewsHubTabs'
+import {NewsHubHeader} from '../hub/NewsHubHeader'
 import {useCollapsingTitle} from '../hub/useCollapsingTitle'
 import {FeaturedOutletsBand} from '../outlets/components/FeaturedOutletsBand'
 import {useArticleOutletProfilesQuery} from '../queries'
@@ -31,15 +30,11 @@ import {boostStories, interestsFromPrefs} from './boost'
 import {type ExploreStory, groupStoriesBySection} from './cluster'
 import {
   ExploreColumn,
-  ExploreHeaderOuter,
   ExploreSpreadBorders,
   useExploreSpread,
 } from './components/ExploreColumn'
 import {DepartmentColumn, DepartmentStrip} from './components/ExploreDepartment'
-import {
-  ExploreInterestPicker,
-  ExploreSubLocationPicker,
-} from './components/ExploreInterestPicker'
+import {ExploreInterestPicker} from './components/ExploreInterestPicker'
 import {
   ExploreLeadBand,
   LEAD_BAND_DEFAULT_STORIES,
@@ -48,14 +43,12 @@ import {
 import {
   ExploreLocationPicker,
   LocationPickerRule,
-  PickerGroup,
-  PickerGroupRule,
 } from './components/ExploreLocationPicker'
 import {ExploreSectionChips} from './components/ExploreSectionChips'
 import {ExploreSectionFront} from './components/ExploreSectionFront'
 import {ExploreSkeleton} from './components/ExploreSkeleton'
 import {BandRule, ColumnRule} from './components/Rules'
-import {filtersForInterest, SUB_LOCATIONS} from './interests'
+import {filtersForInterest} from './interests'
 import {pickerRegions, sourceForRegion, WORLD_REGION} from './locations'
 import {type ExploreSection} from './sections'
 import {useExploreSource} from './useExploreSource'
@@ -86,6 +79,7 @@ export function NewsExploreScreen(
   const t = useTheme()
   const {t: l} = useLingui()
   const {wide, width} = useExploreSpread()
+  const {gtPhone} = useBreakpoints()
   const {data: prefs} = useNewsFeedPrefsQuery()
   const {contentLanguages} = useLanguagePrefs()
   /*
@@ -97,29 +91,13 @@ export function NewsExploreScreen(
   /* The first interest leads, and stands in for one since deleted. */
   const interest =
     interests.find(candidate => candidate.id === interestId) ?? interests[0]
-  /*
-   * A place inside one of the interest's countries, picked on the page to
-   * narrow that country down. Not saved, and dropped with a country the
-   * interest no longer has.
-   */
-  const [subLocationId, setSubLocationId] = useState<string | undefined>()
-  const subLocationCountries = (interest?.countries ?? []).filter(
-    country => SUB_LOCATIONS[country],
-  )
-  const subLocation = subLocationCountries.some(country =>
-    SUB_LOCATIONS[country].some(region => region.id === subLocationId),
-  )
-    ? subLocationId
-    : undefined
   /* Only an interest with outlets unticked needs the outlet list. */
   const {outlets} = useDutchOutletsQuery({
     enabled: (interest?.excludedOutlets.length ?? 0) > 0,
   })
+  /* Its provinces are set with it, in the news settings. */
   const interestFilters = interest
-    ? filtersForInterest(
-        {...interest, subLocations: subLocation ? [subLocation] : []},
-        outlets,
-      )
+    ? filtersForInterest(interest, outlets)
     : undefined
   /*
    * Without interests, the locations on offer are the regions picked in the
@@ -196,14 +174,9 @@ export function NewsExploreScreen(
     scrollToTop()
   }
 
-  /* Likewise the topic is kept across a change of interest or place. */
+  /* Likewise the topic is kept across a change of interest. */
   function onSelectInterest(next: string) {
     setInterestId(next)
-    scrollToTop()
-  }
-
-  function onSelectSubLocation(next: string | undefined) {
-    setSubLocationId(next)
     scrollToTop()
   }
 
@@ -241,34 +214,24 @@ export function NewsExploreScreen(
         style={[web([a.sticky, {top: 0}]), native(a.overflow_hidden), a.z_10]}>
         <Animated.View style={titleCollapse.blockStyle}>
           <View onLayout={titleCollapse.onTitleLayout}>
-            <ExploreHeaderOuter>
-              <Layout.Header.BackButton />
-              <Layout.Header.Content>
-                <Layout.Header.TitleText>
-                  <Trans>{BRAND.name} News</Trans>
-                </Layout.Header.TitleText>
-              </Layout.Header.Content>
-              {/* With interests, the settings are at the foot of their
-               * dropdown instead. Outside Header.Slot: slots are fixed-width
-               * squares and this button carries a text label. */}
-              {!interest && (
-                <Link
-                  testID="newsSettingsBtn"
-                  to="/news/settings"
-                  label={l`Choose your news interests`}
-                  size="small"
-                  color="secondary">
-                  <ButtonIcon icon={SettingsGearIcon} />
+            <NewsHubHeader active="news">
+              {/* Just the icon on a phone, where it shares a row with the
+               * tabs. */}
+              <Link
+                testID="newsSettingsBtn"
+                to="/news/settings"
+                label={l`Choose your news interests`}
+                size="small"
+                color="secondary"
+                shape={gtPhone ? 'default' : 'round'}>
+                <ButtonIcon icon={SettingsGearIcon} />
+                {gtPhone && (
                   <ButtonText>
                     <Trans>Preferences</Trans>
                   </ButtonText>
-                </Link>
-              )}
-            </ExploreHeaderOuter>
-            <ExploreColumn
-              style={[a.border_b, t.atoms.bg, t.atoms.border_contrast_low]}>
-              <NewsHubTabs active="news" />
-            </ExploreColumn>
+                )}
+              </Link>
+            </NewsHubHeader>
           </View>
           <ExploreColumn style={[t.atoms.bg]}>
             {/* Location and departments as one filter bar, straight under the
@@ -282,25 +245,11 @@ export function NewsExploreScreen(
                 leading={
                   interest ? (
                     <>
-                      <PickerGroup>
-                        <ExploreInterestPicker
-                          interests={interests}
-                          selectedId={interest.id}
-                          onSelect={onSelectInterest}
-                          grouped
-                        />
-                        {subLocationCountries.map(country => (
-                          <Fragment key={country}>
-                            <PickerGroupRule />
-                            <ExploreSubLocationPicker
-                              country={country}
-                              selectedId={subLocation}
-                              onSelect={onSelectSubLocation}
-                              grouped
-                            />
-                          </Fragment>
-                        ))}
-                      </PickerGroup>
+                      <ExploreInterestPicker
+                        interests={interests}
+                        selectedId={interest.id}
+                        onSelect={onSelectInterest}
+                      />
                       <LocationPickerRule />
                     </>
                   ) : (
@@ -368,7 +317,7 @@ export function NewsExploreScreen(
                   <BandRule />
                 </>
               )}
-              <FeaturedOutletsBand wide={wide} />
+              <FeaturedOutletsBand wide={wide} interest={interest} />
               {bands.map(band => (
                 <Fragment key={bandKey(band)}>
                   {band.kind === 'columns' ? (
