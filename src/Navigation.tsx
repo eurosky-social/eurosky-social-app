@@ -173,6 +173,10 @@ import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
 import {NewsFeedScreen as LegacyNewsFeedScreen} from '#/features/newsFeed/legacy/NewsFeedScreen'
 import {NewsFeedScreen} from '#/features/newsFeed/NewsFeedScreen'
 import {NewsSettingsScreen} from '#/features/newsFeed/NewsSettingsScreen'
+import {
+  NewSupplementScreen as NewsSupplementNewScreen,
+  SupplementScreen,
+} from '#/features/supplements/SupplementScreen'
 import {router} from '#/routes'
 
 const navigationRef = createNavigationContainerRef<RootNavigatorParams>()
@@ -255,6 +259,20 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
           NEWS_V2_ENABLED ? NewsOutletsScreen : NotFoundScreen
         }
         options={{title: title(msg`Outlets`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="SupplementNew"
+        getComponent={() =>
+          NEWS_V2_ENABLED ? NewsSupplementNewScreen : NotFoundScreen
+        }
+        options={{title: title(msg`New supplement`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="Supplement"
+        getComponent={() =>
+          NEWS_V2_ENABLED ? SupplementScreen : NotFoundScreen
+        }
+        options={{title: title(msg`Supplement`), requireAuth: true}}
       />
       <Stack.Screen
         name="OutletDirectory"

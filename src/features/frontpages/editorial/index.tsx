@@ -31,6 +31,7 @@ import {
   useExploreSpread,
 } from '#/features/news/explore/components/ExploreColumn'
 import {ExploreSkeleton} from '#/features/news/explore/components/ExploreSkeleton'
+import {FrontpageSupplements} from '#/features/supplements/FrontpageSupplements'
 import {type app} from '#/lexicons'
 import {Article} from './Article'
 import {ArticleGrid, ArticleGridItem} from './ArticleGrid'
@@ -659,6 +660,10 @@ export function EditorialFrontpage({
               </View>
             )}
           </View>
+
+          {!editing && !blocked && (
+            <FrontpageSupplements did={profile.did} isOwner={isOwner} />
+          )}
 
           {editing && (
             <EditorToolbar

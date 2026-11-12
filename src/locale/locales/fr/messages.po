@@ -17326,3 +17326,177 @@ msgstr "Votre pseudo et votre mot de passe sera partagé avec <0>{host}</0>. Si 
 #: src/components/verification/VerificationsDialog.tsx:67
 msgid "Your verifications"
 msgstr "Vos vérifications"
+
+
+msgid "Supplement"
+msgstr "Dossier"
+
+msgid "New supplement"
+msgstr "Nouveau dossier"
+
+msgid "Since {start}"
+msgstr "Depuis le {start}"
+
+msgctxt "A supplement past its end date"
+msgid "Archived"
+msgstr "Archivé"
+
+msgctxt "A supplement before its start date"
+msgid "Upcoming"
+msgstr "À venir"
+
+
+
+
+
+
+msgid "Add articles"
+msgstr "Ajouter des articles"
+
+msgid "This supplement is full. Remove an article to add another."
+msgstr "Ce dossier est complet. Retirez un article pour en ajouter un autre."
+
+msgid "Search articles from every outlet"
+msgstr "Rechercher des articles de tous les médias"
+
+msgid "Only this topic and these dates"
+msgstr "Uniquement ce sujet et ces dates"
+
+msgid "Couldn’t search articles. You can still add one by link."
+msgstr "Impossible de rechercher des articles. Vous pouvez toujours en ajouter un par lien."
+
+msgid "No articles found."
+msgstr "Aucun article trouvé."
+
+msgid "Added: {0}"
+msgstr "Ajouté : {0}"
+
+msgid "Add article: {0}"
+msgstr "Ajouter l’article : {0}"
+
+msgctxt "An article in a supplement"
+msgid "Added"
+msgstr "Ajouté"
+
+msgctxt "Add an article"
+msgid "Add"
+msgstr "Ajouter"
+
+msgid "Load more articles"
+msgstr "Charger plus d’articles"
+
+msgid "Add an article by link"
+msgstr "Ajouter un article par lien"
+
+msgid "For a source the search does not cover."
+msgstr "Pour une source que la recherche ne couvre pas."
+
+msgid "Headline"
+msgstr "Titre"
+
+msgid "This article is already in the supplement."
+msgstr "Cet article est déjà dans le dossier."
+
+msgid "Couldn’t load this supplement."
+msgstr "Impossible de charger ce dossier."
+
+msgid "This supplement isn’t available."
+msgstr "Ce dossier n’est pas disponible."
+
+msgid "Supplement published"
+msgstr "Dossier publié"
+
+msgid "This supplement changed in another editor. Reload the published version before editing again."
+msgstr "Ce dossier a été modifié dans un autre éditeur. Rechargez la version publiée avant de le modifier à nouveau."
+
+msgid "Couldn’t publish the supplement. Your changes are still here. Try again."
+msgstr "Impossible de publier le dossier. Vos modifications sont conservées. Réessayez."
+
+msgid "Supplement deleted"
+msgstr "Dossier supprimé"
+
+msgid "Couldn’t delete the supplement. Try again."
+msgstr "Impossible de supprimer le dossier. Réessayez."
+
+msgid "Move up: {0}"
+msgstr "Monter : {0}"
+
+msgid "Move down: {0}"
+msgstr "Descendre : {0}"
+
+msgid "Remove: {0}"
+msgstr "Retirer : {0}"
+
+msgid "Edit supplement"
+msgstr "Modifier le dossier"
+
+msgctxt "Edit a supplement"
+msgid "Edit"
+msgstr "Modifier"
+
+msgid "Publish supplement"
+msgstr "Publier le dossier"
+
+msgid "Publish"
+msgstr "Publier"
+
+msgid "Discard changes"
+msgstr "Abandonner les modifications"
+
+msgid "Delete supplement"
+msgstr "Supprimer le dossier"
+
+msgid "No articles yet."
+msgstr "Aucun article pour le moment."
+
+msgid "Delete this supplement?"
+msgstr "Supprimer ce dossier ?"
+
+msgid "It will be removed for everyone. This can’t be undone. The articles themselves are not affected."
+msgstr "Il sera supprimé pour tout le monde. Cette action est irréversible. Les articles eux-mêmes ne sont pas concernés."
+
+msgid "Select a topic"
+msgstr "Choisir un sujet"
+
+msgid "Couldn’t load the topics."
+msgstr "Impossible de charger les sujets."
+
+msgid "Start date"
+msgstr "Date de début"
+
+msgid "End date (optional)"
+msgstr "Date de fin (facultative)"
+
+msgid "Remove end date"
+msgstr "Retirer la date de fin"
+
+msgid "The end date can’t be before the start date."
+msgstr "La date de fin ne peut pas précéder la date de début."
+
+msgid "It moves to the archive after its end date. Without one, it stays current."
+msgstr "Il passe aux archives après sa date de fin. Sans date de fin, il reste d’actualité."
+
+msgctxt "A frontpage's section of supplements"
+msgid "Supplements"
+msgstr "Dossiers"
+
+msgid "Couldn’t load your supplements."
+msgstr "Impossible de charger vos dossiers."
+
+msgid "Supplements gather coverage of a temporary theme, such as an election, and show here."
+msgstr "Les dossiers rassemblent la couverture d’un thème temporaire, comme une élection, et apparaissent ici."
+
+msgid "Hide archived supplements"
+msgstr "Masquer les dossiers archivés"
+
+msgid "Show archived supplements"
+msgstr "Afficher les dossiers archivés"
+
+msgid "Show archived supplements ({0})"
+msgstr "Afficher les dossiers archivés ({0})"
+
+msgid "Open {editorName}’s frontpage"
+msgstr "Ouvrir la une de {editorName}"
+
+msgid "By {editorName}"
+msgstr "Par {editorName}"

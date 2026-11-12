@@ -219,3 +219,23 @@ export interface DutchOutletArticlesResponse {
   hasMore: boolean
   articles: DutchOutletArticle[]
 }
+
+/** A kind of news inside a theme: elections, strikes, fires. */
+export interface DutchTopic {
+  slug: string
+  theme: string
+  name: string
+  nameNl: string
+  enabled: boolean
+}
+
+export interface DutchTopicsResponse {
+  topics: DutchTopic[]
+}
+
+/** `/api/articles/search`: a page of every outlet's articles, latest first. */
+export interface DutchArticleSearchResponse {
+  offset: number
+  hasMore: boolean
+  articles: DutchArticle[]
+}

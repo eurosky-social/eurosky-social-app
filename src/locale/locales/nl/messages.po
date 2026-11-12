@@ -1695,7 +1695,7 @@ msgstr ""
 #: src/features/profileLinks/components/LinkFormDialog.tsx:431
 #: src/features/profileLinks/components/ProfileLinksEditor.tsx:149
 msgid "Add link"
-msgstr ""
+msgstr "Link toevoegen"
 
 #. Accessibility label for button in composer to add images, a video, or a GIF to a post
 #: src/view/com/composer/SelectMediaButton.tsx:520
@@ -8132,7 +8132,7 @@ msgstr "Lineair"
 #: src/features/profileLinks/components/LinkFormDialog.tsx:318
 #: src/features/profileLinks/components/LinkFormDialog.tsx:324
 msgid "Link"
-msgstr ""
+msgstr "Link"
 
 #: src/features/profileLinks/components/LinkPreviewSheet.tsx:61
 msgid "Link copied"
@@ -14763,7 +14763,7 @@ msgstr ""
 #: src/components/SendErrorReportDialog.tsx:68
 #: src/features/profileLinks/components/LinkFormDialog.tsx:378
 msgid "Title"
-msgstr ""
+msgstr "Titel"
 
 #: src/components/SendErrorReportDialog.tsx:71
 msgid "Title (100 characters max)"
@@ -14836,7 +14836,7 @@ msgstr ""
 
 #: src/Navigation.tsx:550
 msgid "Topic"
-msgstr ""
+msgstr "Onderwerp"
 
 #. Description of a feature flag (Moderation inbox)
 #: src/analytics/features/index.ts:155
@@ -17931,3 +17931,177 @@ msgstr "{unnamed, plural, one {{first}, {second} en nog # brachten dit} other {{
 #: src/screens/Profile/Header/ProfileHeaderStandard.tsx:383
 msgid "Visit the {0} frontpage"
 msgstr "Naar de frontpage van {0}"
+
+
+msgid "Supplement"
+msgstr "Dossier"
+
+msgid "New supplement"
+msgstr "Nieuw dossier"
+
+msgid "Since {start}"
+msgstr "Sinds {start}"
+
+msgctxt "A supplement past its end date"
+msgid "Archived"
+msgstr "Gearchiveerd"
+
+msgctxt "A supplement before its start date"
+msgid "Upcoming"
+msgstr "Binnenkort"
+
+
+
+
+
+
+msgid "Add articles"
+msgstr "Artikelen toevoegen"
+
+msgid "This supplement is full. Remove an article to add another."
+msgstr "Dit dossier is vol. Verwijder een artikel om een ander toe te voegen."
+
+msgid "Search articles from every outlet"
+msgstr "Zoek artikelen van alle media"
+
+msgid "Only this topic and these dates"
+msgstr "Alleen dit onderwerp en deze data"
+
+msgid "Couldn’t search articles. You can still add one by link."
+msgstr "Kan niet zoeken naar artikelen. Je kunt er nog wel een toevoegen via een link."
+
+msgid "No articles found."
+msgstr "Geen artikelen gevonden."
+
+msgid "Added: {0}"
+msgstr "Toegevoegd: {0}"
+
+msgid "Add article: {0}"
+msgstr "Artikel toevoegen: {0}"
+
+msgctxt "An article in a supplement"
+msgid "Added"
+msgstr "Toegevoegd"
+
+msgctxt "Add an article"
+msgid "Add"
+msgstr "Toevoegen"
+
+msgid "Load more articles"
+msgstr "Meer artikelen laden"
+
+msgid "Add an article by link"
+msgstr "Artikel toevoegen via een link"
+
+msgid "For a source the search does not cover."
+msgstr "Voor een bron die de zoekfunctie niet dekt."
+
+msgid "Headline"
+msgstr "Kop"
+
+msgid "This article is already in the supplement."
+msgstr "Dit artikel staat al in het dossier."
+
+msgid "Couldn’t load this supplement."
+msgstr "Kan dit dossier niet laden."
+
+msgid "This supplement isn’t available."
+msgstr "Dit dossier is niet beschikbaar."
+
+msgid "Supplement published"
+msgstr "Dossier gepubliceerd"
+
+msgid "This supplement changed in another editor. Reload the published version before editing again."
+msgstr "Dit dossier is in een andere editor gewijzigd. Laad de gepubliceerde versie opnieuw voordat je verder bewerkt."
+
+msgid "Couldn’t publish the supplement. Your changes are still here. Try again."
+msgstr "Kan het dossier niet publiceren. Je wijzigingen staan er nog. Probeer het opnieuw."
+
+msgid "Supplement deleted"
+msgstr "Dossier verwijderd"
+
+msgid "Couldn’t delete the supplement. Try again."
+msgstr "Kan het dossier niet verwijderen. Probeer het opnieuw."
+
+msgid "Move up: {0}"
+msgstr "Omhoog: {0}"
+
+msgid "Move down: {0}"
+msgstr "Omlaag: {0}"
+
+msgid "Remove: {0}"
+msgstr "Verwijderen: {0}"
+
+msgid "Edit supplement"
+msgstr "Dossier bewerken"
+
+msgctxt "Edit a supplement"
+msgid "Edit"
+msgstr "Bewerken"
+
+msgid "Publish supplement"
+msgstr "Dossier publiceren"
+
+msgid "Publish"
+msgstr "Publiceren"
+
+msgid "Discard changes"
+msgstr "Wijzigingen weggooien"
+
+msgid "Delete supplement"
+msgstr "Dossier verwijderen"
+
+msgid "No articles yet."
+msgstr "Nog geen artikelen."
+
+msgid "Delete this supplement?"
+msgstr "Dit dossier verwijderen?"
+
+msgid "It will be removed for everyone. This can’t be undone. The articles themselves are not affected."
+msgstr "Het wordt voor iedereen verwijderd. Dit kan niet ongedaan worden gemaakt. De artikelen zelf blijven bestaan."
+
+msgid "Select a topic"
+msgstr "Kies een onderwerp"
+
+msgid "Couldn’t load the topics."
+msgstr "Kan de onderwerpen niet laden."
+
+msgid "Start date"
+msgstr "Startdatum"
+
+msgid "End date (optional)"
+msgstr "Einddatum (optioneel)"
+
+msgid "Remove end date"
+msgstr "Einddatum verwijderen"
+
+msgid "The end date can’t be before the start date."
+msgstr "De einddatum kan niet voor de startdatum liggen."
+
+msgid "It moves to the archive after its end date. Without one, it stays current."
+msgstr "Het gaat na de einddatum naar het archief. Zonder einddatum blijft het actueel."
+
+msgctxt "A frontpage's section of supplements"
+msgid "Supplements"
+msgstr "Dossiers"
+
+msgid "Couldn’t load your supplements."
+msgstr "Kan je dossiers niet laden."
+
+msgid "Supplements gather coverage of a temporary theme, such as an election, and show here."
+msgstr "Dossiers bundelen berichtgeving over een tijdelijk thema, zoals verkiezingen, en verschijnen hier."
+
+msgid "Hide archived supplements"
+msgstr "Gearchiveerde dossiers verbergen"
+
+msgid "Show archived supplements"
+msgstr "Gearchiveerde dossiers tonen"
+
+msgid "Show archived supplements ({0})"
+msgstr "Gearchiveerde dossiers tonen ({0})"
+
+msgid "Open {editorName}’s frontpage"
+msgstr "Open de frontpage van {editorName}"
+
+msgid "By {editorName}"
+msgstr "Door {editorName}"
