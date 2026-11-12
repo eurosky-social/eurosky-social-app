@@ -1,8 +1,9 @@
 import {describe, expect, it, jest} from '@jest/globals'
 
-import {type DutchOutletDetail} from '../dutch/types'
+import {type NewsInterest} from '#/features/newsFeed/state/prefs'
+import {type DutchOutletDetail, type DutchOutletListing} from '../dutch/types'
 import {parseRefs} from './config'
-import {mergeFeaturedOutlets} from './featured'
+import {featuredForInterest, mergeFeaturedOutlets} from './featured'
 import {type Newsroom} from './newsrooms'
 
 /* The hooks are not under test; their modules pull in native-only state. */
@@ -105,5 +106,82 @@ describe('mergeFeaturedOutlets', () => {
   it('works with no publisher', () => {
     expect(mergeFeaturedOutlets([outlet('nos')], undefined)).toHaveLength(1)
     expect(mergeFeaturedOutlets([], undefined)).toEqual([])
+  })
+})
+
+describe('featuredForInterest', () => {
+  function listing(
+    slug: string,
+    country: string,
+    themes?: Record<string, number>,
+  ): DutchOutletListing {
+    return {
+      slug,
+      did: null,
+      name: slug,
+      country,
+      language: null,
+      kind: null,
+      domains: [`${slug}.example`],
+      articles: 10,
+      themes,
+    }
+  }
+  function interest(overrides: Partial<NewsInterest> = {}): NewsInterest {
+    return {
+      id: 'i1',
+      name: '',
+      countries: [],
+      subLocations: [],
+      themes: [],
+      excludedOutlets: [],
+      strictOutlets: false,
+      ...overrides,
+    }
+  }
+  const OUTLETS = [
+    listing('nos', 'nl', {politics: 2, sport: 5}),
+    listing('nrc', 'nl', {politics: 6}),
+    listing('ad', 'nl', {sport: 1}),
+    listing('corriere', 'it', {politics: 9}),
+  ]
+  const slugs = (outlets: {slug: string}[]) => outlets.map(o => o.slug)
+
+  it('keeps the interest’s places, busiest first', () => {
+    expect(
+      slugs(featuredForInterest(interest({countries: ['nl']}), OUTLETS, 3)),
+    ).toEqual(['nos', 'nrc', 'ad'])
+  })
+
+  it('ranks and keeps by the interest’s themes', () => {
+    expect(
+      slugs(
+        featuredForInterest(
+          interest({countries: ['nl'], themes: ['sport']}),
+          OUTLETS,
+          3,
+        ),
+      ),
+    ).toEqual(['nos', 'ad'])
+  })
+
+  it('leaves out unticked outlets and stops at the limit', () => {
+    expect(
+      slugs(
+        featuredForInterest(
+          interest({excludedOutlets: ['corriere']}),
+          OUTLETS,
+          2,
+        ),
+      ),
+    ).toEqual(['nos', 'nrc'])
+  })
+
+  it('leads with the generally featured outlets', () => {
+    expect(
+      slugs(
+        featuredForInterest(interest({countries: ['nl']}), OUTLETS, 3, ['ad']),
+      ),
+    ).toEqual(['ad', 'nos', 'nrc'])
   })
 })

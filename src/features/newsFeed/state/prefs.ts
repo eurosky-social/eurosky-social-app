@@ -76,8 +76,10 @@ export type NewsInterest = z.infer<typeof newsInterestSchema>
  * filter. `languages` and `interests` came later than the rest, so a record
  * without them reads as having none rather than failing validation.
  *
- * The news feed reads `topics`, `regions`, `languages` and `excludedDids`;
- * the news page reads `interests`, and the app's content languages.
+ * Both hub tabs read `interests`: the news page as its tabs, the news feed for
+ * the accounts of their outlets. `topics`, `regions`, `languages` and
+ * `excludedDids` are the news feed's former setup, still set where the news
+ * aggregator is missing; without interests the news page boosts by them.
  */
 export const newsFeedPrefsSchema = z.object({
   /** The news aggregator's theme slugs, or `ALL_TOPICS`. */
@@ -86,7 +88,10 @@ export const newsFeedPrefsSchema = z.object({
   /** ISO 639-1 codes, e.g. `en`: the languages of the news to show. */
   languages: z.array(z.string()).default([]),
   excludedDids: z.array(z.string()),
-  /** The news page's tabs, in the reader's order. */
+  /**
+   * The news page's tabs, in the reader's order. The first is the default,
+   * the one the page opens on.
+   */
   interests: z.array(newsInterestSchema).default([]),
   createdAt: z.string(),
 })

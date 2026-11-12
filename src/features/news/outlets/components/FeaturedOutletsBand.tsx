@@ -4,20 +4,40 @@ import {Trans, useLingui} from '@lingui/react/macro'
 import {atoms as a} from '#/alf'
 import {InlineLinkText} from '#/components/Link'
 import {useFrontpageProfiles} from '#/features/frontpages/frontpages'
+import {type NewsInterest} from '#/features/newsFeed/state/prefs'
+import {useDutchOutletsQuery} from '../../dutch/queries'
 import {BandRule, KickerText} from '../../explore/components/Rules'
 import {FEATURED_ON_NEWS_PAGE} from '../config'
-import {useFeaturedOutlets} from '../featured'
+import {featuredForInterest, useFeaturedOutlets} from '../featured'
 import {FeaturedOutletCard} from './FeaturedOutletCard'
 
 /**
  * The news page's featured outlets: a few cards, each leading to the outlet's
- * frontpage, and the way into the outlets tab, closed by a rule. Renders
- * nothing until they load and nothing where there are none, so it never holds
- * the news up.
+ * frontpage, and the way into the outlets tab, closed by a rule. With an
+ * interest picked, they are that interest's outlets (see
+ * `featuredForInterest`). Renders nothing until they load and nothing where
+ * there are none, so it never holds the news up.
  */
-export function FeaturedOutletsBand({wide}: {wide: boolean}) {
+export function FeaturedOutletsBand({
+  wide,
+  interest,
+}: {
+  wide: boolean
+  interest?: NewsInterest
+}) {
   const {t: l} = useLingui()
-  const {outlets} = useFeaturedOutlets({limit: FEATURED_ON_NEWS_PAGE})
+  const featured = useFeaturedOutlets({limit: FEATURED_ON_NEWS_PAGE})
+  const {outlets: all} = useDutchOutletsQuery({enabled: !!interest})
+  const outlets = interest
+    ? all
+      ? featuredForInterest(
+          interest,
+          all,
+          FEATURED_ON_NEWS_PAGE,
+          featured.outlets.map(outlet => outlet.slug),
+        )
+      : []
+    : featured.outlets
   const profiles = useFrontpageProfiles(outlets)
 
   if (outlets.length === 0) return null
