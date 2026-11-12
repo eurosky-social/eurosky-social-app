@@ -1,5 +1,5 @@
-import {useRef, useState} from 'react'
-import {View} from 'react-native'
+import {useEffect, useRef, useState} from 'react'
+import {TextInput, View} from 'react-native'
 import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 
@@ -352,9 +352,9 @@ export function SectionResizeBar({
 }
 
 /**
- * How many spots a section has, at its top in the editor: a fixed number, with
- * a button either side for one fewer or one more, or, for the page's last
- * section, infinite.
+ * How many spots a section has, at its top in the editor: a number typed into
+ * its box or stepped with the buttons either side, or, for the page's last
+ * section, infinite, chosen from the menu beside it.
  */
 export function SpotsMenu({
   length,
@@ -372,97 +372,154 @@ export function SpotsMenu({
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
+  const [draft, setDraft] = useState(
+    length === 'infinite' ? '' : String(length),
+  )
+  /* The box follows the section while it is not being typed in. */
+  useEffect(() => {
+    setDraft(length === 'infinite' ? '' : String(length))
+  }, [length])
   const label = length === 'infinite' ? '∞' : String(length)
-  const step = [
+  const control = [
     t.atoms.bg,
     a.border,
     t.atoms.border_contrast_low,
-    {width: 32, height: 32},
+    {height: 32},
   ]
+  const step = [...control, {width: 32}]
+  function commit() {
+    const value = Number.parseInt(draft, 10)
+    if (Number.isNaN(value))
+      setDraft(length === 'infinite' ? '' : String(length))
+    else if (value !== length) onChange(value)
+    else setDraft(String(length))
+  }
+  const menu = (
+    <Menu.Root>
+      <Menu.Trigger
+        label={l`Spots: ${label}. Fixed, or infinite for the last section`}>
+        {({props}) => (
+          <Button
+            {...props}
+            testID="frontpageSectionSpots"
+            label={l`Spots: ${label}. Fixed, or infinite for the last section`}
+            size="small"
+            shape={length === 'infinite' ? 'default' : 'round'}
+            color="secondary"
+            disabled={disabled}
+            style={[control, length === 'infinite' ? {} : {width: 32}]}>
+            {length === 'infinite' && (
+              <ButtonText style={[a.text_sm]}>{l`Spots: ${label}`}</ButtonText>
+            )}
+            <ButtonIcon icon={DownIcon} size="sm" />
+          </Button>
+        )}
+      </Menu.Trigger>
+      <Menu.Outer>
+        <Menu.Group>
+          <Menu.Item
+            label={l`Infinite: every post its source has`}
+            disabled={!isLast}
+            onPress={() => onChange('infinite')}>
+            <Menu.ItemText>
+              {isLast ? l`Infinite` : l`Infinite (last section only)`}
+            </Menu.ItemText>
+            <Menu.ItemRadio selected={length === 'infinite'} />
+          </Menu.Item>
+          <Menu.Item
+            label={l`A fixed number of spots`}
+            onPress={() =>
+              onChange(
+                length === 'infinite'
+                  ? Math.max(pinned, DEFAULT_SECTION_LENGTH)
+                  : length,
+              )
+            }>
+            <Menu.ItemText>
+              {length === 'infinite'
+                ? l`Fixed number of spots`
+                : plural(length, {
+                    one: 'Fixed: # spot',
+                    other: 'Fixed: # spots',
+                  })}
+            </Menu.ItemText>
+            <Menu.ItemRadio selected={length !== 'infinite'} />
+          </Menu.Item>
+        </Menu.Group>
+      </Menu.Outer>
+    </Menu.Root>
+  )
+  if (length === 'infinite')
+    return (
+      <View
+        testID="frontpageSectionSpotsControl"
+        style={[a.flex_row, a.align_center, a.gap_xs]}>
+        {menu}
+      </View>
+    )
   return (
     <View
       testID="frontpageSectionSpotsControl"
       style={[a.flex_row, a.align_center, a.gap_xs]}>
-      {typeof length === 'number' && (
-        <Button
-          testID="frontpageSectionFewerSpots"
-          label={l`Fewer spots`}
-          size="small"
-          shape="round"
-          color="secondary"
-          disabled={disabled || length <= Math.max(1, pinned)}
-          style={step}
-          onPress={() => onChange(length - 1)}>
-          <ButtonText>−</ButtonText>
-        </Button>
-      )}
-      <Menu.Root>
-        <Menu.Trigger label={l`Spots: ${label}`}>
-          {({props}) => (
-            <Button
-              {...props}
-              testID="frontpageSectionSpots"
-              label={l`Spots: ${label}`}
-              size="small"
-              color="secondary"
-              disabled={disabled}
-              style={[
-                t.atoms.bg,
-                a.border,
-                t.atoms.border_contrast_low,
-                {height: 32},
-              ]}>
-              <ButtonText style={[a.text_sm]}>{l`Spots: ${label}`}</ButtonText>
-              <ButtonIcon icon={DownIcon} size="sm" />
-            </Button>
-          )}
-        </Menu.Trigger>
-        <Menu.Outer>
-          <Menu.Group>
-            <Menu.Item
-              label={l`Infinite: every post its source has`}
-              disabled={!isLast}
-              onPress={() => onChange('infinite')}>
-              <Menu.ItemText>
-                {isLast ? l`Infinite` : l`Infinite (last section only)`}
-              </Menu.ItemText>
-              <Menu.ItemRadio selected={length === 'infinite'} />
-            </Menu.Item>
-            <Menu.Item
-              label={l`A fixed number of spots`}
-              onPress={() =>
-                onChange(
-                  length === 'infinite'
-                    ? Math.max(pinned, DEFAULT_SECTION_LENGTH)
-                    : length,
-                )
-              }>
-              <Menu.ItemText>
-                {length === 'infinite'
-                  ? l`Fixed number of spots`
-                  : plural(length, {
-                      one: 'Fixed: # spot',
-                      other: 'Fixed: # spots',
-                    })}
-              </Menu.ItemText>
-              <Menu.ItemRadio selected={length !== 'infinite'} />
-            </Menu.Item>
-          </Menu.Group>
-        </Menu.Outer>
-      </Menu.Root>
-      {typeof length === 'number' && (
-        <Button
-          testID="frontpageSectionMoreSpots"
-          label={l`More spots`}
-          size="small"
-          shape="round"
-          color="secondary"
-          disabled={disabled || length >= MAX_SECTION_LENGTH}
-          style={step}
-          onPress={() => onChange(length + 1)}>
-          <ButtonText>+</ButtonText>
-        </Button>
-      )}
+      <Button
+        testID="frontpageSectionFewerSpots"
+        label={l`Fewer spots`}
+        size="small"
+        shape="round"
+        color="secondary"
+        disabled={disabled || length <= Math.max(1, pinned)}
+        style={step}
+        onPress={() => onChange(length - 1)}>
+        <ButtonText>−</ButtonText>
+      </Button>
+      <View
+        style={[
+          a.flex_row,
+          a.align_center,
+          a.gap_xs,
+          a.rounded_full,
+          a.px_md,
+          ...control,
+        ]}>
+        <Text style={[a.text_sm, a.font_semi_bold, t.atoms.text]}>
+          <Trans comment="Label before the box holding a section's number of spots">
+            Spots:
+          </Trans>
+        </Text>
+        <TextInput
+          testID="frontpageSectionSpotsInput"
+          accessibilityLabel={l`Number of spots, from ${Math.max(1, pinned)} to ${MAX_SECTION_LENGTH}`}
+          accessibilityHint={l`Type a number and leave the box to resize the section`}
+          value={draft}
+          editable={!disabled}
+          inputMode="numeric"
+          keyboardType="number-pad"
+          maxLength={2}
+          selectTextOnFocus
+          onChangeText={setDraft}
+          onBlur={commit}
+          onSubmitEditing={commit}
+          style={[
+            a.text_sm,
+            a.font_semi_bold,
+            t.atoms.text,
+            {width: 28, height: 30, padding: 0, textAlign: 'center'},
+            web({outlineStyle: 'none'}),
+          ]}
+        />
+      </View>
+      <Button
+        testID="frontpageSectionMoreSpots"
+        label={l`More spots`}
+        size="small"
+        shape="round"
+        color="secondary"
+        disabled={disabled || length >= MAX_SECTION_LENGTH}
+        style={step}
+        onPress={() => onChange(length + 1)}>
+        <ButtonText>+</ButtonText>
+      </Button>
+      {isLast && menu}
     </View>
   )
 }

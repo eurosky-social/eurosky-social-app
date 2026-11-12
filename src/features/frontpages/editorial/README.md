@@ -98,9 +98,9 @@ accounts discards the draft. In edit mode:
   the first story in the page's first non-empty grid.
 - In the editor each section is framed, with its name, **Spots**, **Fill**,
   rename (title, description, and grid or carousel), move up/down and remove
-  above its stories. **Spots** is a fixed number, with a **−** and **+** either
-  side of it for one spot fewer or more, or, for the page's last
-  section only, **Infinite**: every story its source has, with **More stories**
+  above its stories. **Spots** is a fixed number, typed into its box or
+  stepped with the **−** and **+** either side of it, or, for the page's last
+  section only, **Infinite**, from the menu beside the box: every story its source has, with **More stories**
   loading older posts when it fills with the account's own. A section that
   stops being last gets 24 spots. A fixed section's bottom edge is a bar to drag
   down for more spots and up for fewer (or use the arrow keys on it); it cannot
@@ -108,8 +108,10 @@ accounts discards the draft. In edit mode:
 - A fixed section that **doesn't fill** shows its open spots in the editor as
   empty, dashed story shapes after its stories, so a section of five spots
   looks like one. Over each, on hover or focus with a mouse and always on
-  touch, are **Add a story** and **Feature feeds**, which open the add dialog
-  already at that kind's step; **Change component** still leads back to the choice. Stories are pinned in order, so a
+  touch, are the four components, **Post**, **Feed**, **Starter pack** and
+  **Featured feeds**, each opening the add dialog already at its step;
+  **Change component** still leads back to the choice. A carousel's empty
+  spots offer only **Post**. Stories are pinned in order, so a
   new one takes the first open spot whichever empty spot was used. Readers
   never see empty spots.
 - A **featured-feeds card** is a slot holding several feeds: a heading (its

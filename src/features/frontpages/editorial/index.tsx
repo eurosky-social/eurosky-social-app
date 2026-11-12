@@ -501,12 +501,7 @@ export function EditorialFrontpage({
         card={card}
         postsOnly={card}
         disabled={disabled}
-        onAddStory={() => openInsertion(section.id, position, 'posts')}
-        onAddFeeds={
-          card
-            ? undefined
-            : () => openInsertion(section.id, position, 'featured')
-        }
+        onAdd={step => openInsertion(section.id, position, step)}
       />
     )
   }
