@@ -189,16 +189,19 @@ Android build can still compile, but remote Android push will not work.
 
 ## 5. CI (GitHub Actions)
 
-- The iOS/Android build+submit workflows were un-gated to run under
-  `eurosky-social/eurosky-social-app` (were pinned to `bluesky-social/social-app`).
-- Add repo secret **`EXPO_TOKEN`** (Expo → access tokens, scoped to the org).
-  Optional: `SENTRY_AUTH_TOKEN`.
-- Trigger via Actions → "Build and Submit iOS" / "Build and Submit Android"
-  (`workflow_dispatch`), profile `testflight` / `testflight-android` first, then
-  `production`.
-- The iOS upload and TestFlight-group steps use the repo secrets `ASC_KEY_ID`,
-  `ASC_ISSUER_ID` and `ASC_KEY_P8_BASE64` (the `.p8` file, base64-encoded) of an
-  App Manager team key.
+- iOS: Actions → **"Mu – Build and Submit iOS"** (`mu-build-submit-ios.yml`,
+  `workflow_dispatch`). It builds on EAS with the chosen profile (`production`
+  for App Store releases, `testflight` for the internal icon/flags) and uploads
+  the result to App Store Connect. Choosing the build for a version and
+  submitting it for review stays manual in App Store Connect.
+- The upstream `build-submit-ios.yml` is kept identical to upstream and stays
+  gated to `bluesky-social/social-app`, so upstream syncs do not conflict. It
+  builds on a Bluesky-only macOS runner; do not un-gate it.
+- Android: "Build and Submit Android" was un-gated to run under
+  `eurosky-social/eurosky-social-app`.
+- Repo secrets: **`EXPO_TOKEN`** (Expo → access tokens, scoped to the org), and
+  for the iOS upload `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_P8_BASE64` (the
+  `.p8` file, base64-encoded) of an App Manager team key.
 - Still gated to upstream (intentionally left off): the `bskyweb`/`embedr`/
   `ogcard`/`link` AWS/GHCR docker pushes, `sync-internal`, and the OTA
   `bundle-deploy-eas-update` / `nightly-build` (OTA needs a Eurosky-hosted update
@@ -271,7 +274,7 @@ pnpm dlx eas-cli@latest submit -p ios --id <EAS build id>
 ```
 
 All three are required: without them `eas submit -p ios` stops with
-`"ascApiKeyPath" is not allowed to be empty`. The "Build and Submit iOS"
+`"ascApiKeyPath" is not allowed to be empty`. The "Mu – Build and Submit iOS"
 workflow sets them from the `ASC_*` repo secrets.
 
 ### AppView default
