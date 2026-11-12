@@ -32,7 +32,7 @@ const HEADER_NAMES = Object.keys(maslHTTPHeaders) as (keyof MaslHeaders)[]
  * Answers a tile's resource requests from the blobs of its record: through
  * the blob CDN when one is configured, otherwise from the author's PDS. This
  * is what `ATPathLoader` in `@dasl/tile-loader/at` does, except that the PDS
- * is already known (that loader only resolves `did:plc`) and the CDN exists.
+ * is already known and the CDN exists.
  */
 class MuTilePathLoader implements TilePathLoader {
   #pds: string

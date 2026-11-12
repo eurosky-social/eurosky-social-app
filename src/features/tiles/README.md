@@ -125,11 +125,11 @@ link is the plain post URL, so other clients lead there.
 
 `TILES_LOAD_DOMAIN` (`EXPO_PUBLIC_TILES_LOAD_DOMAIN`, default `load.webtil.es`)
 is the `@dasl/tile-server` the loader frames tiles from. webtil.es is a stopgap:
-mu should run its own on a first-party domain. The loader in the app is the
-hardened build (`vendor/README.md`), which stamps the tile policy on every
+mu should run its own on a first-party domain. The loader in the app
+(`@dasl/tile-loader` 2.3 or later, from npm) stamps the tile policy on every
 response the tile receives regardless of what the server does; the server-side
-half (dead-end origins, the runtime CSP) depends on the server running
-`@dasl/tile-server` 2.1 or later.
+half (dead-end origins, the runtime CSP, a worker that survives being
+restarted) depends on the server running `@dasl/tile-server` 2.2.1 or later.
 
 ## Blob CDN
 
