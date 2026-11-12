@@ -216,7 +216,7 @@ describe('public front-page records', () => {
     expect(call).toHaveBeenCalledTimes(1)
   })
 
-  it('validates post ownership before writing', async () => {
+  it('validates slot references before writing', async () => {
     const {client, call} = mockClient()
     await expect(
       saveCuration(
@@ -225,7 +225,7 @@ describe('public front-page records', () => {
         {cid: CID, curation: defaultCuration()},
         placeStory(
           defaultCuration(),
-          'at://did:plc:visitor/app.bsky.feed.post/other',
+          'at://did:plc:visitor/app.bsky.feed.post/other/extra',
           'main',
           0,
         ),

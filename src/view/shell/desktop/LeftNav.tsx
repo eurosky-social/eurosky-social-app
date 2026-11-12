@@ -44,6 +44,7 @@ import {DesktopLegalLinks} from '#/view/shell/desktop/LegalLinks'
 import {NavSignupCard} from '#/view/shell/NavSignupCard'
 import {
   atoms as a,
+  native,
   tokens,
   useBreakpoints,
   useLayoutBreakpoints,
@@ -437,6 +438,7 @@ interface NavItemProps {
 const NEWS_HUB_ROUTES = [
   'NewsFeed',
   'NewsSettings',
+  'NewsOutlets',
   'OutletDirectory',
   'Frontpage',
   'NewsArticle',
@@ -698,7 +700,7 @@ export function DesktopLeftNav({
   const numUnreadMessages = useUnreadMessageCount()
   const hasHomeBadge = useHomeBadge()
   const isAtmosphereExploreEnabled = ax.features.enabled(
-    ax.features.AtmosphereExploreEnable,
+    ax.features.AtmosphereScreenEnable,
   )
   const insets = useSafeAreaInsets()
 
@@ -827,9 +829,9 @@ export function DesktopLeftNav({
       style={[
         a.fixed,
         a.top_0,
-        a.p_lg,
+        web(a.p_lg),
         styles.leftNav,
-        IS_NATIVE && {top: insets.top, bottom: insets.bottom},
+        native(a.bottom_0),
         !hasSession && !leftNavMinimal && {width: LEFT_NAV_PWI_WIDTH},
         // Full height, so the links can sit at the bottom.
         showLegalLinks && web({height: '100vh'}),
@@ -858,7 +860,18 @@ export function DesktopLeftNav({
         },
       ]}>
       {IS_NATIVE ? (
-        <ScrollView style={[a.flex_1, a.w_full]}>{content}</ScrollView>
+        <ScrollView
+          style={[a.flex_1, a.w_full]}
+          contentContainerStyle={[
+            a.p_lg,
+            {
+              paddingTop: insets.top + tokens.space.lg,
+              paddingBottom: insets.bottom + tokens.space.lg,
+            },
+          ]}
+          showsVerticalScrollIndicator={false}>
+          {content}
+        </ScrollView>
       ) : (
         content
       )}

@@ -13,6 +13,6 @@ this bonus ghost has no separate flying cycle. It renders at 3× scale (96×96
 cells) to keep the small sprite readable and pixel-crisp. No attack/death
 artwork is bundled.
 
-Playback rates are chosen for the app; no authored timing metadata was supplied.
-The seasonal descriptor lives in `src/features/halloween/ghost.ts`, not the
-selectable pet registry. See [`ASSETS.md`](../../../ASSETS.md).
+Archived after the Halloween feature was removed. No runtime component or
+selectable pet references this artwork. No authored timing metadata was supplied.
+See [`ASSETS.md`](../../../ASSETS.md).

@@ -8,7 +8,7 @@ import {Text} from '#/components/Typography'
 import {type ExploreSourceId, outletProfile} from '../explore/cluster'
 import {BandRule, KickerText} from '../explore/components/Rules'
 import {PublisherLabel} from '../explore/components/StoryByline'
-import {useFrontpageProfilesQuery} from '../queries'
+import {useArticleOutletProfilesQuery} from '../queries'
 import {articleViewLink} from './articleLink'
 import {useStoryCoverage} from './useStoryCoverage'
 
@@ -38,13 +38,13 @@ export function ArticleCoverage({
   const t = useTheme()
   const {t: l} = useLingui()
   const timeAgo = useGetTimeAgo()
-  const profiles = useFrontpageProfilesQuery()
   const {story, coverage} = useStoryCoverage({
     url,
     storyId,
     storySource,
     storyView,
   })
+  const profiles = useArticleOutletProfilesQuery(coverage)
 
   const others = coverage.filter(article => article.item.link !== url)
   if (others.length === 0) return null

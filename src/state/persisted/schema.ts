@@ -6,7 +6,6 @@ import {deviceLanguageCodes, deviceLocales} from '#/locale/deviceLocales'
 import {findSupportedAppLanguage} from '#/locale/helpers'
 import {logger} from '#/logger'
 import {IS_PARTNER_PREVIEW} from '#/env'
-import {costumeSchema} from '#/features/halloween/costumes/model'
 
 const externalEmbedOptions = ['show', 'hide'] as const
 
@@ -67,21 +66,6 @@ const schema = z.object({
   // String (not enum) so it stays brand-agnostic; unknown/undefined falls back
   // to the brand's defaultAccent at read time.
   accentColor: z.string().optional(),
-  /** Local seasonal consent; optional so existing installs keep their state. */
-  halloween: z
-    .object({
-      enabled: z.boolean(),
-      promptedYear: z.number().int().optional(),
-      costumePromptedYear: z.number().int().optional(),
-    })
-    .optional(),
-  /** Local per-DID costumes; corrupt art must never discard account sessions. */
-  halloweenCostumes: z.record(costumeSchema).optional().catch(undefined),
-  /** Device-local editor color history, not part of a costume record. */
-  halloweenCostumeColors: z
-    .record(z.array(z.string().regex(/^#[0-9A-F]{6}$/)).max(24))
-    .optional()
-    .catch(undefined),
   // Eurosky: app-chrome styling preferences, separate from color themes.
   interfaceStyle: z
     .object({
@@ -203,7 +187,6 @@ export type Schema = z.infer<typeof schema>
 export const defaults: Schema = {
   colorMode: 'system',
   darkTheme: 'dim',
-  halloween: {enabled: false},
   interfaceStyle: {
     borders: 'standard',
   },
