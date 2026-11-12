@@ -1,6 +1,11 @@
 import {type Client} from '@atproto/lex'
 import {useLingui} from '@lingui/react/macro'
-import {useQueries, useQuery, useQueryClient} from '@tanstack/react-query'
+import {
+  type QueryClient,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import {jwtDecode} from 'jwt-decode'
 
 import {logger} from '#/logger'
@@ -344,31 +349,7 @@ export function useDutchOutletQuery({
         ?.find(outlet => outlet.slug === ref || outlet.did === ref),
     initialDataUpdatedAt: () =>
       queryClient.getQueryState(createDutchOutletsQueryKey())?.dataUpdatedAt,
-    async queryFn() {
-      try {
-        const data = await fetchDutchApi<DutchOutletResponse>(
-          pdsClient!,
-          buildDutchApiUrl(`/api/outlets/${encodeURIComponent(ref!)}`),
-        )
-        /*
-         * Cached under its other name too, so the frontpage a profile links
-         * to by slug opens without asking again.
-         */
-        for (const name of [data.outlet.slug, data.outlet.did]) {
-          if (name && name !== ref) {
-            queryClient.setQueryData(
-              createDutchOutletQueryKey({ref: name}),
-              data.outlet,
-            )
-          }
-        }
-        return data.outlet
-      } catch (error) {
-        if (error instanceof DutchApiError && error.status === 404) return null
-        logger.error('dutchOutlet: failed to load', {safeMessage: error})
-        throw error
-      }
-    },
+    queryFn: () => fetchDutchOutlet(pdsClient!, queryClient, ref!),
   })
 
   return {
@@ -377,6 +358,66 @@ export function useDutchOutletQuery({
     isLoading: query.isLoading,
     isError: query.isError,
     refetch: query.refetch,
+  }
+}
+
+/**
+ * Several outlets, by slug or DID, in the order asked: one read each, sharing
+ * `useDutchOutletQuery`'s cache, so a handful of named outlets never waits on
+ * the whole list. Each entry is undefined until loaded and null where the
+ * service has no such outlet.
+ */
+export function useDutchOutletsByRefQuery({
+  refs,
+  enabled = true,
+}: {
+  refs: string[]
+  enabled?: boolean
+}) {
+  const pdsClient = useMaybePdsClient()
+  const queryClient = useQueryClient()
+  const results = useQueries({
+    queries: refs.map(ref => ({
+      queryKey: createDutchOutletQueryKey({ref}),
+      staleTime: STALE.HOURS.ONE,
+      enabled: enabled && IS_DUTCH_API_CONFIGURED && !!pdsClient,
+      queryFn: () => fetchDutchOutlet(pdsClient!, queryClient, ref),
+    })),
+  })
+
+  return {
+    outlets: results.map(result => result.data),
+    isLoading: results.some(result => result.isLoading),
+  }
+}
+
+async function fetchDutchOutlet(
+  client: Client,
+  queryClient: QueryClient,
+  ref: string,
+): Promise<DutchOutletDetail | null> {
+  try {
+    const data = await fetchDutchApi<DutchOutletResponse>(
+      client,
+      buildDutchApiUrl(`/api/outlets/${encodeURIComponent(ref)}`),
+    )
+    /*
+     * Cached under its other name too, so the frontpage a profile links
+     * to by slug opens without asking again.
+     */
+    for (const name of [data.outlet.slug, data.outlet.did]) {
+      if (name && name !== ref) {
+        queryClient.setQueryData(
+          createDutchOutletQueryKey({ref: name}),
+          data.outlet,
+        )
+      }
+    }
+    return data.outlet
+  } catch (error) {
+    if (error instanceof DutchApiError && error.status === 404) return null
+    logger.error('dutchOutlet: failed to load', {safeMessage: error})
+    throw error
   }
 }
 

@@ -34,7 +34,9 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
       : undefined,
   )
   const isPublicationSpread =
-    routeName === 'Frontpage' && frontpageView !== 'conversation'
+    NEWS_V2_ENABLED &&
+    routeName === 'Frontpage' &&
+    frontpageView !== 'conversation'
   const isSearchScreen = routeName === 'Search'
   const isMessagesRelatedScreen = routeName.startsWith('Messages')
   const {rightNavVisible, centerColumnOffset, leftNavMinimal} =
@@ -48,6 +50,7 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
   const isNewsExplore =
     NEWS_V2_ENABLED &&
     (routeName === 'NewsExplore' ||
+      routeName === 'NewsOutlets' ||
       routeName === 'OutletDirectory' ||
       routeName === 'NewsFeed' ||
       routeName === 'NewsSettings')

@@ -291,7 +291,7 @@ function DialogInner({
       })
       await save.onSuccess()
       if (prepared && linksDirty) {
-        logProfileLinkChanges(ax, storedLinks ?? [], links ?? [])
+        logProfileLinkChanges(ax, storedLinks ?? [], prepared.savedLinks)
       }
       control.close(() => onUpdate?.())
       Toast.show(_(msg({message: 'Profile updated', context: 'toast'})))

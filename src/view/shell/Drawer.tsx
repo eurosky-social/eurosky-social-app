@@ -9,15 +9,23 @@ import {
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {plural} from '@lingui/core/macro'
 import {Plural, Trans, useLingui} from '@lingui/react/macro'
+import {type NavigationState} from '@react-navigation/native'
 import {StackActions, useNavigation} from '@react-navigation/native'
 
+import {UNREAD_NOTIFICATION_CAP} from '#/lib/constants'
 import {type PressableScale} from '#/lib/custom-animations/PressableScale'
 import {useNavigationTabState} from '#/lib/hooks/useNavigationTabState'
 import {getTabState, TabState} from '#/lib/routes/helpers'
+import {
+  getCommonNavigationAction,
+  getTabNavigationAction,
+  getTabResetAction,
+} from '#/lib/routes/navigation'
 import {type SharedNavTab, TAB_TO_NAV_ITEM} from '#/lib/routes/tab-to-nav-item'
-import {type NavigationProp} from '#/lib/routes/types'
+import {type RootNavigationProp} from '#/lib/routes/types'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {emitSoftReset} from '#/state/events'
+import {useModerationInboxUnreadCountQuery} from '#/state/queries/moderation-inbox'
 import {useUnreadNotifications} from '#/state/queries/notifications/unread'
 import {useProfileQuery} from '#/state/queries/profile'
 import {type SessionAccount, useSession} from '#/state/session'
@@ -179,7 +187,7 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
   const t = useTheme()
   const insets = useSafeAreaInsets()
   const setDrawerOpen = useSetDrawerOpen()
-  const navigation = useNavigation<NavigationProp>()
+  const navigation = useNavigation<RootNavigationProp>()
   const ax = useAnalytics()
   const {isAtHome, isAtSearch, isAtNotifications, isAtMessages} =
     useNavigationTabState()
@@ -195,16 +203,10 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
         item: TAB_TO_NAV_ITEM[tab],
         surface,
       })
-      const state = navigation.getState()
+      const state: NavigationState = navigation.getState()
       setDrawerOpen(false)
       if (IS_WEB) {
-        // hack because we have flat navigator for web and MyProfile does not exist on the web navigator -ansh
-        if (tab === 'MyProfile') {
-          navigation.navigate('Profile', {name: currentAccount!.handle})
-        } else {
-          // @ts-expect-error struggles with string unions, apparently
-          navigation.navigate(tab)
-        }
+        navigation.dispatch(getTabNavigationAction(tab, currentAccount?.handle))
       } else {
         const tabState = getTabState(state, tab)
         if (tabState === TabState.InsideAtRoot) {
@@ -221,13 +223,10 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
             })
           } else {
             // fallback: reset navigation
-            navigation.reset({
-              index: 0,
-              routes: [{name: `${tab}Tab`}],
-            })
+            navigation.dispatch(getTabResetAction(tab))
           }
         } else {
-          navigation.navigate(`${tab}Tab`)
+          navigation.dispatch(getTabNavigationAction(tab))
         }
       }
     },
@@ -254,7 +253,7 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
 
   const navigateToSecondaryTab = useCallback(
     (tab: SecondarySidebarTab) => {
-      const state = navigation.getState()
+      const state: NavigationState = navigation.getState()
       const tabState = getTabState(state, tab)
       const routeName = SECONDARY_TAB_ROUTES[tab]
       if (tabState === TabState.InsideAtRoot) {
@@ -268,10 +267,10 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
             target,
           })
         } else {
-          navigation.reset({index: 0, routes: [{name: routeName}]})
+          navigation.dispatch(getTabResetAction(tab))
         }
       } else {
-        navigation.navigate(routeName)
+        navigation.dispatch(getTabNavigationAction(tab))
       }
       setDrawerOpen(false)
     },
@@ -280,19 +279,29 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
 
   const onPressNews = useCallback(() => {
     ax.metric('nav:click', {item: 'news', surface: 'drawer'})
-    navigation.navigate(NEWS_V2_ENABLED ? 'NewsExplore' : 'NewsFeed')
+    navigation.dispatch(
+      getCommonNavigationAction(
+        {name: NEWS_V2_ENABLED ? 'NewsExplore' : 'NewsFeed', params: undefined},
+        navigation.getState(),
+      ),
+    )
     setDrawerOpen(false)
   }, [navigation, setDrawerOpen, ax])
 
   const onPressEvents = useCallback(() => {
     ax.metric('nav:click', {item: 'events', surface: 'drawer'})
-    navigation.navigate('Events', {})
+    navigation.dispatch(
+      getCommonNavigationAction(
+        {name: 'Events', params: {}},
+        navigation.getState(),
+      ),
+    )
     setDrawerOpen(false)
   }, [navigation, setDrawerOpen, ax])
 
   const onPressSettings = useCallback(() => {
     ax.metric('nav:click', {item: 'settings', surface: 'drawer'})
-    if (IS_WEB) navigation.navigate('Settings')
+    if (IS_WEB) navigation.dispatch(getTabNavigationAction('Settings'))
     else navigateToSecondaryTab('Settings')
     if (IS_WEB) setDrawerOpen(false)
   }, [navigation, navigateToSecondaryTab, setDrawerOpen, ax])
@@ -602,25 +611,63 @@ let EventsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
 EventsMenuItem = memo(EventsMenuItem)
 
 let SettingsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
-  const {t: l} = useLingui()
+  const {i18n, t: l} = useLingui()
   const t = useTheme()
+  const ax = useAnalytics()
+  const isModerationInboxEnabled = ax.features.enabled(
+    ax.features.ModerationInboxEnable,
+  )
+  const unreadCountQuery = useModerationInboxUnreadCountQuery(
+    isModerationInboxEnabled,
+  )
+  const unreadCount = isModerationInboxEnabled
+    ? (unreadCountQuery.data?.unreadCounts.total ?? 0)
+    : 0
+  const count =
+    unreadCount > 0
+      ? unreadCount >= UNREAD_NOTIFICATION_CAP
+        ? l({
+            message: `${i18n.number(UNREAD_NOTIFICATION_CAP - 1)}+`,
+            comment:
+              'Displayed when the number of notifications exceeds the cap – for example, 99+',
+          })
+        : i18n.number(unreadCount)
+      : undefined
+
   return (
     <MenuItem
       icon={<OsoSettingsIcon style={[t.atoms.text]} width={iconWidth} />}
       label={l`Settings`}
+      count={count}
+      accessibilityHint={
+        unreadCount > 0
+          ? plural(unreadCount, {
+              one: '# unread update',
+              other: '# unread updates',
+            })
+          : ''
+      }
       onPress={onPress}
     />
   )
 }
 SettingsMenuItem = memo(SettingsMenuItem)
 
-function MenuItem({icon, label, count, bold, onPress}: MenuItemProps) {
+function MenuItem({
+  icon,
+  label,
+  count,
+  bold,
+  onPress,
+  accessibilityHint,
+}: MenuItemProps) {
   const t = useTheme()
   return (
     <Button
       testID={`menuItemButton-${label}`}
       onPress={onPress}
       accessibilityRole="tab"
+      accessibilityHint={accessibilityHint}
       label={label}>
       {({hovered, pressed}) => (
         <View

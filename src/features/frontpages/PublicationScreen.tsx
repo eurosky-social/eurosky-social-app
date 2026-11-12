@@ -23,7 +23,7 @@ import {EditorialFrontpageSkeleton} from './editorial/Skeleton'
 import {type Frontpage} from './frontpages'
 import {findPublicationPreview} from './preview'
 
-/** Both news versions use this detail page; only their publisher lookup and conversation source differ. */
+/** News v2 publication detail, with an editorial layout for account-backed outlets. */
 export function PublicationScreen({
   publication,
   view,

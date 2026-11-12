@@ -34,9 +34,6 @@ jest.mock('#/components/Tooltip', () => ({
   SheetCompatProvider:
     jest.requireActual<typeof import('react-native')>('react-native').View,
 }))
-jest.mock('react-native-edge-to-edge', () => ({
-  SystemBars: {pushStackEntry: jest.fn(), popStackEntry: jest.fn()},
-}))
 jest.mock('react-native-reanimated', () => {
   const {View} =
     jest.requireActual<typeof import('react-native')>('react-native')
@@ -65,9 +62,8 @@ const AndroidComposer =
 beforeEach(() => {
   jest.clearAllMocks()
   mockState = {
-    halloweenCostumeNumber: 3,
-    text: 'Trick or treat!',
-    imageUris: [{uri: 'file:///costume.png', width: 512, height: 512}],
+    text: 'Hello!',
+    imageUris: [{uri: 'file:///drawing.png', width: 512, height: 512}],
     logContext: 'Other',
     onClose: jest.fn(),
   }
@@ -78,11 +74,10 @@ it.each([
   ['iOS', IosComposer],
   ['Android', AndroidComposer],
 ])(
-  'forwards the costume marker and seeded image through the %s shell',
+  'forwards composer options and seeded images through the %s shell',
   (_platform, Composer) => {
     render(<Composer />)
     const props = jest.mocked(ComposePost).mock.calls[0][0]
     expect(props).toEqual(expect.objectContaining(mockState!))
-    expect(props.halloweenCostumeNumber).toBe(3)
   },
 )

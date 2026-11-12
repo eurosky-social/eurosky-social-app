@@ -28,7 +28,7 @@ export function maybeApplyGalleryOffsetStyles(
   // The gate only controls whether legacy image embeds opt into the new
   // expanded gallery layout. Gallery embeds always render expanded by item
   // count, so their offset must apply regardless of the gate.
-  const isPostGalleryEmbedEnabled = features.isOn(
+  const isPostGalleryEmbedEnabled = features.enabled(
     Features.PostGalleryEmbedEnable,
   )
 

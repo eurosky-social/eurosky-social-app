@@ -10,12 +10,14 @@ import {useCleanError} from '#/lib/hooks/useCleanError'
 import {createLexClient} from '#/lib/lexClient'
 import {isNetworkError, shouldRetryError} from '#/lib/strings/errors'
 import {sanitizeHandle} from '#/lib/strings/handles'
+import {checkAndFormatResetCode} from '#/lib/strings/password'
 import {logger} from '#/logger'
 import {usePdsClient, useSession, useSessionApi} from '#/state/session'
 import {resolveDidServiceEndpoint} from '#/state/session/identity-resolver'
 import {atoms as a, useTheme} from '#/alf'
 import {Admonition} from '#/components/Admonition'
-import {type DialogOuterProps} from '#/components/Dialog'
+import * as Dialog from '#/components/Dialog'
+import {type DialogOuterProps, useDialogControl} from '#/components/Dialog'
 import {
   isValidCode,
   TokenField,
@@ -32,7 +34,9 @@ import {BRAND} from '#/config/brand'
 import {CHAT_PROXY_DID} from '#/env'
 import {chat, com} from '#/lexicons'
 import {resetToTab} from '#/Navigation'
-import {OAuthAccountActionPasswordRequired} from './OAuthAccountActionPasswordRequired'
+import {AccountActionIdentity} from './AccountActionIdentity'
+import {AccountActionIntro} from './AccountActionIntro'
+import {AccountFootprintDialog} from './AccountFootprintDialog'
 
 const WHITESPACE_RE = /\s/gu
 const PASSWORD_MIN_LENGTH = 8
@@ -113,33 +117,60 @@ async function deleteChatAccountWithRetry(client: Client) {
 
 export function DeleteAccountDialog({
   control,
-  deactivateDialogControl,
 }: {
   control: DialogOuterProps['control']
-  deactivateDialogControl: DialogOuterProps['control']
 }) {
   const {currentAccount} = useSession()
+  const footprintControl = useDialogControl()
+  const isOauth = !!currentAccount?.isOauthSession
+  /*
+   * Deletion starts from the account footprint. Confirming there reopens this
+   * dialog with the real first step; closing it any other way starts over.
+   */
+  const [hasReviewed, setHasReviewed] = useState(false)
+
+  const onPressWhatWillILose = () => {
+    control.close(() => footprintControl.open())
+  }
 
   return (
-    <Prompt.Outer control={control}>
-      {currentAccount?.isOauthSession ? (
-        <OAuthAccountActionPasswordRequired action="delete" />
-      ) : (
-        <DeleteAccountDialogInner
-          control={control}
-          deactivateDialogControl={deactivateDialogControl}
-        />
-      )}
-    </Prompt.Outer>
+    <>
+      <Prompt.Outer control={control} onClose={() => setHasReviewed(false)}>
+        {isOauth ? (
+          <AccountActionIntro
+            action="delete"
+            onPressWhatWillILose={onPressWhatWillILose}
+          />
+        ) : (
+          <DeleteAccountDialogInner
+            control={control}
+            hasReviewed={hasReviewed}
+            onPressWhatWillILose={onPressWhatWillILose}
+          />
+        )}
+        <Dialog.Close />
+      </Prompt.Outer>
+      <AccountFootprintDialog
+        control={footprintControl}
+        action="delete"
+        useHostingProvider={isOauth}
+        onConfirm={() => {
+          setHasReviewed(true)
+          control.open()
+        }}
+      />
+    </>
   )
 }
 
 function DeleteAccountDialogInner({
   control,
-  deactivateDialogControl,
+  hasReviewed,
+  onPressWhatWillILose,
 }: {
   control: DialogOuterProps['control']
-  deactivateDialogControl: DialogOuterProps['control']
+  hasReviewed: boolean
+  onPressWhatWillILose: () => void
 }) {
   const passwordRef = useRef<React.ComponentRef<typeof TextInput> | null>(null)
   const t = useTheme()
@@ -184,7 +215,8 @@ function DeleteAccountDialogInner({
       if (!currentAccount?.did) {
         throw new Error('Invalid did')
       }
-      const token = confirmCode.replace(WHITESPACE_RE, '')
+      const strippedCode = confirmCode.replace(WHITESPACE_RE, '')
+      const token = checkAndFormatResetCode(strippedCode) || strippedCode
       /*
        * Resolve the configured chat DID and mint authorization while the PDS
        * account still exists, but do not delete the chat account until the PDS
@@ -227,7 +259,7 @@ function DeleteAccountDialogInner({
       } finally {
         control.close(() => {
           toast.show(_(msg`Your account has been deleted, see ya! ✌️`))
-          resetToTab('HomeTab')
+          resetToTab('Home')
           removeAccount(currentAccount)
         })
       }
@@ -253,10 +285,6 @@ function DeleteAccountDialogInner({
     removeAccount,
   ])
 
-  const handleDeactivate = useCallback(() => {
-    control.close(() => deactivateDialogControl.open())
-  }, [control, deactivateDialogControl])
-
   const handleSendEmail = useCallback(() => {
     void sendEmail()
   }, [sendEmail])
@@ -278,22 +306,33 @@ function DeleteAccountDialogInner({
 
   switch (step) {
     case Step.SEND_CODE:
+      if (!hasReviewed) {
+        return (
+          <AccountActionIntro
+            action="delete"
+            onPressWhatWillILose={onPressWhatWillILose}
+          />
+        )
+      }
       return (
         <>
           <Prompt.Content>
+            <AccountActionIdentity />
             <Prompt.TitleText>
-              {_(msg`Delete account “${currentHandle}”`)}
+              <Trans>Delete your account</Trans>
             </Prompt.TitleText>
-            <Prompt.DescriptionText>
-              <Trans>
-                For security reasons, we’ll need to send a confirmation code to
-                your email address{' '}
-                <Span style={[a.font_semi_bold, t.atoms.text]}>
-                  {currentEmail}
-                </Span>
-                .
-              </Trans>
-            </Prompt.DescriptionText>
+            <View style={[a.mt_xs]}>
+              <Prompt.DescriptionText>
+                <Trans>
+                  For security reasons, we’ll need to send a confirmation code
+                  to your email address{' '}
+                  <Span style={[a.font_semi_bold, t.atoms.text]}>
+                    {currentEmail}
+                  </Span>
+                  .
+                </Trans>
+              </Prompt.DescriptionText>
+            </View>
           </Prompt.Content>
           <Prompt.Actions>
             <Prompt.Action
@@ -309,19 +348,6 @@ function DeleteAccountDialogInner({
               <Text style={[a.flex_1, a.leading_snug]}>{error}</Text>
             </Admonition>
           )}
-          <Admonition style={[a.mt_lg]} type="tip">
-            <Trans>
-              You can also{' '}
-              <SimpleInlineLinkText
-                label={_(msg`Temporarily deactivate your account`)}
-                {...createStaticClick(handleDeactivate)}>
-                temporarily deactivate
-              </SimpleInlineLinkText>{' '}
-              your account instead. Your profile, posts, feeds, and lists will
-              no longer be visible to other Bluesky users. You can reactivate
-              your account at any time by logging in.
-            </Trans>
-          </Admonition>
         </>
       )
     case Step.VERIFY_CODE:

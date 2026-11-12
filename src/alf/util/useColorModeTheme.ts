@@ -5,7 +5,6 @@ import {type Theme, type ThemeName} from '@bsky.app/alf'
 import {useThemePrefs} from '#/state/shell'
 import {themes} from '#/alf/themes'
 import {IS_WEB} from '#/env'
-import {useHalloween} from '#/features/halloween/context'
 
 export function useColorModeTheme(
   themesOverride?: Partial<typeof themes>,
@@ -23,11 +22,8 @@ export function useColorModeTheme(
 export function useThemeName(): ThemeName {
   const colorScheme = useColorScheme()
   const {colorMode, darkTheme} = useThemePrefs()
-  const {isActive: halloweenActive} = useHalloween()
 
-  return halloweenActive
-    ? 'dark'
-    : getThemeName(colorScheme, colorMode, darkTheme)
+  return getThemeName(colorScheme, colorMode, darkTheme)
 }
 
 function getThemeName(

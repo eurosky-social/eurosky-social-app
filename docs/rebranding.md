@@ -105,7 +105,8 @@ Universal SSL and the TLS handshake will fail.
 
 - **Services** — edge services live in `services/`. Read APIs default to
   Bluesky's; override per build via `EXPO_PUBLIC_*` (see `.env.example`).
-  GrowthBook flags + product metrics toggle via `EXPO_PUBLIC_ENABLE_*`.
+  Build-local feature settings in `src/analytics/features/` and product metrics
+  toggle via `EXPO_PUBLIC_ENABLE_METRICS`.
 - **Native build** (separate pass) — bundle IDs, app name, scheme, app groups,
   associated domains, EAS / App Store / Sentry / Firebase IDs live in
   `app.config.js`, `eas.json`, `ios/`, `android/`.

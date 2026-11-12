@@ -52,7 +52,7 @@ import {
   MaxHiddenRepliesError,
   useToggleReplyVisibilityMutation,
 } from '#/state/queries/threadgate'
-import {useCurrentAccountProfile} from '#/state/queries/useCurrentAccountProfile'
+import {useAccountCreatedAt} from '#/state/queries/useAccountCreatedAt'
 import {useRequireAuth, useSession} from '#/state/session'
 import {useMergedThreadgateHiddenReplies} from '#/state/threadgate-hidden-replies'
 import {useDialogControl} from '#/components/Dialog'
@@ -179,12 +179,12 @@ let PostMenuItems = ({
   const isPostHidden = hiddenPosts && hiddenPosts.includes(postUri)
   const isAuthor = postAuthor.did === currentAccount?.did
   const {openComposer} = useOpenComposer()
-  const currentProfile = useCurrentAccountProfile()
+  const accountCreatedAt = useAccountCreatedAt()
   const canEdit = canEditPost({
     isAuthor,
     createdAt: record.createdAt,
     updatedAt: getPostEditInfo(record).updatedAt,
-    accountCreatedAt: currentProfile?.createdAt,
+    accountCreatedAt,
   })
   const isRootPostAuthor = new AtUri(rootUri).host === currentAccount?.did
   const threadgateHiddenReplies = useMergedThreadgateHiddenReplies({

@@ -3,7 +3,8 @@ import {IS_DUTCH_API_CONFIGURED} from '#/features/news/dutch/config'
 /**
  * Whether the news hub (the news page shaped by interests, the frontpage
  * explore spread, the directory and the article page) replaces the original
- * news feed and frontpages.
+ * news feed and newsrooms. The editorial frontpage layout and editor are
+ * also exclusive to news v2; the original newsrooms keep their RSS layout.
  *
  * Opt-in per build with EXPO_PUBLIC_ENABLE_NEWS_V2=true, and only once the news
  * aggregator it reads is configured (see `news/dutch/config.ts`), so a
