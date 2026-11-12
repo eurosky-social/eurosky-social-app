@@ -40,6 +40,9 @@ jest.mock('#/features/frontpages/components/FrontpageRightRail', () => ({
 jest.mock('#/features/news/article/NewsArticleRightRail', () => ({}))
 jest.mock('#/features/newsFeed/legacy/NewsFeedRightRail', () => ({}))
 jest.mock('#/view/shell/desktop/Feeds', () => ({}))
+/* Oso's rail: the events rail and the legal links reach Reanimated, which the test runner has no native part for. */
+jest.mock('#/features/events/components/EventsRightRail', () => ({}))
+jest.mock('#/view/shell/desktop/LegalLinks', () => ({}))
 jest.mock('#/view/shell/desktop/Search', () => ({}))
 jest.mock('#/components/AppLanguageDropdown', () => ({}))
 jest.mock('#/components/Button', () => ({}))
