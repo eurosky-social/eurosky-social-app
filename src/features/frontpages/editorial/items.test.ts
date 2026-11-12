@@ -73,6 +73,13 @@ describe('post slot candidates', () => {
       opts,
     )
     expect(result.map(value => value.title)).toEqual(['one'])
+    expect(
+      pickerArticles(
+        [entry('one'), reply, repost, entry('other', 'did:plc:other')],
+        undefined,
+        opts,
+      ).map(value => value.title),
+    ).toEqual(['one', 'other'])
   })
 
   it('ignores malformed and filtered posts and deduplicates pages by post URI', () => {

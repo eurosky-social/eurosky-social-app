@@ -38,13 +38,14 @@ import {type EditorialArticle, editorialArticles} from './articles'
 import {Carousel} from './Carousel'
 import {Cover} from './Cover'
 import {
+  addFeaturedFeeds,
   addSection,
   articleSize,
   type Curation,
   defaultCuration,
   endsWithOwnPosts,
+  featuredFeeds,
   fillFeeds,
-  isOwnPostUri,
   layoutSections,
   moveSection,
   ownRoom,
@@ -64,6 +65,7 @@ import {
   splitSection,
   starterPackView,
   unpinStory,
+  updateFeaturedFeeds,
   updateSection,
 } from './curation'
 import {
@@ -73,7 +75,15 @@ import {
   StarterPackViewPicker,
 } from './Editor'
 import {EditorVisibility} from './EditorVisibility'
-import {type EditorialItem, isResourceItem} from './items'
+import {EmptySlot} from './EmptySlot'
+import {FeaturedFeedsSlot} from './FeaturedFeeds'
+import {
+  type EditorialItem,
+  featuredItem,
+  isArticleItem,
+  isFeaturedItem,
+  isResourceItem,
+} from './items'
 import {articleModeration} from './moderation'
 import {CurationConflictError, type CurationSnapshot} from './records'
 import {ResourceSlot} from './ResourceSlot'
@@ -85,7 +95,7 @@ import {
   SectionResizeBar,
   SectionToolbar,
 } from './Section'
-import {InsertSlotButton, SlotPicker} from './SlotPicker'
+import {InsertSlotButton, SlotPicker, type SlotStep} from './SlotPicker'
 import {
   SortableStories,
   SortableStory,
@@ -137,14 +147,22 @@ export function EditorialFrontpage({
   const [conflict, setConflict] = useState(false)
   const pickerControl = Dialog.useDialogControl()
   const sectionControl = Dialog.useDialogControl()
+  /** The step the add dialog opens at, and how often it has opened, so it starts over each time. */
+  const [slotStart, setSlotStart] = useState<{step: SlotStep; key: number}>({
+    step: 'choose',
+    key: 0,
+  })
+  /** The featured-feeds card the dialog edits, instead of adding to a spot. */
+  const [featuredEdit, setFeaturedEdit] = useState<string>()
   /** The section the dialog renames, or where it adds one: after a section, or at the top for `null`. */
   const [sectionTarget, setSectionTarget] = useState<
     {edit: string} | {after: string | null}
   >()
-  /** Where the picker places a story: a section, and a position among its stories. */
+  /** Where the picker places a story: a section, a position among its stories, and the story there it replaces. */
   const [insertion, setInsertion] = useState<{
     section: string
     position: number
+    replace?: string
   }>()
   const editing = !!draft
   const [previewing, setPreviewing] = useState(false)
@@ -161,8 +179,8 @@ export function EditorialFrontpage({
     profile.did,
   )
   const addedPosts = editing
-    ? (draft.added ?? []).filter(
-        (value): value is EditorialArticle => !isResourceItem(value),
+    ? (draft.added ?? []).filter((value): value is EditorialArticle =>
+        isArticleItem(value),
       )
     : []
   const savedPosts = useEditorialPostsQuery(
@@ -186,6 +204,10 @@ export function EditorialFrontpage({
   ].filter(article => !articleModeration(article, moderationOpts).filter)
   const resources = [...pinned].flatMap((uri): EditorialItem[] => {
     const kind = referenceKind(uri)
+    if (kind === 'featured') {
+      const card = featuredFeeds(curation, uri)
+      return card ? [featuredItem(card, l`Featured feeds`)] : []
+    }
     if (kind !== 'feed' && kind !== 'starterPack') return []
     const added = editing
       ? draft.added?.find(
@@ -275,9 +297,11 @@ export function EditorialFrontpage({
     const reason = error instanceof Error ? error.message : undefined
     return reason === 'CarouselTakesPosts'
       ? l`A carousel holds posts only, not feeds or starter packs.`
-      : reason === 'CurationLimit'
-        ? l`You can pin up to 100 items, with up to 60 slots in a section.`
-        : l`Couldn’t place the item there. Choose another place.`
+      : reason === 'FeaturedTakesFeeds'
+        ? l`A featured-feeds card holds feeds only.`
+        : reason === 'CurationLimit'
+          ? l`You can pin up to 100 items, with up to 60 slots in a section.`
+          : l`Couldn’t place the item there. Choose another place.`
   }
 
   async function publish() {
@@ -300,11 +324,6 @@ export function EditorialFrontpage({
   }
 
   const disabled = save.isPending || conflict
-
-  /** Whether a story can be pinned: a post of the account's own, or a feed or starter pack. */
-  function pinnable(story: EditorialItem) {
-    return isResourceItem(story) || isOwnPostUri(story.item.uri, profile.did)
-  }
 
   function reorder(source: string, target: string, edge: 'before' | 'after') {
     let at: {section: string; position: number} | undefined
@@ -343,14 +362,11 @@ export function EditorialFrontpage({
       ? 'small'
       : articleSize(curation, article.item.uri, lead, position)
     const automatic = arranging && !slot.pinned
-    const canPin = pinnable(article)
     const controls = arranging ? (
       <ArticleControls
         article={article}
         dragHandle={
-          canPin ? (
-            <StoryDragHandle uri={article.item.uri} title={article.title} />
-          ) : null
+          <StoryDragHandle uri={article.item.uri} title={article.title} />
         }
         size={card ? undefined : size}
         lead={lead}
@@ -365,21 +381,22 @@ export function EditorialFrontpage({
                 )
               }
             />
-          ) : !isResourceItem(article) ? (
+          ) : isArticleItem(article) && !slot.pinned ? (
             <PinToggle
-              pinned={slot.pinned}
-              canPin={canPin}
               title={article.title}
               disabled={disabled}
-              onChange={pin =>
+              onPin={() =>
                 changeCuration(value =>
-                  pin
-                    ? pinStory(value, section.id, article.item.uri)
-                    : unpinStory(value, article.item.uri),
+                  pinStory(value, section.id, article.item.uri),
                 )
               }
             />
           ) : undefined
+        }
+        onEdit={
+          slot.pinned
+            ? () => openReplacement(section.id, position, article)
+            : undefined
         }
         onSize={value =>
           changeCuration(current =>
@@ -388,7 +405,7 @@ export function EditorialFrontpage({
         }
         disabled={disabled}
         onRemove={
-          isResourceItem(article)
+          slot.pinned
             ? () => changeCuration(value => unpinStory(value, article.item.uri))
             : undefined
         }
@@ -396,7 +413,9 @@ export function EditorialFrontpage({
     ) : undefined
     return (
       <SortableStory uri={article.item.uri}>
-        {isResourceItem(article) ? (
+        {isFeaturedItem(article) ? (
+          <FeaturedFeedsSlot item={article} controls={controls} />
+        ) : isResourceItem(article) ? (
           <ResourceSlot
             item={article}
             controls={controls}
@@ -418,9 +437,42 @@ export function EditorialFrontpage({
     )
   }
 
-  function openInsertion(section: string, position: number) {
+  /** Opens the add dialog for a spot, at the choice of what to add or straight at one kind. */
+  function openInsertion(
+    section: string,
+    position: number,
+    step: SlotStep = 'choose',
+  ) {
     if (!editing || disabled) return
     setInsertion({section, position})
+    setFeaturedEdit(undefined)
+    setSlotStart(current => ({step, key: current.key + 1}))
+    pickerControl.open()
+  }
+
+  /**
+   * Opens the add dialog on a pinned story's spot, at its own kind's step, to
+   * change it: a featured-feeds card's feeds and title, or another post, feed
+   * or starter pack in its place; changing the kind replaces it.
+   */
+  function openReplacement(
+    section: string,
+    position: number,
+    story: EditorialItem,
+  ) {
+    if (!editing || disabled) return
+    setInsertion({section, position, replace: story.item.uri})
+    setFeaturedEdit(isFeaturedItem(story) ? story.featured.id : undefined)
+    setSlotStart(current => ({
+      step: isFeaturedItem(story)
+        ? 'featured'
+        : isResourceItem(story)
+          ? story.kind === 'feed'
+            ? 'feeds'
+            : 'starterPacks'
+          : 'posts',
+      key: current.key + 1,
+    }))
     pickerControl.open()
   }
 
@@ -430,13 +482,42 @@ export function EditorialFrontpage({
     sectionControl.open()
   }
 
+  /** How many empty spots a section shows in the editor: its open room, when it does not fill itself. */
+  function emptySpots(
+    section: PlacedSection<EditorialItem>['section'],
+    shown: number,
+  ) {
+    return arranging && section.fill === 'none' && section.length !== 'infinite'
+      ? Math.max(0, section.length - shown)
+      : 0
+  }
+
+  function renderEmptySlot(
+    section: PlacedSection<EditorialItem>['section'],
+    position: number,
+  ) {
+    const card = section.kind === 'carousel'
+    return (
+      <EmptySlot
+        position={position}
+        size={card ? 'small' : articleSize(curation, '', false, position)}
+        card={card}
+        postsOnly={card}
+        disabled={disabled}
+        onAdd={step => openInsertion(section.id, position, step)}
+      />
+    )
+  }
+
   function addItem(item: EditorialItem) {
     if (!editing || disabled || !insertion) return
     try {
       setDraft({
         ...draft,
         curation: placeStory(
-          draft.curation,
+          insertion.replace
+            ? unpinStory(draft.curation, insertion.replace)
+            : draft.curation,
           item.item.uri,
           insertion.section,
           insertion.position,
@@ -666,8 +747,14 @@ export function EditorialFrontpage({
                   onPress={() => openSectionDialog({after: null})}
                 />
               )}
-              {placed.map(({section, slots}, index) =>
-                !arranging && !slots.length ? null : (
+              {placed.map(({section, slots}, index) => {
+                const empty = emptySpots(section, slots.length)
+                /* The empty spots' places in the section, after its stories. */
+                const empties = Array.from(
+                  {length: empty},
+                  (_, offset) => slots.length + offset,
+                )
+                return !arranging && !slots.length ? null : (
                   <Fragment key={section.id}>
                     <SectionContainer
                       section={section}
@@ -720,39 +807,50 @@ export function EditorialFrontpage({
                           />
                         ) : undefined
                       }>
-                      {!!slots.length && section.kind === 'carousel' ? (
-                        <Carousel>
-                          {slots.map((slot, position) => (
-                            <Fragment key={slot.story.item.uri}>
-                              {renderSlot(section, slot, position)}
-                            </Fragment>
-                          ))}
-                        </Carousel>
-                      ) : (
-                        !!slots.length && (
+                      {slots.length + empty > 0 &&
+                        (section.kind === 'carousel' ? (
+                          <Carousel>
+                            {slots.map((slot, position) => (
+                              <Fragment key={slot.story.item.uri}>
+                                {renderSlot(section, slot, position)}
+                              </Fragment>
+                            ))}
+                            {empties.map(position => (
+                              <Fragment key={`empty:${position}`}>
+                                {renderEmptySlot(section, position)}
+                              </Fragment>
+                            ))}
+                          </Carousel>
+                        ) : (
                           <ArticleGrid
                             renderInsert={
                               arranging
-                                ? (position, beside) => (
-                                    <InsertSlotButton
-                                      beside={beside}
-                                      disabled={disabled}
-                                      onPress={() =>
-                                        openInsertion(section.id, position)
-                                      }
-                                    />
-                                  )
+                                ? (position, beside) =>
+                                    position < slots.length ? (
+                                      <InsertSlotButton
+                                        beside={beside}
+                                        disabled={disabled}
+                                        onPress={() =>
+                                          openInsertion(section.id, position)
+                                        }
+                                      />
+                                    ) : null
                                 : undefined
                             }
                             wide={wide}
-                            sizes={slots.map((slot, position) =>
-                              articleSize(
-                                curation,
-                                slot.story.item.uri,
-                                slot.story.item.uri === leadUri,
-                                position,
+                            sizes={[
+                              ...slots.map((slot, position) =>
+                                articleSize(
+                                  curation,
+                                  slot.story.item.uri,
+                                  slot.story.item.uri === leadUri,
+                                  position,
+                                ),
                               ),
-                            )}>
+                              ...empties.map(position =>
+                                articleSize(curation, '', false, position),
+                              ),
+                            ]}>
                             {slots.map((slot, position) => (
                               <ArticleGridItem
                                 key={slot.story.item.uri}
@@ -766,12 +864,24 @@ export function EditorialFrontpage({
                                 {renderSlot(section, slot, position)}
                               </ArticleGridItem>
                             ))}
+                            {empties.map(position => (
+                              <ArticleGridItem
+                                key={`empty:${position}`}
+                                wide={wide}
+                                size={articleSize(
+                                  curation,
+                                  '',
+                                  false,
+                                  position,
+                                )}>
+                                {renderEmptySlot(section, position)}
+                              </ArticleGridItem>
+                            ))}
                           </ArticleGrid>
-                        )
-                      )}
+                        ))}
                       {arranging && (
                         <SortableStory uri={`end:${section.id}`}>
-                          {slots.length ? (
+                          {slots.length + empty > 0 ? (
                             <InsertSlotButton
                               inline
                               disabled={disabled}
@@ -792,8 +902,8 @@ export function EditorialFrontpage({
                       />
                     )}
                   </Fragment>
-                ),
-              )}
+                )
+              })}
             </SortableStories>
           ) : !query.isError ? (
             <View style={[a.py_4xl]}>
@@ -881,12 +991,37 @@ export function EditorialFrontpage({
           )}
           automatic={placed.flatMap(value =>
             value.slots
-              .filter(slot => !slot.pinned && pinnable(slot.story))
+              .filter(slot => !slot.pinned)
               .map(slot => slot.story.item.uri),
           )}
           postsOnly={insertionSection?.section.kind === 'carousel'}
+          start={slotStart.step}
+          openKey={slotStart.key}
+          featured={
+            featuredEdit
+              ? curation.featured?.find(card => card.id === featuredEdit)
+              : undefined
+          }
+          onSaveFeatured={value => {
+            if (featuredEdit)
+              changeCuration(current =>
+                updateFeaturedFeeds(current, featuredEdit, value),
+              )
+            else if (insertion)
+              changeCuration(current =>
+                addFeaturedFeeds(
+                  insertion.replace
+                    ? unpinStory(current, insertion.replace)
+                    : current,
+                  insertion.section,
+                  insertion.position,
+                  value,
+                ),
+              )
+          }}
           onSplit={
             insertion &&
+            !insertion.replace &&
             insertionSection &&
             insertionSection.section.kind !== 'carousel' &&
             insertion.position > 0 &&

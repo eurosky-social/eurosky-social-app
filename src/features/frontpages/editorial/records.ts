@@ -11,6 +11,7 @@ import {
   fromSlotsRecord,
   FRONTPAGE_COLLECTION,
   legacyRecordSchema,
+  recordVersion,
   slotsRecordSchema,
 } from './curation'
 
@@ -56,6 +57,7 @@ export async function readCuration(
       curation: {
         cover: record.cover,
         sections: record.sections,
+        ...(record.featured ? {featured: record.featured} : {}),
         sizes: record.sizes,
         starterPackViews: record.starterPackViews,
       },
@@ -78,7 +80,7 @@ export async function saveCuration(
     throw new Error('Only the profile owner can edit this front page.')
   const record = curationRecordSchema(did).parse({
     $type: FRONTPAGE_COLLECTION,
-    version: 3,
+    version: recordVersion(curation),
     ...curation,
     updatedAt: new Date().toISOString(),
   })

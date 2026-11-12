@@ -6,11 +6,9 @@ import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import * as Toggle from '#/components/forms/Toggle'
 import {Bubble_Stroke2_Corner2_Rounded as PostsIcon} from '#/components/icons/Bubble'
 import {Group3_Stroke2_Corner0_Rounded as PeopleIcon} from '#/components/icons/Group3'
-import {
-  Pin_Filled_Corner0_Rounded as PinnedIcon,
-  Pin_Stroke2_Corner0_Rounded as PinIcon,
-} from '#/components/icons/Pin'
-import {TimesLarge_Stroke2_Corner0_Rounded as Close} from '#/components/icons/Times'
+import {PencilLine_Stroke2_Corner0_Rounded as EditIcon} from '#/components/icons/Pencil'
+import {Pin_Stroke2_Corner0_Rounded as PinIcon} from '#/components/icons/Pin'
+import {Trash_Stroke2_Corner0_Rounded as TrashIcon} from '#/components/icons/Trash'
 import * as Menu from '#/components/Menu'
 import {Text} from '#/components/Typography'
 import {type EditorialArticle} from './articles'
@@ -196,6 +194,7 @@ export function ArticleControls({
   size,
   lead,
   disabled,
+  onEdit,
   onRemove,
   onSize,
   extraControls,
@@ -207,12 +206,20 @@ export function ArticleControls({
   size?: ArticleSize
   lead: boolean
   disabled: boolean
-  /** Removes a feed or starter pack; posts are pinned or unpinned instead. */
+  /** Reopens the add dialog to replace what is in the slot; absent for an automatic story. */
+  onEdit?: () => void
+  /** Removes a pinned story, feed, starter pack or card from the page; absent for an automatic story. */
   onRemove?: () => void
   onSize?: (size: ArticleSize) => void
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
+  const roundButton = [
+    t.atoms.bg,
+    a.border,
+    t.atoms.border_contrast_low,
+    {width: 36, height: 36},
+  ]
   return (
     <View
       testID="articleControls"
@@ -235,67 +242,56 @@ export function ArticleControls({
         )}
         {extraControls}
       </View>
-      {onRemove && (
-        <Button
-          testID="removeFrontpageSlot"
-          label={l`Remove ${article.title} from the front page`}
-          size="small"
-          shape="round"
-          color="secondary"
-          style={[
-            t.atoms.bg,
-            a.border,
-            t.atoms.border_contrast_low,
-            {width: 36, height: 36, marginLeft: 'auto'},
-          ]}
-          disabled={disabled}
-          onPress={onRemove}>
-          <ButtonIcon icon={Close} />
-        </Button>
+      {(onEdit || onRemove) && (
+        <View style={[a.flex_row, a.gap_xs, {marginLeft: 'auto'}]}>
+          {onEdit && (
+            <Button
+              testID="editFrontpageSlot"
+              label={l`Change what is in this spot instead of ${article.title}`}
+              size="small"
+              shape="round"
+              color="secondary"
+              style={roundButton}
+              disabled={disabled}
+              onPress={onEdit}>
+              <ButtonIcon icon={EditIcon} />
+            </Button>
+          )}
+          {onRemove && (
+            <Button
+              testID="removeFrontpageSlot"
+              label={l`Remove ${article.title} from the front page`}
+              size="small"
+              shape="round"
+              color="secondary"
+              style={roundButton}
+              disabled={disabled}
+              onPress={onRemove}>
+              <ButtonIcon icon={TrashIcon} />
+            </Button>
+          )}
+        </View>
       )}
     </View>
   )
 }
 
 /**
- * Whether a story is pinned in its section or fills it automatically, with the
- * action that changes it. Pinning moves it to the end of the section's pinned
- * stories; unpinning returns it to the automatic ones.
+ * An automatic story's tag, with the action that pins it: pinning moves it to
+ * the end of the section's pinned stories. A pinned story has the trash
+ * button instead, which returns a post to the automatic ones.
  */
 export function PinToggle({
-  pinned,
-  canPin = true,
   title,
   disabled,
-  onChange,
+  onPin,
 }: {
-  pinned: boolean
-  /** False for another account's post from a feed: a layout pins only the account's own posts. */
-  canPin?: boolean
   title: string
   disabled: boolean
-  onChange: (pinned: boolean) => void
+  onPin: () => void
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
-  if (pinned)
-    return (
-      <Button
-        testID="unpinFrontpageStory"
-        label={l`Unpin ${title} so it fills automatically`}
-        size="small"
-        color="primary_subtle"
-        disabled={disabled}
-        style={[{height: 36}]}
-        onPress={() => onChange(false)}>
-        <ButtonIcon icon={PinnedIcon} />
-        <ButtonText>
-          <Trans comment="A story pinned to its place on the front page; pressing unpins it">
-            Pinned
-          </Trans>
-        </ButtonText>
-      </Button>
-    )
   return (
     <View
       testID="automaticStory"
@@ -312,18 +308,12 @@ export function PinToggle({
         ]}>
         <Text
           style={[a.text_xs, a.font_semi_bold, t.atoms.text_contrast_medium]}>
-          {canPin ? (
-            <Trans comment="An automatically included story on the front page editor">
-              Automatic
-            </Trans>
-          ) : (
-            <Trans comment="A story filled in from a feed, which cannot be pinned because another account posted it">
-              From a feed
-            </Trans>
-          )}
+          <Trans comment="An automatically included story on the front page editor">
+            Automatic
+          </Trans>
         </Text>
       </View>
-      {canPin && (
+      {
         <Button
           testID="pinFrontpageStory"
           label={l`Pin ${title} here`}
@@ -336,13 +326,13 @@ export function PinToggle({
             t.atoms.border_contrast_low,
             {height: 36},
           ]}
-          onPress={() => onChange(true)}>
+          onPress={onPin}>
           <ButtonIcon icon={PinIcon} />
           <ButtonText>
             <Trans>Pin</Trans>
           </ButtonText>
         </Button>
-      )}
+      }
     </View>
   )
 }
