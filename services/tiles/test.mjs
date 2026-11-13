@@ -48,6 +48,10 @@ function check(name, ok, detail = '') {
   console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${detail ? `  (${detail})` : ''}`)
   if (!ok) failures++
 }
+/** Something worth knowing that is not the script's doing. */
+function note(name, ok, detail = '') {
+  console.log(`${ok ? 'ok  ' : 'note'} ${name}${detail ? `  (${detail})` : ''}`)
+}
 
 async function main() {
   const url = `${base}/blob/${DID}/${CID}`
@@ -91,8 +95,10 @@ async function main() {
     h.get('content-length') ?? 'absent',
   )
   check('CORS *', h.get('access-control-allow-origin') === '*')
-  check(
-    'immutable cache header',
+  // Bunny rewrites a standalone script's Cache-Control to no-cache, so on a
+  // deployment this is a note: the edge cache is checked by X-Tile-Cache below.
+  note(
+    'immutable Cache-Control reaches the client',
     /public, max-age=\d+, immutable/.test(h.get('cache-control') ?? ''),
     h.get('cache-control') ?? '',
   )
@@ -110,11 +116,42 @@ async function main() {
   check('ETag is the CID', h.get('etag') === `"${CID}"`, h.get('etag') ?? '')
 
   const missing = await fetch(`${base}/blob/${DID}/${MISSING}`)
+  check('missing blob is 404', missing.status === 404, String(missing.status))
+
+  // The script stores the blob in the edge cache as it streams it; the write
+  // finishes a moment after the response, so give it a few tries.
+  let state = h.get('x-tile-cache')
+  let cached
+  for (let i = 0; i < 6 && state !== 'HIT'; i++) {
+    await new Promise(r => setTimeout(r, 500))
+    cached = await fetch(url)
+    state = cached.headers.get('x-tile-cache')
+    if (state !== 'HIT') await cached.arrayBuffer()
+  }
+  cached ??= await fetch(url)
+  const cachedBody = Buffer.from(await cached.arrayBuffer())
   check(
-    'missing blob is 404, briefly cacheable',
-    missing.status === 404 &&
-      /max-age=\d+/.test(missing.headers.get('cache-control') ?? ''),
-    `${missing.status} ${missing.headers.get('cache-control')}`,
+    'a repeat GET is served from the edge cache',
+    state === 'HIT',
+    `X-Tile-Cache: ${state}`,
+  )
+  check(
+    'cached bytes match the CID',
+    createHash('sha256').update(cachedBody).digest('hex') === cidDigest(CID),
+    `${cachedBody.length} bytes`,
+  )
+  check(
+    'cached answer keeps type and inert headers',
+    cached.headers.get('content-type') === 'image/png' &&
+      cached.headers.get('x-content-type-options') === 'nosniff' &&
+      cached.headers.get('access-control-allow-origin') === '*',
+  )
+  const cachedHead = await fetch(url, {method: 'HEAD'})
+  check(
+    'HEAD of a cached blob has no body',
+    cachedHead.status === 200 &&
+      (await cachedHead.arrayBuffer()).byteLength === 0,
+    cachedHead.headers.get('x-tile-cache') ?? '',
   )
 
   const badDid = await fetch(`${base}/blob/did:plc:nope/${CID}`)

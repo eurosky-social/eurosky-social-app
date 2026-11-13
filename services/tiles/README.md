@@ -28,8 +28,8 @@ this does the same for the tile itself.
    `nosniff`, `X-Frame-Options: DENY`), with
    `Cache-Control: public, max-age=31536000, immutable` and the CID as `ETag`.
 
-A CID names its bytes for good, so the pull zone caches each blob by URL for
-good and the script runs only on a cache miss. A missing blob is a 404 cached
+A CID names its bytes for good, so the script stores each blob in the edge
+cache (the Cache API) as it streams it, and answers from there afterwards. A missing blob is a 404 cached
 for `ERROR_SECONDS`; a PDS error is a 502, a rate limit a 503, neither cached.
 Bodies above `MAX_BLOB_BYTES` are refused (413 when the PDS states the length,
 a failed stream otherwise). A blob missing on a PDS remembered for over a
@@ -75,11 +75,15 @@ to check that too.
 1. Create a standalone Edge Script in the Bunny dashboard and paste
    `bunny/index.ts`, on its own pull zone and hostname, e.g.
    `tiles.<your-domain>`.
-2. Caching is the point, so check the pull zone keeps the script's
-   `Cache-Control`: leave **Run script before cache** off (the script is the
-   origin and should only run on a miss), and set the cache expiration to
-   respect the origin headers or to a long fixed time. Blobs never change, so
-   there is nothing to purge. Query strings play no part in the URL.
+2. Caching is the point, and the pull zone does not do it: Bunny does not
+   cache what a standalone script answers and rewrites its `Cache-Control` to
+   `no-cache` (seen on tiles.mu.social and rss.mu.social, 2026-11-13, with the
+   zone on "Respect origin Cache-Control"). The script therefore keeps blobs
+   itself through the Edge Scripting Cache API (`caches`, entries of up to
+   100 MB, kept per region) and reports `X-Tile-Cache: HIT` or `MISS`. The one
+   zone setting that matters: **Cache expiration time** must not be
+   "Override: do not cache", which silently turns the Cache API off. Leave
+   **Run script before cache** off.
 3. Env Configuration, all optional:
    - `ALLOWED_ORIGIN`: `Access-Control-Allow-Origin` (default `*`; the blobs
      are public, and the demo origins fetch them too).
@@ -98,9 +102,11 @@ node services/tiles/test.mjs https://tiles.<your-domain>
 curl -sI https://tiles.<your-domain>/blob/did:plc:izttpdp3l6vss5crelt5kcux/bafkreihdadacrx6zowligm4yqvvdnili6oiyvjbmhtiqj6bb5ug54t3dcy
 ```
 
-Run the `curl` twice: the second answer should be a pull-zone cache hit
-(`CDN-Cache: HIT`). If it is not, the zone is ignoring the script's
-`Cache-Control`; fix the expiration setting rather than the script.
+Run the `curl` twice: the second answer should say `X-Tile-Cache: HIT` (the
+zone's own `CDN-Cache` stays `MISS`, and `Cache-Control` reads `no-cache`,
+both Bunny's doing). The test checks the same thing. Because of that
+rewritten header browsers do not keep blobs themselves; each play asks the
+edge, which answers from its cache without touching the PDS.
 
 ## Limits
 

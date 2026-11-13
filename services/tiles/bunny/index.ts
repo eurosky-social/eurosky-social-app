@@ -4,8 +4,11 @@
  * Serves the resources of DASL web tiles (https://dasl.ing/, see
  * ../../../src/features/tiles/) from the edge instead of from each author's
  * PDS. `GET /blob/<did>/<cid>` resolves the DID to its PDS, passes
- * `com.atproto.sync.getBlob` through, and the pull zone caches the body by
- * URL. A CID names its bytes for good, so a cached blob never goes stale, and
+ * `com.atproto.sync.getBlob` through, and keeps the body in the edge cache
+ * through the Cache API (`caches`): Bunny's pull zones do not cache what a
+ * standalone script answers and rewrite its Cache-Control to `no-cache`, so
+ * the script stores and serves its own entries, and says which happened in
+ * `X-Tile-Cache`. A CID names its bytes for good, so a cached blob never goes stale, and
  * playing a tile costs its author's PDS about one fetch per resource per edge
  * location rather than one per viewer. The app points
  * EXPO_PUBLIC_TILES_BLOB_URL at this host (src/features/tiles/manifest.ts).
@@ -35,6 +38,31 @@ const MAX_REDIRECTS = 5
 const MAX_CACHED_DIDS = 5000
 /** A PDS remembered this long is re-resolved when it has no such blob. */
 const RETRY_AFTER_MS = 60e3
+
+/** Bump to drop every cached blob. */
+const CACHE_NAME = 'tile-blobs:v1'
+
+/*
+ * The edge cache, where there is one (Bunny, and Deno locally). Entries stay
+ * in the region that wrote them. Any failure reads as "no cache".
+ */
+async function openCache(): Promise<Cache | null> {
+  try {
+    return typeof caches === 'undefined' ? null : await caches.open(CACHE_NAME)
+  } catch {
+    return null
+  }
+}
+
+/** Lets a cache write outlive the response where the runtime allows it. */
+function background(work: Promise<unknown>): Promise<unknown> | void {
+  const quiet = work.catch(() => {})
+  const waitUntil = (
+    globalThis as {Bunny?: {v1?: {waitUntil?: (p: Promise<unknown>) => void}}}
+  ).Bunny?.v1?.waitUntil
+  if (typeof waitUntil === 'function') return waitUntil(quiet)
+  return quiet
+}
 
 const DID_PLC = /^did:plc:[a-z2-7]{24}$/
 const DID_WEB = /^did:web:[a-z0-9][a-z0-9.%:_-]*$/
@@ -230,6 +258,26 @@ BunnySDK.net.http.serve(async (req: Request): Promise<Response> => {
   if (!DID_PLC.test(did) && !DID_WEB.test(did)) return error(400, 'Bad DID')
   if (!CID.test(cid)) return error(400, 'Bad CID')
 
+  // One key per blob, whatever the host or query the request came with.
+  const cacheKey = `https://tile-blobs.invalid/blob/${did}/${cid}`
+  const cache = await openCache()
+  if (cache) {
+    try {
+      const hit = await cache.match(cacheKey)
+      if (hit) {
+        const headers = new Headers(hit.headers)
+        headers.set('X-Tile-Cache', 'HIT')
+        if (req.method === 'HEAD') await hit.body?.cancel()
+        return new Response(req.method === 'HEAD' ? null : hit.body, {
+          status: 200,
+          headers,
+        })
+      }
+    } catch {
+      // fall through to the PDS
+    }
+  }
+
   const errorSeconds = envNumber('ERROR_SECONDS', 60)
   const resolved = await resolvePds(did)
   if (!resolved) return error(404, 'DID has no PDS', errorSeconds)
@@ -284,6 +332,8 @@ BunnySDK.net.http.serve(async (req: Request): Promise<Response> => {
     'Cross-Origin-Resource-Policy': 'cross-origin',
     'Cache-Control': `public, max-age=${envNumber('CACHE_SECONDS', 31536000)}, immutable`,
     ETag: `"${cid}"`,
+    'X-Tile-Cache': 'MISS',
+    'Access-Control-Expose-Headers': 'X-Tile-Cache',
   })
   if (hasLength) headers.set('Content-Length', String(length))
 
@@ -291,5 +341,14 @@ BunnySDK.net.http.serve(async (req: Request): Promise<Response> => {
     await upstream.body?.cancel()
     return new Response(null, {status: 200, headers})
   }
-  return new Response(limitBytes(upstream.body, max), {status: 200, headers})
+  const body = limitBytes(upstream.body, max)
+  if (!cache) return new Response(body, {status: 200, headers})
+  // One copy to the viewer, one to the cache; a body past the limit fails
+  // both, so nothing truncated is ever stored.
+  const [toViewer, toCache] = body.tee()
+  const stored = background(
+    cache.put(cacheKey, new Response(toCache, {status: 200, headers})),
+  )
+  if (stored) void stored
+  return new Response(toViewer, {status: 200, headers})
 })
