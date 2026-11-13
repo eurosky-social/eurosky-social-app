@@ -35,4 +35,14 @@ export const TILES_BLOB_URL = process.env.EXPO_PUBLIC_TILES_BLOB_URL || ''
 /** Aspect ratio of a rendered tile whose manifest requests no size. */
 export const DEFAULT_TILE_ASPECT_RATIO = 16 / 9
 export const MIN_TILE_HEIGHT = 200
+/** The tallest a tile gets when the viewport's height is not known. */
 export const MAX_TILE_HEIGHT = 800
+/**
+ * The room a tile leaves on screen, top and bottom together, so that the post
+ * it belongs to still reads as a post with the tile running in it: above the
+ * tile, the app's header and the post's author line; below it, the card's
+ * footer (title, description, tile author), the post's reply/repost/like row
+ * and the app's bottom bar. A tile is never taller than the viewport less
+ * this (and the device's safe areas, on native).
+ */
+export const TILE_POST_CHROME = 340

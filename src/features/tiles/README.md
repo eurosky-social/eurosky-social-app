@@ -121,10 +121,19 @@ As it runs, a tile can ask for another height over the size protocol
 follows its content without any script of its own. Whatever is asked for is
 settled by the rules all tile contexts share (`resolveSize` in
 `@dasl/tile-lexicon`): inside the range the manifest declares, then inside
-mu's limits (`MIN_TILE_HEIGHT` to `MAX_TILE_HEIGHT`), which win. On the web
+mu's limits (`tileLimits` in `sizing.ts`), which win. On the web
 the loader's `tileSize` passes requests on and tells the tile what it got; on
 native the hosted page sends them up as `size` events and the WebView is
-resized. The width is always the column's.
+resized.
+
+mu's limits are these. The width is nailed to the column: minimum and maximum
+are both the column's width, so a tile can ask for another and will be told
+the one it has. The height is at least `MIN_TILE_HEIGHT` and at most the
+viewport's height less `TILE_POST_CHROME`, the room kept on screen for the
+app's bars, the post's author line above the tile, and the card's footer and
+the post's actions below it, so a running tile never pushes its own post off
+screen. Native takes the safe areas off the viewport first. The limits follow
+the window: rotating a phone or resizing a browser settles the tile again.
 The frame fills a div whose height React owns, so a resize never remounts the
 tile. A post shown on its own, as the anchor of its thread rather than as a
 feed item, loads the tile on mount instead of waiting for a click; the card's
@@ -193,7 +202,9 @@ work in the WebView for subdomains of an app-bound domain.
   button is composited with a canvas, which only the web build has.
 - The native embed starts at the default height and adjusts when the host page
   reports the manifest's size, under the loading overlay.
-- The rendered height is capped between `MIN_TILE_HEIGHT` and `MAX_TILE_HEIGHT`
-  whatever the manifest asks for.
+- The rendered height is kept between `MIN_TILE_HEIGHT` and what the screen
+  leaves once the post's chrome is counted (`tileLimits`), whatever the
+  manifest or the running tile asks for. `TILE_POST_CHROME` is one figure for
+  every layout, not a measurement of the post.
 - The mothership keeps a reference to every frame it has started; closing a
   tile removes the frame but the loader has no teardown API yet.

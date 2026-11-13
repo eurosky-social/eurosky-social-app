@@ -1,5 +1,30 @@
-import {MAX_TILE_HEIGHT, MIN_TILE_HEIGHT} from './constants'
-import {tileHeight} from './sizing'
+import {MAX_TILE_HEIGHT, MIN_TILE_HEIGHT, TILE_POST_CHROME} from './constants'
+import {tileHeight, tileLimits} from './sizing'
+
+describe('tileLimits', () => {
+  it('nails the width to the column', () => {
+    const limits = tileLimits(412, 900)
+    expect(limits.minWidth).toBe(412)
+    expect(limits.maxWidth).toBe(412)
+    expect(tileLimits(0, 900).maxWidth).toBeUndefined()
+  })
+
+  it('leaves the post chrome on screen', () => {
+    expect(tileLimits(400, 900).maxHeight).toBe(900 - TILE_POST_CHROME)
+    expect(tileLimits(400, 1440).maxHeight).toBe(1440 - TILE_POST_CHROME)
+    expect(tileLimits(400, 667.5).maxHeight).toBe(327)
+  })
+
+  it('never leaves a tile less than its minimum, however short the screen', () => {
+    expect(tileLimits(400, 420).maxHeight).toBe(MIN_TILE_HEIGHT)
+    expect(tileLimits(400, 900).minHeight).toBe(MIN_TILE_HEIGHT)
+  })
+
+  it('falls back to a fixed ceiling when the viewport is not known', () => {
+    expect(tileLimits(400).maxHeight).toBe(MAX_TILE_HEIGHT)
+    expect(tileLimits(400, 0).maxHeight).toBe(MAX_TILE_HEIGHT)
+  })
+})
 
 describe('tileHeight', () => {
   it('grows a requested size with a wider card', () => {
@@ -40,6 +65,17 @@ describe('tileHeight', () => {
     expect(tileHeight({height: 300, maxHeight: 60}, 400, 60)).toBe(
       MIN_TILE_HEIGHT,
     )
+  })
+
+  it('keeps a tile short enough for its post on the screen it is on', () => {
+    const phone = tileLimits(390, 760)
+    expect(tileHeight({width: 600, height: 700}, 390, undefined, phone)).toBe(
+      420,
+    )
+    expect(tileHeight({height: 300}, 390, 2000, phone)).toBe(420)
+    expect(tileHeight({height: 300}, 390, 360, phone)).toBe(360)
+    const desktop = tileLimits(600, 1300)
+    expect(tileHeight({height: 300}, 600, 2000, desktop)).toBe(960)
   })
 
   it('stays within bounds', () => {

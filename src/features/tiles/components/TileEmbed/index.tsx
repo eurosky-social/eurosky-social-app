@@ -2,9 +2,11 @@ import {useEffect, useRef, useState} from 'react'
 import {
   type LayoutChangeEvent,
   type StyleProp,
+  useWindowDimensions,
   View,
   type ViewStyle,
 } from 'react-native'
+import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {useLingui} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
 
@@ -18,7 +20,7 @@ import {type app} from '#/lexicons'
 import {fetchIsTrustedTile, useTileAuthor} from '../../author'
 import {fetchTilesPaused, useTilesPolicy} from '../../policy'
 import {type TileRef} from '../../record'
-import {tileHeight, type TileSizing} from '../../sizing'
+import {tileHeight, tileLimits, type TileSizing} from '../../sizing'
 import {TileCard} from '../TileCard'
 import {TilePlayer} from '../TilePlayer'
 
@@ -34,7 +36,9 @@ import {TilePlayer} from '../TilePlayer'
  *
  * As it runs, a tile can ask for another height over the size protocol
  * (https://dasl.ing/tp-size.html), which the hosted page passes up; it gets
- * what it asks for within mu's limits, as on the web.
+ * what it asks for within mu's limits, as on the web: the width is the
+ * column's, and the height stops where the post's chrome above and below the
+ * tile would leave the screen.
  */
 export function TileEmbed({
   link,
@@ -73,6 +77,9 @@ export function TileEmbed({
   // The height the running tile last asked for, over the size protocol.
   const [asked, setAsked] = useState<number | undefined>()
   const title = link.title || l`Tile`
+  const {height: windowHeight} = useWindowDimensions()
+  const insets = useSafeAreaInsets()
+  const limits = tileLimits(width, windowHeight - insets.top - insets.bottom)
 
   const onLayout = (e: LayoutChangeEvent) => {
     setWidth(e.nativeEvent.layout.width)
@@ -152,7 +159,7 @@ export function TileEmbed({
           media={
             <TilePlayer
               uri={tile.uri}
-              height={tileHeight(sizing, width, asked)}
+              height={tileHeight(sizing, width, asked, limits)}
               onSizing={setSizing}
               onSize={want => {
                 if (want.height) setAsked(want.height)

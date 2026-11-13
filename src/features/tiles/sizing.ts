@@ -1,9 +1,10 @@
-import {type MaslSizing, resolveSize} from '@dasl/tile-lexicon'
+import {type MaslSizing, resolveSize, type SizeLimits} from '@dasl/tile-lexicon'
 
 import {
   DEFAULT_TILE_ASPECT_RATIO,
   MAX_TILE_HEIGHT,
   MIN_TILE_HEIGHT,
+  TILE_POST_CHROME,
 } from './constants'
 
 /**
@@ -12,10 +13,30 @@ import {
  */
 export type TileSizing = Partial<MaslSizing>
 
-/** mu's limits on a tile's height, whatever the tile asks for. */
-export const TILE_LIMITS = {
-  minHeight: MIN_TILE_HEIGHT,
-  maxHeight: MAX_TILE_HEIGHT,
+/**
+ * mu's limits on a tile's size (https://dasl.ing/tp-size.html), whatever the
+ * tile asks for.
+ *
+ * The width is not negotiable: a tile is exactly as wide as the column it is
+ * in, so the minimum and the maximum are both that width.
+ *
+ * The height has a floor, and a ceiling that depends on the screen: the
+ * viewport's height less the post's chrome above and below the tile
+ * (`TILE_POST_CHROME`), so that a running tile never pushes the post it is in
+ * off screen. `viewportHeight` is the height tiles have to share with that
+ * chrome: the window's, less the safe areas on native. Without one the
+ * ceiling is `MAX_TILE_HEIGHT`.
+ */
+export function tileLimits(width: number, viewportHeight?: number): SizeLimits {
+  const maxHeight =
+    viewportHeight && viewportHeight > 0
+      ? Math.max(MIN_TILE_HEIGHT, Math.floor(viewportHeight - TILE_POST_CHROME))
+      : MAX_TILE_HEIGHT
+  return {
+    ...(width > 0 ? {minWidth: width, maxWidth: width} : {}),
+    minHeight: MIN_TILE_HEIGHT,
+    maxHeight,
+  }
 }
 
 /**
@@ -34,13 +55,15 @@ export const TILE_LIMITS = {
  *
  * Either way the result is settled by the rules every tile context shares
  * (`resolveSize`, https://dasl.ing/tp-size.html): inside the range the
- * manifest declares, then inside mu's limits, which win. Shared by the web
- * frame and the native player so a tile is the same size on both.
+ * manifest declares, then inside mu's limits (`tileLimits`), which win.
+ * Shared by the web frame and the native player so a tile is the same size on
+ * both.
  */
 export function tileHeight(
   sizing: TileSizing | undefined,
   width: number,
   asked?: number,
+  limits: SizeLimits = tileLimits(width),
 ): number {
   const w = width || 560
   let h: number
@@ -56,7 +79,7 @@ export function tileHeight(
   return resolveSize({
     want: {height: h},
     sizing: {minHeight: sizing?.minHeight, maxHeight: sizing?.maxHeight},
-    limits: TILE_LIMITS,
+    limits: {minHeight: limits.minHeight, maxHeight: limits.maxHeight},
     fallback: {width: w, height: h},
   }).height
 }

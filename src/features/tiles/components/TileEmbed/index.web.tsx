@@ -2,11 +2,12 @@ import {useEffect, useRef, useState} from 'react'
 import {
   type LayoutChangeEvent,
   type StyleProp,
+  useWindowDimensions,
   View,
   type ViewStyle,
 } from 'react-native'
 import {type Tile} from '@dasl/tile-loader'
-import {tileSize} from '@dasl/tile-loader/size'
+import {tileSize, type TileSizeControl} from '@dasl/tile-loader/size'
 import {useLingui} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
 
@@ -21,7 +22,7 @@ import {fetchIsTrustedTile, useTileAuthor} from '../../author'
 import {getTileMothership} from '../../mothership'
 import {fetchTilesPaused, useTilesPolicy} from '../../policy'
 import {type TileRef} from '../../record'
-import {TILE_LIMITS, tileHeight, type TileSizing} from '../../sizing'
+import {tileHeight, tileLimits, type TileSizing} from '../../sizing'
 import {TileCard} from '../TileCard'
 
 type Status = 'card' | 'loading' | 'active'
@@ -74,7 +75,9 @@ function measureInset(node: unknown): Inset | undefined {
  *
  * As it runs, a tile can ask for another height over the size protocol
  * (https://dasl.ing/tp-size.html), and one whose manifest declares `fit`
- * follows its content. It gets what it asks for within mu's limits.
+ * follows its content. It gets what it asks for within mu's limits: the
+ * width is the column's and nothing else, and the height stops where the
+ * post's chrome above and below the tile would leave the screen.
  *
  * Shown as the post itself rather than as a feed item (`autoplay`), the tile
  * loads straight away, with no card to click.
@@ -117,7 +120,11 @@ export function TileEmbed({
   const hostRef = useRef<HTMLDivElement>(null)
   const loadedRef = useRef<Tile | null>(null)
   const title = link.title || l`Tile`
-  const height = tileHeight(sizing, width, asked)
+  const sizerRef = useRef<TileSizeControl | null>(null)
+  const {height: viewportHeight} = useWindowDimensions()
+  const limits = tileLimits(width, viewportHeight)
+  const height = tileHeight(sizing, width, asked, limits)
+  const {minWidth, maxWidth, minHeight, maxHeight} = limits
 
   const onLayout = (e: LayoutChangeEvent) => {
     setWidth(e.nativeEvent.layout.width)
@@ -217,16 +224,27 @@ export function TileEmbed({
     host.replaceChildren(frame)
     const sizer = tileSize(loaded, frame, {
       apply: false,
-      limits: TILE_LIMITS,
       onRequest: want => {
         if (want.height) setAsked(want.height)
       },
     })
+    sizerRef.current = sizer
     return () => {
+      sizerRef.current = null
       sizer.stop()
       frame.remove()
     }
   }, [status, title])
+
+  /*
+   * The limits follow the column and the window, so the tile is told of them
+   * whenever either changes (and when it first runs): they are what its
+   * requests are answered with.
+   */
+  useEffect(() => {
+    if (status !== 'active') return
+    sizerRef.current?.setLimits({minWidth, maxWidth, minHeight, maxHeight})
+  }, [status, title, minWidth, maxWidth, minHeight, maxHeight])
 
   if (status === 'active') {
     const spread = inset && {
