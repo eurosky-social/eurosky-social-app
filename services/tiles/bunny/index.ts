@@ -40,7 +40,7 @@ const MAX_CACHED_DIDS = 5000
 const RETRY_AFTER_MS = 60e3
 
 /** Bump to drop every cached blob. */
-const CACHE_NAME = 'tile-blobs:v1'
+const CACHE_NAME = 'tile-blobs:v2'
 
 /** Bodies up to this size are stored whole; larger ones are streamed in. */
 const BUFFER_BYTES = 8 * 1024 * 1024
