@@ -88,6 +88,9 @@ function storable(body: BodyInit, headers: Headers): Response {
   const seconds = envNumber('CACHE_SECONDS', 31536000)
   stored.set('Cache-Control', `public, max-age=${seconds}, s-maxage=${seconds}`)
   stored.delete('X-Tile-Cache')
+  // The cache drops Content-Length; keep the size where it survives.
+  const size = stored.get('Content-Length')
+  if (size) stored.set('X-Tile-Length', size)
   return new Response(body, {status: 200, headers: stored})
 }
 
@@ -298,8 +301,17 @@ BunnySDK.net.http.serve(async (req: Request): Promise<Response> => {
           'Cache-Control',
           `public, max-age=${envNumber('CACHE_SECONDS', 31536000)}, immutable`,
         )
-        if (req.method === 'HEAD') await hit.body?.cancel()
-        return new Response(req.method === 'HEAD' ? null : hit.body, {
+        const size = Number(headers.get('X-Tile-Length'))
+        headers.delete('X-Tile-Length')
+        const sized = Number.isInteger(size) && size >= 0
+        if (sized) headers.set('Content-Length', String(size))
+        if (req.method === 'HEAD') {
+          await hit.body?.cancel()
+          return new Response(null, {status: 200, headers})
+        }
+        // A modest body is answered whole, so the length goes out with it.
+        const whole = sized && size <= BUFFER_BYTES
+        return new Response(whole ? await hit.arrayBuffer() : hit.body, {
           status: 200,
           headers,
         })
