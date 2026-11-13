@@ -4,7 +4,7 @@
  *
  *   BASE_HOST=localhost deno run --allow-net --allow-env services/tileLoader/bunny/index.ts
  *   node services/tileLoader/test.mjs http://localhost:8080 localhost
- *   node services/tileLoader/test.mjs https://mu.social mu.social      # deployed
+ *   node services/tileLoader/test.mjs https://t.mu.social t.mu.social  # deployed
  *
  * First argument: scheme and port to reach it on (the host part is replaced
  * by load.<base> and tile origins); second: the base host. Requests go to

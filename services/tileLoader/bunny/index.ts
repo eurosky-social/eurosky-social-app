@@ -27,7 +27,7 @@
  * load.<BASE_HOST>.
  *
  * Config (Bunny dashboard -> script -> Env Configuration):
- *   BASE_HOST  the host tile origins are minted under (default mu.social).
+ *   BASE_HOST  the host tile origins are minted under (default t.mu.social).
  */
 import * as BunnySDK from 'https://esm.sh/@bunny.net/edgescript-sdk@0.13.0'
 
@@ -90,7 +90,7 @@ const FILES: Record<string, {type: string; etag: string; body: string}> =
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz'
 
 function baseHost(): string {
-  return (Deno.env.get('BASE_HOST') || 'mu.social')
+  return (Deno.env.get('BASE_HOST') || 't.mu.social')
     .toLowerCase()
     .replace(/^\./, '')
 }

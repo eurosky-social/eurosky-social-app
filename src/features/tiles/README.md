@@ -144,7 +144,7 @@ link is the plain post URL, so other clients lead there.
 `TILES_LOAD_DOMAIN` (`EXPO_PUBLIC_TILES_LOAD_DOMAIN`, default `load.webtil.es`)
 is the `@dasl/tile-server` the loader frames tiles from. webtil.es is a stopgap:
 mu's own is `services/tileLoader`, the same server as a Bunny Edge Script for
-`load.mu.social`, switched on by setting the variable in
+`load.t.mu.social`, switched on by setting the variable in
 `.github/environments/common.env` once it is deployed. The loader in the app
 (`@dasl/tile-loader` 2.3 or later, from npm) stamps the tile policy on every
 response the tile receives regardless of what the server does; the server-side
