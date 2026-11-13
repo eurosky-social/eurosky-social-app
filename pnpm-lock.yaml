@@ -333,14 +333,14 @@ importers:
         specifier: 1.2.0
         version: 1.2.0(@atproto/lex@0.3.8)
       '@dasl/tile-host':
-        specifier: ^2.1.0
-        version: 2.1.0(supports-color@8.1.1)
+        specifier: ^2.1.1
+        version: 2.1.1(supports-color@8.1.1)
       '@dasl/tile-lexicon':
         specifier: ^2.2.0
         version: 2.2.0
       '@dasl/tile-loader':
-        specifier: ^2.5.0
-        version: 2.5.0(@atcute/cbor@2.3.8(@atcute/cid@2.5.0))
+        specifier: ^2.6.0
+        version: 2.6.0(@atcute/cbor@2.3.8(@atcute/cid@2.5.0))
       '@emoji-mart/data':
         specifier: ^1.2.1
         version: 1.2.1
@@ -2060,14 +2060,14 @@ packages:
     resolution: {integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==}
     engines: {node: '>=18'}
 
-  '@dasl/tile-host@2.1.0':
-    resolution: {integrity: sha512-Z35QztYZaBox0O0hHdKIRghYvYfJcuN82IA2KuJjt9GUKsiBCPG+yI1keXqIYhk36+UT7vhHjkmOxuZmAzfsUA==}
+  '@dasl/tile-host@2.1.1':
+    resolution: {integrity: sha512-pFLrXvEXrx3C6jzIpts/N9d0W4JUJVMUrU9t0s+FdHH2Bephj5ionScAr314fnZelx2AHzwSt21z6RQoJfj7Ug==}
 
   '@dasl/tile-lexicon@2.2.0':
     resolution: {integrity: sha512-AYCAf3ooBG5TycyttVujXNm16lO9nf6lF3lZFQ8DM9VR0BxB8fhhiC280TubWJiqrEfdfLyiWJZ4sICQRJQ7eA==}
 
-  '@dasl/tile-loader@2.5.0':
-    resolution: {integrity: sha512-fJFYq9Sm0NZUNlUngAlabFSoD0fvkKUc5BELJ00PRuhaFGjMTIwVrqd4JK8NZWSWXzbTe8MzBT+ppPE9NatYYA==}
+  '@dasl/tile-loader@2.6.0':
+    resolution: {integrity: sha512-sPAffqWobKpzI+peObICD9/RsLWBshUSuZ/Qp14e1vNS+vDawv+PRhkj7mDpIQsxhNWIyCzI6Ov9OAxFcEOmTw==}
 
   '@dasl/tile-server@2.3.0':
     resolution: {integrity: sha512-b4B4qeHR0dbdTOuBd98u4y7DbFrINMZVC2UYX1QTFY1Csfb4izRRRB/tRXzNuLiay+Dk79M/U9y6uYrb3pt0OA==}
@@ -11738,7 +11738,7 @@ snapshots:
 
   '@csstools/css-tokenizer@3.0.4': {}
 
-  '@dasl/tile-host@2.1.0(supports-color@8.1.1)':
+  '@dasl/tile-host@2.1.1(supports-color@8.1.1)':
     dependencies:
       '@dasl/tile-lexicon': 2.2.0
       express: 5.3.0(supports-color@8.1.1)
@@ -11747,7 +11747,7 @@ snapshots:
 
   '@dasl/tile-lexicon@2.2.0': {}
 
-  '@dasl/tile-loader@2.5.0(@atcute/cbor@2.3.8(@atcute/cid@2.5.0))':
+  '@dasl/tile-loader@2.6.0(@atcute/cbor@2.3.8(@atcute/cid@2.5.0))':
     dependencies:
       '@atcute/car': 6.1.1(@atcute/cbor@2.3.8(@atcute/cid@2.5.0))(@atcute/cid@2.5.0)
       '@atcute/cid': 2.5.0
