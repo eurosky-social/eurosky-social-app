@@ -121,15 +121,21 @@ async function main() {
   // The script stores the blob in the edge cache as it streams it; the write
   // finishes a moment after the response, so give it a few tries.
   let state = h.get('x-tile-cache')
-  let cached
+  let cachedHeaders = h
+  let cachedBody = body
   for (let i = 0; i < 6 && state !== 'HIT'; i++) {
     await new Promise(r => setTimeout(r, 500))
-    cached = await fetch(url)
-    state = cached.headers.get('x-tile-cache')
-    if (state !== 'HIT') await cached.arrayBuffer()
+    const again = await fetch(url)
+    state = again.headers.get('x-tile-cache')
+    cachedHeaders = again.headers
+    cachedBody = Buffer.from(await again.arrayBuffer())
   }
-  cached ??= await fetch(url)
-  const cachedBody = Buffer.from(await cached.arrayBuffer())
+  const cached = {headers: cachedHeaders}
+  if (cachedHeaders.get('x-tile-cache-info')) {
+    console.log(
+      `note the script says: ${cachedHeaders.get('x-tile-cache-info')}`,
+    )
+  }
   check(
     'a repeat GET is served from the edge cache',
     state === 'HIT',

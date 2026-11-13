@@ -31,7 +31,7 @@
  *                   never change).
  *   ERROR_SECONDS   cache TTL of a "blob not found" (default 60).
  */
-import * as BunnySDK from 'https://esm.sh/@bunny.net/edgescript-sdk@0.11.2'
+import * as BunnySDK from 'https://esm.sh/@bunny.net/edgescript-sdk@0.13.0'
 
 const MAX_REDIRECTS = 5
 /** Many entries would mean something is enumerating DIDs; start over then. */
@@ -42,26 +42,53 @@ const RETRY_AFTER_MS = 60e3
 /** Bump to drop every cached blob. */
 const CACHE_NAME = 'tile-blobs:v1'
 
+/** Bodies up to this size are stored whole; larger ones are streamed in. */
+const BUFFER_BYTES = 8 * 1024 * 1024
+
+/*
+ * Why the cache is not working, when it is not: reported in
+ * `X-Tile-Cache-Info` so a deployment can be diagnosed from outside.
+ */
+let cacheTrouble = ''
+
+function trouble(where: string, e: unknown) {
+  cacheTrouble = `${where}: ${e instanceof Error ? e.message : String(e)}`
+    .replace(/[^\x20-\x7e]/g, ' ')
+    .slice(0, 200)
+}
+
 /*
  * The edge cache, where there is one (Bunny, and Deno locally). Entries stay
  * in the region that wrote them. Any failure reads as "no cache".
  */
 async function openCache(): Promise<Cache | null> {
+  if (typeof caches === 'undefined') {
+    cacheTrouble = 'no caches global'
+    return null
+  }
   try {
-    return typeof caches === 'undefined' ? null : await caches.open(CACHE_NAME)
-  } catch {
+    return await caches.open(CACHE_NAME)
+  } catch (e) {
+    trouble('open', e)
     return null
   }
 }
 
 /** Lets a cache write outlive the response where the runtime allows it. */
-function background(work: Promise<unknown>): Promise<unknown> | void {
-  const quiet = work.catch(() => {})
-  const waitUntil = (
+function background(work: Promise<unknown>) {
+  const bunny = (
     globalThis as {Bunny?: {v1?: {waitUntil?: (p: Promise<unknown>) => void}}}
-  ).Bunny?.v1?.waitUntil
-  if (typeof waitUntil === 'function') return waitUntil(quiet)
-  return quiet
+  ).Bunny
+  if (typeof bunny?.v1?.waitUntil === 'function') bunny.v1.waitUntil(work)
+}
+
+/** What goes in the cache: the answer, under a plain lifetime header. */
+function storable(body: BodyInit, headers: Headers): Response {
+  const stored = new Headers(headers)
+  const seconds = envNumber('CACHE_SECONDS', 31536000)
+  stored.set('Cache-Control', `public, max-age=${seconds}, s-maxage=${seconds}`)
+  stored.delete('X-Tile-Cache')
+  return new Response(body, {status: 200, headers: stored})
 }
 
 const DID_PLC = /^did:plc:[a-z2-7]{24}$/
@@ -258,8 +285,8 @@ BunnySDK.net.http.serve(async (req: Request): Promise<Response> => {
   if (!DID_PLC.test(did) && !DID_WEB.test(did)) return error(400, 'Bad DID')
   if (!CID.test(cid)) return error(400, 'Bad CID')
 
-  // One key per blob, whatever the host or query the request came with.
-  const cacheKey = `https://tile-blobs.invalid/blob/${did}/${cid}`
+  // One key per blob, on the request's own origin, whatever its query.
+  const cacheKey = `${new URL(req.url).origin}/blob/${did}/${cid}`
   const cache = await openCache()
   if (cache) {
     try {
@@ -267,14 +294,18 @@ BunnySDK.net.http.serve(async (req: Request): Promise<Response> => {
       if (hit) {
         const headers = new Headers(hit.headers)
         headers.set('X-Tile-Cache', 'HIT')
+        headers.set(
+          'Cache-Control',
+          `public, max-age=${envNumber('CACHE_SECONDS', 31536000)}, immutable`,
+        )
         if (req.method === 'HEAD') await hit.body?.cancel()
         return new Response(req.method === 'HEAD' ? null : hit.body, {
           status: 200,
           headers,
         })
       }
-    } catch {
-      // fall through to the PDS
+    } catch (e) {
+      trouble('match', e)
     }
   }
 
@@ -333,8 +364,9 @@ BunnySDK.net.http.serve(async (req: Request): Promise<Response> => {
     'Cache-Control': `public, max-age=${envNumber('CACHE_SECONDS', 31536000)}, immutable`,
     ETag: `"${cid}"`,
     'X-Tile-Cache': 'MISS',
-    'Access-Control-Expose-Headers': 'X-Tile-Cache',
+    'Access-Control-Expose-Headers': 'X-Tile-Cache, X-Tile-Cache-Info',
   })
+  if (cacheTrouble) headers.set('X-Tile-Cache-Info', cacheTrouble)
   if (hasLength) headers.set('Content-Length', String(length))
 
   if (req.method === 'HEAD' || !upstream.body) {
@@ -343,12 +375,36 @@ BunnySDK.net.http.serve(async (req: Request): Promise<Response> => {
   }
   const body = limitBytes(upstream.body, max)
   if (!cache) return new Response(body, {status: 200, headers})
-  // One copy to the viewer, one to the cache; a body past the limit fails
-  // both, so nothing truncated is ever stored.
+
+  // A body of known, modest size is read whole and stored before answering,
+  // so the next request is a hit; the cost is a few milliseconds, once.
+  if (hasLength && length <= BUFFER_BYTES) {
+    let bytes: ArrayBuffer
+    try {
+      bytes = await new Response(body).arrayBuffer()
+    } catch {
+      return error(502, 'PDS stream failed')
+    }
+    try {
+      await cache.put(cacheKey, storable(bytes, headers))
+      cacheTrouble = ''
+    } catch (e) {
+      trouble('put', e)
+      headers.set('X-Tile-Cache-Info', cacheTrouble)
+    }
+    return new Response(bytes, {status: 200, headers})
+  }
+
+  // Anything larger streams: one copy to the viewer, one to the cache. A
+  // body past the limit fails both, so nothing truncated is ever stored.
   const [toViewer, toCache] = body.tee()
-  const stored = background(
-    cache.put(cacheKey, new Response(toCache, {status: 200, headers})),
+  background(
+    cache.put(cacheKey, storable(toCache, headers)).then(
+      () => {
+        cacheTrouble = ''
+      },
+      e => trouble('put (stream)', e),
+    ),
   )
-  if (stored) void stored
   return new Response(toViewer, {status: 200, headers})
 })
