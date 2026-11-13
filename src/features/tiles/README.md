@@ -116,6 +116,15 @@ The height follows the manifest's `sizing` at the width the tile ends up with
 (`sizing.ts`): the requested size scaled to the width but never shorter than
 the height it asked for, the way the reference loader honours a declared
 height as is; a wider column grows it in proportion; no sizing means 16:9.
+As it runs, a tile can ask for another height over the size protocol
+(https://dasl.ing/tp-size.html), and one whose manifest declares `sizing.fit`
+follows its content without any script of its own. Whatever is asked for is
+settled by the rules all tile contexts share (`resolveSize` in
+`@dasl/tile-lexicon`): inside the range the manifest declares, then inside
+mu's limits (`MIN_TILE_HEIGHT` to `MAX_TILE_HEIGHT`), which win. On the web
+the loader's `tileSize` passes requests on and tells the tile what it got; on
+native the hosted page sends them up as `size` events and the WebView is
+resized. The width is always the column's.
 The frame fills a div whose height React owns, so a resize never remounts the
 tile. A post shown on its own, as the anchor of its thread rather than as a
 feed item, loads the tile on mount instead of waiting for a click; the card's

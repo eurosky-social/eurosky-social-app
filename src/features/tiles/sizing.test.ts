@@ -19,6 +19,29 @@ describe('tileHeight', () => {
     expect(tileHeight(undefined, 0)).toBe(315)
   })
 
+  it('gives a tile the height it asks for as it runs', () => {
+    expect(tileHeight({width: 400, height: 300}, 800, 450)).toBe(450)
+    expect(tileHeight(undefined, 640, 512.4)).toBe(512)
+    expect(tileHeight({height: 300}, 400, 0)).toBe(300)
+  })
+
+  it('keeps a tile inside the range its manifest declares', () => {
+    expect(tileHeight({height: 300, maxHeight: 500}, 400, 700)).toBe(500)
+    expect(tileHeight({height: 300, minHeight: 250}, 400, 210)).toBe(250)
+    expect(tileHeight({width: 400, height: 300, maxHeight: 400}, 800)).toBe(400)
+  })
+
+  it('puts its own limits over the manifest and over requests', () => {
+    expect(tileHeight({height: 300}, 400, 1)).toBe(MIN_TILE_HEIGHT)
+    expect(tileHeight({height: 300}, 400, 99999)).toBe(MAX_TILE_HEIGHT)
+    expect(tileHeight({height: 300, minHeight: 2000}, 400)).toBe(
+      MAX_TILE_HEIGHT,
+    )
+    expect(tileHeight({height: 300, maxHeight: 60}, 400, 60)).toBe(
+      MIN_TILE_HEIGHT,
+    )
+  })
+
   it('stays within bounds', () => {
     expect(tileHeight({height: 10}, 400)).toBe(MIN_TILE_HEIGHT)
     expect(tileHeight({height: 5000}, 400)).toBe(MAX_TILE_HEIGHT)

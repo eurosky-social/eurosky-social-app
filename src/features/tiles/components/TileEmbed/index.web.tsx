@@ -6,6 +6,7 @@ import {
   type ViewStyle,
 } from 'react-native'
 import {type Tile} from '@dasl/tile-loader'
+import {tileSize} from '@dasl/tile-loader/size'
 import {useLingui} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
 
@@ -20,7 +21,7 @@ import {fetchIsTrustedTile, useTileAuthor} from '../../author'
 import {getTileMothership} from '../../mothership'
 import {fetchTilesPaused, useTilesPolicy} from '../../policy'
 import {type TileRef} from '../../record'
-import {tileHeight, type TileSizing} from '../../sizing'
+import {TILE_LIMITS, tileHeight, type TileSizing} from '../../sizing'
 import {TileCard} from '../TileCard'
 
 type Status = 'card' | 'loading' | 'active'
@@ -71,6 +72,10 @@ function measureInset(node: unknown): Inset | undefined {
  * so the frame runs flush from edge to edge and its height follows the
  * manifest's sizing at that width.
  *
+ * As it runs, a tile can ask for another height over the size protocol
+ * (https://dasl.ing/tp-size.html), and one whose manifest declares `fit`
+ * follows its content. It gets what it asks for within mu's limits.
+ *
  * Shown as the post itself rather than as a feed item (`autoplay`), the tile
  * loads straight away, with no card to click.
  */
@@ -104,13 +109,15 @@ export function TileEmbed({
   )
   const [width, setWidth] = useState(0)
   const [sizing, setSizing] = useState<TileSizing | undefined>()
+  // The height the running tile last asked for, over the size protocol.
+  const [asked, setAsked] = useState<number | undefined>()
   const [inset, setInset] = useState<Inset | undefined>()
   const busyRef = useRef(false)
   const rootRef = useRef<React.ComponentRef<typeof View>>(null)
   const hostRef = useRef<HTMLDivElement>(null)
   const loadedRef = useRef<Tile | null>(null)
   const title = link.title || l`Tile`
-  const height = tileHeight(sizing, width)
+  const height = tileHeight(sizing, width, asked)
 
   const onLayout = (e: LayoutChangeEvent) => {
     setWidth(e.nativeEvent.layout.width)
@@ -173,6 +180,7 @@ export function TileEmbed({
   const deactivate = () => {
     loadedRef.current = null
     setSizing(undefined)
+    setAsked(undefined)
     setInset(undefined)
     setStatus('card')
   }
@@ -182,6 +190,7 @@ export function TileEmbed({
     if (policy.enabled || status !== 'active') return
     loadedRef.current = null
     setSizing(undefined)
+    setAsked(undefined)
     setInset(undefined)
     setStatus('card')
   }, [policy.enabled, status])
@@ -192,6 +201,11 @@ export function TileEmbed({
    * layout. The frame fills that div, whose height React keeps in step with
    * the width, so a resize never remounts (and so reloads) the tile.
    * Removing the frame tears the tile down.
+   *
+   * The size protocol runs over the same frame. React owns the box, so the
+   * loader only passes on what the tile asks for (`apply: false`); the
+   * height that comes of it is `tileHeight`'s, and the loader tells the tile
+   * the size it really has whenever the box changes.
    */
   useEffect(() => {
     const host = hostRef.current
@@ -201,7 +215,15 @@ export function TileEmbed({
     frame.style.height = '100%'
     frame.title = title
     host.replaceChildren(frame)
+    const sizer = tileSize(loaded, frame, {
+      apply: false,
+      limits: TILE_LIMITS,
+      onRequest: want => {
+        if (want.height) setAsked(want.height)
+      },
+    })
     return () => {
+      sizer.stop()
       frame.remove()
     }
   }, [status, title])

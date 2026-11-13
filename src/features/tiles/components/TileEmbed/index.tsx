@@ -31,6 +31,10 @@ import {TilePlayer} from '../TilePlayer'
  * A tile only plays if its author is one of our verified accounts. The card
  * shows the verdict once it is known, and the tap checks it afresh before the
  * WebView is mounted.
+ *
+ * As it runs, a tile can ask for another height over the size protocol
+ * (https://dasl.ing/tp-size.html), which the hosted page passes up; it gets
+ * what it asks for within mu's limits, as on the web.
  */
 export function TileEmbed({
   link,
@@ -66,6 +70,8 @@ export function TileEmbed({
   const busyRef = useRef(false)
   const [width, setWidth] = useState(0)
   const [sizing, setSizing] = useState<TileSizing | undefined>()
+  // The height the running tile last asked for, over the size protocol.
+  const [asked, setAsked] = useState<number | undefined>()
   const title = link.title || l`Tile`
 
   const onLayout = (e: LayoutChangeEvent) => {
@@ -116,6 +122,7 @@ export function TileEmbed({
   const deactivate = () => {
     setActive(false)
     setSizing(undefined)
+    setAsked(undefined)
   }
 
   // Paused while running (the switch flipped under it): the tile comes down.
@@ -123,6 +130,7 @@ export function TileEmbed({
     if (policy.enabled || !active) return
     setActive(false)
     setSizing(undefined)
+    setAsked(undefined)
   }, [policy.enabled, active])
 
   const onError = (message: string) => {
@@ -144,8 +152,11 @@ export function TileEmbed({
           media={
             <TilePlayer
               uri={tile.uri}
-              height={tileHeight(sizing, width)}
+              height={tileHeight(sizing, width, asked)}
               onSizing={setSizing}
+              onSize={want => {
+                if (want.height) setAsked(want.height)
+              }}
               onError={onError}
             />
           }

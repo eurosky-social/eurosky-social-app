@@ -13,13 +13,14 @@ import {type TileSizing} from '../sizing'
 /**
  * A tile running on native: a WebView on the hosted page (`@dasl/tile-host`)
  * that runs the loader, sandbox and all. The page reports the manifest's
- * requested size, readiness and errors over the message bridge; nothing
- * else crosses it.
+ * requested size, the sizes the tile asks for as it runs, readiness and
+ * errors over the message bridge; nothing else crosses it.
  */
 export function TilePlayer({
   uri,
   height,
   onSizing,
+  onSize,
   onLoad,
   onError,
   style,
@@ -28,6 +29,12 @@ export function TilePlayer({
   height: number
   /** The manifest's requested size, once known. */
   onSizing?: (sizing: TileSizing | undefined) => void
+  /**
+   * The running tile asks for a size (https://dasl.ing/tp-size.html), in CSS
+   * pixels, either dimension possibly absent. The parent decides the height
+   * and passes it back as `height`; the page tells the tile what it got.
+   */
+  onSize?: (want: {width?: number; height?: number}) => void
   onLoad?: () => void
   onError?: (message: string) => void
   style?: StyleProp<ViewStyle>
@@ -43,6 +50,9 @@ export function TilePlayer({
     switch (event.event) {
       case 'manifest':
         onSizing?.(event.sizing)
+        break
+      case 'size':
+        onSize?.({width: event.width, height: event.height})
         break
       case 'load':
         setReady(true)
