@@ -29,6 +29,7 @@ export function TileCard({
   pressed = false,
   loading = false,
   media,
+  action,
   flush = false,
   style,
 }: {
@@ -43,6 +44,8 @@ export function TileCard({
   loading?: boolean
   /** Replaces the screenshot: the running tile. */
   media?: React.ReactNode
+  /** Sits at the right end of the footer row: the stop button. */
+  action?: React.ReactNode
   /** Edge to edge, for a running tile given its whole column: no side borders, no rounding. */
   flush?: boolean
   style?: StyleProp<ViewStyle>
@@ -146,6 +149,7 @@ export function TileCard({
             ) : (
               <View style={[a.flex_1, {height: 16}]} />
             )}
+            {action}
           </View>
           {paused && (
             <Text

@@ -210,6 +210,6 @@ work in the WebView for subdomains of an app-bound domain.
   leaves once the post's chrome is counted (`tileLimits`), whatever the
   manifest or the running tile asks for. `TILE_POST_CHROME` is one figure for
   every layout, not a measurement of the post.
-- A running tile has no close button: it stays until the post leaves the
-  screen (or tiles are paused). The mothership keeps a reference to every
-  frame it has started, and the loader has no teardown API yet.
+- A running tile has a Stop button at the right of the card's footer, which
+  brings the card back. The mothership keeps a reference to every frame it
+  has started, and the loader has no teardown API yet.

@@ -90,6 +90,11 @@ set one. What keeps tiles and the rest of mu apart:
   keep: a future mu service that needs a cookie should name it with the
   `__Host-` prefix, which pins it to its own host so that no tile can see or
   overwrite it.
+- **The web app deletes every cookie it can see** (`src/lib/cookies/scrub.ts`,
+  from `App.web.tsx`): at start, when the page comes back into view and every
+  minute. A cookie set from a tile's script is always visible to script, so
+  one tossed at `mu.social` is expired the next time the app looks, in every
+  browser. Storage is not touched.
 - **Tiles are framed credentialless on the web** (`TileEmbed/index.web.tsx`).
   In Chromium that gives the frame, and every frame inside it, a cookie jar
   and storage of its own that starts empty and is discarded with the page: a
@@ -104,9 +109,10 @@ set one. What keeps tiles and the rest of mu apart:
   the app sets none.
 
 What this cannot do: in Firefox and Safari a tile's script can still set a
-`Domain=mu.social` cookie, which then rides along on requests to mu's hosts
-until it expires. Nothing there reads cookies, so it is inert, but only a
-registrable domain of its own for tiles (`BASE_HOST`) rules it out entirely.
+`Domain=mu.social` cookie, which rides along on requests to mu's hosts until
+the app's next scrub, at most a minute while the app is open. Nothing there
+reads cookies, so it is inert meanwhile; only a registrable domain of its own
+for tiles (`BASE_HOST`) rules it out entirely.
 
 ## Things to know
 

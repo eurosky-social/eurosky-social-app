@@ -13,7 +13,7 @@ import {useQueryClient} from '@tanstack/react-query'
 import {logger} from '#/logger'
 import {useAppviewClient} from '#/state/session'
 import {atoms as a} from '#/alf'
-import {Button} from '#/components/Button'
+import {Button, ButtonText} from '#/components/Button'
 import * as Toast from '#/components/Toast'
 import {type app} from '#/lexicons'
 import {fetchIsTrustedTile, useTileAuthor} from '../../author'
@@ -165,6 +165,15 @@ export function TileEmbed({
               }}
               onError={onError}
             />
+          }
+          action={
+            <Button
+              label={l`Stop this tile`}
+              size="tiny"
+              color="secondary"
+              onPress={deactivate}>
+              <ButtonText>{l`Stop`}</ButtonText>
+            </Button>
           }
         />
       </View>

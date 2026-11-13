@@ -7,6 +7,7 @@ import {SafeAreaProvider} from 'react-native-safe-area-context'
 import {BackgroundNotificationPreferencesProvider} from '@bsky.app/expo-background-notification-handler/src/BackgroundNotificationHandlerProvider'
 import {useLingui} from '@lingui/react/macro'
 
+import {keepCookiesScrubbed} from '#/lib/cookies/scrub'
 import {Provider as HotkeysProvider} from '#/lib/hotkeys'
 import {QueryProvider} from '#/lib/react-query'
 import {ThemeProvider} from '#/lib/ThemeContext'
@@ -208,6 +209,10 @@ function InnerApp() {
 }
 
 function App() {
+  // EUROSKY: mu uses no cookies; any that turn up (a tile can set one for
+  // our domain) are deleted. Storage, where sessions live, is untouched.
+  useEffect(() => keepCookiesScrubbed(), [])
+
   useSessionActivity()
   const [isReady, setIsReady] = useState(false)
 

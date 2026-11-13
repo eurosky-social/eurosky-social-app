@@ -14,7 +14,7 @@ import {useQueryClient} from '@tanstack/react-query'
 import {logger} from '#/logger'
 import {useAppviewClient} from '#/state/session'
 import {atoms as a} from '#/alf'
-import {Button} from '#/components/Button'
+import {Button, ButtonText} from '#/components/Button'
 import * as Toast from '#/components/Toast'
 import {type app} from '#/lexicons'
 import {fetchIsTrustedTile, useTileAuthor} from '../../author'
@@ -183,6 +183,15 @@ export function TileEmbed({
     void activateRef.current()
   }, [autoplay, preview, policy.enabled])
 
+  // Stopped: back to the card. Removing the frame tears the tile down.
+  const deactivate = () => {
+    loadedRef.current = null
+    setSizing(undefined)
+    setAsked(undefined)
+    setInset(undefined)
+    setStatus('card')
+  }
+
   // Paused while running (the switch flipped under it): the tile comes down.
   useEffect(() => {
     if (policy.enabled || status !== 'active') return
@@ -261,6 +270,15 @@ export function TileEmbed({
           style={style}
           flush={!!spread}
           media={<div ref={hostRef} style={{width: '100%', height}} />}
+          action={
+            <Button
+              label={l`Stop this tile`}
+              size="tiny"
+              color="secondary"
+              onPress={deactivate}>
+              <ButtonText>{l`Stop`}</ButtonText>
+            </Button>
+          }
         />
       </View>
     )
