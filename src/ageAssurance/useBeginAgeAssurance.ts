@@ -2,27 +2,15 @@ import {Platform} from 'react-native'
 import {useMutation} from '@tanstack/react-query'
 
 import {wait} from '#/lib/async/wait'
-import {
-  DEV_ENV_APPVIEW,
-  PUBLIC_APPVIEW,
-  PUBLIC_APPVIEW_DID,
-} from '#/lib/constants'
 import {createLexClient} from '#/lib/lexClient'
 import {isNetworkError} from '#/lib/network-error'
 import {usePdsClient} from '#/state/session'
 import {usePatchAgeAssuranceServerState} from '#/ageAssurance'
 import {logger} from '#/ageAssurance/logger'
 import {useAnalytics} from '#/analytics'
-import {BLUESKY_PROXY_DID} from '#/env'
-import {getAppViewDid, getPublicAppViewUrl} from '#/features/appView/config'
+import {getAgeAssuranceAppView} from '#/features/appView/config'
 import {useGeolocation} from '#/geolocation'
 import {app, com} from '#/lexicons'
-
-const IS_DEV_ENV = BLUESKY_PROXY_DID !== PUBLIC_APPVIEW_DID
-const APPVIEW = getPublicAppViewUrl(
-  IS_DEV_ENV ? DEV_ENV_APPVIEW : PUBLIC_APPVIEW,
-)
-const APPVIEW_DID = getAppViewDid(BLUESKY_PROXY_DID)
 
 export function useBeginAgeAssurance() {
   const ax = useAnalytics()
@@ -43,8 +31,9 @@ export function useBeginAgeAssurance() {
         throw new Error(`Geolocation not available, cannot init age assurance.`)
       }
 
+      const appView = getAgeAssuranceAppView()
       const {token} = await pdsClient.call(com.atproto.server.getServiceAuth, {
-        aud: APPVIEW_DID,
+        aud: appView.did,
         lxm: `app.bsky.ageassurance.begin`,
       })
 
@@ -57,7 +46,7 @@ export function useBeginAgeAssurance() {
        */
       const scopedClient = createLexClient(
         {
-          service: APPVIEW,
+          service: appView.url,
           headers: {authorization: `Bearer ${token}`},
         },
         {includeDeviceSessionHeaders: true},
