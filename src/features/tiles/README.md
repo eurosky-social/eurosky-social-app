@@ -141,11 +141,12 @@ link is the plain post URL, so other clients lead there.
 
 ## Loading server
 
-`TILES_LOAD_DOMAIN` (`EXPO_PUBLIC_TILES_LOAD_DOMAIN`, default `load.webtil.es`)
-is the `@dasl/tile-server` the loader frames tiles from. webtil.es is a stopgap:
-mu's own is `services/tileLoader`, the same server as a Bunny Edge Script for
-`load.t.mu.social`, switched on by setting the variable in
-`.github/environments/common.env` once it is deployed. The loader in the app
+`TILES_LOAD_DOMAIN` (`EXPO_PUBLIC_TILES_LOAD_DOMAIN`, default
+`load.t.mu.social`) is the `@dasl/tile-server` the loader frames tiles from:
+mu's own, `services/tileLoader`, the same server as a Bunny Edge Script. On
+the web the tile's frame is credentialless, so that in Chromium its cookies
+and storage are a jar of their own, apart from mu.social's (see that
+service's README on cookies). The loader in the app
 (`@dasl/tile-loader` 2.3 or later, from npm) stamps the tile policy on every
 response the tile receives regardless of what the server does; the server-side
 half (dead-end origins, the runtime CSP, a worker that survives being
@@ -177,7 +178,7 @@ The loader needs iframes and a service worker, which React Native has no
 equivalent of, so iOS and Android run the tile in a WebView on a hosted page:
 [`@dasl/tile-host`](https://tangled.org/robin.berjon.com/dasl-tiles/tree/main/tile-host),
 `TILES_HOST_URL` (`EXPO_PUBLIC_TILES_HOST_URL`, default
-`https://webtil.es/host/`). The page runs the same hardened loader against the
+`https://t.mu.social/host/`, served by `services/tileLoader`). The page runs the same hardened loader against the
 same loading server; `TilePlayer` only talks to it over the WebView message
 bridge (manifest size, readiness, errors) and keeps anything but the page out
 of the top frame, sending links a tile opens through `useOpenLink`.

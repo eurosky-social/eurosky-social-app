@@ -14,6 +14,9 @@ edge script, so mu no longer depends on `load.webtil.es`.
   scripts and the service worker) under `/.well-known/web-tiles/`, with the
   runtime policy from `@dasl/tile-lexicon`. Every other path there is a dead
   end: a 404 that loads nothing, runs nothing and cannot be framed.
+- `<BASE_HOST>/host/` is the page the native apps' WebView runs one tile in
+  ([`@dasl/tile-host`](https://www.npmjs.com/package/@dasl/tile-host), inlined
+  like the runtime). Its CSP lets it frame this server's tile origins only.
 - Any other name gets a 404. Only names of the shape it mints are tile
   origins, so the runtime and its worker never land on another subdomain.
 
@@ -53,12 +56,13 @@ and tile origins are `<random>.t.mu.social`. Nesting them under `t.` keeps the
 1. Bunny dashboard: Edge Scripting, add a **standalone** script, paste
    `bunny/index.ts`, deploy. Leave "Run script before cache" off. No env is
    needed.
-2. On the script's pull zone, add two hostnames: `load.t.mu.social` and the
-   wildcard `*.t.mu.social`, with SSL on both (the wildcard certificate is
+2. On the script's pull zone, add three hostnames: `load.t.mu.social`, the
+   wildcard `*.t.mu.social`, and `t.mu.social` itself (the native host page),
+   with SSL on each (the wildcard certificate is
    issued through Bunny DNS, which hosts mu.social).
-3. DNS (Bunny DNS, zone mu.social): two CNAME records to the script's pull
-   zone (`<zone>.b-cdn.net`), named `load.t` and `*.t`. Nothing existing
-   changes. `t.mu.social` itself needs no record.
+3. DNS (Bunny DNS, zone mu.social): three CNAME records to the script's pull
+   zone (`<zone>.b-cdn.net`), named `load.t`, `*.t` and `t`. Nothing existing
+   changes.
 4. Check it, then switch the app over:
 
 ```bash
@@ -70,6 +74,38 @@ node services/tileLoader/test.mjs https://t.mu.social t.mu.social
    (the demo build takes `TILES_LOAD_DOMAIN`). Deployed and switched on
    2026-11-13; a real tile was played through it.
 
+## Cookies and the rest of mu.social
+
+Tile origins are cross-origin from everything, but `<random>.t.mu.social`
+shares a *site* with mu.social, and cookies follow sites: a cookie set for
+`Domain=mu.social` is sent to every subdomain, and a script on a subdomain may
+set one. What keeps tiles and the rest of mu apart:
+
+- **Nothing on mu.social uses cookies.** No mu host sets one (checked
+  2026-11-13: the app, staging, and the tiles, rss, ip, events, oauth and age
+  services) and no app or service code reads one; sessions live in the app
+  origin's storage, which no other origin can reach. That is the property to
+  keep: a future mu service that needs a cookie should name it with the
+  `__Host-` prefix, which pins it to its own host so that no tile can see or
+  overwrite it.
+- **Tiles are framed credentialless on the web** (`TileEmbed/index.web.tsx`).
+  In Chromium that gives the frame, and every frame inside it, a cookie jar
+  and storage of its own that starts empty and is discarded with the page: a
+  tile sees no cookie from outside and none it sets, for any domain, gets
+  out. Firefox and Safari ignore the attribute.
+- **This server expires what reaches it.** It never sets a cookie, and any
+  cookie arriving on a request is expired in the answer, host-only and for
+  `Domain=t.mu.social`. It never names a domain above its own, so nothing of
+  mu.social's is ever reset. Tile origins are fresh per load, so their own
+  storage never outlives a load anyway.
+- **Native** runs tiles in a WebView whose cookie store is the app's alone;
+  the app sets none.
+
+What this cannot do: in Firefox and Safari a tile's script can still set a
+`Domain=mu.social` cookie, which then rides along on requests to mu's hosts
+until it expires. Nothing there reads cookies, so it is inert, but only a
+registrable domain of its own for tiles (`BASE_HOST`) rules it out entirely.
+
 ## Things to know
 
 - **Same site as the app.** Tile origins under `t.mu.social` are cross-origin
@@ -79,10 +115,11 @@ node services/tileLoader/test.mjs https://t.mu.social t.mu.social
   network access either way. A separate registrable domain (as `webtil.es`
   is) is the stricter choice; `BASE_HOST` makes that a configuration change.
 - **Native.** The iOS and Android apps run tiles in a WebView on the hosted
-  page (`EXPO_PUBLIC_TILES_HOST_URL`, still `https://webtil.es/host/`), which
-  defaults its loading server to `load.<its own host>`. `tileHostUrl` passes
-  ours along when it differs, and `app.config.js` derives the iOS app-bound
-  domains from both settings, so changing the load domain means a new native
-  build. Moving the hosted page off webtil.es is a separate step.
+  page, `https://t.mu.social/host/` (`EXPO_PUBLIC_TILES_HOST_URL`; this and the
+  load domain are the app's built-in defaults, so a native build needs no
+  setting). The page defaults its loading server to `load.<its own host>`,
+  which is ours. `app.config.js` derives the iOS app-bound domain,
+  `t.mu.social`, from the two settings: changing either means a new native
+  build.
 - Bunny rewrites `Cache-Control` on script responses to `no-cache`, which
   suits the runtime: it revalidates on each load, by ETag.

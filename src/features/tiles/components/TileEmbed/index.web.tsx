@@ -212,6 +212,14 @@ export function TileEmbed({
     const frame = loaded.renderContent()
     frame.style.height = '100%'
     frame.title = title
+    /*
+     * A credentialless frame (Chromium) gets a cookie jar and storage of its
+     * own, emptied with the page: the tile sees none of the cookies of
+     * mu.social, whose site its origin shares, and any it sets, for whatever
+     * domain, stay in there. Other browsers ignore the attribute.
+     */
+    ;(frame as HTMLIFrameElement & {credentialless?: boolean}).credentialless =
+      true
     host.replaceChildren(frame)
     const sizer = tileSize(loaded, frame, {
       apply: false,

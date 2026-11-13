@@ -113,17 +113,24 @@ describe('tileBlobUrl', () => {
 
 describe('tileScreenshotUrl', () => {
   it('points at the first screenshot blob, or nothing', () => {
-    expect(tileScreenshotUrl(manifest, 'https://pds.test', 'did:plc:a')).toBe(
+    expect(
+      tileScreenshotUrl(manifest, 'https://pds.test', 'did:plc:a', ''),
+    ).toBe(
       'https://pds.test/xrpc/com.atproto.sync.getBlob?did=did%3Aplc%3Aa&cid=bafyshot',
     )
     expect(
-      tileScreenshotUrl({...manifest, screenshots: []}, 'https://p.test', 'd'),
+      tileScreenshotUrl(
+        {...manifest, screenshots: []},
+        'https://p.test',
+        'd',
+        '',
+      ),
     ).toBe(undefined)
   })
 
   it('finds the screenshot in a lex-parsed record', () => {
     expect(
-      tileScreenshotUrl(parsedManifest, 'https://pds.test', 'did:plc:a'),
+      tileScreenshotUrl(parsedManifest, 'https://pds.test', 'did:plc:a', ''),
     ).toBe(
       `https://pds.test/xrpc/com.atproto.sync.getBlob?did=did%3Aplc%3Aa&cid=${SHOT_CID}`,
     )

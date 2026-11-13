@@ -78,9 +78,10 @@ export function tileScreenshotUrl(
   manifest: TileManifest,
   pds: string,
   did: string,
+  cdn: string = TILES_BLOB_URL,
 ): string | undefined {
   const src = manifest.screenshots?.[0]?.src
   if (!src) return undefined
   const cid = tileResourceCid(manifest, src)
-  return cid ? tileBlobUrl(pds, did, cid) : undefined
+  return cid ? tileBlobUrl(pds, did, cid, cdn) : undefined
 }

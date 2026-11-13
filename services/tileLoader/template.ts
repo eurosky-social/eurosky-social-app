@@ -19,8 +19,19 @@
  *                         is a dead end (404, no scripts, no loads, opaque
  *                         origin), which is what a tile that unregisters its
  *                         worker and navigates to the network gets.
+ *   <BASE_HOST>/host/     the page the native apps' WebView runs one tile in
+ *                         (@dasl/tile-host, inlined too). It frames tiles
+ *                         from the origins above and nothing else.
  *   anything else         404. The runtime, and the worker it registers at
  *                         scope /, is never served on any other name.
+ *
+ * Cookies. Tile origins share a site with <BASE_HOST>'s parent, so a tile's
+ * script could set a cookie for a parent domain. This server never sets one,
+ * and any cookie that reaches it is expired on the spot for the two scopes
+ * that are its own, the host itself and Domain=<BASE_HOST>: never for a
+ * domain above, which would reach into the rest of the site. (In Chromium the
+ * app also frames tiles credentialless, which keeps their cookies in a jar of
+ * their own.)
  *
  * It never sees tile content: the page that embeds the tile hands the
  * resources to the worker. The app points EXPO_PUBLIC_TILES_LOAD_DOMAIN at
@@ -39,6 +50,13 @@ const DEAD_HEADERS: Record<string, string> = __DEAD_HEADERS__
 
 const FILES: Record<string, {type: string; etag: string; body: string}> =
   __FILES__
+
+const HOST_PATH = '/host/'
+
+const HOST_HEADERS: Record<string, string> = __HOST_HEADERS__
+
+const HOST_FILES: Record<string, {type: string; etag: string; body: string}> =
+  __HOST_FILES__
 
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz'
 
@@ -95,7 +113,33 @@ function dead(
   })
 }
 
+/**
+ * Expires every cookie the request carried, host-only and for the base host:
+ * whatever a tile managed to leave behind under our own names goes. Nothing
+ * above the base host is touched.
+ */
+function scrubCookies(req: Request, res: Response, base: string): Response {
+  const names = (req.headers.get('cookie') || '')
+    .split(';')
+    .map(pair => pair.split('=')[0].trim())
+    .filter(name => /^[\w!#$%&'*+.^`|~-]+$/.test(name))
+    .slice(0, 50)
+  if (!names.length) return res
+  const headers = new Headers(res.headers)
+  const domain = base.replace(/:\d+$/, '')
+  for (const name of new Set(names)) {
+    const gone = `${name}=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
+    headers.append('set-cookie', gone)
+    headers.append('set-cookie', `${gone}; Domain=${domain}`)
+  }
+  return new Response(res.body, {status: res.status, headers})
+}
+
 BunnySDK.net.http.serve((req: Request): Response => {
+  return scrubCookies(req, respond(req), baseHost())
+})
+
+function respond(req: Request): Response {
   const base = baseHost()
   const url = new URL(req.url)
   const host = requestHost(req, base)
@@ -113,6 +157,36 @@ BunnySDK.net.http.serve((req: Request): Response => {
         'cache-control': 'no-store',
         'referrer-policy': 'no-referrer',
         'x-content-type-options': 'nosniff',
+      },
+    })
+  }
+
+  // The base host itself: the page native WebViews run a tile in.
+  if (name === base) {
+    if (url.pathname === HOST_PATH.slice(0, -1)) {
+      return new Response(null, {
+        status: 308,
+        headers: {location: `${HOST_PATH}${url.search}`},
+      })
+    }
+    const file = url.pathname.startsWith(HOST_PATH)
+      ? HOST_FILES[url.pathname.slice(HOST_PATH.length) || 'index.html']
+      : undefined
+    if (!file) return dead(404, 'Nothing here.')
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      return dead(405, 'Method not allowed.', {allow: 'GET, HEAD'})
+    }
+    return new Response(req.method === 'HEAD' ? null : file.body, {
+      status: 200,
+      headers: {
+        ...HOST_HEADERS,
+        // Tiles come from this server's origins only (any port, for local runs).
+        'content-security-policy': HOST_HEADERS[
+          'content-security-policy'
+        ].replace('__FRAME_SRC__', `https://*.${base} http://*.${base}`),
+        'content-type': file.type,
+        etag: file.etag,
+        'cache-control': 'no-cache',
       },
     })
   }
@@ -146,4 +220,4 @@ BunnySDK.net.http.serve((req: Request): Response => {
     }
   }
   return dead(404, 'Not a tile resource.')
-})
+}

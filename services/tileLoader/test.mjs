@@ -199,6 +199,81 @@ for (const host of [
   )
 }
 
+// The page native WebViews run a tile in, on the base host itself.
+const hostDir = join(modules, 'tile-host', 'public')
+const page = await request(base, '/host/').catch(e => ({
+  unreachable: e.code || e.message,
+}))
+if (page.unreachable) {
+  check(`https://${base}/host/ is reachable`, false, page.unreachable)
+} else {
+  check(
+    'host page is served on the base host',
+    page.status === 200 &&
+      page.body === readFileSync(join(hostDir, 'index.html'), 'utf8'),
+    String(page.status),
+  )
+  const csp = page.headers['content-security-policy'] || ''
+  check(
+    "it may frame this server's tile origins and nothing else",
+    new RegExp(
+      `frame-src https://\\*\\.${base.replace(/\./g, '\\.')}[ ;]`,
+    ).test(csp) && /default-src 'none'/.test(csp),
+    csp.match(/frame-src[^;]*/)?.[0] ?? 'no frame-src',
+  )
+  const hostJs = await request(base, '/host/host.js')
+  check(
+    "host.js is byte-identical to @dasl/tile-host's",
+    hostJs.status === 200 &&
+      hostJs.body === readFileSync(join(hostDir, 'host.js'), 'utf8'),
+    String(hostJs.status),
+  )
+  const bare = await request(base, '/host?tile=x')
+  check(
+    '/host redirects to /host/, keeping the query',
+    bare.status === 308 && bare.headers.location === '/host/?tile=x',
+    `${bare.status} ${bare.headers.location}`,
+  )
+  const root = await request(base, '/')
+  const shuttleOnBase = await request(base, '/.well-known/web-tiles/')
+  check(
+    'nothing else on the base host, and never the runtime',
+    root.status === 404 && shuttleOnBase.status === 404,
+    `${root.status} ${shuttleOnBase.status}`,
+  )
+}
+
+// Cookies: none set unasked; any that arrive are expired, for our scopes only.
+const plain = [a, index, worker].some(r => r.headers['set-cookie'])
+check('no cookie is ever set unasked', !plain)
+const withCookie = await request(origin, '/.well-known/web-tiles/', {
+  headers: {cookie: 'tossed=1; other=2'},
+})
+const set = withCookie.headers['set-cookie'] || []
+const domain = base.replace(/:\d+$/, '')
+const expires = name =>
+  set.some(
+    c =>
+      c.startsWith(`${name}=;`) && /Max-Age=0/i.test(c) && !/Domain=/i.test(c),
+  ) &&
+  set.some(
+    c =>
+      c.startsWith(`${name}=;`) &&
+      /Max-Age=0/i.test(c) &&
+      new RegExp(`Domain=${domain.replace(/\./g, '\\.')}$`, 'i').test(c),
+  )
+check(
+  'cookies that arrive are expired, host-only and for the base host',
+  expires('tossed') && expires('other'),
+  `${set.length} Set-Cookie`,
+)
+check(
+  'and never for a domain above the base host',
+  set.every(
+    c => !/Domain=/i.test(c) || c.toLowerCase().endsWith(`domain=${domain}`),
+  ),
+)
+
 if (failures) {
   console.error(`\n${failures} failure(s)`)
   process.exit(1)

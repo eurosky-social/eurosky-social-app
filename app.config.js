@@ -39,10 +39,10 @@ const APPLE_TEAM_ID = process.env.EXPO_APPLE_TEAM_ID ?? '2472Y2UN4X'
  * loading server's go in WKAppBoundDomains (subdomains included; ten at most).
  */
 const TILES_HOST_URL = String(
-  process.env.EXPO_PUBLIC_TILES_HOST_URL ?? 'https://webtil.es/host/',
+  process.env.EXPO_PUBLIC_TILES_HOST_URL ?? 'https://t.mu.social/host/',
 )
 const TILES_LOAD_DOMAIN = String(
-  process.env.EXPO_PUBLIC_TILES_LOAD_DOMAIN ?? 'load.webtil.es',
+  process.env.EXPO_PUBLIC_TILES_LOAD_DOMAIN ?? 'load.t.mu.social',
 )
 const TILES_APP_BOUND_DOMAINS = Array.from(
   new Set([

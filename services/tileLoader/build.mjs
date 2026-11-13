@@ -24,32 +24,44 @@ const serverDir = join(modules, 'tile-server')
 const serverPkg = pkg('tile-server')
 const lexiconPkg = pkg('tile-lexicon')
 const {runtimeHeaders, deadHeaders} = await import('@dasl/tile-lexicon')
+const {tileHostHeaders} = await import('@dasl/tile-host')
+const hostPkg = pkg('tile-host')
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
 }
-const files = {}
-for (const name of readdirSync(join(serverDir, 'public')).sort()) {
-  const type = TYPES[name.slice(name.lastIndexOf('.'))]
-  if (!type) throw new Error(`no content type for runtime file ${name}`)
-  const body = readFileSync(join(serverDir, 'public', name), 'utf8')
-  files[name] = {
-    type,
-    etag: `"${createHash('sha256').update(body).digest('hex').slice(0, 16)}"`,
-    body,
+const TYPES_CSS = {...TYPES, '.css': 'text/css; charset=utf-8'}
+function readFiles(dir) {
+  const files = {}
+  for (const name of readdirSync(dir).sort()) {
+    const type = TYPES_CSS[name.slice(name.lastIndexOf('.'))]
+    if (!type) throw new Error(`no content type for ${name}`)
+    const body = readFileSync(join(dir, name), 'utf8')
+    files[name] = {
+      type,
+      etag: `"${createHash('sha256').update(body).digest('hex').slice(0, 16)}"`,
+      body,
+    }
   }
+  return files
 }
+const files = readFiles(join(serverDir, 'public'))
+const hostFiles = readFiles(join(modules, 'tile-host', 'public'))
+// frame-src is filled in at run time, from the base host.
+const hostHeaders = tileHostHeaders({frameSrc: '__FRAME_SRC__'})
 
 const template = readFileSync(join(here, 'template.ts'), 'utf8')
 const out = template
   .replace(
     '__VERSIONS__',
-    `@dasl/tile-server ${serverPkg.version}, @dasl/tile-lexicon ${lexiconPkg.version}`,
+    `@dasl/tile-server ${serverPkg.version}, @dasl/tile-lexicon ${lexiconPkg.version}, @dasl/tile-host ${hostPkg.version}`,
   )
   .replace('__RUNTIME_HEADERS__', JSON.stringify(runtimeHeaders, null, 2))
   .replace('__DEAD_HEADERS__', JSON.stringify(deadHeaders, null, 2))
   .replace('__FILES__', () => JSON.stringify(files, null, 2))
+  .replace('__HOST_HEADERS__', JSON.stringify(hostHeaders, null, 2))
+  .replace('__HOST_FILES__', () => JSON.stringify(hostFiles, null, 2))
 
 const target = join(here, 'bunny', 'index.ts')
 if (process.argv.includes('--check')) {
