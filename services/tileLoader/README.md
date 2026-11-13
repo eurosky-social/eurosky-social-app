@@ -65,9 +65,10 @@ and tile origins are `<random>.t.mu.social`. Nesting them under `t.` keeps the
 node services/tileLoader/test.mjs https://t.mu.social t.mu.social
 ```
 
-   then uncomment `EXPO_PUBLIC_TILES_LOAD_DOMAIN=load.t.mu.social` in
-   `.github/environments/common.env` (and pass `TILES_LOAD_DOMAIN` to the demo
-   build), and play a tile.
+   `EXPO_PUBLIC_TILES_LOAD_DOMAIN=load.t.mu.social` in
+   `.github/environments/common.env` is what points every web build at it
+   (the demo build takes `TILES_LOAD_DOMAIN`). Deployed and switched on
+   2026-11-13; a real tile was played through it.
 
 ## Things to know
 

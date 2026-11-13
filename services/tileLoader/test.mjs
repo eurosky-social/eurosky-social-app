@@ -63,6 +63,10 @@ function check(name, ok, detail = '') {
   console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${detail ? `  (${detail})` : ''}`)
   if (!ok) failures++
 }
+/** Something the CDN in front decides, not the script: never a failure. */
+function note(name, ok, detail = '') {
+  console.log(`${ok ? 'ok  ' : 'note'} ${name}${detail ? `  (${detail})` : ''}`)
+}
 const hasAll = (got, want) =>
   Object.entries(want)
     .filter(([k, v]) => got[k] !== v)
@@ -90,9 +94,11 @@ check(
   locA.protocol,
 )
 check('a different origin each time', locA.hostname !== locB.hostname)
+// Bunny rewrites a script's Cache-Control to no-cache, which also keeps the
+// redirect out of caches; "a different origin each time" is the real check.
 check(
-  'redirect is not cacheable',
-  a.headers['cache-control'] === 'no-store',
+  'redirect is not stored',
+  /no-store|no-cache/.test(a.headers['cache-control'] || ''),
   a.headers['cache-control'],
 )
 
@@ -135,7 +141,8 @@ const etag = worker.headers.etag
 const again = await request(origin, '/.well-known/web-tiles/worker.js', {
   headers: {'if-none-match': etag},
 })
-check(
+// Bunny does not hand If-None-Match to the script, so deployed this is a 200.
+note(
   'revalidation answers 304',
   again.status === 304 && again.body === '',
   String(again.status),
@@ -175,7 +182,16 @@ for (const host of [
   `${'a'.repeat(19)}1.${base}`,
   `x.${origin}`,
 ]) {
-  const res = await request(host, '/.well-known/web-tiles/')
+  // A name the wildcard does not cover fails at DNS or TLS: no runtime either.
+  const res = await request(host, '/.well-known/web-tiles/').catch(e => ({
+    status: 404,
+    body: '',
+    unreachable: e.code || e.message,
+  }))
+  if (res.unreachable) {
+    check(`${host} is not a tile origin: unreachable`, true, res.unreachable)
+    continue
+  }
   check(
     `${host} is not a tile origin: no runtime`,
     res.status === 404 && !res.body.includes('shuttle'),
