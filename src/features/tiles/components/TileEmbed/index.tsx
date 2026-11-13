@@ -13,8 +13,7 @@ import {useQueryClient} from '@tanstack/react-query'
 import {logger} from '#/logger'
 import {useAppviewClient} from '#/state/session'
 import {atoms as a} from '#/alf'
-import {Button, ButtonIcon} from '#/components/Button'
-import {TimesLarge_Stroke2_Corner0_Rounded as XIcon} from '#/components/icons/Times'
+import {Button} from '#/components/Button'
 import * as Toast from '#/components/Toast'
 import {type app} from '#/lexicons'
 import {fetchIsTrustedTile, useTileAuthor} from '../../author'
@@ -166,16 +165,6 @@ export function TileEmbed({
               }}
               onError={onError}
             />
-          }
-          action={
-            <Button
-              label={l`Close tile`}
-              size="tiny"
-              shape="round"
-              color="secondary"
-              onPress={deactivate}>
-              <ButtonIcon icon={XIcon} />
-            </Button>
           }
         />
       </View>

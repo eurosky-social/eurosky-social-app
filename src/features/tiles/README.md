@@ -83,8 +83,8 @@ The check is applied where it matters, at play time: `TileEmbed` asks
 WebView (native) touches anything of the tile. That covers posts from any
 client and authors who have lost their verification since posting. The card
 shows the verdict once it is known: the footer names the author, with the check
-when they are verified, and a tile by an unverified author says so in place of
-the play icon. The composer and the post pipeline apply the same check up front
+when they are verified and a link to their profile, and a tile by an
+unverified author says so there. The composer and the post pipeline apply the same check up front
 so nobody attaches a card that will never play. This is a client-side rule for
 now.
 
@@ -143,7 +143,9 @@ link is the plain post URL, so other clients lead there.
 
 `TILES_LOAD_DOMAIN` (`EXPO_PUBLIC_TILES_LOAD_DOMAIN`, default `load.webtil.es`)
 is the `@dasl/tile-server` the loader frames tiles from. webtil.es is a stopgap:
-mu should run its own on a first-party domain. The loader in the app
+mu's own is `services/tileLoader`, the same server as a Bunny Edge Script for
+`load.mu.social`, switched on by setting the variable in
+`.github/environments/common.env` once it is deployed. The loader in the app
 (`@dasl/tile-loader` 2.3 or later, from npm) stamps the tile policy on every
 response the tile receives regardless of what the server does; the server-side
 half (dead-end origins, the runtime CSP, a worker that survives being
@@ -153,7 +155,8 @@ restarted) depends on the server running `@dasl/tile-server` 2.2.1 or later.
 
 Every resource of a tile is a blob on its author's PDS, and the web loader
 fetches each one when the tile runs. With `TILES_BLOB_URL`
-(`EXPO_PUBLIC_TILES_BLOB_URL`, empty by default) set, `tileBlobUrl`
+(`EXPO_PUBLIC_TILES_BLOB_URL`; `https://tiles.mu.social` for every web
+environment, in `.github/environments/common.env`) set, `tileBlobUrl`
 (`manifest.ts`) points those fetches, and the card screenshot the composer
 composites, at `services/tiles` instead: a Bunny Edge Script that answers
 `GET /blob/<did>/<cid>` by resolving the DID to its PDS and passing
@@ -206,5 +209,6 @@ work in the WebView for subdomains of an app-bound domain.
   leaves once the post's chrome is counted (`tileLimits`), whatever the
   manifest or the running tile asks for. `TILE_POST_CHROME` is one figure for
   every layout, not a measurement of the post.
-- The mothership keeps a reference to every frame it has started; closing a
-  tile removes the frame but the loader has no teardown API yet.
+- A running tile has no close button: it stays until the post leaves the
+  screen (or tiles are paused). The mothership keeps a reference to every
+  frame it has started, and the loader has no teardown API yet.

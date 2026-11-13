@@ -1,12 +1,14 @@
-import {View} from 'react-native'
 import {moderateProfile} from '@bsky/sdk/moderation'
+import {useLingui} from '@lingui/react/macro'
 
+import {makeProfileLink} from '#/lib/routes/links'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useProfileShadow} from '#/state/cache/profile-shadow'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
+import {Link} from '#/components/Link'
 import {ProfileHoverCard} from '#/components/ProfileHoverCard'
 import {Text} from '#/components/Typography'
 import {VerificationCheck} from '#/components/verification/VerificationCheck'
@@ -15,7 +17,8 @@ import {type TileAuthor} from '../author'
 /**
  * The card footer's author line: a tiny avatar, the name, the check when the
  * author is one of our verified accounts (which is what lets the tile run),
- * and the handle. Plain text, not links: the whole card is the play button.
+ * and the handle. The line links to the author's profile; a press on it goes
+ * there and does not reach the card around it, which is the play button.
  */
 export function TileAuthorLine({
   author,
@@ -25,6 +28,7 @@ export function TileAuthorLine({
   hovered?: boolean
 }) {
   const t = useTheme()
+  const {t: l} = useLingui()
   const profile = useProfileShadow(author.profile)
   const moderationOpts = useModerationOpts()
   const moderation = moderationOpts
@@ -37,7 +41,11 @@ export function TileAuthorLine({
 
   return (
     <ProfileHoverCard did={profile.did}>
-      <View style={[a.flex_1, a.flex_row, a.align_center, a.gap_xs]}>
+      <Link
+        to={makeProfileLink(profile)}
+        label={l`View ${name}'s profile`}
+        onPress={e => e.stopPropagation()}
+        style={[a.flex_1, a.flex_row, a.align_center, a.gap_xs]}>
         <UserAvatar
           type="user"
           size={16}
@@ -77,7 +85,7 @@ export function TileAuthorLine({
           ]}>
           {sanitizeHandle(profile.handle, '@')}
         </Text>
-      </View>
+      </Link>
     </ProfileHoverCard>
   )
 }

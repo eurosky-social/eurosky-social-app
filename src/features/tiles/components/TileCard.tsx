@@ -5,7 +5,6 @@ import {useLingui} from '@lingui/react/macro'
 import {atoms as a, useTheme} from '#/alf'
 import {Divider} from '#/components/Divider'
 import {Pause_Filled_Corner0_Rounded as PauseIcon} from '#/components/icons/Pause'
-import {Play_Filled_Corner0_Rounded as PlayIcon} from '#/components/icons/Play'
 import {Warning_Stroke2_Corner0_Rounded as WarningIcon} from '#/components/icons/Warning'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
@@ -18,9 +17,9 @@ import {TileAuthorLine} from './TileAuthor'
  * The link card of a tile post. Looks like an external link card, with the
  * screenshot (play button included) where the thumbnail goes, or, once the
  * tile is running, the tile itself in `media`. The footer names the tile's
- * author, since it is their verification that lets the tile run; a tile whose
- * author is not verified says so there instead of a play button, as does
- * every tile while tiles are paused.
+ * author, since it is their verification that lets the tile run, and links
+ * to their profile; a tile whose author is not verified says so there, as
+ * does every tile while tiles are paused.
  */
 export function TileCard({
   link,
@@ -30,7 +29,6 @@ export function TileCard({
   pressed = false,
   loading = false,
   media,
-  action,
   flush = false,
   style,
 }: {
@@ -45,8 +43,6 @@ export function TileCard({
   loading?: boolean
   /** Replaces the screenshot: the running tile. */
   media?: React.ReactNode
-  /** Sits at the end of the footer row, e.g. a close button. */
-  action?: React.ReactNode
   /** Edge to edge, for a running tile given its whole column: no side borders, no rounding. */
   flush?: boolean
   style?: StyleProp<ViewStyle>
@@ -144,23 +140,12 @@ export function TileCard({
               <PauseIcon size="xs" style={t.atoms.text_contrast_medium} />
             ) : untrusted ? (
               <WarningIcon size="xs" fill={t.palette.negative_500} />
-            ) : (
-              <PlayIcon
-                size="xs"
-                style={[
-                  a.transition_color,
-                  hovered
-                    ? t.atoms.text_contrast_medium
-                    : t.atoms.text_contrast_low,
-                ]}
-              />
-            )}
+            ) : null}
             {author ? (
               <TileAuthorLine author={author} hovered={hovered} />
             ) : (
               <View style={[a.flex_1, {height: 16}]} />
             )}
-            {action}
           </View>
           {paused && (
             <Text
