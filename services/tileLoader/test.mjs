@@ -262,11 +262,28 @@ const expires = name =>
       /Max-Age=0/i.test(c) &&
       new RegExp(`Domain=${domain.replace(/\./g, '\\.')}$`, 'i').test(c),
   )
-check(
-  'cookies that arrive are expired, host-only and for the base host',
-  expires('tossed') && expires('other'),
-  `${set.length} Set-Cookie`,
-)
+const ran = withCookie.headers['x-tile-cookies-expired']
+if (set.length === 0 && ran) {
+  // The script answered with the expiries and the CDN removed them: Bunny's
+  // "Strip Response Cookies" (pull zone, Caching), on by default.
+  note(
+    'cookies that arrive are expired',
+    false,
+    `script expired ${ran}, but the CDN strips Set-Cookie: turn off "Strip Response Cookies" on the pull zone to let it through`,
+  )
+} else if (set.length === 0) {
+  note(
+    'cookies that arrive are expired',
+    false,
+    'the CDN does not hand request cookies to the script',
+  )
+} else {
+  check(
+    'cookies that arrive are expired, host-only and for the base host',
+    expires('tossed') && expires('other'),
+    `${set.length} Set-Cookie`,
+  )
+}
 check(
   'and never for a domain above the base host',
   set.every(

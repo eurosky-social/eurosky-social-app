@@ -126,6 +126,8 @@ function scrubCookies(req: Request, res: Response, base: string): Response {
     .slice(0, 50)
   if (!names.length) return res
   const headers = new Headers(res.headers)
+  // Says the scrub ran, for when a CDN setting strips the Set-Cookie lines.
+  headers.set('x-tile-cookies-expired', String(new Set(names).size))
   const domain = base.replace(/:\d+$/, '')
   for (const name of new Set(names)) {
     const gone = `${name}=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
