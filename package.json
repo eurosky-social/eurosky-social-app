@@ -325,7 +325,7 @@
     "@babel/preset-env": "^7.26.0",
     "@babel/runtime": "^7.26.0",
     "@crowdin/cli": "^4.14.1",
-    "@dasl/tile-server": "^2.3.0",
+    "@dasl/tile-server": "^2.3.1",
     "@eloqnt/cli": "0.6.26",
     "@lingui/babel-plugin-lingui-macro": "^5.9.2",
     "@lingui/cli": "^5.9.2",
