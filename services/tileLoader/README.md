@@ -28,10 +28,12 @@ to the worker (through the blob CDN, `services/tiles`).
 - `bunny/index.ts`: the script to paste. **Generated**: the runtime files and
   the policy headers are inlined from `node_modules`.
 - `template.ts`: its source. Edit this, not the generated file.
-- `build.mjs`: `node services/tileLoader/build.mjs` regenerates the script;
-  `--check` fails if it is stale. Rerun after bumping `@dasl/tile-server` or
-  `@dasl/tile-lexicon`, and redeploy: the runtime served here has to be the
-  one the app's `@dasl/tile-loader` expects.
+- `build.mjs`: `pnpm tiles:loader:build` regenerates the script;
+  `pnpm tiles:loader:check` fails if it is stale, and runs in CI with the
+  linters. Rerun after bumping `@dasl/tile-server`, `@dasl/tile-lexicon` or
+  `@dasl/tile-host`, **and paste the new script into Bunny**: CI keeps the
+  repository consistent, it does not deploy. The runtime served has to be
+  the one the app's `@dasl/tile-loader` expects.
 - `test.mjs`: checks a running instance against the packages (redirect,
   byte-identical runtime, policy headers, dead ends, non-tile names).
 

@@ -73,6 +73,9 @@ jobs:
             prettier,
             'icons:check',
             'lexicons:verify',
+            # The tile loader edge script inlines @dasl/* package files:
+            # a bump without `pnpm tiles:loader:build` fails here.
+            'tiles:loader:check',
             'typecheck:ios',
             'typecheck:android',
             'typecheck:web',

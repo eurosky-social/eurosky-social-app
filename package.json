@@ -77,6 +77,8 @@
     "test-coverage": "NODE_ENV=test jest --coverage",
     "lint": "oxlint --quiet src modules && node scripts/check-sentry-browser-version.mjs",
     "lint:fix": "oxlint --fix --prune-suppressions src modules",
+    "tiles:loader:build": "node services/tileLoader/build.mjs",
+    "tiles:loader:check": "node services/tileLoader/build.mjs --check",
     "lint-native": "swiftlint ./modules && ktlint ./modules",
     "lint-native:fix": "swiftlint --fix ./modules && ktlint --format ./modules",
     "lexicons:generate": "lex build --clear --index-file --import-ext ''",
