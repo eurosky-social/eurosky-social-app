@@ -91,7 +91,6 @@ function reducer(state: State, action: Action): State {
 export function Verify({config, showScreen}: ScreenProps<ScreenID.Verify>) {
   const t = useTheme()
   const {t: l} = useLingui()
-  const control = useDialogContext()
   const cleanError = useCleanError()
   const {currentAccount} = useSession()
   const [state, dispatch] = useReducer(reducer, {
@@ -172,36 +171,7 @@ export function Verify({config, showScreen}: ScreenProps<ScreenID.Verify>) {
   }
 
   if (state.step === 'success') {
-    return (
-      <View style={[a.gap_lg]}>
-        <View style={[a.gap_sm]}>
-          <Text style={[a.text_xl, a.font_bold]}>
-            <Span style={{top: 1}}>
-              <Check size="sm" fill={t.palette.positive_500} />
-            </Span>
-            {'  '}
-            <Trans>Email verification complete!</Trans>
-          </Text>
-
-          <Text
-            style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
-            <Trans>
-              You have successfully verified your email address. You can close
-              this dialog.
-            </Trans>
-          </Text>
-        </View>
-        <Button
-          label={l`Done`}
-          size="large"
-          color="primary"
-          onPress={() => control.close()}>
-          <ButtonText>
-            <Trans>Done</Trans>
-          </ButtonText>
-        </Button>
-      </View>
-    )
+    return <VerifySuccess />
   }
 
   return (
@@ -396,6 +366,42 @@ export function Verify({config, showScreen}: ScreenProps<ScreenID.Verify>) {
           </Text>
         </>
       ) : null}
+    </View>
+  )
+}
+
+export function VerifySuccess() {
+  const t = useTheme()
+  const {t: l} = useLingui()
+  const control = useDialogContext()
+
+  return (
+    <View style={[a.gap_lg]}>
+      <View style={[a.gap_sm]}>
+        <Text style={[a.text_xl, a.font_bold]}>
+          <Span style={{top: 1}}>
+            <Check size="sm" fill={t.palette.positive_500} />
+          </Span>
+          {'  '}
+          <Trans>Email verification complete!</Trans>
+        </Text>
+
+        <Text style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
+          <Trans>
+            You have successfully verified your email address. You can close
+            this dialog.
+          </Trans>
+        </Text>
+      </View>
+      <Button
+        label={l`Done`}
+        size="large"
+        color="primary"
+        onPress={() => control.close()}>
+        <ButtonText>
+          <Trans>Done</Trans>
+        </ButtonText>
+      </Button>
     </View>
   )
 }
