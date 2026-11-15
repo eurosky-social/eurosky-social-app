@@ -9,6 +9,7 @@ import {useGlobalDialogsControlContext} from '#/components/dialogs/Context'
 import {useAccountEmailState} from '#/components/dialogs/EmailDialog/data/useAccountEmailState'
 import {Manage2FA} from '#/components/dialogs/EmailDialog/screens/Manage2FA'
 import {OAuthPasswordRequired} from '#/components/dialogs/EmailDialog/screens/OAuthPasswordRequired'
+import {OAuthVerify} from '#/components/dialogs/EmailDialog/screens/OAuthVerify'
 import {Update} from '#/components/dialogs/EmailDialog/screens/Update'
 import {VerificationReminder} from '#/components/dialogs/EmailDialog/screens/VerificationReminder'
 import {Verify} from '#/components/dialogs/EmailDialog/screens/Verify'
@@ -63,7 +64,11 @@ function Inner({control}: {control: StatefulControl<Screen>}) {
       )
     }
     case ScreenID.Verify: {
-      return <Verify config={screen} showScreen={showScreen} />
+      return isOauthSession ? (
+        <OAuthVerify config={screen} />
+      ) : (
+        <Verify config={screen} showScreen={showScreen} />
+      )
     }
     case ScreenID.VerificationReminder: {
       return <VerificationReminder config={screen} showScreen={showScreen} />
