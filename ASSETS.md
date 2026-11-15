@@ -123,7 +123,8 @@ Forks must obtain their own applicable license from ToffeeCraft or replace/remov
 See [`assets/pets/README.md`](./assets/pets/README.md).
 
 The seasonal ghost in `assets/pets/halloween/` is also paid, license-restricted
-artwork, supplied from `HorrorUltimateEdition/GhostPaid/`. It is not MIT-licensed
+artwork, taken from the bonus ghost in a separately purchased "Horror Ultimate Edition"
+asset pack (the pack itself is not in this repository). It is not MIT-licensed
 or licensed to downstream users through this repository. See its
 [`provenance and packing notes`](./assets/pets/halloween/README.md).
 
