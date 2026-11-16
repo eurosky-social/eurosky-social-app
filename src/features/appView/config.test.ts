@@ -111,6 +111,7 @@ describe('AppView configuration', () => {
       url: 'https://api.bsky.app',
       did: 'did:web:api.bsky.app',
       service: 'did:web:api.bsky.app#bsky_appview',
+      isDevEnv: false,
     })
   })
 })

@@ -213,6 +213,8 @@ export function getAgeAssuranceAppView(): {
   url: string
   did: DidString
   service: Service
+  /** True in a local dev env, where KWS traffic is not pinned to Bluesky. */
+  isDevEnv: boolean
 } {
   const isDevEnv = BLUESKY_PROXY_DID !== BRAND.services.appViewDid
   const did = isDevEnv ? BLUESKY_PROXY_DID : BLUESKY_APPVIEW_DID
@@ -220,6 +222,7 @@ export function getAgeAssuranceAppView(): {
     url: isDevEnv ? DEV_ENV_APPVIEW : BLUESKY_APPVIEW,
     did,
     service: `${did}#bsky_appview`,
+    isDevEnv,
   }
 }
 

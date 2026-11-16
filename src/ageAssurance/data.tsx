@@ -11,7 +11,10 @@ import {createPersistedQueryStorage} from '#/lib/persisted-query-storage'
 import {getAge} from '#/lib/strings/time'
 import {fetchActorDeclarationRecord} from '#/state/queries/messages/actor-declaration'
 import {useAppviewClient, usePdsClient, useSession} from '#/state/session'
-import {getPublicBlueskyAppviewClient} from '#/state/session/clients'
+import {
+  getPublicAppviewClient,
+  getPublicBlueskyAppviewClient,
+} from '#/state/session/clients'
 import {DEVICE_SIGNALS_SUPPORTED} from '#/ageAssurance/const'
 import * as debug from '#/ageAssurance/debug'
 import {logger} from '#/ageAssurance/logger'
@@ -98,11 +101,12 @@ export async function getConfig() {
    * before there is any session (and while logged out), so it goes through the
    * process-wide public client rather than a bundle one. mu fork: pinned to
    * Bluesky's AppView, since its rules gate on KWS state that only it has (see
-   * getAgeAssuranceAppView).
+   * getAgeAssuranceAppView), except in a local dev env, like getState and begin.
    */
-  return await getPublicBlueskyAppviewClient().call(
-    app.bsky.ageassurance.getConfig,
-  )
+  const client = getAgeAssuranceAppView().isDevEnv
+    ? getPublicAppviewClient()
+    : getPublicBlueskyAppviewClient()
+  return await client.call(app.bsky.ageassurance.getConfig)
 }
 export function getConfigFromCache():
   app.bsky.ageassurance.getConfig.$OutputBody | undefined {

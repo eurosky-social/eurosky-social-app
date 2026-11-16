@@ -36,6 +36,24 @@ describe('age assurance reads', () => {
     expect(mockPublicAppviewCall).not.toHaveBeenCalled()
   })
 
+  it('fetches config from the public AppView in a local dev env', async () => {
+    const appViewConfig = jest.requireActual<
+      typeof import('#/features/appView/config')
+    >('#/features/appView/config')
+    jest.spyOn(appViewConfig, 'getAgeAssuranceAppView').mockReturnValueOnce({
+      ...appViewConfig.getAgeAssuranceAppView(),
+      isDevEnv: true,
+    })
+    mockPublicAppviewCall.mockResolvedValue({regions: []})
+
+    await getConfig()
+
+    expect(mockPublicAppviewCall).toHaveBeenCalledWith(
+      app.bsky.ageassurance.getConfig,
+    )
+    expect(mockPublicBlueskyAppviewCall).not.toHaveBeenCalled()
+  })
+
   it("proxies getState to Bluesky's AppView, overriding the session AppView", async () => {
     const call = jest.fn().mockResolvedValue({state: {status: 'assured'}})
     const appviewClient = {did: 'did:plc:alice', call} as unknown as Client
