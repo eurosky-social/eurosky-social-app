@@ -12,7 +12,6 @@ import {
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {type app} from '#/lexicons'
-import {articleViewLink} from '../../article/articleLink'
 import {useOgImageQuery} from '../../queries'
 import {type ArticleSharers} from '../../queries'
 import {type ExploreStory, outletProfile} from '../cluster'
@@ -50,10 +49,7 @@ export function StoryLead({
   return (
     <View style={[a.gap_sm]}>
       {!!image && (
-        <Link
-          to={articleViewLink(lead, story)}
-          label={lead.item.title}
-          style={[a.w_full]}>
+        <Link to={lead.item.link} label={lead.item.title} style={[a.w_full]}>
           <Image
             accessibilityIgnoresInvertColors
             source={{uri: image}}
@@ -68,7 +64,7 @@ export function StoryLead({
         profile={outletProfile(profiles, lead.publisher)}
       />
       <Link
-        to={articleViewLink(lead, story)}
+        to={lead.item.link}
         label={lead.item.title}
         style={[a.flex_col, a.align_start, a.gap_sm, a.w_full]}>
         <Text
@@ -89,7 +85,7 @@ export function StoryLead({
           </Text>
         )}
       </Link>
-      <StoryMeta article={lead} sharers={sharers} />
+      <StoryMeta article={lead} story={story} sharers={sharers} />
       <StoryCoverage story={story} profiles={profiles} />
     </View>
   )
@@ -120,7 +116,7 @@ export function StoryRow({
             profile={outletProfile(profiles, lead.publisher)}
           />
           <Link
-            to={articleViewLink(lead, story)}
+            to={lead.item.link}
             label={lead.item.title}
             style={[a.flex_col, a.align_start, a.gap_xs, a.w_full]}>
             <Text
@@ -129,10 +125,10 @@ export function StoryRow({
               {lead.item.title}
             </Text>
           </Link>
-          <StoryMeta article={lead} sharers={sharers} />
+          <StoryMeta article={lead} story={story} sharers={sharers} />
         </View>
         {!!lead.item.imageUrl && (
-          <Link to={articleViewLink(lead, story)} label={lead.item.title}>
+          <Link to={lead.item.link} label={lead.item.title}>
             <Image
               accessibilityIgnoresInvertColors
               source={{uri: lead.item.imageUrl}}
@@ -170,7 +166,7 @@ export function StoryHeadline({
         profile={outletProfile(profiles, lead.publisher)}
       />
       <Link
-        to={articleViewLink(lead, story)}
+        to={lead.item.link}
         label={lead.item.title}
         style={[a.flex_col, a.align_start, a.gap_xs, a.w_full]}>
         <Text
@@ -179,7 +175,7 @@ export function StoryHeadline({
           {lead.item.title}
         </Text>
       </Link>
-      <StoryMeta article={lead} />
+      <StoryMeta article={lead} story={story} />
       <StoryCoverage story={story} profiles={profiles} />
     </View>
   )
@@ -245,7 +241,7 @@ function StoryCoverage({
                 profile={outletProfile(profiles, article.publisher)}
               />
               <Link
-                to={articleViewLink(article, story)}
+                to={article.item.link}
                 label={article.item.title}
                 style={[a.flex_col, a.align_start, a.w_full]}>
                 <Text

@@ -47,7 +47,9 @@ columns; nothing is boxed. Choosing a department (a chip, or a department's own
 name) narrows the page to that section, which keeps the same shape: its own lead
 band, then its stories as a grid of pictures and a closing pair of headline
 columns. Every headline carries its outlet above it and its time below, and a story covered elsewhere carries a "Full coverage" row that
-expands into each other outlet's own headline.
+expands into each other outlet's own headline. A story's picture and headline open the article itself; its
+time and "Shared by" line below open the article page, with every outlet's
+coverage and the reactions to it.
 
 ### Boosting from the news settings
 

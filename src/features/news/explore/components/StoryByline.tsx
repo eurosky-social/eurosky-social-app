@@ -8,9 +8,10 @@ import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {frontpagePath} from '#/features/frontpages/frontpages'
 import {type app} from '#/lexicons'
+import {articleViewLink} from '../../article/articleLink'
 import {getPublisherName} from '../../publishers'
 import {type ArticleSharers} from '../../queries'
-import {type ExploreArticle, outletProfile} from '../cluster'
+import {type ExploreArticle, type ExploreStory, outletProfile} from '../cluster'
 import {OutletIcon} from './OutletIcon'
 
 /**
@@ -75,17 +76,24 @@ export function PublisherLabel({
 /**
  * When a story ran, and how much of a conversation it has drawn. Sits under the
  * headline, quiet enough to skip while scanning.
+ *
+ * It is also the way into the article's page - every outlet's coverage and the
+ * reactions to it - while the picture and headline go to the article itself:
+ * reading is one tap, the conversation another.
  */
 export function StoryMeta({
   article,
+  story,
   sharers,
 }: {
   article: ExploreArticle
+  /** The story the article leads, so its page can list the other coverage. */
+  story?: Pick<ExploreStory, 'id' | 'source' | 'view'>
   /** People in the Atmosphere who shared the article, where they are known. */
   sharers?: ArticleSharers
 }) {
   const t = useTheme()
-  const {i18n} = useLingui()
+  const {i18n, t: l} = useLingui()
   const timeAgo = useGetTimeAgo()
   const published = article.item.publishedAt
     ? new Date(article.item.publishedAt)
@@ -93,17 +101,29 @@ export function StoryMeta({
 
   const sharedBy = sharers?.count ? sharedByLabel(sharers) : undefined
 
-  if (!published && !sharedBy) return null
-
   return (
-    <Text style={[a.text_xs, t.atoms.text_contrast_medium]}>
-      {!!published &&
-        (isRecent(published)
-          ? timeAgo(published, Date.now())
-          : i18n.date(published, {dateStyle: 'medium'}))}
-      {!!published && !!sharedBy && '\u00a0– '}
-      {sharedBy}
-    </Text>
+    <Link
+      to={articleViewLink(article, story)}
+      label={l`See the coverage of and reactions to this story`}
+      style={[a.self_start]}>
+      {({hovered}) => (
+        <Text
+          style={[
+            a.text_xs,
+            t.atoms.text_contrast_medium,
+            hovered && a.underline,
+          ]}>
+          {!!published &&
+            (isRecent(published)
+              ? timeAgo(published, Date.now())
+              : i18n.date(published, {dateStyle: 'medium'}))}
+          {!!published && !!sharedBy && '\u00a0– '}
+          {sharedBy}
+          {/* Neither to show, the way in still needs words. */}
+          {!published && !sharedBy && l`Coverage and reactions`}
+        </Text>
+      )}
+    </Link>
   )
 }
 

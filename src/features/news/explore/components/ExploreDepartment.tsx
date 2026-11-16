@@ -11,7 +11,6 @@ import {ChevronRight_Stroke2_Corner0_Rounded as ChevronRightIcon} from '#/compon
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
 import {type app} from '#/lexicons'
-import {articleViewLink} from '../../article/articleLink'
 import {type ExploreStory, outletProfile} from '../cluster'
 import {type ExploreSection} from '../sections'
 import {ColumnRule} from './Rules'
@@ -116,10 +115,7 @@ export function StripStory({
   return (
     <View style={[a.flex_1, a.gap_sm]}>
       {!!lead.item.imageUrl && (
-        <Link
-          to={articleViewLink(lead, story)}
-          label={lead.item.title}
-          style={[a.w_full]}>
+        <Link to={lead.item.link} label={lead.item.title} style={[a.w_full]}>
           <Image
             accessibilityIgnoresInvertColors
             source={{uri: lead.item.imageUrl}}
@@ -134,7 +130,7 @@ export function StripStory({
         profile={outletProfile(profiles, lead.publisher)}
       />
       <Link
-        to={articleViewLink(lead, story)}
+        to={lead.item.link}
         label={lead.item.title}
         style={[a.flex_col, a.align_start, a.w_full]}>
         <Text
@@ -143,7 +139,7 @@ export function StripStory({
           {lead.item.title}
         </Text>
       </Link>
-      <StoryMeta article={lead} />
+      <StoryMeta article={lead} story={story} />
     </View>
   )
 }
