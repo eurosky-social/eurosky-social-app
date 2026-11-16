@@ -333,8 +333,8 @@ importers:
         specifier: 1.2.0
         version: 1.2.0(@atproto/lex@0.3.8)
       '@dasl/tile-host':
-        specifier: ^2.1.1
-        version: 2.1.1(supports-color@8.1.1)
+        specifier: ^2.2.1
+        version: 2.2.1(supports-color@8.1.1)
       '@dasl/tile-lexicon':
         specifier: ^2.2.0
         version: 2.2.0
@@ -2060,8 +2060,8 @@ packages:
     resolution: {integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==}
     engines: {node: '>=18'}
 
-  '@dasl/tile-host@2.1.1':
-    resolution: {integrity: sha512-pFLrXvEXrx3C6jzIpts/N9d0W4JUJVMUrU9t0s+FdHH2Bephj5ionScAr314fnZelx2AHzwSt21z6RQoJfj7Ug==}
+  '@dasl/tile-host@2.2.1':
+    resolution: {integrity: sha512-E8Z7W5Bzu8lpt9SDYHDoixPM+68FqtYhmqQJblwOzf2sILdJnM+1WjiS+Q0GQmlkJwvpL5UxBIKRkFNGXuMYEA==}
 
   '@dasl/tile-lexicon@2.2.0':
     resolution: {integrity: sha512-AYCAf3ooBG5TycyttVujXNm16lO9nf6lF3lZFQ8DM9VR0BxB8fhhiC280TubWJiqrEfdfLyiWJZ4sICQRJQ7eA==}
@@ -11738,7 +11738,7 @@ snapshots:
 
   '@csstools/css-tokenizer@3.0.4': {}
 
-  '@dasl/tile-host@2.1.1(supports-color@8.1.1)':
+  '@dasl/tile-host@2.2.1(supports-color@8.1.1)':
     dependencies:
       '@dasl/tile-lexicon': 2.2.0
       express: 5.3.0(supports-color@8.1.1)

@@ -1,24 +1,26 @@
-import {useState} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import {type StyleProp, View, type ViewStyle} from 'react-native'
 import {WebView, type WebViewMessageEvent} from 'react-native-webview'
 import {type ShouldStartLoadRequest} from 'react-native-webview/lib/WebViewTypes'
-import {parseTileHostEvent} from '@dasl/tile-host/messages'
+import {parseTileHostEvent, type TileHostLimits} from '@dasl/tile-host/messages'
 
 import {useOpenLink} from '#/lib/hooks/useOpenLink'
 import {atoms as a} from '#/alf'
 import {Loader} from '#/components/Loader'
-import {tileHostOrigin, tileHostUrl} from '../host'
+import {tileHostLimitsMessage, tileHostOrigin, tileHostUrl} from '../host'
 import {type TileSizing} from '../sizing'
 
 /**
  * A tile running on native: a WebView on the hosted page (`@dasl/tile-host`)
  * that runs the loader, sandbox and all. The page reports the manifest's
  * requested size, the sizes the tile asks for as it runs, readiness and
- * errors over the message bridge; nothing else crosses it.
+ * errors over the message bridge, and is told mu's limits on the tile's size;
+ * nothing else crosses it.
  */
 export function TilePlayer({
   uri,
   height,
+  limits,
   onSizing,
   onSize,
   onLoad,
@@ -27,6 +29,11 @@ export function TilePlayer({
 }: {
   uri: string
   height: number
+  /**
+   * mu's limits on the tile's size (`tileLimits`). The page is told them, as
+   * soon as it is up and whenever they change, and passes them on to the tile.
+   */
+  limits?: TileHostLimits
   /** The manifest's requested size, once known. */
   onSizing?: (sizing: TileSizing | undefined) => void
   /**
@@ -43,12 +50,29 @@ export function TilePlayer({
   const [ready, setReady] = useState(false)
   const source = tileHostUrl(uri)
   const hostOrigin = tileHostOrigin()
+  /*
+   * `WebView<P>` is `Component<WebViewProps & P>` with P undefined by default,
+   * which leaves it no props at all once a ref pins P: hence the `object`.
+   */
+  const webViewRef = useRef<WebView<object>>(null)
+  /*
+   * The page listens from the moment its script runs, and announces itself
+   * with `manifest`, its first message: nothing is sent before that. The
+   * message is a string so that the effect only runs when a limit changes.
+   */
+  const [listening, setListening] = useState(false)
+  const limitsMessage = limits ? tileHostLimitsMessage(limits) : undefined
+  useEffect(() => {
+    if (!listening || !limitsMessage) return
+    webViewRef.current?.postMessage(limitsMessage)
+  }, [listening, limitsMessage])
 
   const onMessage = (e: WebViewMessageEvent) => {
     const event = parseTileHostEvent(e.nativeEvent.data)
     if (!event) return
     switch (event.event) {
       case 'manifest':
+        setListening(true)
         onSizing?.(event.sizing)
         break
       case 'size':
@@ -82,6 +106,7 @@ export function TilePlayer({
   return (
     <View style={[a.w_full, {height}, style]}>
       <WebView
+        ref={webViewRef}
         source={{uri: source}}
         style={[a.flex_1, a.bg_transparent]}
         javaScriptEnabled

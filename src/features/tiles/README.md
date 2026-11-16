@@ -132,7 +132,9 @@ the one it has. The height is at least `MIN_TILE_HEIGHT` and at most the
 viewport's height less `TILE_POST_CHROME`, the room kept on screen for the
 app's bars, the post's author line above the tile, and the card's footer and
 the post's actions below it, so a running tile never pushes its own post off
-screen. Native takes the safe areas off the viewport first. The limits follow
+screen. Native takes the safe areas off the viewport first, and sends the
+limits down to the hosted page (its `limits` command), so a tile in the
+WebView is answered with the same limits as one on the web. The limits follow
 the window: rotating a phone or resizing a browser settles the tile again.
 The frame fills a div whose height React owns, so a resize never remounts the
 tile. A post shown on its own, as the anchor of its thread rather than as a

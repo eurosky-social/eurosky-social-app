@@ -159,6 +159,7 @@ export function TileEmbed({
             <TilePlayer
               uri={tile.uri}
               height={tileHeight(sizing, width, asked, limits)}
+              limits={limits}
               onSizing={setSizing}
               onSize={want => {
                 if (want.height) setAsked(want.height)

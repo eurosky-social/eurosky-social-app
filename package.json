@@ -166,7 +166,7 @@
     "@bsky.app/video": "0.4.2",
     "@bsky.app/video-compressor": "0.2.0",
     "@bsky/sdk": "1.2.0",
-    "@dasl/tile-host": "^2.1.1",
+    "@dasl/tile-host": "^2.2.1",
     "@dasl/tile-lexicon": "^2.2.0",
     "@dasl/tile-loader": "^2.6.0",
     "@emoji-mart/data": "^1.2.1",

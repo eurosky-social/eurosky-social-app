@@ -1,3 +1,8 @@
+import {
+  type TileHostCommand,
+  type TileHostLimits,
+} from '@dasl/tile-host/messages'
+
 import {TILES_HOST_URL, TILES_LOAD_DOMAIN} from './constants'
 
 /**
@@ -18,6 +23,21 @@ export function tileHostUrl(
     url.searchParams.set('load', loadDomain)
   }
   return url.toString()
+}
+
+/**
+ * The message that tells the hosted page mu's limits on the tile's size
+ * (`tileLimits`), for `WebView.postMessage`. The page passes them on to the
+ * tile, which is then answered with the limits it really has rather than the
+ * page's defaults. They are sent whole: a limit left out is a limit lifted.
+ */
+export function tileHostLimitsMessage(limits: TileHostLimits): string {
+  const command: TileHostCommand = {tilesHost: 1, action: 'limits'}
+  for (const k of ['minWidth', 'minHeight', 'maxWidth', 'maxHeight'] as const) {
+    const v = limits[k]
+    if (typeof v === 'number' && Number.isFinite(v) && v > 0) command[k] = v
+  }
+  return JSON.stringify(command)
 }
 
 /** The origin of the host page: the only thing allowed in the player's top frame. */
