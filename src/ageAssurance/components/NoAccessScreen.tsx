@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useEffectEvent} from 'react'
+import {useCallback, useEffect, useEffectEvent, useState} from 'react'
 import {ScrollView, View} from 'react-native'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {BottomSheetOutlet} from '@bsky.app/bottom-sheet'
@@ -6,24 +6,33 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
-import {useSessionApi} from '#/state/session'
+import {dateDiff, useGetTimeAgo} from '#/lib/hooks/useTimeAgo'
+import {formatDateTime} from '#/lib/strings/time'
+import {useAppviewClient, useSessionApi} from '#/state/session'
 import {DeactivateAccountDialog} from '#/screens/Settings/components/DeactivateAccountDialog'
 import {DeleteAccountDialog} from '#/screens/Settings/components/DeleteAccountDialog'
 import {atoms as a, useBreakpoints, useTheme, web} from '#/alf'
 import {Admonition} from '#/components/Admonition'
+import {AgeAssuranceAppealDialog} from '#/components/ageAssurance/AgeAssuranceAppealDialog'
 import {AgeAssuranceBadge} from '#/components/ageAssurance/AgeAssuranceBadge'
+import {AgeAssuranceInitDialog} from '#/components/ageAssurance/AgeAssuranceInitDialog'
 import {MuAgeConfirmDialog} from '#/components/ageAssurance/MuAgeConfirmDialog'
-import {Button, ButtonText} from '#/components/Button'
+import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {useDialogControl} from '#/components/Dialog'
 import {DeviceLocationRequestDialog} from '#/components/dialogs/DeviceLocationRequestDialog'
 import {Full as Logo} from '#/components/icons/Logo'
+import {ShieldCheck_Stroke2_Corner0_Rounded as ShieldIcon} from '#/components/icons/Shield'
 import {createStaticClick, SimpleInlineLinkText} from '#/components/Link'
+import {Loader} from '#/components/Loader'
 import {Outlet as PortalOutlet} from '#/components/Portal'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
-import {useAgeAssurance} from '#/ageAssurance'
+import {refetchAgeAssuranceServerState, useAgeAssurance} from '#/ageAssurance'
+import {DeviceSignalsNotice} from '#/ageAssurance/components/DeviceSignalsNotice'
 import {useAgeAssuranceServerDataContext} from '#/ageAssurance/data'
+import {getNoAccessReason} from '#/ageAssurance/noAccessReason'
 import {useComputeAgeAssuranceRegionAccess} from '#/ageAssurance/useComputeAgeAssuranceRegionAccess'
+import {useAgeAssuranceVerificationFlow} from '#/ageAssurance/useVerificationFlow'
 import {useAgeAssuranceRegionConfig} from '#/ageAssurance/util'
 import {useAnalytics} from '#/analytics'
 import {BRAND} from '#/config/brand'
@@ -33,15 +42,18 @@ import {useDeviceGeolocationApi} from '#/geolocation'
 const textStyles = [a.text_md, a.leading_snug]
 
 /**
- * mu fork: the age gate. Shown by the shell when access === None. mu does not
- * offer identity verification, so the cases are:
+ * mu fork: the age gate. Shown by the shell when access === None. The cases
+ * (see getNoAccessReason):
  *
  *  - not declared yet     -> the one-time birthdate prompt (the gate itself)
  *  - declared, under 13   -> blocked everywhere
  *  - declared, below the region minimum age -> blocked in this region
- *  - declared, over the minimum but the region requires *verified* age
- *    assurance (e.g. US-MS) -> not available here (no recourse, only a
- *    wrong-location correction on native)
+ *  - declared, over the minimum but the region only grants access on a
+ *    *verified* age (US-MS; US-TX on native) -> the same verification flow as
+ *    the account settings card: KWS, or the device's age signals where the
+ *    region allows them. A declared adult in the UK gets restricted access and
+ *    verifies from that card; here the gate is the only screen they can reach,
+ *    so it has to offer the flow itself.
  */
 export function NoAccessScreen() {
   const t = useTheme()
@@ -59,6 +71,13 @@ export function NoAccessScreen() {
   const aa = useAgeAssurance()
   const isAARegion = !!region
   const hasDeclaredAge = metadata?.declaredAge !== undefined
+  const isBlocked = aa.state.status === aa.Status.Blocked
+  const reason = getNoAccessReason({
+    hasDeclaredAge,
+    isOverAppMinAccessAge: aa.flags.isOverAppMinAccessAge,
+    isAARegion,
+    isOverRegionMinAccessAge: aa.flags.isOverRegionMinAccessAge,
+  })
 
   const onShown = useEffectEvent(() => {
     ax.metric(`ageAssurance:noAccessScreen:shown`, {
@@ -127,7 +146,7 @@ export function NoAccessScreen() {
               <AgeAssuranceBadge />
             </View>
 
-            {!hasDeclaredAge ? (
+            {reason === 'undeclared' ? (
               <View style={[a.gap_lg]}>
                 <Text style={textStyles}>
                   <Trans>Hi there!</Trans>
@@ -155,7 +174,7 @@ export function NoAccessScreen() {
                   </Trans>
                 </Admonition>
               </View>
-            ) : !aa.flags.isOverAppMinAccessAge ? (
+            ) : reason === 'under-app-min' ? (
               <View style={[a.gap_lg]}>
                 <Text style={textStyles}>
                   <Trans>
@@ -164,7 +183,7 @@ export function NoAccessScreen() {
                 </Text>
                 {updateAge}
               </View>
-            ) : isAARegion && !aa.flags.isOverRegionMinAccessAge ? (
+            ) : reason === 'under-region-min' ? (
               <View style={[a.gap_lg]}>
                 <Text style={textStyles}>
                   <Trans>
@@ -175,14 +194,17 @@ export function NoAccessScreen() {
                 {updateAge}
               </View>
             ) : (
-              <View style={[a.gap_lg]}>
-                <Text style={textStyles}>
-                  <Trans>
-                    {BRAND.name} isn't available in your region, which legally
-                    requires verified age assurance.
-                  </Trans>
-                </Text>
-                {updateAge}
+              <View style={[a.gap_xl]}>
+                <View style={[a.gap_lg]}>
+                  <Text style={textStyles}>
+                    <Trans>
+                      You are accessing {BRAND.name} from a region that legally
+                      requires us to verify your age before you can use the app.
+                    </Trans>
+                  </Text>
+                  {!isBlocked && updateAge}
+                </View>
+                <VerifySection />
                 {IS_NATIVE && <LocationCorrection />}
               </View>
             )}
@@ -238,6 +260,145 @@ export function NoAccessScreen() {
        */}
       <BottomSheetOutlet />
       <PortalOutlet />
+    </>
+  )
+}
+
+/**
+ * The verification flow for regions that only grant access on a verified age.
+ * Mirrors the account settings card (AgeAssuranceAccountCard), plus a way to
+ * re-read the status: the server state is cached for an hour, and the KWS
+ * flow ends outside the app, so without it a user who just verified would
+ * stay behind this gate until the cache expires.
+ */
+function VerifySection() {
+  const t = useTheme()
+  const {_, i18n} = useLingui()
+  const ax = useAnalytics()
+  const initDialogControl = useDialogControl()
+  const appealControl = useDialogControl()
+  const getTimeAgo = useGetTimeAgo()
+  const appviewClient = useAppviewClient()
+  const [isChecking, setIsChecking] = useState(false)
+
+  const aa = useAgeAssurance()
+  const {status, lastInitiatedAt} = aa.state
+  const isBlocked = status === aa.Status.Blocked
+  const hasInitiated = !!lastInitiatedAt
+  const timeAgo = lastInitiatedAt
+    ? getTimeAgo(lastInitiatedAt, new Date())
+    : null
+  const diff = lastInitiatedAt
+    ? dateDiff(lastInitiatedAt, new Date(), 'down')
+    : null
+  const {
+    onPressVerify,
+    openInitDialog,
+    isVerifying,
+    verifyCta,
+    deviceSignalsFailed,
+  } = useAgeAssuranceVerificationFlow({initDialogControl})
+  const useDeviceSignals =
+    aa.flags.allowsDeviceVerification && !deviceSignalsFailed
+
+  const onPressCheckAgain = async () => {
+    if (isChecking) return
+    setIsChecking(true)
+    try {
+      const data = await refetchAgeAssuranceServerState({appviewClient})
+      // An assured status lifts this gate on its own; say so when it didn't.
+      if (data?.state.status !== 'assured') {
+        Toast.show(
+          _(
+            msg`Your age isn't verified yet. If you just finished, try again in a minute.`,
+          ),
+          {type: 'info'},
+        )
+      }
+    } catch {
+      Toast.show(_(msg`Couldn't check your status. Please try again.`), {
+        type: 'error',
+      })
+    } finally {
+      setIsChecking(false)
+    }
+  }
+
+  return (
+    <>
+      <AgeAssuranceInitDialog control={initDialogControl} />
+      <AgeAssuranceAppealDialog control={appealControl} />
+
+      {isBlocked ? (
+        <Admonition type="warning">
+          <Trans>
+            You are currently unable to access Bluesky's Age Assurance flow.
+            Please{' '}
+            <SimpleInlineLinkText
+              label={_(msg`Contact our moderation team`)}
+              {...createStaticClick(() => {
+                appealControl.open()
+                ax.metric('ageAssurance:appealDialogOpen', {})
+              })}>
+              contact our moderation team
+            </SimpleInlineLinkText>{' '}
+            if you believe this is an error.
+          </Trans>
+        </Admonition>
+      ) : (
+        <View style={[a.gap_md]}>
+          <Button
+            label={verifyCta}
+            size="large"
+            color={
+              hasInitiated || aa.flags.hasSharedDeviceSignals
+                ? 'secondary'
+                : 'primary'
+            }
+            disabled={isVerifying}
+            onPress={() => void onPressVerify()}>
+            <ButtonIcon icon={isVerifying ? Loader : ShieldIcon} />
+            <ButtonText>{verifyCta}</ButtonText>
+          </Button>
+
+          {useDeviceSignals ? (
+            <DeviceSignalsNotice onPressKws={openInitDialog} />
+          ) : lastInitiatedAt && timeAgo && diff ? (
+            <Text
+              style={[a.text_sm, a.italic, t.atoms.text_contrast_medium]}
+              title={formatDateTime(i18n, lastInitiatedAt, {
+                dateStyle: 'medium',
+                timeStyle: 'medium',
+              })}>
+              {diff.value === 0 ? (
+                <Trans>Last initiated just now</Trans>
+              ) : (
+                <Trans>Last initiated {timeAgo} ago</Trans>
+              )}
+            </Text>
+          ) : (
+            <Text style={[a.text_sm, a.italic, t.atoms.text_contrast_medium]}>
+              <Trans>Age assurance only takes a few minutes</Trans>
+            </Text>
+          )}
+
+          {hasInitiated && (
+            <Text style={[a.text_sm, a.leading_snug]}>
+              <Trans>
+                Finished verifying?{' '}
+                <SimpleInlineLinkText
+                  label={_(msg`Check your verification status`)}
+                  style={[a.text_sm]}
+                  {...createStaticClick(() => {
+                    void onPressCheckAgain()
+                  })}>
+                  Check again
+                </SimpleInlineLinkText>
+              </Trans>
+            </Text>
+          )}
+        </View>
+      )}
     </>
   )
 }

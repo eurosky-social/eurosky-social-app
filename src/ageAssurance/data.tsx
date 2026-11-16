@@ -11,7 +11,10 @@ import {createPersistedQueryStorage} from '#/lib/persisted-query-storage'
 import {getAge} from '#/lib/strings/time'
 import {fetchActorDeclarationRecord} from '#/state/queries/messages/actor-declaration'
 import {useAppviewClient, usePdsClient, useSession} from '#/state/session'
-import {getPublicAppviewClient} from '#/state/session/clients'
+import {
+  getPublicAppviewClient,
+  getPublicBlueskyAppviewClient,
+} from '#/state/session/clients'
 import {DEVICE_SIGNALS_SUPPORTED} from '#/ageAssurance/const'
 import * as debug from '#/ageAssurance/debug'
 import {logger} from '#/ageAssurance/logger'
@@ -25,6 +28,7 @@ import {
   getAgeAssuranceRegionConfigForGeolocation,
 } from '#/ageAssurance/util'
 import {IS_DEV} from '#/env'
+import {getAgeAssuranceAppView} from '#/features/appView/config'
 import {useGeolocation} from '#/geolocation'
 import {app, type chat} from '#/lexicons'
 import {device} from '#/storage'
@@ -95,9 +99,14 @@ export async function getConfig() {
   /*
    * An unauthenticated read against the public appview: the config is fetched
    * before there is any session (and while logged out), so it goes through the
-   * process-wide public client rather than a bundle one.
+   * process-wide public client rather than a bundle one. mu fork: pinned to
+   * Bluesky's AppView, since its rules gate on KWS state that only it has (see
+   * getAgeAssuranceAppView), except in a local dev env, like getState and begin.
    */
-  return await getPublicAppviewClient().call(app.bsky.ageassurance.getConfig)
+  const client = getAgeAssuranceAppView().isDevEnv
+    ? getPublicAppviewClient()
+    : getPublicBlueskyAppviewClient()
+  return await client.call(app.bsky.ageassurance.getConfig)
 }
 export function getConfigFromCache():
   app.bsky.ageassurance.getConfig.$OutputBody | undefined {
@@ -186,10 +195,15 @@ export async function getServerState({appviewClient}: {appviewClient: Client}) {
     logger.error(`getServerState: missing geolocation countryCode`)
     return null
   }
-  const data = await appviewClient.call(app.bsky.ageassurance.getState, {
-    countryCode: geolocation.countryCode,
-    regionCode: geolocation.regionCode,
-  })
+  // mu fork: pinned to the KWS AppView, see getAgeAssuranceAppView
+  const data = await appviewClient.call(
+    app.bsky.ageassurance.getState,
+    {
+      countryCode: geolocation.countryCode,
+      regionCode: geolocation.regionCode,
+    },
+    {service: getAgeAssuranceAppView().service},
+  )
   const did = appviewClient.did
   if (data && did && createdAtCache.has(did)) {
     /*
