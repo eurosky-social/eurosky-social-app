@@ -20,6 +20,20 @@ describe('languagesForPlaces', () => {
     ])
   })
 
+  it('knows every country with an outlet, several languages too', () => {
+    expect(languagesForPlaces(['en'], {countries: ['at']})).toEqual([
+      'en',
+      'de',
+    ])
+    expect(languagesForPlaces(['en'], {countries: ['lv', 'ch']})).toEqual([
+      'en',
+      'lv',
+      'ru',
+      'de',
+      'fr',
+    ])
+  })
+
   it('adds a province’s country’s languages', () => {
     expect(languagesForPlaces(['en'], {category: 'nl-utrecht'})).toEqual([
       'en',

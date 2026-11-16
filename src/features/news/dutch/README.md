@@ -61,6 +61,8 @@ fitted how" - narrowed by filter:
 - A country or province also adds its country's own languages to the reader's
   (`languagesForPlaces` in `view.ts`): read in English alone, the Netherlands
   was the handful of stories its outlets publish in English, all a week old.
+  The map covers every country with an outlet in the news service; a country
+  added there needs an entry here too.
 
 Other scopes (the admin-created `dutch` one) are not read: `/api/threads` serves
 a scope's active thread fit, a scope with only the older weekly story fit

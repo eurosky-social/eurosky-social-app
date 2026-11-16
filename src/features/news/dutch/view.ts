@@ -35,18 +35,43 @@ export type DutchThreadViewParams = {
 }
 
 /**
- * The languages each country's outlets mostly write in. Read in the reader's
- * languages alone, a country is only what its outlets publish in those: in
- * English, the Netherlands was a handful of week-old stories.
+ * The languages each country's outlets write in: those their articles carry,
+ * and the outlet's own language where its articles carry none (read off the
+ * news service's outlets and two weeks of articles, 2026-11-16). Read in the
+ * reader's languages alone, a country is only what its outlets publish in
+ * those: in English, the Netherlands was a handful of week-old stories.
+ * Every country with an outlet needs an entry; one missing adds nothing.
  */
 const COUNTRY_LANGUAGES: Record<string, string[]> = {
+  al: ['sq'],
+  at: ['de'],
   be: ['nl', 'fr'],
+  bg: ['bg'],
+  ch: ['de', 'fr'],
+  cy: ['el', 'en'],
+  cz: ['cs'],
   de: ['de'],
   dk: ['da'],
-  es: ['es'],
+  es: ['es', 'ca', 'eu'],
+  fi: ['fi', 'sv'],
   fr: ['fr'],
   gb: ['en'],
+  gr: ['el'],
+  hr: ['hr'],
+  hu: ['hu'],
+  ie: ['en'],
+  is: ['is'],
+  it: ['it'],
+  lu: ['de', 'fr'],
+  lv: ['lv', 'ru'],
   nl: ['nl'],
+  no: ['no'],
+  pl: ['pl'],
+  pt: ['pt'],
+  se: ['sv'],
+  si: ['sl'],
+  ua: ['uk'],
+  xk: ['sq', 'en'],
 }
 
 /**
