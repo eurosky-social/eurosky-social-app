@@ -33,6 +33,7 @@ import {
   NotAuthenticatedError,
   routeSessionToPds,
 } from '../clients'
+import * as network from '../network'
 import {sessionAccountToSessionData} from '../session-data'
 import {
   asFetch,
@@ -93,6 +94,40 @@ describe('buildAppviewClient', () => {
   beforeEach(() => {
     fetchMock = makeProfileFetch()
     configureGlobalAppLabelers([])
+  })
+
+  it('enables direct feed reads with the deployment flag', async () => {
+    const previous = process.env.EXPO_PUBLIC_DIRECT_FEED_READS
+    process.env.EXPO_PUBLIC_DIRECT_FEED_READS = 'true'
+    const directFetch = jest
+      .spyOn(network, 'networkAwareFetch')
+      .mockResolvedValue(json({feed: []}))
+    try {
+      const sessionFetch = makeMockFetch({
+        'com.atproto.server.getServiceAuth': () =>
+          json({token: 'scoped-token'}),
+      })
+      const client = buildAppviewClient(makeSession(sessionFetch))
+      await client.call(app.bsky.feed.getFeed, {
+        feed: 'at://did:plc:publisher/app.bsky.feed.generator/fu',
+        limit: 2,
+      })
+      expect(urlsOf(sessionFetch)).toHaveLength(1)
+      expect(urlsOf(sessionFetch)[0]).toContain(
+        '/xrpc/com.atproto.server.getServiceAuth',
+      )
+      expect(directFetch).toHaveBeenCalledTimes(1)
+      const headers = new Headers(directFetch.mock.calls[0][1]?.headers)
+      expect(headers.get('authorization')).toBe('Bearer scoped-token')
+      expect(headers.has('atproto-proxy')).toBe(false)
+    } finally {
+      directFetch.mockRestore()
+      if (previous === undefined) {
+        delete process.env.EXPO_PUBLIC_DIRECT_FEED_READS
+      } else {
+        process.env.EXPO_PUBLIC_DIRECT_FEED_READS = previous
+      }
+    }
   })
 
   it('passes through the session did', () => {
