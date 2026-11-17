@@ -811,8 +811,8 @@ importers:
         specifier: ^4.14.1
         version: 4.14.2
       '@dasl/tile-server':
-        specifier: ^3.0.0
-        version: 3.0.0(supports-color@8.1.1)
+        specifier: ^3.0.1
+        version: 3.0.1(supports-color@8.1.1)
       '@eloqnt/cli':
         specifier: 0.6.26
         version: 0.6.26
@@ -2069,8 +2069,8 @@ packages:
   '@dasl/tile-loader@3.0.0':
     resolution: {integrity: sha512-GE00lyTinX/u93WaDD5u/4MXmpt43rWg2ctnL2XFD0lUETU5RcbLqbS2WybGdzDjwgv69qKpvIif0YJzoQnYNA==}
 
-  '@dasl/tile-server@3.0.0':
-    resolution: {integrity: sha512-WE47z89AbCv6cxtg9XKKXOEEu4SHU3Ik7N9OZ/RXnSW8w4su9xLgFflvgLfaDj3RF9KNv0A3oxDsgCRdVQeRgw==}
+  '@dasl/tile-server@3.0.1':
+    resolution: {integrity: sha512-I35kyaaohsVSBW8ezjQkMorBU1CCcnDIXxYN32mOKPXNYq7u4ZngexhEaGU2FpbACrTeQ3CMM0SWJmJYqrbwyQ==}
     hasBin: true
 
   '@eloqnt/cli@0.6.26':
@@ -11758,7 +11758,7 @@ snapshots:
     transitivePeerDependencies:
       - '@atcute/cbor'
 
-  '@dasl/tile-server@3.0.0(supports-color@8.1.1)':
+  '@dasl/tile-server@3.0.1(supports-color@8.1.1)':
     dependencies:
       '@dasl/tile-lexicon': 3.0.0
       express: 5.3.0(supports-color@8.1.1)
