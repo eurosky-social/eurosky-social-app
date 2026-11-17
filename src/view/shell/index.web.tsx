@@ -34,6 +34,7 @@ import {DataUnavailableScreen} from '#/ageAssurance/components/DataUnavailableSc
 import {NoAccessScreen} from '#/ageAssurance/components/NoAccessScreen'
 import {RedirectOverlay} from '#/ageAssurance/components/RedirectOverlay'
 import {PassiveAnalytics} from '#/analytics/PassiveAnalytics'
+import {AppViewFailoverPrompt} from '#/features/appView/FailoverPrompt'
 import {PetCompanion} from '#/features/petCompanion'
 import {FlatNavigator, RoutesContainer} from '#/Navigation'
 import {Composer} from './Composer'
@@ -75,6 +76,7 @@ function ShellInner() {
       <Lightbox />
       <NuxDialogs />
       <GlobalReportDialog />
+      <AppViewFailoverPrompt />
 
       {welcomeModalControl.isOpen && (
         <WelcomeModal control={welcomeModalControl} />

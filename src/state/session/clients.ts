@@ -12,6 +12,7 @@ import {
   getAppViewProxyService,
   getPublicAppViewUrl,
 } from '#/features/appView/config'
+import {withAppViewHealth} from '#/features/appView/health'
 import {withAppViewShadowFetch} from '#/features/appView/shadow'
 import {networkAwareFetch} from './network'
 
@@ -35,8 +36,9 @@ import {networkAwareFetch} from './network'
  * fetch, which is `networkAwareFetch` wrapped in the disposal kill switch.
  */
 export function buildAppviewClient(agent: Agent): Client {
-  return createLexClient(agent, {
-    service: getAppViewProxyService(BLUESKY_PROXY_HEADER.get()) as Service,
+  const service = getAppViewProxyService(BLUESKY_PROXY_HEADER.get()) as Service
+  return createLexClient(withAppViewHealth(agent, service), {
+    service,
     includeDeviceSessionHeaders: true,
   })
 }
@@ -175,10 +177,10 @@ export function getPublicBlueskyAppviewClient(): Client {
  */
 export function getPublicAppviewClient(): Client {
   return (publicLexClient ??= createLexClient(
-    {
+    withAppViewHealth({
       service: getPublicAppViewUrl(PUBLIC_BSKY_SERVICE),
       fetch: withAppViewShadowFetch(networkAwareFetch),
-    },
+    }),
     {includeDeviceSessionHeaders: true},
   ))
 }

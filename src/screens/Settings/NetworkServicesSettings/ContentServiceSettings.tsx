@@ -20,6 +20,7 @@ import {
   APP_VIEW_PRESETS,
   type AppViewOptionId,
   AppViewValidationError,
+  getActiveAppViewFailover,
   getAppViewOptionId,
   getConfiguredAppView,
   isConfiguredAppView,
@@ -40,7 +41,9 @@ export function ContentServiceSettingsScreen({}: Props) {
   const t = useTheme()
   const [override, setOverride] = useStorage(device, ['appViewOverride'])
   const configured = getConfiguredAppView()
-  const current = override ?? configured
+  const failover = getActiveAppViewFailover()
+  const preferred = override ?? configured
+  const current = failover ?? preferred
   const currentOption = getAppViewOptionId(current)
   const [selected, setSelected] = useState<AppViewOptionId>(currentOption)
   const [customUrl, setCustomUrl] = useState(
@@ -61,7 +64,9 @@ export function ContentServiceSettingsScreen({}: Props) {
   try {
     normalizedCustomUrl = normalizeAppViewUrl(customUrl)
   } catch {}
+  /* During a failover, saving either keeps the fallback or goes back. */
   const hasChanges =
+    !!failover ||
     selected !== currentOption ||
     (selected === 'custom' && normalizedCustomUrl !== current.url)
   const canSave =
@@ -106,6 +111,7 @@ export function ContentServiceSettingsScreen({}: Props) {
 
       /* No override means future builds can continue choosing the default. */
       setOverride(isConfiguredAppView(next) ? undefined : next)
+      device.set(['appViewFailover'], undefined)
       restartControl.open()
     } catch (cause) {
       setError(validationError(cause))
@@ -147,6 +153,14 @@ export function ContentServiceSettingsScreen({}: Props) {
                   AppView. This setting applies to every account on this device.
                 </Trans>
               </Text>
+              {failover && (
+                <Text style={[a.text_sm, a.leading_snug, a.font_semi_bold]}>
+                  <Trans>
+                    Your content service isn’t responding, so the app is
+                    temporarily using another one.
+                  </Trans>
+                </Text>
+              )}
               <Text
                 style={[
                   a.text_sm,
