@@ -1,4 +1,9 @@
-import {tileHostLimitsMessage, tileHostOrigin, tileHostUrl} from './host'
+import {
+  isOnTileHostOrigin,
+  tileHostLimitsMessage,
+  tileHostOrigin,
+  tileHostUrl,
+} from './host'
 import {tileLimits} from './sizing'
 
 const TILE = 'at://did:plc:izttpdp3l6vss5crelt5kcux/ing.dasl.masl/3mcjwwoqjqs2v'
@@ -56,5 +61,41 @@ describe('tileHostOrigin', () => {
     expect(tileHostOrigin('https://webtil.es/host/?x=1')).toBe(
       'https://webtil.es',
     )
+  })
+})
+
+describe('isOnTileHostOrigin', () => {
+  const origin = tileHostOrigin('https://webtil.es/host/')
+
+  it('takes the host page, whatever the path and the query', () => {
+    expect(isOnTileHostOrigin(tileHostUrl(TILE), tileHostOrigin())).toBe(true)
+    expect(isOnTileHostOrigin('https://webtil.es/host/?x=1', origin)).toBe(true)
+    expect(isOnTileHostOrigin('https://webtil.es', origin)).toBe(true)
+  })
+
+  it('refuses a host that only starts like the page host', () => {
+    expect(isOnTileHostOrigin('https://webtil.es.example/host/', origin)).toBe(
+      false,
+    )
+    expect(isOnTileHostOrigin('https://webtil.es@example.com/', origin)).toBe(
+      false,
+    )
+    expect(isOnTileHostOrigin('https://webtil.es:8443/host/', origin)).toBe(
+      false,
+    )
+  })
+
+  it('refuses another scheme, and what does not parse', () => {
+    expect(isOnTileHostOrigin('http://webtil.es/host/', origin)).toBe(false)
+    expect(isOnTileHostOrigin('about:blank', origin)).toBe(false)
+    expect(isOnTileHostOrigin('webtil.es/host/', origin)).toBe(false)
+    expect(isOnTileHostOrigin('', origin)).toBe(false)
+  })
+
+  it('takes nothing for a page that has no origin to be on', () => {
+    const none = tileHostOrigin('about:blank')
+    expect(none).toBe('null')
+    expect(isOnTileHostOrigin('about:blank', none)).toBe(false)
+    expect(isOnTileHostOrigin('data:text/html,x', none)).toBe(false)
   })
 })

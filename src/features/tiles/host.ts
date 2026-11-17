@@ -44,3 +44,22 @@ export function tileHostLimitsMessage(limits: TileHostLimits): string {
 export function tileHostOrigin(hostUrl: string = TILES_HOST_URL): string {
   return new URL(hostUrl).origin
 }
+
+/**
+ * Whether a URL is on the host page's origin. The two are compared as the URL
+ * parser reads them: by its text alone, a host that merely starts like ours
+ * would pass for it. A URL that does not parse is not on it, and neither is
+ * one with no origin of its own (`about:blank`, `data:`): the parser calls
+ * every such origin `null`, and two of those are not the same place.
+ */
+export function isOnTileHostOrigin(
+  url: string,
+  hostOrigin: string = tileHostOrigin(),
+): boolean {
+  try {
+    const origin = new URL(url).origin
+    return origin !== 'null' && origin === hostOrigin
+  } catch {
+    return false
+  }
+}

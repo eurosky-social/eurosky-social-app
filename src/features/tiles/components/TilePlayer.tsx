@@ -6,7 +6,12 @@ import {parseTileHostEvent, type TileHostLimits} from '@dasl/tile-host/messages'
 
 import {atoms as a} from '#/alf'
 import {Loader} from '#/components/Loader'
-import {tileHostLimitsMessage, tileHostOrigin, tileHostUrl} from '../host'
+import {
+  isOnTileHostOrigin,
+  tileHostLimitsMessage,
+  tileHostOrigin,
+  tileHostUrl,
+} from '../host'
 import {type TileSizing} from '../sizing'
 
 /**
@@ -109,7 +114,7 @@ export function TilePlayer({
    */
   const onShouldStartLoadWithRequest = (req: ShouldStartLoadRequest) => {
     if (!req.isTopFrame) return true
-    if (req.url.startsWith(hostOrigin)) return true
+    if (isOnTileHostOrigin(req.url, hostOrigin)) return true
     return false
   }
 
