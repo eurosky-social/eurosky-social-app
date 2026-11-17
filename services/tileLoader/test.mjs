@@ -255,6 +255,18 @@ if (page.unreachable) {
     `${root.status} ${shuttleOnBase.status}`,
   )
   await onlyFiles(base, '/host/')
+  // The name asked for is the one that counts: a client does not get another
+  // believed by sending a forwarding header of its own.
+  for (const header of ['x-forwarded-host', 'cdn-host']) {
+    const res = await request(base, '/.well-known/web-tiles/worker.js', {
+      headers: {[header]: origin},
+    })
+    check(
+      `${header} from a client does not make the base host a tile origin`,
+      res.status === 404,
+      String(res.status),
+    )
+  }
 }
 
 // Cookies: none set unasked; any that arrive are expired, for our scopes only.

@@ -103,15 +103,17 @@ function randomLabel(): string {
 }
 
 /**
- * The host the visitor asked for. At the edge the request URL can carry an
- * internal host, so the forwarding headers are tried first; whichever
- * candidate belongs to the base host wins.
+ * The host the visitor asked for. At the edge the Host header and the request
+ * URL can carry an internal host, so both are tried, then CDN-Host, the
+ * header Bunny puts the visitor's hostname in; whichever candidate belongs to
+ * the base host wins. X-Forwarded-Host is not among them: Bunny never sets
+ * it, so one that arrives is the client's own.
  */
 function requestHost(req: Request, base: string): string {
   const candidates = [
-    req.headers.get('x-forwarded-host'),
     req.headers.get('host'),
     new URL(req.url).host,
+    req.headers.get('cdn-host'),
   ]
   for (const candidate of candidates) {
     const host = (candidate || '').split(',')[0].trim().toLowerCase()
