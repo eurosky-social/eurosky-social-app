@@ -7,6 +7,7 @@ import {
   type ViewStyle,
 } from 'react-native'
 import {type Tile} from '@dasl/tile-loader'
+import {tileLinks} from '@dasl/tile-loader/link'
 import {tileSize, type TileSizeControl} from '@dasl/tile-loader/size'
 import {useLingui} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
@@ -15,6 +16,7 @@ import {logger} from '#/logger'
 import {useAppviewClient} from '#/state/session'
 import {atoms as a} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
+import {useGlobalDialogsControlContext} from '#/components/dialogs/Context'
 import * as Toast from '#/components/Toast'
 import {type app} from '#/lexicons'
 import {fetchIsTrustedTile, useTileAuthor} from '../../author'
@@ -102,6 +104,11 @@ export function TileEmbed({
   autoplay?: boolean
 }) {
   const {t: l} = useLingui()
+  const {linkWarningDialogControl} = useGlobalDialogsControlContext()
+  const openLinkDialogRef = useRef(linkWarningDialogControl.open)
+  useEffect(() => {
+    openLinkDialogRef.current = linkWarningDialogControl.open
+  })
   const queryClient = useQueryClient()
   const appviewClient = useAppviewClient()
   const author = useTileAuthor(tile)
@@ -237,9 +244,24 @@ export function TileEmbed({
       },
     })
     sizerRef.current = sizer
+    /*
+     * A tile opens no window and navigates nothing but itself. A link out of
+     * it is a request (https://dasl.ing/tp-link.html), and ours to open or
+     * not: the tile chose the address, so the user sees it first, in the
+     * dialog mu shows for any link it does not vouch for, and opens it from
+     * there. A request nobody clicked for is refused. The tile is not told
+     * what the user decided.
+     */
+    const links = tileLinks(loaded, {
+      open: (url, {activated}) => {
+        if (!activated) return false
+        openLinkDialogRef.current({displayText: '', href: url.href})
+      },
+    })
     return () => {
       sizerRef.current = null
       sizer.stop()
+      links.stop()
       frame.remove()
     }
   }, [status, title])

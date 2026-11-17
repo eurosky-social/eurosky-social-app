@@ -10,8 +10,16 @@
  * those origins, the same thing as `@dasl/tile-server` (whose runtime files
  * and policy are inlined below), as one edge script:
  *
- *   load.<BASE_HOST>      303 to a fresh <20 letters>.<BASE_HOST>, same path:
- *                         every load gets an origin of its own.
+ *   load.<BASE_HOST>      the dock, under /.well-known/web-tiles/dock/: the
+ *                         page the app frames, which frames the runtime on a
+ *                         tile origin and keeps it there. Asked for without a
+ *                         tile origin it mints one (303 to itself with
+ *                         ?tile=<20 letters>.<BASE_HOST>): every load gets an
+ *                         origin of its own. Its policy lets its frame be at
+ *                         that origin's runtime and nowhere else, so a tile
+ *                         that scripts its runtime into following a link gets
+ *                         a refused navigation. Any other path: 303 to a
+ *                         fresh origin, as before the dock.
  *   <20 letters>.<BASE_HOST>
  *                         a tile origin. Serves the loader runtime (shuttle,
  *                         worker) under /.well-known/web-tiles/ with the
@@ -43,6 +51,15 @@
 import * as BunnySDK from 'https://esm.sh/@bunny.net/edgescript-sdk@0.13.0'
 
 const RUNTIME_PATH = '/.well-known/web-tiles/'
+
+const DOCK_PATH = '__DOCK_PATH__'
+
+// For the origin DOCK_ORIGIN, which is replaced by the one being docked.
+const DOCK_ORIGIN = '__DOCK_ORIGIN__'
+const DOCK_HEADERS: Record<string, string> = __DOCK_HEADERS__
+
+const DOCK_FILES: Record<string, {type: string; etag: string; body: string}> =
+  __DOCK_FILES__
 
 const RUNTIME_HEADERS: Record<string, string> = __RUNTIME_HEADERS__
 
@@ -152,6 +169,9 @@ function respond(req: Request): Response {
     const origin = `${randomLabel()}.${base}${port ? `:${port}` : ''}`
     // Always https, except for a local run on *.localhost.
     const scheme = base.endsWith('localhost') ? 'http' : 'https'
+    if (url.pathname.startsWith(DOCK_PATH)) {
+      return dock(req, url, {base, host, port, scheme, origin})
+    }
     return new Response(null, {
       status: 303,
       headers: {
@@ -182,10 +202,14 @@ function respond(req: Request): Response {
       status: 200,
       headers: {
         ...HOST_HEADERS,
-        // Tiles come from this server's origins only (any port, for local runs).
+        // The page frames the dock, on the loading host, and nothing else
+        // (any port, for local runs): the tile's origin is framed there.
         'content-security-policy': HOST_HEADERS[
           'content-security-policy'
-        ].replace('__FRAME_SRC__', `https://*.${base} http://*.${base}`),
+        ].replace(
+          '__FRAME_SRC__',
+          `https://load.${base} http://load.${base}:*`,
+        ),
         'content-type': file.type,
         etag: file.etag,
         'cache-control': 'no-cache',
@@ -222,4 +246,68 @@ function respond(req: Request): Response {
     }
   }
   return dead(404, 'Not a tile resource.')
+}
+
+/**
+ * The dock: the page, for one tile origin named in `?tile=`, with a policy
+ * made for that origin; and its script. Only an origin of the shape this
+ * server mints, on this port, is docked.
+ */
+function dock(
+  req: Request,
+  url: URL,
+  {
+    base,
+    host,
+    port,
+    scheme,
+    origin,
+  }: {
+    base: string
+    host: string
+    port?: string
+    scheme: string
+    origin: string
+  },
+): Response {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    return dead(405, 'Method not allowed.', {allow: 'GET, HEAD'})
+  }
+  const path = url.pathname.slice(DOCK_PATH.length) || 'index.html'
+  const file = DOCK_FILES[path]
+  if (!file) return dead(404, 'Not part of the dock.')
+  let docked = origin
+  if (path === 'index.html') {
+    const asked = url.searchParams.getAll('tile')
+    if (asked.length === 0) {
+      return new Response(null, {
+        status: 303,
+        headers: {
+          location: `${scheme}://${host}${DOCK_PATH}?tile=${encodeURIComponent(origin)}`,
+          'cache-control': 'no-store',
+          'referrer-policy': 'no-referrer',
+          'x-content-type-options': 'nosniff',
+        },
+      })
+    }
+    const m =
+      asked.length === 1
+        ? asked[0].toLowerCase().match(/^([a-z]{20})\.(.+?)(?::(\d+))?$/)
+        : null
+    if (!m || m[2] !== base || m[3] !== port) {
+      return dead(400, 'Not a tile origin.')
+    }
+    docked = `${m[1]}.${base}${port ? `:${port}` : ''}`
+  }
+  const headers: Record<string, string> = {
+    ...DOCK_HEADERS,
+    'content-type': file.type,
+  }
+  headers['content-security-policy'] = headers[
+    'content-security-policy'
+  ].replace(DOCK_ORIGIN, `${scheme}://${docked}`)
+  return new Response(req.method === 'HEAD' ? null : file.body, {
+    status: 200,
+    headers,
+  })
 }

@@ -7,9 +7,15 @@ edge script, so mu no longer depends on `load.webtil.es`.
 
 ## What it does
 
-- `load.<BASE_HOST>` answers every request with a 303 to a fresh
-  `<20 random letters>.<BASE_HOST>`, same path: each load gets its own origin,
-  cross-origin from mu and from every other tile.
+- `load.<BASE_HOST>` serves the dock, under `/.well-known/web-tiles/dock/`:
+  the page the app frames. Asked for without a tile origin it mints one, a
+  fresh `<20 random letters>.<BASE_HOST>`, and redirects to itself with it:
+  each load gets its own origin, cross-origin from mu and from every other
+  tile. The dock frames the runtime on that origin and keeps it there: its
+  policy lets its frame be at that runtime and nowhere else, so a tile that
+  scripts its runtime into following a link out gets a refused navigation,
+  and is stopped. Any other path there still answers with a 303 to a fresh
+  origin, where a loader from before the dock is told to update.
 - On such a tile origin it serves the loader runtime (the shuttle page, its
   scripts and the service worker) under `/.well-known/web-tiles/`, with the
   runtime policy from `@dasl/tile-lexicon`. Every other path there is a dead

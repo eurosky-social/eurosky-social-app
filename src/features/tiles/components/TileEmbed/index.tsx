@@ -14,6 +14,7 @@ import {logger} from '#/logger'
 import {useAppviewClient} from '#/state/session'
 import {atoms as a} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
+import {useGlobalDialogsControlContext} from '#/components/dialogs/Context'
 import * as Toast from '#/components/Toast'
 import {type app} from '#/lexicons'
 import {fetchIsTrustedTile, useTileAuthor} from '../../author'
@@ -64,6 +65,7 @@ export function TileEmbed({
   autoplay?: boolean
 }) {
   const {t: l} = useLingui()
+  const {linkWarningDialogControl} = useGlobalDialogsControlContext()
   const queryClient = useQueryClient()
   const appviewClient = useAppviewClient()
   const author = useTileAuthor(tile)
@@ -163,6 +165,18 @@ export function TileEmbed({
               onSizing={setSizing}
               onSize={want => {
                 if (want.height) setAsked(want.height)
+              }}
+              onLink={(href, activated) => {
+                /*
+                 * A link out of the tile is ours to open, or not. The tile
+                 * chose the address, so the user sees it first, in the
+                 * dialog mu shows for any link it does not vouch for, and
+                 * opens it from there. A request nobody tapped for is
+                 * dropped.
+                 */
+                if (activated) {
+                  linkWarningDialogControl.open({displayText: '', href})
+                }
               }}
               onError={onError}
             />

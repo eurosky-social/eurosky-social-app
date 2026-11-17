@@ -23,7 +23,9 @@ const pkg = name =>
 const serverDir = join(modules, 'tile-server')
 const serverPkg = pkg('tile-server')
 const lexiconPkg = pkg('tile-lexicon')
-const {runtimeHeaders, deadHeaders} = await import('@dasl/tile-lexicon')
+const {runtimeHeaders, deadHeaders, dockHeaders, dockPath} = await import(
+  '@dasl/tile-lexicon'
+)
 const {tileHostHeaders} = await import('@dasl/tile-host')
 const hostPkg = pkg('tile-host')
 
@@ -48,6 +50,9 @@ function readFiles(dir) {
 }
 const files = readFiles(join(serverDir, 'public'))
 const hostFiles = readFiles(join(modules, 'tile-host', 'public'))
+// The dock: its files, and its headers for an origin filled in at run time.
+const dockFiles = readFiles(join(serverDir, 'dock'))
+const DOCK_ORIGIN = 'https://tile-origin.invalid'
 // frame-src is filled in at run time, from the base host.
 const hostHeaders = tileHostHeaders({frameSrc: '__FRAME_SRC__'})
 
@@ -60,6 +65,10 @@ const out = template
   .replace('__RUNTIME_HEADERS__', JSON.stringify(runtimeHeaders, null, 2))
   .replace('__DEAD_HEADERS__', JSON.stringify(deadHeaders, null, 2))
   .replace('__FILES__', () => JSON.stringify(files, null, 2))
+  .replace('__DOCK_PATH__', dockPath)
+  .replace('__DOCK_ORIGIN__', DOCK_ORIGIN)
+  .replace('__DOCK_HEADERS__', JSON.stringify(dockHeaders(DOCK_ORIGIN), null, 2))
+  .replace('__DOCK_FILES__', () => JSON.stringify(dockFiles, null, 2))
   .replace('__HOST_HEADERS__', JSON.stringify(hostHeaders, null, 2))
   .replace('__HOST_FILES__', () => JSON.stringify(hostFiles, null, 2))
 

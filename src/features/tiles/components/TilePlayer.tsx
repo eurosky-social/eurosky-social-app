@@ -4,7 +4,6 @@ import {WebView, type WebViewMessageEvent} from 'react-native-webview'
 import {type ShouldStartLoadRequest} from 'react-native-webview/lib/WebViewTypes'
 import {parseTileHostEvent, type TileHostLimits} from '@dasl/tile-host/messages'
 
-import {useOpenLink} from '#/lib/hooks/useOpenLink'
 import {atoms as a} from '#/alf'
 import {Loader} from '#/components/Loader'
 import {tileHostLimitsMessage, tileHostOrigin, tileHostUrl} from '../host'
@@ -14,8 +13,9 @@ import {type TileSizing} from '../sizing'
  * A tile running on native: a WebView on the hosted page (`@dasl/tile-host`)
  * that runs the loader, sandbox and all. The page reports the manifest's
  * requested size, the sizes the tile asks for as it runs, readiness and
- * errors over the message bridge, and is told mu's limits on the tile's size;
- * nothing else crosses it.
+ * errors over the message bridge, and is told mu's limits on the tile's size.
+ * A link out of the tile comes up the same way, as a request (`onLink`): the
+ * tile opens nothing itself, and nothing is opened from here either.
  */
 export function TilePlayer({
   uri,
@@ -23,6 +23,7 @@ export function TilePlayer({
   limits,
   onSizing,
   onSize,
+  onLink,
   onLoad,
   onError,
   style,
@@ -42,11 +43,17 @@ export function TilePlayer({
    * and passes it back as `height`; the page tells the tile what it got.
    */
   onSize?: (want: {width?: number; height?: number}) => void
+  /**
+   * The tile asks for a link to be opened (https://dasl.ing/tp-link.html):
+   * the user followed one in it, or it asked from script. `activated` is
+   * false when the user had not just touched the tile. The address is the
+   * tile's to choose: show it before opening anything.
+   */
+  onLink?: (url: string, activated: boolean) => void
   onLoad?: () => void
   onError?: (message: string) => void
   style?: StyleProp<ViewStyle>
 }) {
-  const openLink = useOpenLink()
   const [ready, setReady] = useState(false)
   const source = tileHostUrl(uri)
   const hostOrigin = tileHostOrigin()
@@ -78,6 +85,9 @@ export function TilePlayer({
       case 'size':
         onSize?.({width: event.width, height: event.height})
         break
+      case 'link':
+        onLink?.(event.url, event.activated)
+        break
       case 'load':
         setReady(true)
         onLoad?.()
@@ -92,14 +102,14 @@ export function TilePlayer({
   }
 
   /*
-   * Only the host page belongs in the top frame. The shuttle and the tile are
-   * subframes and are left alone; a top-level navigation anywhere else is a
-   * link the tile opened out of its sandbox, which goes where links go.
+   * Only the host page belongs in the top frame. The frames under it are
+   * left alone; a top-level navigation anywhere else has no business
+   * happening (a tile opens no window and navigates nothing but itself),
+   * and is not followed. Links out of a tile arrive as `link` events.
    */
   const onShouldStartLoadWithRequest = (req: ShouldStartLoadRequest) => {
     if (!req.isTopFrame) return true
     if (req.url.startsWith(hostOrigin)) return true
-    openLink(req.url)
     return false
   }
 
@@ -113,7 +123,7 @@ export function TilePlayer({
         domStorageEnabled
         onMessage={onMessage}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
-        onOpenWindow={e => openLink(e.nativeEvent.targetUrl)}
+        onOpenWindow={() => {}}
         setSupportMultipleWindows
         /*
          * iOS only gives service workers, which the tile runtime needs, to

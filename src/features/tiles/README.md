@@ -141,6 +141,18 @@ tile. A post shown on its own, as the anchor of its thread rather than as a
 feed item, loads the tile on mount instead of waiting for a click; the card's
 link is the plain post URL, so other clients lead there.
 
+A tile navigates itself and nothing else. It cannot open a window, and the
+frame it runs in is held in place by the dock: the page on the loading server
+that the app frames, which in turn frames the tile's origin and lets it be
+nowhere else. A link out of a tile is a request
+(https://dasl.ing/tp-link.html), made when the user follows an ordinary link
+in it or by the tile's script, and mu decides: the address goes into the link
+warning dialog, the one shown for any link mu does not vouch for, and the user
+opens it from there, in the browser the app uses for links. A request nobody
+tapped for is dropped. On the web that is `tileLinks` in the embed; on native
+the hosted page sends `link` events and nothing is ever opened in the
+WebView.
+
 ## Loading server
 
 `TILES_LOAD_DOMAIN` (`EXPO_PUBLIC_TILES_LOAD_DOMAIN`, default

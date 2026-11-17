@@ -22,9 +22,10 @@ const base = process.argv[3] || 'localhost'
 const local = base.endsWith('localhost')
 const here = dirname(fileURLToPath(import.meta.url))
 const modules = join(here, '..', '..', 'node_modules', '@dasl')
-const {runtimeHeaders, deadHeaders} = await import(
+const {runtimeHeaders, deadHeaders, dockCSP, dockPath} = await import(
   join(modules, 'tile-lexicon', 'dist', 'index.js')
 )
+const dockDir = join(modules, 'tile-server', 'dock')
 const publicDir = join(modules, 'tile-server', 'public')
 
 /** GET/HEAD a path on a named host; locally the name only goes in Host. */
@@ -215,9 +216,9 @@ if (page.unreachable) {
   )
   const csp = page.headers['content-security-policy'] || ''
   check(
-    "it may frame this server's tile origins and nothing else",
+    "it may frame this server's dock, on the loading host, and nothing else",
     new RegExp(
-      `frame-src https://\\*\\.${base.replace(/\./g, '\\.')}[ ;]`,
+      `frame-src https://load\\.${base.replace(/\./g, '\\.')} http://load\\.${base.replace(/\./g, '\\.')}:\\*(;|$)`,
     ).test(csp) && /default-src 'none'/.test(csp),
     csp.match(/frame-src[^;]*/)?.[0] ?? 'no frame-src',
   )
@@ -290,6 +291,48 @@ check(
     c => !/Domain=/i.test(c) || c.toLowerCase().endsWith(`domain=${domain}`),
   ),
 )
+
+// The dock: on the loading host, for one tile origin at a time.
+const scheme = local ? 'http' : 'https'
+const portPart = reach.port ? `:${reach.port}` : ''
+const mint = await request(`load.${base}`, dockPath)
+const minted = new URL(mint.headers.location || 'http://invalid/')
+check('the dock, asked without a tile origin, answers 303', mint.status === 303, String(mint.status))
+check(
+  'to itself, with a 20-letter tile origin',
+  minted.hostname === `load.${base}` &&
+    minted.pathname === dockPath &&
+    new RegExp(`^[a-z]{20}\\.${base.replace(/\./g, '\\.')}${portPart}$`).test(
+      minted.searchParams.get('tile') || '',
+    ),
+  mint.headers.location,
+)
+const docked = minted.searchParams.get('tile')
+const dockPage = await request(`load.${base}`, `${dockPath}?tile=${encodeURIComponent(docked)}`)
+check(
+  'the dock page is served for that origin',
+  dockPage.status === 200 &&
+    dockPage.body === readFileSync(join(dockDir, 'index.html'), 'utf8'),
+  String(dockPage.status),
+)
+check(
+  'with a policy that frames that origin\'s runtime and nothing else',
+  dockPage.headers['content-security-policy'] === dockCSP(`${scheme}://${docked}`),
+  dockPage.headers['content-security-policy'],
+)
+const dockJs = await request(`load.${base}`, `${dockPath}dock.js`)
+check(
+  'the dock script is served, byte for byte',
+  dockJs.status === 200 &&
+    dockJs.body === readFileSync(join(dockDir, 'dock.js'), 'utf8'),
+  String(dockJs.status),
+)
+for (const bad of ['evil.example', base, `load.${base}`, `${docked.replace(/:\d+$/, '')}:1`, `x.${docked}`]) {
+  const res = await request(`load.${base}`, `${dockPath}?tile=${encodeURIComponent(bad)}`)
+  check(`does not dock ${bad}`, res.status === 400, String(res.status))
+}
+const notOnTile = await request(origin, dockPath)
+check('a tile origin has no dock', notOnTile.status === 404, String(notOnTile.status))
 
 if (failures) {
   console.error(`\n${failures} failure(s)`)
