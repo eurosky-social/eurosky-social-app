@@ -8,6 +8,7 @@ import {
 
 import {getDeviceId, getSessionId} from '#/analytics/identifiers'
 import {withAppViewShadowFetch} from '#/features/appView/shadow'
+import {withImageCdn} from '#/features/imageCdn/agent'
 
 type CreateLexClientOptions = ClientOptions & {
   /**
@@ -55,6 +56,8 @@ function withDeviceSessionHeaders(agentOptions: Agent | AgentOptions): Agent {
  * missing timezones) and blob MIME/size constraints. `Client.configure` only
  * accepts `appLabelers` globally, so the option is defaulted here, per
  * constructed client.
+ *
+ * Every client also rewrites image URLs to the selected image CDN.
  */
 export function createLexClient(
   agent: Agent | AgentOptions,
@@ -62,7 +65,11 @@ export function createLexClient(
 ): Client {
   const {includeDeviceSessionHeaders, ...clientOptions} = options
   return new Client(
-    includeDeviceSessionHeaders ? withDeviceSessionHeaders(agent) : agent,
+    withImageCdn(
+      includeDeviceSessionHeaders
+        ? withDeviceSessionHeaders(agent)
+        : buildAgent(agent),
+    ),
     {
       strictResponseProcessing: false,
       ...clientOptions,

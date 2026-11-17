@@ -139,6 +139,7 @@ import {LegacyNotificationSettingsScreen} from '#/screens/Settings/LegacyNotific
 import {NetworkServicesSettingsScreen} from '#/screens/Settings/NetworkServicesSettings'
 import {AppViewTransferSettingsScreen} from '#/screens/Settings/NetworkServicesSettings/AppViewTransfer'
 import {ContentServiceSettingsScreen} from '#/screens/Settings/NetworkServicesSettings/ContentServiceSettings'
+import {ImageCdnSettingsScreen} from '#/screens/Settings/NetworkServicesSettings/ImageCdnSettings'
 import {NotificationSettingsScreen} from '#/screens/Settings/NotificationSettings'
 import {ActivityNotificationSettingsScreen} from '#/screens/Settings/NotificationSettings/ActivityNotificationSettings'
 import {PetCompanionSettingsScreen} from '#/screens/Settings/PetCompanionSettings'
@@ -529,6 +530,14 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         getComponent={() => ContentServiceSettingsScreen}
         options={{
           title: title(msg`Content service`),
+          requireAuth: true,
+        }}
+      />
+      <Stack.Screen
+        name="ImageCdnSettings"
+        getComponent={() => ImageCdnSettingsScreen}
+        options={{
+          title: title(msg`Image CDN`),
           requireAuth: true,
         }}
       />

@@ -80,6 +80,7 @@ export const router = new Router<AllNavigatableRoutes>({
   AppearanceSettings: '/settings/appearance',
   NetworkServicesSettings: '/settings/network-services',
   ContentServiceSettings: '/settings/network-services/content-service',
+  ImageCdnSettings: '/settings/network-services/image-cdn',
   AppViewTransferSettings: '/settings/network-services/transfer-app-data',
   PetCompanionSettings: '/settings/pet-companion',
   DecorationsSettings: '/settings/decorations',

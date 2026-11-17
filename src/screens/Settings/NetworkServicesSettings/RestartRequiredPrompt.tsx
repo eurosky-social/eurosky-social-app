@@ -9,15 +9,20 @@ import {IS_WEB} from '#/env'
 
 export function NetworkServicesRestartRequiredPrompt({
   control,
+  description,
 }: {
   control: Prompt.PromptControlProps
+  description?: string
 }) {
   const {t: l} = useLingui()
   const queryClient = useQueryClient()
   const {accounts} = useSession()
 
   const restart = async () => {
-    /* Service responses share query keys, so none may survive the switch. */
+    /*
+     * Service responses share query keys and carry image URLs, so none may
+     * survive the switch.
+     */
     queryClient.clear()
     const cacheIds = new Set([
       'logged-out',
@@ -36,7 +41,9 @@ export function NetworkServicesRestartRequiredPrompt({
     <Prompt.Basic
       control={control}
       title={l`Restart required`}
-      description={l`Restart the app to use the selected content service.`}
+      description={
+        description ?? l`Restart the app to use the selected content service.`
+      }
       cancelButtonCta={l`Later`}
       confirmButtonCta={l`Restart`}
       onConfirm={() => void restart()}

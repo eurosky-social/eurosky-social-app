@@ -72,6 +72,8 @@ export type Device = {
   policyUpdateBannerDismissed?: boolean
   /** Device-wide override for public and authenticated AppView requests. */
   appViewOverride: AppViewPreference | undefined
+  /** Device-wide image CDN base URL, replacing the build default. */
+  imageCdnOverride?: string
   /**
    * Per account DID, the AppView this device's push token was last registered
    * with, so a switch of AppView can unregister it at the old one.
