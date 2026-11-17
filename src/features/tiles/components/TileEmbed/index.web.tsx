@@ -214,7 +214,10 @@ export function TileEmbed({
    * it is mounted into a plain div once the card has switched to its active
    * layout. The frame fills that div, whose height React keeps in step with
    * the width, so a resize never remounts (and so reloads) the tile.
-   * Removing the frame tears the tile down.
+   * Closing the tile tears it down: its runtime gets a moment to unregister
+   * its worker and have its origin wiped, where the frame is still in the
+   * document to do it, and the loader lets go of the frame either way, so
+   * that nothing of a tile that was shown and put away is kept.
    *
    * The size protocol runs over the same frame. React owns the box, so the
    * loader only passes on what the tile asks for (`apply: false`); the
@@ -262,7 +265,7 @@ export function TileEmbed({
       sizerRef.current = null
       sizer.stop()
       links.stop()
-      frame.remove()
+      void loaded.close()
     }
   }, [status, title])
 

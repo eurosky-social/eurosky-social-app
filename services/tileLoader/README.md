@@ -20,6 +20,10 @@ edge script, so mu no longer depends on `load.webtil.es`.
   scripts and the service worker) under `/.well-known/web-tiles/`, with the
   runtime policy from `@dasl/tile-lexicon`. Every other path there is a dead
   end: a 404 that loads nothing, runs nothing and cannot be framed.
+- `/.well-known/web-tiles/wipe` on a tile origin answers with
+  `Clear-Site-Data`. The runtime loads it when the app closes a tile, so that
+  an origin made for one load does not stay in the browser, with its worker
+  registered and whatever the tile stored, for good.
 - `<BASE_HOST>/host/` is the page the native apps' WebView runs one tile in
   ([`@dasl/tile-host`](https://www.npmjs.com/package/@dasl/tile-host), inlined
   like the runtime). Its CSP lets it frame this server's tile origins only.

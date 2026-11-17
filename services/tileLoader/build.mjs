@@ -23,9 +23,14 @@ const pkg = name =>
 const serverDir = join(modules, 'tile-server')
 const serverPkg = pkg('tile-server')
 const lexiconPkg = pkg('tile-lexicon')
-const {runtimeHeaders, deadHeaders, dockHeaders, dockPath} = await import(
-  '@dasl/tile-lexicon'
-)
+const {
+  runtimeHeaders,
+  deadHeaders,
+  dockHeaders,
+  dockPath,
+  wipeHeaders,
+  wipePath,
+} = await import('@dasl/tile-lexicon')
 const {tileHostHeaders} = await import('@dasl/tile-host')
 const hostPkg = pkg('tile-host')
 
@@ -65,6 +70,8 @@ const out = template
   .replace('__RUNTIME_HEADERS__', JSON.stringify(runtimeHeaders, null, 2))
   .replace('__DEAD_HEADERS__', JSON.stringify(deadHeaders, null, 2))
   .replace('__FILES__', () => JSON.stringify(files, null, 2))
+  .replace('__WIPE_PATH__', wipePath)
+  .replace('__WIPE_HEADERS__', JSON.stringify(wipeHeaders, null, 2))
   .replace('__DOCK_PATH__', dockPath)
   .replace('__DOCK_ORIGIN__', DOCK_ORIGIN)
   .replace('__DOCK_HEADERS__', JSON.stringify(dockHeaders(DOCK_ORIGIN), null, 2))

@@ -52,6 +52,13 @@ import * as BunnySDK from 'https://esm.sh/@bunny.net/edgescript-sdk@0.13.0'
 
 const RUNTIME_PATH = '/.well-known/web-tiles/'
 
+// Where the runtime goes, on a tile origin, to have that origin wiped when
+// its tile is closed: the answer's Clear-Site-Data has the browser forget the
+// worker registered there and whatever the tile stored.
+const WIPE_PATH = '__WIPE_PATH__'
+
+const WIPE_HEADERS: Record<string, string> = __WIPE_HEADERS__
+
 const DOCK_PATH = '__DOCK_PATH__'
 
 // For the origin DOCK_ORIGIN, which is replaced by the one being docked.
@@ -222,6 +229,13 @@ function respond(req: Request): Response {
     ? name.slice(0, -(base.length + 1))
     : ''
   if (!/^[a-z]{20}$/.test(label)) return dead(404, 'Not a tile origin.')
+
+  if (url.pathname === WIPE_PATH) {
+    return new Response('<!doctype html><title>Wiped</title>', {
+      status: 200,
+      headers: {...WIPE_HEADERS, 'content-type': 'text/html; charset=utf-8'},
+    })
+  }
 
   if (url.pathname.startsWith(RUNTIME_PATH)) {
     if (req.method !== 'GET' && req.method !== 'HEAD') {

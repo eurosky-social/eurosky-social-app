@@ -22,9 +22,8 @@ const base = process.argv[3] || 'localhost'
 const local = base.endsWith('localhost')
 const here = dirname(fileURLToPath(import.meta.url))
 const modules = join(here, '..', '..', 'node_modules', '@dasl')
-const {runtimeHeaders, deadHeaders, dockCSP, dockPath} = await import(
-  join(modules, 'tile-lexicon', 'dist', 'index.js')
-)
+const {runtimeHeaders, deadHeaders, dockCSP, dockPath, wipeHeaders, wipePath} =
+  await import(join(modules, 'tile-lexicon', 'dist', 'index.js'))
 const dockDir = join(modules, 'tile-server', 'dock')
 const publicDir = join(modules, 'tile-server', 'public')
 
@@ -331,6 +330,23 @@ for (const bad of ['evil.example', base, `load.${base}`, `${docked.replace(/:\d+
   const res = await request(`load.${base}`, `${dockPath}?tile=${encodeURIComponent(bad)}`)
   check(`does not dock ${bad}`, res.status === 400, String(res.status))
 }
+// Wiping: a tile origin can be emptied, and nothing else can.
+const wipe = await request(origin, wipePath)
+check(
+  'a tile origin answers the wipe with Clear-Site-Data',
+  wipe.status === 200 &&
+    wipe.headers['clear-site-data'] === wipeHeaders['clear-site-data'],
+  `${wipe.status} ${wipe.headers['clear-site-data']}`,
+)
+for (const host of [base, `load.${base}`]) {
+  const res = await request(host, wipePath)
+  check(
+    `${host} clears nothing`,
+    !res.headers['clear-site-data'],
+    String(res.headers['clear-site-data']),
+  )
+}
+
 const notOnTile = await request(origin, dockPath)
 check('a tile origin has no dock', notOnTile.status === 404, String(notOnTile.status))
 
