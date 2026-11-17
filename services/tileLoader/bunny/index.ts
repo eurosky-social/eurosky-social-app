@@ -360,7 +360,13 @@ function dock(
     port,
     scheme,
     origin,
-  }: {base: string; host: string; port?: string; scheme: string; origin: string},
+  }: {
+    base: string
+    host: string
+    port?: string
+    scheme: string
+    origin: string
+  },
 ): Response {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     return dead(405, 'Method not allowed.', {allow: 'GET, HEAD'})
@@ -383,17 +389,21 @@ function dock(
       })
     }
     const m =
-      asked.length === 1 ? asked[0].toLowerCase().match(/^([a-z]{20})\.(.+?)(?::(\d+))?$/) : null
+      asked.length === 1
+        ? asked[0].toLowerCase().match(/^([a-z]{20})\.(.+?)(?::(\d+))?$/)
+        : null
     if (!m || m[2] !== base || m[3] !== port) {
       return dead(400, 'Not a tile origin.')
     }
     docked = `${m[1]}.${base}${port ? `:${port}` : ''}`
   }
-  const headers: Record<string, string> = {...DOCK_HEADERS, 'content-type': file.type}
-  headers['content-security-policy'] = headers['content-security-policy'].replace(
-    DOCK_ORIGIN,
-    `${scheme}://${docked}`,
-  )
+  const headers: Record<string, string> = {
+    ...DOCK_HEADERS,
+    'content-type': file.type,
+  }
+  headers['content-security-policy'] = headers[
+    'content-security-policy'
+  ].replace(DOCK_ORIGIN, `${scheme}://${docked}`)
   return new Response(req.method === 'HEAD' ? null : file.body, {
     status: 200,
     headers,
