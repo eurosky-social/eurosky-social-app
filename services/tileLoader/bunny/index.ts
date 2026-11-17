@@ -231,6 +231,17 @@ function requestHost(req: Request, base: string): string {
   return (candidates.find(Boolean) || '').toLowerCase()
 }
 
+/**
+ * A file by its name, if it is one of the files: a plain lookup would also
+ * answer for the names every object has (`constructor`, `toString`).
+ */
+function fileNamed(
+  files: Record<string, {type: string; etag: string; body: string}>,
+  name: string,
+) {
+  return Object.hasOwn(files, name) ? files[name] : undefined
+}
+
 function dead(
   status: number,
   text: string,
@@ -309,7 +320,10 @@ function respond(req: Request): Response {
       })
     }
     const file = url.pathname.startsWith(HOST_PATH)
-      ? HOST_FILES[url.pathname.slice(HOST_PATH.length) || 'index.html']
+      ? fileNamed(
+          HOST_FILES,
+          url.pathname.slice(HOST_PATH.length) || 'index.html',
+        )
       : undefined
     if (!file) return dead(404, 'Nothing here.')
     if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -351,7 +365,10 @@ function respond(req: Request): Response {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       return dead(405, 'Method not allowed.', {allow: 'GET, HEAD'})
     }
-    const file = FILES[url.pathname.slice(RUNTIME_PATH.length) || 'index.html']
+    const file = fileNamed(
+      FILES,
+      url.pathname.slice(RUNTIME_PATH.length) || 'index.html',
+    )
     if (file) {
       const headers = {
         ...RUNTIME_HEADERS,
@@ -398,7 +415,7 @@ function dock(
     return dead(405, 'Method not allowed.', {allow: 'GET, HEAD'})
   }
   const path = url.pathname.slice(DOCK_PATH.length) || 'index.html'
-  const file = DOCK_FILES[path]
+  const file = fileNamed(DOCK_FILES, path)
   if (!file) return dead(404, 'Not part of the dock.')
   let docked = origin
   if (path === 'index.html') {

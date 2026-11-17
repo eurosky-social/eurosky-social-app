@@ -71,6 +71,18 @@ const hasAll = (got, want) =>
   Object.entries(want)
     .filter(([k, v]) => got[k] !== v)
     .map(([k]) => k)
+/** Only the files are served: not the names every object answers to. */
+async function onlyFiles(host, dir) {
+  for (const name of ['constructor', 'toString', 'hasOwnProperty']) {
+    const res = await request(host, `${dir}${name}`)
+    const miss = hasAll(res.headers, deadHeaders)
+    check(
+      `${dir}${name} on ${host} is not a file`,
+      res.status === 404 && miss.length === 0,
+      `${res.status} ${miss.join(', ')}`,
+    )
+  }
+}
 
 const a = await request(`load.${base}`, '/.well-known/web-tiles/?x=1')
 const b = await request(`load.${base}`, '/.well-known/web-tiles/?x=1')
@@ -174,6 +186,7 @@ check(
   post.status === 405,
   String(post.status),
 )
+await onlyFiles(origin, '/.well-known/web-tiles/')
 
 for (const host of [
   `www.${base}`,
@@ -241,6 +254,7 @@ if (page.unreachable) {
     root.status === 404 && shuttleOnBase.status === 404,
     `${root.status} ${shuttleOnBase.status}`,
   )
+  await onlyFiles(base, '/host/')
 }
 
 // Cookies: none set unasked; any that arrive are expired, for our scopes only.
@@ -326,6 +340,7 @@ check(
     dockJs.body === readFileSync(join(dockDir, 'dock.js'), 'utf8'),
   String(dockJs.status),
 )
+await onlyFiles(`load.${base}`, dockPath)
 for (const bad of ['evil.example', base, `load.${base}`, `${docked.replace(/:\d+$/, '')}:1`, `x.${docked}`]) {
   const res = await request(`load.${base}`, `${dockPath}?tile=${encodeURIComponent(bad)}`)
   check(`does not dock ${bad}`, res.status === 400, String(res.status))
