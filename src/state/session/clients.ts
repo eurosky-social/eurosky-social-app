@@ -10,9 +10,11 @@ import {
 import {createLexClient} from '#/lib/lexClient'
 import {
   getAppViewProxyService,
+  getConfiguredAppView,
   getPublicAppViewUrl,
 } from '#/features/appView/config'
 import {withAppViewShadowFetch} from '#/features/appView/shadow'
+import {withDirectFeed} from './direct-feed'
 import {networkAwareFetch} from './network'
 
 /**
@@ -31,12 +33,24 @@ import {networkAwareFetch} from './network'
  * instance, and that function filters out global app labelers so the redacted
  * authorities are not also listed unredacted.
  *
- * No `fetch` option: a client built over a session uses that session's own
- * fetch, which is `networkAwareFetch` wrapped in the disposal kill switch.
+ * Normally requests use the session's own fetch. With DIRECT_FEED_READS
+ * enabled, only authenticated getFeed reads go directly to the selected
+ * AppView using method-scoped service auth; all other calls stay on the PDS.
  */
 export function buildAppviewClient(agent: Agent): Client {
+  const service = getAppViewProxyService(BLUESKY_PROXY_HEADER.get()) as Service
+  if (process.env.EXPO_PUBLIC_DIRECT_FEED_READS === 'true') {
+    agent = withDirectFeed(
+      agent,
+      {
+        url: getPublicAppViewUrl(getConfiguredAppView().url),
+        did: service.split('#')[0],
+      },
+      networkAwareFetch,
+    )
+  }
   return createLexClient(agent, {
-    service: getAppViewProxyService(BLUESKY_PROXY_HEADER.get()) as Service,
+    service,
     includeDeviceSessionHeaders: true,
   })
 }
