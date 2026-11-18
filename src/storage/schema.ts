@@ -73,6 +73,11 @@ export type Device = {
   /** Device-wide override for public and authenticated AppView requests. */
   appViewOverride: AppViewPreference | undefined
   /**
+   * AppView temporarily used instead of the preferred one while that one is
+   * failing. Cleared once the preferred AppView answers again.
+   */
+  appViewFailover?: AppViewPreference
+  /**
    * Per account DID, the AppView this device's push token was last registered
    * with, so a switch of AppView can unregister it at the old one.
    */
