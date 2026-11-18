@@ -58,13 +58,23 @@ function normalizeOrUndefined(input: string | undefined): string | undefined {
   }
 }
 
+const CONFIGURED_IMAGE_CDN =
+  normalizeOrUndefined(BRAND.services.cdn) ?? SOURCE_IMAGE_CDN
+
 /** The build-time default (`EXPO_PUBLIC_IMAGE_CDN_URL` or brand.json). */
 export function getConfiguredImageCdn(): string {
-  return normalizeOrUndefined(BRAND.services.cdn) ?? SOURCE_IMAGE_CDN
+  return CONFIGURED_IMAGE_CDN
 }
 
+/* Read on every response, so the stored value is only parsed when it changes. */
+let lastOverride: {raw: string | undefined; url: string | undefined} | undefined
+
 export function readImageCdnOverride(): string | undefined {
-  return normalizeOrUndefined(device.get(['imageCdnOverride']))
+  const raw = device.get(['imageCdnOverride'])
+  if (!lastOverride || lastOverride.raw !== raw) {
+    lastOverride = {raw, url: normalizeOrUndefined(raw)}
+  }
+  return lastOverride.url
 }
 
 /** The CDN images should currently load from. */

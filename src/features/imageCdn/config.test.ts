@@ -9,6 +9,7 @@ import {
   rewriteImageCdnUrl,
   rewriteImageCdnUrlsInJson,
 } from './config'
+import {getImageCdnPath} from './verify'
 
 const CDN = 'https://cdn.example.com'
 const AVATAR = 'https://cdn.bsky.app/img/avatar/plain/did:plc:abc/bafy@jpeg'
@@ -55,6 +56,16 @@ describe('image CDN configuration', () => {
     expect(rewriteImageCdnUrl('https://cdn.bsky.app/other', CDN)).toBe(
       'https://cdn.bsky.app/other',
     )
+  })
+})
+
+describe('getImageCdnPath', () => {
+  it('extracts the image path whatever CDN serves it', () => {
+    const path = '/img/avatar/plain/did:plc:abc/bafy@jpeg'
+    expect(getImageCdnPath(AVATAR)).toBe(path)
+    expect(getImageCdnPath(`https://example.com/bsky${path}`)).toBe(path)
+    expect(getImageCdnPath('https://img/logo.png')).toBeUndefined()
+    expect(getImageCdnPath(undefined)).toBeUndefined()
   })
 })
 

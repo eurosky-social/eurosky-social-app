@@ -5,9 +5,10 @@ import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 
 import {type CommonNavigatorParams} from '#/lib/routes/types'
 import {useProfileQuery} from '#/state/queries/profile'
-import {useSession} from '#/state/session'
+import {useAppviewClient, useSession} from '#/state/session'
 import * as SettingsList from '#/screens/Settings/components/SettingsList'
 import {atoms as a, useTheme} from '#/alf'
+import {Admonition} from '#/components/Admonition'
 import {Button, ButtonText} from '#/components/Button'
 import {useDialogControl} from '#/components/Dialog'
 import {FormError} from '#/components/forms/FormError'
@@ -24,12 +25,17 @@ import {
   type ImageCdnOptionId,
   ImageCdnValidationError,
   normalizeImageCdnUrl,
+  SOURCE_IMAGE_CDN,
 } from '#/features/imageCdn/config'
 import {getImageCdnPath, verifyImageCdn} from '#/features/imageCdn/verify'
+import {app} from '#/lexicons'
 import {device, useStorage} from '#/storage'
 import {NetworkServicesRestartRequiredPrompt} from './RestartRequiredPrompt'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'ImageCdnSettings'>
+
+/** Sampled when the current account has no avatar to test a CDN with. */
+const FALLBACK_SAMPLE_ACTOR = 'bsky.app'
 
 export function ImageCdnSettingsScreen({}: Props) {
   const {t: l} = useLingui()
@@ -37,6 +43,7 @@ export function ImageCdnSettingsScreen({}: Props) {
   const [, setOverride] = useStorage(device, ['imageCdnOverride'])
   const {currentAccount} = useSession()
   const {data: profile} = useProfileQuery({did: currentAccount?.did})
+  const client = useAppviewClient()
   const configured = getConfiguredImageCdn()
   const current = getImageCdn()
   const currentOption = getImageCdnOptionId(current)
@@ -108,9 +115,16 @@ export function ImageCdnSettingsScreen({}: Props) {
           ? normalizeImageCdnUrl(customUrl)
           : options.find(option => option.id === selected)!.url
 
-      /* Without an avatar to sample there is nothing to test against. */
-      const samplePath = getImageCdnPath(profile?.avatar, current)
-      if (samplePath) {
+      /* Every AppView serves the Bluesky CDN, so it needs no test. */
+      if (next !== SOURCE_IMAGE_CDN) {
+        let samplePath = getImageCdnPath(profile?.avatar)
+        if (!samplePath) {
+          const fallback = await client.call(app.bsky.actor.getProfile, {
+            actor: FALLBACK_SAMPLE_ACTOR,
+          })
+          samplePath = getImageCdnPath(fallback.avatar)
+        }
+        if (!samplePath) throw new Error('No sample image to verify with')
         await verifyImageCdn(next, samplePath)
       }
 
@@ -156,6 +170,13 @@ export function ImageCdnSettingsScreen({}: Props) {
                 setting applies to every account on this device.
               </Trans>
             </Text>
+
+            <Admonition type="info" style={[a.w_full]}>
+              <Trans>
+                The CDN you choose can see your IP address and which images you
+                load.
+              </Trans>
+            </Admonition>
 
             <Toggle.Group
               type="radio"

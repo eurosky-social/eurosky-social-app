@@ -31,13 +31,11 @@ export async function verifyImageCdn(
 }
 
 /**
- * The `/img/...` path of an image URL served by `cdn`, used to sample a real
- * blob through another CDN.
+ * The `/img/...` path of a CDN image URL, used to sample a real blob through
+ * another CDN. The host is ignored: a cached URL may still point at a CDN
+ * selected earlier.
  */
-export function getImageCdnPath(
-  url: string | undefined,
-  cdn: string,
-): string | undefined {
-  if (!url?.startsWith(`${cdn}/img/`)) return undefined
-  return url.slice(cdn.length)
+export function getImageCdnPath(url: string | undefined): string | undefined {
+  const start = url?.indexOf('/img/', 'https://'.length) ?? -1
+  return start === -1 ? undefined : url!.slice(start)
 }

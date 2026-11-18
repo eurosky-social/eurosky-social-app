@@ -1,5 +1,5 @@
-import {CDN_SERVICE} from '#/lib/constants'
 import {RSVP_STATUS} from '#/features/customEmbeds/atmoRsvp/lexicon'
+import {getImageCdn} from '#/features/imageCdn/config'
 
 const ATMO_HOST = 'https://atmo.rsvp'
 
@@ -111,7 +111,7 @@ export function bskyCdnImage(
   blobCid?: string,
 ): string | undefined {
   if (!blobCid) return undefined
-  return `${CDN_SERVICE}/img/${preset}/plain/${did}/${blobCid}@jpeg`
+  return `${getImageCdn()}/img/${preset}/plain/${did}/${blobCid}@jpeg`
 }
 
 /** Extracts going attendees (with resolved avatar URLs) from an event response. */
