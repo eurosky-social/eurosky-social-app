@@ -5,8 +5,10 @@ import {useRestartApp} from '#/features/appView/useRestartApp'
 
 export function NetworkServicesRestartRequiredPrompt({
   control,
+  description,
 }: {
   control: Prompt.PromptControlProps
+  description?: string
 }) {
   const {t: l} = useLingui()
   const restart = useRestartApp()
@@ -15,7 +17,9 @@ export function NetworkServicesRestartRequiredPrompt({
     <Prompt.Basic
       control={control}
       title={l`Restart required`}
-      description={l`Restart the app to use the selected content service.`}
+      description={
+        description ?? l`Restart the app to use the selected content service.`
+      }
       cancelButtonCta={l`Later`}
       confirmButtonCta={l`Restart`}
       onConfirm={() => void restart()}

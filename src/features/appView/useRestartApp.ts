@@ -11,7 +11,10 @@ export function useRestartApp() {
   const {accounts} = useSession()
 
   return async () => {
-    /* Service responses share query keys, so none may survive the switch. */
+    /*
+     * Service responses share query keys and carry image URLs, so none may
+     * survive the switch.
+     */
     queryClient.clear()
     const cacheIds = new Set([
       'logged-out',

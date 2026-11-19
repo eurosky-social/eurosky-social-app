@@ -72,6 +72,8 @@ export type Device = {
   policyUpdateBannerDismissed?: boolean
   /** Device-wide override for public and authenticated AppView requests. */
   appViewOverride: AppViewPreference | undefined
+  /** Device-wide image CDN base URL, replacing the build default. */
+  imageCdnOverride?: string
   /**
    * AppView temporarily used instead of the preferred one while that one is
    * failing. Cleared once the preferred AppView answers again.

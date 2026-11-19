@@ -102,6 +102,7 @@ export type CommonNavigatorParams = {
   AppearanceSettings: undefined
   NetworkServicesSettings: undefined
   ContentServiceSettings: undefined
+  ImageCdnSettings: undefined
   AppViewTransferSettings: undefined
   PetCompanionSettings: undefined
   DecorationsSettings: undefined

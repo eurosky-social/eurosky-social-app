@@ -50,6 +50,8 @@ export const BRAND = {
     publicApi: appViewUrlOverride || brand.services.publicApi,
     appView: appViewUrlOverride || brand.services.appView,
     appViewDid: appViewDidOverride || brand.services.appViewDid,
+    /** Default image CDN; users can pick another in network settings. */
+    cdn: process.env.EXPO_PUBLIC_IMAGE_CDN_URL || brand.services.cdn,
   },
   verification: brand.verification,
   decorations: {

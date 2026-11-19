@@ -5,6 +5,7 @@ import {type CommonNavigatorParams} from '#/lib/routes/types'
 import * as SettingsList from '#/screens/Settings/components/SettingsList'
 import {Download_Stroke2_Corner0_Rounded as DownloadIcon} from '#/components/icons/Download'
 import {Earth_Stroke2_Corner2_Rounded as EarthIcon} from '#/components/icons/Globe'
+import {Image_Stroke2_Corner2_Rounded as ImageIcon} from '#/components/icons/Image'
 import * as Layout from '#/components/Layout'
 
 type Props = NativeStackScreenProps<
@@ -34,6 +35,14 @@ export function NetworkServicesSettingsScreen({}: Props) {
             <SettingsList.ItemIcon icon={EarthIcon} />
             <SettingsList.ItemText>
               <Trans>Content service</Trans>
+            </SettingsList.ItemText>
+          </SettingsList.LinkItem>
+          <SettingsList.LinkItem
+            to="/settings/network-services/image-cdn"
+            label={l`Image CDN`}>
+            <SettingsList.ItemIcon icon={ImageIcon} />
+            <SettingsList.ItemText>
+              <Trans>Image CDN</Trans>
             </SettingsList.ItemText>
           </SettingsList.LinkItem>
           <SettingsList.LinkItem
