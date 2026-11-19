@@ -12,7 +12,7 @@
  * `keyset: undefined` in its `super()` call), so prod assembles the base
  * `OAuthClient` with our keyset + a fork-owned runtime + IndexedDB stores.
  *
- * Both paths are exposed through one small interface (`signIn`/`init`/
+ * Both paths are exposed through one small interface (`signIn`/`callback`/
  * `restore`) so oauth-web-callback.ts and oauth-agent.ts stay untouched.
  */
 import {
@@ -52,7 +52,14 @@ import {createOAuthRemoteKey} from './oauthRemoteKey'
  */
 export interface WebOAuthClient {
   signIn(input: string, options?: AuthorizeOptions): Promise<void>
-  init(): Promise<{session: OAuthSession; state?: string | null} | undefined>
+  /**
+   * Finish an authorization from callback params the caller has already taken
+   * off the URL (see oauth-web-callback.ts), so a parallel startup run can
+   * never read and replay the same one-time code.
+   */
+  callback(
+    params: URLSearchParams,
+  ): Promise<{session: OAuthSession; state?: string | null}>
   restore(sub: string, refresh?: boolean): Promise<OAuthSession>
   /**
    * Revoke the session's tokens at the authorization server and delete the
@@ -82,18 +89,6 @@ const sessionHooks = {
     logger.warn('oauth: session deleted', describeOAuthError(cause))
   },
   onUpdate(_sub: string) {},
-}
-
-/** Callback params arrive in the hash fragment (response_mode=fragment) or query. */
-function readCallbackParams(): URLSearchParams | null {
-  if (typeof window === 'undefined') return null
-  const hash = new URLSearchParams(window.location.hash.slice(1))
-  const query = new URLSearchParams(window.location.search)
-  const params = hash.has('state') ? hash : query
-  if (params.has('state') && (params.has('code') || params.has('error'))) {
-    return params
-  }
-  return null
 }
 
 // -- Dev / loopback: public BrowserOAuthClient -------------------------------
@@ -139,7 +134,7 @@ function createLoopbackClient(): WebOAuthClient {
         ...options,
       })
     },
-    init: () => client.init(),
+    callback: params => client.callback(params),
     restore: (sub, refresh) => client.restore(sub, refresh),
     revoke: sub => client.revoke(sub),
   }
@@ -232,9 +227,7 @@ function createConfidentialClient(): WebOAuthClient {
       // Navigation is underway; never resolve so callers don't act further.
       await new Promise<never>(() => {})
     },
-    async init() {
-      const params = readCallbackParams()
-      if (!params) return undefined
+    async callback(params) {
       const {session, state} = await client.callback(params)
       return {session, state}
     },
