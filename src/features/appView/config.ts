@@ -185,20 +185,41 @@ export function readAppViewOverride(): AppViewPreference | undefined {
   return asValidPreference(device.get(['appViewOverride']))
 }
 
+/**
+ * The temporary failover this process runs on, if any. Read once at load:
+ * clients and cached queries are built for one AppView, so a failover that is
+ * set or cleared later only takes effect on the next start.
+ */
+const activeFailover = asValidPreference(device.get(['appViewFailover']))
+
+export function getActiveAppViewFailover(): AppViewPreference | undefined {
+  return activeFailover
+}
+
+/** The AppView the user chose, ignoring any temporary failover. */
+export function getPreferredAppView(): AppViewPreference {
+  return readAppViewOverride() ?? getConfiguredAppView()
+}
+
+/** The failover if one is active, otherwise the saved override. */
+function readEffectiveOverride(): AppViewPreference | undefined {
+  return activeFailover ?? readAppViewOverride()
+}
+
 /** Resolve the PDS proxy service while preserving test/build defaults. */
 export function getAppViewProxyService(defaultService: string): string {
-  const override = readAppViewOverride()
+  const override = readEffectiveOverride()
   return override ? `${override.did}#bsky_appview` : defaultService
 }
 
 /** Resolve the direct URL used by the unauthenticated AppView client. */
 export function getPublicAppViewUrl(defaultUrl: string): string {
-  return readAppViewOverride()?.url ?? defaultUrl
+  return readEffectiveOverride()?.url ?? defaultUrl
 }
 
 /** Resolve the AppView DID for flows that authenticate directly to it. */
 export function getAppViewDid(defaultDid: string): DidString {
-  return (readAppViewOverride()?.did ?? defaultDid) as DidString
+  return (readEffectiveOverride()?.did ?? defaultDid) as DidString
 }
 
 /**

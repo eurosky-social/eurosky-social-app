@@ -1,11 +1,7 @@
-import {reloadAppAsync} from 'expo'
 import {useLingui} from '@lingui/react/macro'
-import {useQueryClient} from '@tanstack/react-query'
 
-import {clearPersistedQueryStorage} from '#/lib/persisted-query-storage'
-import {useSession} from '#/state/session'
 import * as Prompt from '#/components/Prompt'
-import {IS_WEB} from '#/env'
+import {useRestartApp} from '#/features/appView/useRestartApp'
 
 export function NetworkServicesRestartRequiredPrompt({
   control,
@@ -15,27 +11,7 @@ export function NetworkServicesRestartRequiredPrompt({
   description?: string
 }) {
   const {t: l} = useLingui()
-  const queryClient = useQueryClient()
-  const {accounts} = useSession()
-
-  const restart = async () => {
-    /*
-     * Service responses share query keys and carry image URLs, so none may
-     * survive the switch.
-     */
-    queryClient.clear()
-    const cacheIds = new Set([
-      'logged-out',
-      ...accounts.map(account => account.did),
-    ])
-    await Promise.all([...cacheIds].map(clearPersistedQueryStorage))
-
-    if (IS_WEB) {
-      window.location.reload()
-    } else {
-      await reloadAppAsync()
-    }
-  }
+  const restart = useRestartApp()
 
   return (
     <Prompt.Basic

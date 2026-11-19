@@ -1,4 +1,4 @@
-import {afterEach, describe, expect, it} from '@jest/globals'
+import {afterEach, describe, expect, it, jest} from '@jest/globals'
 
 import {BRAND} from '#/config/brand'
 import {device} from '#/storage'
@@ -15,6 +15,7 @@ import {
 
 afterEach(() => {
   device.set(['appViewOverride'], undefined)
+  device.set(['appViewFailover'], undefined)
 })
 
 describe('AppView configuration', () => {
@@ -113,5 +114,33 @@ describe('AppView configuration', () => {
       service: 'did:web:api.bsky.app#bsky_appview',
       isDevEnv: false,
     })
+  })
+
+  it('routes to an active failover without changing the preference', () => {
+    const eurosky = {
+      url: 'https://api.eurosky.network',
+      did: 'did:web:api.eurosky.network',
+    }
+
+    /* The failover is read when the module loads, i.e. at app start. */
+    jest.isolateModules(() => {
+      const storage = require('#/storage') as typeof import('#/storage')
+      storage.device.set(['appViewFailover'], eurosky)
+      const config = require('./config') as typeof import('./config')
+      expect(config.getActiveAppViewFailover()).toEqual(eurosky)
+      expect(config.getAppViewProxyService('default')).toBe(
+        'did:web:api.eurosky.network#bsky_appview',
+      )
+      expect(config.getPublicAppViewUrl('https://default.test')).toBe(
+        eurosky.url,
+      )
+      expect(config.getPreferredAppView()).toEqual(
+        config.getConfiguredAppView(),
+      )
+    })
+
+    /* Setting it later does not move a running process. */
+    device.set(['appViewFailover'], eurosky)
+    expect(getAppViewProxyService('default')).toBe('default')
   })
 })
