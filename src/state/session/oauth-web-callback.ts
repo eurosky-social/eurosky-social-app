@@ -6,7 +6,9 @@
  * provider returns the user to `/` with params, and we finish sign-in at
  * app startup here.
  */
+import {logger} from '#/logger'
 import {type SessionApiContext} from '#/state/session/types'
+import {describeOAuthError} from './oauth-logging'
 import {
   getWebOAuthClient,
   OAUTH_HANDLE_STEPUP_STATE,
@@ -29,28 +31,71 @@ export function maybeRedirectLoopbackHost(): void {
   }
 }
 
-function hasOAuthCallbackParams(): boolean {
-  if (typeof window === 'undefined') return false
+/**
+ * Read the OAuth callback params and remove them from the URL at once, before
+ * any await. The authorization code is single-use: the startup effect can run
+ * again while the exchange is in flight (its dependencies change when e.g. the
+ * geolocation lookup lands), and a second run that still saw the params would
+ * replay the code, which the PDS answers by revoking the session. Clearing the
+ * URL also keeps a reload from retrying a spent code instead of resuming the
+ * stored account.
+ */
+function takeOAuthCallbackParams(): URLSearchParams | null {
+  if (typeof window === 'undefined') return null
   // Params arrive in the hash fragment (response_mode=fragment) or query.
   const hash = new URLSearchParams(window.location.hash.slice(1))
   const query = new URLSearchParams(window.location.search)
   const params = hash.has('state') ? hash : query
-  return params.has('state') && (params.has('code') || params.has('error'))
+  if (!params.has('state') || !(params.has('code') || params.has('error'))) {
+    return null
+  }
+  window.history.replaceState(null, '', window.location.pathname)
+  return params
 }
+
+let pendingCallback: Promise<boolean> | undefined
 
 /**
  * If the current URL is an OAuth callback, finish the flow and log the user
- * in. Returns true if it handled a callback (caller should stop its normal
- * resume path), false otherwise.
+ * in. Returns true if it signed the user in (caller should stop its normal
+ * resume path), false otherwise, including when the callback failed, so the
+ * caller resumes the stored account instead. Idempotent per page load: later
+ * calls share the first call's result.
  */
-export async function tryFinishWebOAuthSignIn(
+export function tryFinishWebOAuthSignIn(
   login: SessionApiContext['login'],
   startOnboarding: () => void,
 ): Promise<boolean> {
-  if (!hasOAuthCallbackParams()) return false
+  if (!pendingCallback) {
+    const params = takeOAuthCallbackParams()
+    if (!params) return Promise.resolve(false)
+    pendingCallback = finishWebOAuthSignIn(params, login, startOnboarding)
+  }
+  return pendingCallback
+}
+
+async function finishWebOAuthSignIn(
+  params: URLSearchParams,
+  login: SessionApiContext['login'],
+  startOnboarding: () => void,
+): Promise<boolean> {
+  try {
+    return await completeCallback(params, login, startOnboarding)
+  } catch (e) {
+    // No DID here: this reaches the live Sentry transport.
+    logger.warn('oauth: sign-in callback failed', describeOAuthError(e))
+    return false
+  }
+}
+
+async function completeCallback(
+  params: URLSearchParams,
+  login: SessionApiContext['login'],
+  startOnboarding: () => void,
+): Promise<boolean> {
   const client = getWebOAuthClient()
-  const result = await client.init()
-  if (result?.session) {
+  const result = await client.callback(params)
+  if (result.session) {
     // A fresh signup (prompt=create) is created on the external PDS page, which
     // never runs our in-app signup wizard - so start onboarding here, the same
     // way that wizard does. Plain sign-ins carry no state and are untouched.
@@ -87,9 +132,6 @@ export async function tryFinishWebOAuthSignIn(
       // navigator reads it so web linking resolves to account settings, where
       // the reopen flag reopens the change-handle dialog.
       window.history.replaceState(null, '', '/settings/account')
-    } else {
-      // Drop the callback params from the URL.
-      window.history.replaceState(null, '', window.location.pathname)
     }
     return true
   }
