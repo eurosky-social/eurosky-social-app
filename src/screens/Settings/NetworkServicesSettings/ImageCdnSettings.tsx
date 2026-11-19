@@ -58,7 +58,7 @@ export function ImageCdnSettingsScreen({}: Props) {
 
   const presetNames = {
     bluesky: l`Bluesky`,
-    porxie: l`Porxie`,
+    mu: l`mu`,
   } as const
   const options: {id: ImageCdnOptionId; url: string; name: string}[] = [
     ...(getImageCdnOptionId(configured) === 'default'

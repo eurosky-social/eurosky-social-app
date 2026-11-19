@@ -7,13 +7,13 @@ import {device} from '#/storage'
  */
 export const SOURCE_IMAGE_CDN = 'https://cdn.bsky.app'
 
-export type ImageCdnPresetId = 'bluesky' | 'porxie'
+export type ImageCdnPresetId = 'bluesky' | 'mu'
 export type ImageCdnOptionId = ImageCdnPresetId | 'default' | 'custom'
 
 export const IMAGE_CDN_PRESETS: readonly {id: ImageCdnPresetId; url: string}[] =
   [
     {id: 'bluesky', url: SOURCE_IMAGE_CDN},
-    {id: 'porxie', url: 'https://porxie-bsky.dollware.net'},
+    {id: 'mu', url: 'https://dev.cdn.mu.social'},
   ]
 
 export type ImageCdnValidationErrorCode =
