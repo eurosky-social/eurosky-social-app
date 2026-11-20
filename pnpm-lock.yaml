@@ -333,14 +333,14 @@ importers:
         specifier: 1.2.0
         version: 1.2.0(@atproto/lex@0.3.8)
       '@dasl/tile-host':
-        specifier: ^3.0.1
-        version: 3.0.1(supports-color@8.1.1)
+        specifier: ^3.1.0
+        version: 3.1.0(supports-color@8.1.1)
       '@dasl/tile-lexicon':
-        specifier: ^3.1.0
-        version: 3.1.0
+        specifier: ^3.2.0
+        version: 3.2.0
       '@dasl/tile-loader':
-        specifier: ^3.1.0
-        version: 3.1.0(@atcute/cbor@2.3.8(@atcute/cid@2.5.0))
+        specifier: ^3.2.0
+        version: 3.2.0(@atcute/cbor@2.3.8(@atcute/cid@2.5.0))
       '@emoji-mart/data':
         specifier: ^1.2.1
         version: 1.2.1
@@ -811,8 +811,8 @@ importers:
         specifier: ^4.14.1
         version: 4.14.2
       '@dasl/tile-server':
-        specifier: ^3.1.0
-        version: 3.1.0(supports-color@8.1.1)
+        specifier: ^3.2.0
+        version: 3.2.0(supports-color@8.1.1)
       '@eloqnt/cli':
         specifier: 0.6.26
         version: 0.6.26
@@ -2060,17 +2060,17 @@ packages:
     resolution: {integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==}
     engines: {node: '>=18'}
 
-  '@dasl/tile-host@3.0.1':
-    resolution: {integrity: sha512-680BCkkoQjDnm4JstihZQZb9pCIduuS5WXQ1aj0cc2C3vCybNZ8NzEasgEdDCLjsuWks2rs9+AQBEe69i89IaQ==}
+  '@dasl/tile-host@3.1.0':
+    resolution: {integrity: sha512-UVxhFiIqm4BfKtwuFO8wzyojHqmr7DsU8hkOLYmI4ZUgjeYmGFSPp0/boMRBAApvk4bnqzOszFMvNIE6mLzLYg==}
 
-  '@dasl/tile-lexicon@3.1.0':
-    resolution: {integrity: sha512-RYg3z8w95uI2NQk8yolXc7fGCEChfbKFOgMDajqAB19yTNqMSGeJosoH3qmWWUza9+Tv7pWvIJ13u3KXR1SjAg==}
+  '@dasl/tile-lexicon@3.2.0':
+    resolution: {integrity: sha512-Phle6iu9Ms49wqyv6ItjMEN2YLnArI4cqa8Ugrg6fXhnMJPW0tiYBndbYoXCKmQeUHeRtxlhouFsucHGoWosSg==}
 
-  '@dasl/tile-loader@3.1.0':
-    resolution: {integrity: sha512-KWYt077SB0FeCJXANkl3/8jXjBZRDsKqWhEsW2Rwi5IMeRcdZMVW9XiMlg3MHcqG64hNh8JHD9QugsVIID2w+A==}
+  '@dasl/tile-loader@3.2.0':
+    resolution: {integrity: sha512-M2CBC4Vk+blrCYkQvQzr0bZNv/4s3UiVAHjET5WcyxvzxYoeoATvUyiPzQnPZsgwhwJTTxA/+d8mCjtZllmCmw==}
 
-  '@dasl/tile-server@3.1.0':
-    resolution: {integrity: sha512-mlefjAQ4wjUuF6ufom6ldEsUojBLtf+J7jr4OVLrtRtClHYDcIBrhUJFUSPlFdTJCkqRiSUQRmqFESAMs9BXSQ==}
+  '@dasl/tile-server@3.2.0':
+    resolution: {integrity: sha512-6c/MGA32qrcCr/ZKmh1GqVXZItYREJtrLYqgJ0RTEvkLwLmjyZ1XFX0LNBdPQz+q9IGIfXX5VDCJB3+mQr4maw==}
     hasBin: true
 
   '@eloqnt/cli@0.6.26':
@@ -6086,6 +6086,10 @@ packages:
     resolution: {integrity: sha512-Q0n9HRi4m6JuGIV1eFlmvJB7ZEVxu93IrMyiMsGC0lrMJMWzRgx6WGquyfQgZVb31vhGgXnfmPNNXmxnOkRBrg==}
     engines: {node: '>= 0.8'}
 
+  encodeurl@2.0.3:
+    resolution: {integrity: sha512-mIteYONiEfc4xWf2F1WXovh1c8npzS00vNeiUPdwFF+QlVJni+gNvpQltLMQhob8rew/bWWc/bGTuUr0EUGt0w==}
+    engines: {node: '>= 0.8'}
+
   enhanced-resolve@5.21.3:
     resolution: {integrity: sha512-QyL119InA+XXEkNLNTPCXPugSvOfhwv0JOlGNzvxs0hZaiHLNvXSpudUWsOlsXGWJh8G6ckCScEkVHfX3kw/2Q==}
     engines: {node: '>=10.13.0'}
@@ -8119,9 +8123,9 @@ packages:
     resolution: {integrity: sha512-myRT3DiWPHqho5PrJaIRyaMv2kgYf0mUVgBNOYMuCH5Ki1yEiQaf/ZJuQ62nvpc44wL5WDbTX7yGJi1Neevw8w==}
     engines: {node: '>= 0.6'}
 
-  negotiator@1.0.0:
-    resolution: {integrity: sha512-8Ofs/AUQh8MaEcrlq5xOX0CQ9ypTF5dl78mjlMNfOK08fzpgTHQRQPBxcPlEtIw0yRpws+Zo/3r+5WRby7u3Gg==}
-    engines: {node: '>= 0.6'}
+  negotiator@1.1.0:
+    resolution: {integrity: sha512-NMPBRMJgiQHjbd8phG3Vebdx4kZ1H121rbl5IkMqeOsahptB9BKo/d7oJ3zTXqTgagn2bWlNSXkh0QUGM31RYg==}
+    engines: {node: '>=18'}
 
   neo-async@2.6.2:
     resolution: {integrity: sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==}
@@ -8328,6 +8332,10 @@ packages:
     resolution: {integrity: sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew==}
     engines: {node: '>= 0.4'}
 
+  object-inspect@1.14.0:
+    resolution: {integrity: sha512-IVgHNlp/jwQX271+Xzoq9LZNTWXxZK+cEOrGBOBxXNbn7fapnZ+Ts6TVMgNOuAezwG2wdtnMX97tTPK6VEnuOQ==}
+    engines: {node: '>= 0.4'}
+
   object-keys@1.1.1:
     resolution: {integrity: sha512-NuAESUOUMrlIXOfHKzD6bpPu3tYt3xvjNdRIQ+FeT0lNb4K8WR70CaDxhuNguS2XG+GjkyMwOzsN5ZktImfhLA==}
     engines: {node: '>= 0.4'}
@@ -8353,6 +8361,10 @@ packages:
 
   on-finished@2.4.1:
     resolution: {integrity: sha512-oVlzkg3ENAhCk2zdv7IJwd/QUD4z2RxRwpkcGY8psCVcCYZNq4wYnVWALHM+brtuJjePWiYF/ClmuDr8Ch5+kg==}
+    engines: {node: '>= 0.8'}
+
+  on-finished@2.4.2:
+    resolution: {integrity: sha512-ATWUv387i+nLD49EiDoOft5scf32Vsdz3ktrQJG9bi7jRFmaXTssvyvj1EmeKVVgvesbqUtvQQvaS2TpTukAZQ==}
     engines: {node: '>= 0.8'}
 
   on-headers@1.1.0:
@@ -8763,6 +8775,10 @@ packages:
     resolution: {integrity: sha512-Hrgsx+orqoygnmhFbKaHE6c296J+HTAQXoxEF6gNupROmmGJRoyzfG3ccAveqCBrwr/2yxQ5BVd/GTl5agOwSg==}
     engines: {node: '>= 0.6'}
 
+  range-parser@1.3.0:
+    resolution: {integrity: sha512-hek2mFQpPuI4E1BBKrSto+BU3e3x4xuarsbiwr3+lf7p44juvFMV0XFWQAP3xUyqXA4RrXLIoaSUGbSt056ZMw==}
+    engines: {node: '>= 0.6'}
+
   raw-body@2.5.3:
     resolution: {integrity: sha512-s4VSOf6yN0rvbRZGxs8Om5CWj6seneMwK3oDb4lWDH0UPhWcxwOWw5+qk24bxq87szX1ydrwylIOp2uG1ojUpA==}
     engines: {node: '>= 0.8'}
@@ -9142,8 +9158,8 @@ packages:
   rope-sequence@1.3.4:
     resolution: {integrity: sha512-UT5EDe2cu2E/6O4igUr5PSFs23nvvukicWHx6GnOPlHAiiYbzNuCRQCuiUdHJQcqKalLKlrYJnjY0ySGsXNQXQ==}
 
-  router@2.2.0:
-    resolution: {integrity: sha512-nLTrUKm2UyiL7rlhapu/Zl45FwNgkZGaCpZbIHajDYgwlJCOzLSk+cIPAnsEqV955GjILJnKbdQC1nVPz+gAYQ==}
+  router@2.3.0:
+    resolution: {integrity: sha512-bpowRfGjEPe8t9R6fJIzhwmyCGAXwKvxBUsgJm+bJukwdcWmUXbMo7p22w7aYmQBPQTUMNqMV39YX0kMou3z8w==}
     engines: {node: '>= 18'}
 
   rrweb-cssom@0.8.0:
@@ -11738,29 +11754,29 @@ snapshots:
 
   '@csstools/css-tokenizer@3.0.4': {}
 
-  '@dasl/tile-host@3.0.1(supports-color@8.1.1)':
+  '@dasl/tile-host@3.1.0(supports-color@8.1.1)':
     dependencies:
-      '@dasl/tile-lexicon': 3.1.0
+      '@dasl/tile-lexicon': 3.2.0
       express: 5.3.0(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
-  '@dasl/tile-lexicon@3.1.0': {}
+  '@dasl/tile-lexicon@3.2.0': {}
 
-  '@dasl/tile-loader@3.1.0(@atcute/cbor@2.3.8(@atcute/cid@2.5.0))':
+  '@dasl/tile-loader@3.2.0(@atcute/cbor@2.3.8(@atcute/cid@2.5.0))':
     dependencies:
       '@atcute/car': 6.1.1(@atcute/cbor@2.3.8(@atcute/cid@2.5.0))(@atcute/cid@2.5.0)
       '@atcute/cid': 2.5.0
-      '@dasl/tile-lexicon': 3.1.0
+      '@dasl/tile-lexicon': 3.2.0
       jszip: 3.10.2
       mime: 4.1.2
       smol-toml: 1.9.1
     transitivePeerDependencies:
       - '@atcute/cbor'
 
-  '@dasl/tile-server@3.1.0(supports-color@8.1.1)':
+  '@dasl/tile-server@3.2.0(supports-color@8.1.1)':
     dependencies:
-      '@dasl/tile-lexicon': 3.1.0
+      '@dasl/tile-lexicon': 3.2.0
       express: 5.3.0(supports-color@8.1.1)
       nanoid: 5.1.11
     transitivePeerDependencies:
@@ -15074,7 +15090,7 @@ snapshots:
   accepts@2.0.0:
     dependencies:
       mime-types: 3.0.2
-      negotiator: 1.0.0
+      negotiator: 1.1.0
 
   acorn-import-phases@1.0.4(acorn@8.18.0):
     dependencies:
@@ -15533,7 +15549,7 @@ snapshots:
       debug: 4.4.3(supports-color@8.1.1)
       http-errors: 2.0.1
       iconv-lite: 0.7.3
-      on-finished: 2.4.1
+      on-finished: 2.4.2
       qs: 6.17.1
       raw-body: 3.0.2
       type-is: 2.1.0
@@ -16081,6 +16097,8 @@ snapshots:
   encodeurl@1.0.2: {}
 
   encodeurl@2.0.0: {}
+
+  encodeurl@2.0.3: {}
 
   enhanced-resolve@5.21.3:
     dependencies:
@@ -16879,7 +16897,7 @@ snapshots:
       cookie-signature: 1.2.2
       debug: 4.4.3(supports-color@8.1.1)
       depd: 2.0.0
-      encodeurl: 2.0.0
+      encodeurl: 2.0.3
       escape-html: 1.0.3
       etag: 1.8.1
       finalhandler: 2.1.1(supports-color@8.1.1)
@@ -16887,13 +16905,13 @@ snapshots:
       http-errors: 2.0.1
       merge-descriptors: 2.0.0
       mime-types: 3.0.2
-      on-finished: 2.4.1
+      on-finished: 2.4.2
       once: 1.4.0
       parseurl: 1.3.3
       proxy-addr: 2.0.8
       qs: 6.17.1
-      range-parser: 1.2.1
-      router: 2.2.0(supports-color@8.1.1)
+      range-parser: 1.3.0
+      router: 2.3.0(supports-color@8.1.1)
       send: 1.2.1(supports-color@8.1.1)
       serve-static: 2.2.1(supports-color@8.1.1)
       statuses: 2.0.2
@@ -17018,9 +17036,9 @@ snapshots:
   finalhandler@2.1.1(supports-color@8.1.1):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
-      encodeurl: 2.0.0
+      encodeurl: 2.0.3
       escape-html: 1.0.3
-      on-finished: 2.4.1
+      on-finished: 2.4.2
       parseurl: 1.3.3
       statuses: 2.0.2
     transitivePeerDependencies:
@@ -18706,7 +18724,9 @@ snapshots:
 
   negotiator@0.6.4: {}
 
-  negotiator@1.0.0: {}
+  negotiator@1.1.0:
+    dependencies:
+      content-type: 2.1.0
 
   neo-async@2.6.2: {}
 
@@ -18773,6 +18793,8 @@ snapshots:
 
   object-inspect@1.13.4: {}
 
+  object-inspect@1.14.0: {}
+
   object-keys@1.1.1: {}
 
   object.assign@4.1.7:
@@ -18800,6 +18822,10 @@ snapshots:
       ee-first: 1.1.1
 
   on-finished@2.4.1:
+    dependencies:
+      ee-first: 1.1.1
+
+  on-finished@2.4.2:
     dependencies:
       ee-first: 1.1.1
 
@@ -19331,6 +19357,8 @@ snapshots:
 
   range-parser@1.2.1: {}
 
+  range-parser@1.3.0: {}
+
   raw-body@2.5.3:
     dependencies:
       bytes: 3.1.2
@@ -19781,7 +19809,7 @@ snapshots:
 
   rope-sequence@1.3.4: {}
 
-  router@2.2.0(supports-color@8.1.1):
+  router@2.3.0(supports-color@8.1.1):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
       depd: 2.0.0
@@ -19880,15 +19908,15 @@ snapshots:
   send@1.2.1(supports-color@8.1.1):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
-      encodeurl: 2.0.0
+      encodeurl: 2.0.3
       escape-html: 1.0.3
       etag: 1.8.1
       fresh: 2.0.0
       http-errors: 2.0.1
       mime-types: 3.0.2
       ms: 2.1.3
-      on-finished: 2.4.1
-      range-parser: 1.2.1
+      on-finished: 2.4.2
+      range-parser: 1.3.0
       statuses: 2.0.2
     transitivePeerDependencies:
       - supports-color
@@ -19906,7 +19934,7 @@ snapshots:
 
   serve-static@2.2.1(supports-color@8.1.1):
     dependencies:
-      encodeurl: 2.0.0
+      encodeurl: 2.0.3
       escape-html: 1.0.3
       parseurl: 1.3.3
       send: 1.2.1(supports-color@8.1.1)
@@ -20024,7 +20052,7 @@ snapshots:
   side-channel@1.1.1:
     dependencies:
       es-errors: 1.3.0
-      object-inspect: 1.13.4
+      object-inspect: 1.14.0
       side-channel-list: 1.0.1
       side-channel-map: 1.0.1
       side-channel-weakmap: 1.0.2
