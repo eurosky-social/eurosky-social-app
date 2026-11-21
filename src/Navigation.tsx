@@ -161,7 +161,12 @@ import {
 import {useAnalytics} from '#/analytics'
 import {setNavigationMetadata} from '#/analytics/metadata'
 import {BRAND} from '#/config/brand'
-import {IS_LIQUID_GLASS, IS_NATIVE, IS_WEB} from '#/env'
+import {
+  ENABLE_IMAGE_CDN_SETTINGS,
+  IS_LIQUID_GLASS,
+  IS_NATIVE,
+  IS_WEB,
+} from '#/env'
 import {HomeScreen} from '#/features/followingV2/home'
 import {OutletDirectoryScreen} from '#/features/frontpages/directory'
 import {FrontpageScreen} from '#/features/frontpages/FrontpageScreen'
@@ -533,14 +538,16 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
           requireAuth: true,
         }}
       />
-      <Stack.Screen
-        name="ImageCdnSettings"
-        getComponent={() => ImageCdnSettingsScreen}
-        options={{
-          title: title(msg`Image CDN`),
-          requireAuth: true,
-        }}
-      />
+      {ENABLE_IMAGE_CDN_SETTINGS && (
+        <Stack.Screen
+          name="ImageCdnSettings"
+          getComponent={() => ImageCdnSettingsScreen}
+          options={{
+            title: title(msg`Image CDN`),
+            requireAuth: true,
+          }}
+        />
+      )}
       <Stack.Screen
         name="AppViewTransferSettings"
         getComponent={() => AppViewTransferSettingsScreen}

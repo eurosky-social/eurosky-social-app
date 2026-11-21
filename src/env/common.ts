@@ -99,6 +99,24 @@ export const APPVIEW_SHADOW_DID: string =
   process.env.EXPO_PUBLIC_APPVIEW_SHADOW_DID || 'did:web:api.eurosky.network'
 
 /**
+ * Percentage (0-100) of AppView responses whose images are also loaded from
+ * the candidate image CDN and discarded. Only applies while images load from
+ * the Bluesky CDN. Invalid values disable it; others are clamped to 0-100.
+ */
+const requestedImageCdnShadowPercentage = Number(
+  process.env.EXPO_PUBLIC_IMAGE_CDN_SHADOW_PERCENTAGE,
+)
+export const IMAGE_CDN_SHADOW_PERCENTAGE: number = Number.isFinite(
+  requestedImageCdnShadowPercentage,
+)
+  ? Math.min(100, Math.max(0, requestedImageCdnShadowPercentage))
+  : 0
+
+/** Candidate image CDN used for shadow loads. */
+export const IMAGE_CDN_SHADOW_URL: string =
+  process.env.EXPO_PUBLIC_IMAGE_CDN_SHADOW_URL || 'https://dev.cdn.mu.social'
+
+/**
  * The DID of the chat service to proxy to
  */
 export const CHAT_PROXY_DID: DidString =
@@ -231,6 +249,12 @@ export const ENABLE_LIVE_EVENTS =
   process.env.EXPO_PUBLIC_ENABLE_LIVE_EVENTS !== 'false'
 export const ENABLE_APP_CONFIG =
   process.env.EXPO_PUBLIC_ENABLE_APP_CONFIG !== 'false'
+/**
+ * Shows the image CDN picker in network settings. While hidden, a stored
+ * choice is ignored, so images always load from the build's default.
+ */
+export const ENABLE_IMAGE_CDN_SETTINGS =
+  process.env.EXPO_PUBLIC_ENABLE_IMAGE_CDN_SETTINGS !== 'false'
 /**
  * Gates the web product-analytics metrics client (the `ax.metric()` pipeline
  * that POSTs to `${METRICS_API_HOST}/t`). Native product analytics are always

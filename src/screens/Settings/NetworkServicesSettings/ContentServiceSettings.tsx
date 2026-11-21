@@ -1,5 +1,5 @@
 import {useRef, useState} from 'react'
-import {Pressable, View} from 'react-native'
+import {View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 
@@ -11,10 +11,8 @@ import {useDialogControl} from '#/components/Dialog'
 import {FormError} from '#/components/forms/FormError'
 import * as TextField from '#/components/forms/TextField'
 import * as Toggle from '#/components/forms/Toggle'
-import {CircleInfo_Stroke2_Corner0_Rounded as CircleInfoIcon} from '#/components/icons/CircleInfo'
 import {Earth_Stroke2_Corner2_Rounded as EarthIcon} from '#/components/icons/Globe'
 import * as Layout from '#/components/Layout'
-import * as Tooltip from '#/components/Tooltip'
 import {Text} from '#/components/Typography'
 import {
   APP_VIEW_PRESETS,
@@ -30,6 +28,7 @@ import {
 import {type AppViewPreference} from '#/features/appView/types'
 import {device, useStorage} from '#/storage'
 import {NetworkServicesRestartRequiredPrompt} from './RestartRequiredPrompt'
+import {ServiceAddressInfo} from './ServiceAddressInfo'
 
 type Props = NativeStackScreenProps<
   CommonNavigatorParams,
@@ -301,31 +300,5 @@ export function ContentServiceSettingsScreen({}: Props) {
 
       <NetworkServicesRestartRequiredPrompt control={restartControl} />
     </Layout.Screen>
-  )
-}
-
-function ServiceAddressInfo({name, url}: {name: string; url: string}) {
-  const {t: l} = useLingui()
-  const t = useTheme()
-  const [visible, setVisible] = useState(false)
-  const label = l`Show service address for ${name}`
-
-  return (
-    <Tooltip.Outer visible={visible} onVisibleChange={setVisible}>
-      <Tooltip.Target>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={label}
-          accessibilityHint={l`Shows the service address`}
-          hitSlop={8}
-          onHoverIn={() => setVisible(true)}
-          onHoverOut={() => setVisible(false)}
-          onPress={() => setVisible(value => !value)}
-          style={[a.rounded_full, a.p_xs]}>
-          <CircleInfoIcon size="sm" fill={t.atoms.text_contrast_medium.color} />
-        </Pressable>
-      </Tooltip.Target>
-      <Tooltip.BubbleText label={label}>{url}</Tooltip.BubbleText>
-    </Tooltip.Outer>
   )
 }

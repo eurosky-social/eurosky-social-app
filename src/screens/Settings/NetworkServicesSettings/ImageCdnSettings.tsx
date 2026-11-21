@@ -31,6 +31,7 @@ import {getImageCdnPath, verifyImageCdn} from '#/features/imageCdn/verify'
 import {app} from '#/lexicons'
 import {device, useStorage} from '#/storage'
 import {NetworkServicesRestartRequiredPrompt} from './RestartRequiredPrompt'
+import {ServiceAddressInfo} from './ServiceAddressInfo'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'ImageCdnSettings'>
 
@@ -58,7 +59,7 @@ export function ImageCdnSettingsScreen({}: Props) {
 
   const presetNames = {
     bluesky: l`Bluesky`,
-    mu: l`mu`,
+    eurosky: l`Eurosky`,
   } as const
   const options: {id: ImageCdnOptionId; url: string; name: string}[] = [
     ...(getImageCdnOptionId(configured) === 'default'
@@ -193,39 +194,48 @@ export function ImageCdnSettingsScreen({}: Props) {
                       ? l`${option.name} (default)`
                       : option.name
                   return (
-                    <Toggle.Item
+                    <View
                       key={option.id}
-                      name={option.id}
-                      label={label}
-                      style={[a.flex_row, a.align_start, a.gap_sm, a.w_full]}>
-                      <Toggle.Radio />
-                      <View style={[a.flex_1, a.gap_2xs]}>
+                      style={[a.flex_row, a.align_center, a.gap_xs, a.w_full]}>
+                      <Toggle.Item
+                        name={option.id}
+                        label={label}
+                        style={[
+                          a.flex_1,
+                          a.flex_row,
+                          a.align_center,
+                          a.gap_sm,
+                        ]}>
+                        <Toggle.Radio />
                         <Toggle.LabelText
                           style={[t.atoms.text, a.font_normal, a.text_md]}>
                           {label}
                         </Toggle.LabelText>
-                        <Text
-                          style={[
-                            a.text_sm,
-                            a.leading_snug,
-                            t.atoms.text_contrast_medium,
-                          ]}>
-                          {option.url}
-                        </Text>
-                      </View>
-                    </Toggle.Item>
+                      </Toggle.Item>
+                      <ServiceAddressInfo name={option.name} url={option.url} />
+                    </View>
                   )
                 })}
 
                 <Toggle.Item
                   name="custom"
                   label={l`Custom image CDN`}
-                  style={[a.flex_row, a.align_center, a.gap_sm, a.w_full]}>
+                  style={[a.flex_row, a.align_start, a.gap_sm, a.w_full]}>
                   <Toggle.Radio />
-                  <Toggle.LabelText
-                    style={[t.atoms.text, a.font_normal, a.text_md]}>
-                    <Trans>Custom</Trans>
-                  </Toggle.LabelText>
+                  <View style={[a.flex_1, a.gap_2xs]}>
+                    <Toggle.LabelText
+                      style={[t.atoms.text, a.font_normal, a.text_md]}>
+                      <Trans>Custom</Trans>
+                    </Toggle.LabelText>
+                    <Text
+                      style={[
+                        a.text_sm,
+                        a.leading_snug,
+                        t.atoms.text_contrast_medium,
+                      ]}>
+                      <Trans>Use another compatible image CDN</Trans>
+                    </Text>
+                  </View>
                 </Toggle.Item>
               </View>
             </Toggle.Group>
