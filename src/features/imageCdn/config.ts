@@ -1,4 +1,5 @@
 import {BRAND} from '#/config/brand'
+import {ENABLE_IMAGE_CDN_SETTINGS} from '#/env'
 import {device} from '#/storage'
 
 /**
@@ -7,13 +8,13 @@ import {device} from '#/storage'
  */
 export const SOURCE_IMAGE_CDN = 'https://cdn.bsky.app'
 
-export type ImageCdnPresetId = 'bluesky' | 'mu'
+export type ImageCdnPresetId = 'bluesky' | 'eurosky'
 export type ImageCdnOptionId = ImageCdnPresetId | 'default' | 'custom'
 
 export const IMAGE_CDN_PRESETS: readonly {id: ImageCdnPresetId; url: string}[] =
   [
     {id: 'bluesky', url: SOURCE_IMAGE_CDN},
-    {id: 'mu', url: 'https://dev.cdn.mu.social'},
+    {id: 'eurosky', url: 'https://dev.cdn.mu.social'},
   ]
 
 export type ImageCdnValidationErrorCode =
@@ -70,6 +71,7 @@ export function getConfiguredImageCdn(): string {
 let lastOverride: {raw: string | undefined; url: string | undefined} | undefined
 
 export function readImageCdnOverride(): string | undefined {
+  if (!ENABLE_IMAGE_CDN_SETTINGS) return undefined
   const raw = device.get(['imageCdnOverride'])
   if (!lastOverride || lastOverride.raw !== raw) {
     lastOverride = {raw, url: normalizeOrUndefined(raw)}

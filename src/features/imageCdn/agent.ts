@@ -5,8 +5,11 @@ import {
   rewriteImageCdnUrlsInJson,
   SOURCE_IMAGE_CDN,
 } from './config'
+import {createImageCdnShadow} from './shadow'
 
 const NULL_BODY_STATUSES = new Set([101, 204, 205, 304])
+
+const shadow = createImageCdnShadow()
 
 /**
  * Wrap an agent so JSON responses carry image URLs on the selected CDN. Every
@@ -22,10 +25,18 @@ export function withImageCdn(agent: Agent): Agent {
       const response = await agent.fetchHandler(path, init)
       const cdn = getImageCdn()
       if (
-        cdn === SOURCE_IMAGE_CDN ||
         NULL_BODY_STATUSES.has(response.status) ||
         !response.headers.get('content-type')?.includes('application/json')
       ) {
+        return response
+      }
+      if (cdn === SOURCE_IMAGE_CDN) {
+        if (shadow?.sample()) {
+          response
+            .clone()
+            .text()
+            .then(shadow.copy, () => {})
+        }
         return response
       }
 
