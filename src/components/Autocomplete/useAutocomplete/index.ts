@@ -26,23 +26,28 @@ export function useAutocomplete({
   query: q,
   limit,
   showSearchFallback = false,
+  enabled = true,
 }: {
   type: AutocompleteItemType
   query: string
   limit?: number
   showSearchFallback?: boolean
+  enabled?: boolean
 }): AutocompleteApi {
   const client = useAppviewClient()
   const moderationOpts = useModerationOpts()
   const emojiSearch = useEmojiSearch()
+  const resultLimit = limit || 8
 
   const query = useQuery({
+    enabled,
     staleTime: STALE.MINUTES.ONE,
     queryKey: [
       'autocomplete',
       {
         type,
         query: q,
+        limit: resultLimit,
       },
     ],
     async queryFn() {
@@ -55,7 +60,7 @@ export function useAutocomplete({
 
         const data = await client.call(app.bsky.actor.searchActorsTypeahead, {
           q,
-          limit: limit || 8,
+          limit: resultLimit,
         })
 
         return (data?.actors || []).map(profile => ({
@@ -65,7 +70,7 @@ export function useAutocomplete({
           profile,
         }))
       } else if (type === 'emoji') {
-        return emojiSearch(q, limit || 8)
+        return emojiSearch(q, resultLimit)
       }
 
       return []
