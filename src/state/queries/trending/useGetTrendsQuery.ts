@@ -10,7 +10,7 @@ import {logger} from '#/logger'
 import {getContentLanguages} from '#/state/preferences/languages'
 import {STALE} from '#/state/queries'
 import {usePreferencesQuery} from '#/state/queries/preferences'
-import {useAppviewClient} from '#/state/session'
+import {useBlueskyAppviewRequestTarget} from '#/state/session'
 import {app} from '#/lexicons'
 
 export const DEFAULT_LIMIT = 10
@@ -50,7 +50,9 @@ export const createGetTrendsQueryKey = (fetchLimit?: number) =>
   fetchLimit === undefined ? ['trends'] : ['trends', {limit: fetchLimit}]
 
 export function useGetTrendsQuery(props: QueryProps = {}) {
-  const client = useAppviewClient()
+  // Trends come from Bluesky's topics service, which other AppViews don't
+  // have, so this always asks Bluesky's AppView, like the suggestion queries.
+  const {client, service} = useBlueskyAppviewRequestTarget()
   const {data: preferences} = usePreferencesQuery()
   const fetchLimit = props.fetchLimit ?? DEFAULT_FETCH_LIMIT
   const limit = props.limit ?? DEFAULT_LIMIT
@@ -75,6 +77,7 @@ export function useGetTrendsQuery(props: QueryProps = {}) {
             ...createBskyTopicsHeader(aggregateUserInterests(preferences)),
             'Accept-Language': contentLangs,
           },
+          service,
         },
       )
       if (!data.recIdStr) {
