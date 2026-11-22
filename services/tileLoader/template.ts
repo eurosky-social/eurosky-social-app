@@ -36,10 +36,10 @@
  * Cookies. Tile origins share a site with <BASE_HOST>'s parent, so a tile's
  * script could set a cookie for a parent domain. This server never sets one,
  * and any cookie that reaches it is expired on the spot for the two scopes
- * that are its own, the host itself and Domain=<BASE_HOST>: never for a
- * domain above, which would reach into the rest of the site. (In Chromium the
- * app also frames tiles credentialless, which keeps their cookies in a jar of
- * their own.)
+ * that are its own, Domain=<BASE_HOST> and the host itself, as many as fit in
+ * one answer: never for a domain above, which would reach into the rest of
+ * the site. (In Chromium the app also frames tiles credentialless, which
+ * keeps their cookies in a jar of their own.)
  *
  * It never sees tile content: the page that embeds the tile hands the
  * resources to the worker. The app points EXPO_PUBLIC_TILES_LOAD_DOMAIN at
@@ -150,27 +150,48 @@ function dead(
   })
 }
 
+// What the expiries in one answer may come to. An answer whose headers are
+// too large is given up on, by a browser (Chrome at 256 kB) and maybe by the
+// CDN before it, whose limit is not known; and names cost more to expire
+// than to send, so a jar can need far more than that. What does not fit goes
+// with the answers to the requests that follow, which no longer bring what
+// was expired. 16 kB is the base host's expiries for 180 short names: all of
+// a page's credentialless jar in Chromium, in one answer.
+const EXPIRIES = 16 * 1024
+
 /**
- * Expires every cookie the request carried, host-only and for the base host:
+ * Expires every cookie the request carried, for the base host and host-only:
  * whatever a tile managed to leave behind under our own names goes. Nothing
- * above the base host is touched.
+ * above the base host is touched. The widest first (Domain=<BASE_HOST>
+ * reaches every tile origin and the loading host), and only as many as fit
+ * in EXPIRIES bytes.
  */
 function scrubCookies(req: Request, res: Response, base: string): Response {
-  const names = (req.headers.get('cookie') || '')
-    .split(';')
-    .map(pair => pair.split('=')[0].trim())
-    .filter(name => /^[\w!#$%&'*+.^`|~-]+$/.test(name))
-    .slice(0, 50)
-  if (!names.length) return res
+  const names = new Set(
+    (req.headers.get('cookie') || '')
+      .split(';')
+      .map(pair => pair.split('=')[0].trim())
+      .filter(name => /^[\w!#$%&'*+.^`|~-]+$/.test(name)),
+  )
+  if (!names.size) return res
   const headers = new Headers(res.headers)
-  // Says the scrub ran, for when a CDN setting strips the Set-Cookie lines.
-  headers.set('x-tile-cookies-expired', String(new Set(names).size))
   const domain = base.replace(/:\d+$/, '')
-  for (const name of new Set(names)) {
-    const gone = `${name}=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
-    headers.append('set-cookie', gone)
-    headers.append('set-cookie', `${gone}; Domain=${domain}`)
+  const gone = (name: string) =>
+    `${name}=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
+  let room = EXPIRIES
+  let sent = 0
+  for (const expiry of [
+    ...[...names].map(name => `${gone(name)}; Domain=${domain}`),
+    ...[...names].map(gone),
+  ]) {
+    room -= expiry.length
+    if (room < 0) break
+    headers.append('set-cookie', expiry)
+    sent++
   }
+  // Says the scrub ran, and how many it sent, for when a CDN setting strips
+  // the Set-Cookie lines.
+  headers.set('x-tile-cookies-expired', String(sent))
   return new Response(res.body, {status: res.status, headers})
 }
 

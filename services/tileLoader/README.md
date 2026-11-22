@@ -45,7 +45,8 @@ to the worker (through the blob CDN, `services/tiles`).
   repository consistent, it does not deploy. The runtime served has to be
   the one the app's `@dasl/tile-loader` expects.
 - `test.mjs`: checks a running instance against the packages (redirect,
-  byte-identical runtime, policy headers, dead ends, non-tile names).
+  byte-identical runtime, policy headers, dead ends, non-tile names, a
+  cookie jar of 12 kB).
 
 ## Local run
 
@@ -67,7 +68,10 @@ and tile origins are `<random>.t.mu.social`. Nesting them under `t.` keeps the
 
 1. Bunny dashboard: Edge Scripting, add a **standalone** script, paste
    `bunny/index.ts`, deploy. Leave "Run script before cache" off. No env is
-   needed.
+   needed. On the script's pull zone, under Caching, turn **Strip Response
+   Cookies** off: Bunny has it on by default, and it removes the expiries
+   the script sends (see "Cookies and the rest of mu.social"). `test.mjs`
+   says so when it is on.
 2. On the script's pull zone, add three hostnames: `load.t.mu.social`, the
    wildcard `*.t.mu.social`, and `t.mu.social` itself (the native host page),
    with SSL on each (the wildcard certificate is
@@ -111,10 +115,15 @@ set one. What keeps tiles and the rest of mu apart:
   tile sees no cookie from outside and none it sets, for any domain, gets
   out. Firefox and Safari ignore the attribute.
 - **This server expires what reaches it.** It never sets a cookie, and any
-  cookie arriving on a request is expired in the answer, host-only and for
-  `Domain=t.mu.social`. It never names a domain above its own, so nothing of
-  mu.social's is ever reset. Tile origins are fresh per load, so their own
-  storage never outlives a load anyway.
+  cookie arriving on a request is expired in the answer, for
+  `Domain=t.mu.social` first and then host-only, as many as fit in 16 kB of
+  `Set-Cookie`: all of a page's credentialless jar in Chromium, for
+  `t.mu.social`, at once. What does not fit is expired in the answers to the
+  requests that follow. That needs **Strip Response Cookies** off on the
+  pull zone (Deploy, step 1): with it on, Bunny removes every expiry. It
+  never names a domain above its own, so nothing of mu.social's is ever
+  reset. Tile origins are fresh per load, so their own storage never
+  outlives a load anyway.
 - **Native** runs tiles in a WebView whose cookie store is the app's alone;
   the app sets none.
 
@@ -141,3 +150,16 @@ for tiles (`BASE_HOST`) rules it out entirely.
   build.
 - Bunny rewrites `Cache-Control` on script responses to `no-cache`, which
   suits the runtime: it revalidates on each load, by ETag.
+- **Large cookie jars.** Every request to the loading host or a tile
+  origin brings the cookies a tile left there, and the next tiles' loads
+  bring them too. In Chromium a page's credentialless tiles share a jar of
+  about 11 kB; over HTTP/2 a browser sends each cookie as a field of its
+  own, which comes to about 19 kB of headers. Where frames are not
+  credentialless (Firefox, Safari, the native WebView) a tile can fill the
+  jar the browser keeps for `t.mu.social`: some 740 kB in Firefox. Bunny
+  refuses a request past its own limit before the script runs, and that
+  limit is not documented: where it is lower than what a jar comes to, the
+  next tiles on the page fail to load until the page is reloaded, and
+  outside a credentialless frame until those cookies are cleared. If it is
+  below about 19 kB, ask Bunny to raise it for the pull zone. `test.mjs`
+  sends a 12 kB jar.

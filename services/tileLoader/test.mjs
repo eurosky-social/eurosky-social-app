@@ -40,6 +40,8 @@ function request(host, path, {method = 'GET', headers = {}} = {}) {
         path,
         method,
         headers: {host: `${host}${port}`, ...headers},
+        // As a browser reads them: an answer's expiries can be 16 kB.
+        maxHeaderSize: 1024 * 1024,
       },
       res => {
         const chunks = []
@@ -357,6 +359,80 @@ for (const bad of ['evil.example', base, `load.${base}`, `${docked.replace(/:\d+
   const res = await request(`load.${base}`, `${dockPath}?tile=${encodeURIComponent(bad)}`)
   check(`does not dock ${bad}`, res.status === 400, String(res.status))
 }
+// A large jar. In Chromium a page's credentialless tiles share one, about
+// 10.8 kB of 180 cookies, and every later tile on that page brings it: a jar
+// a little larger than that gets the runtime and the dock as without it, and
+// has every name expired for the base host, within what one answer takes
+// (16 kB). In other browsers, and in the native WebView, a tile can make the
+// jar much larger: see the README.
+const jar = Array.from(
+  {length: 180},
+  (_, i) => `c${i}=${'x'.repeat(63 - String(i).length)}`,
+).join('; ')
+const bare = await request(origin, '/.well-known/web-tiles/worker.js')
+const big = await request(origin, '/.well-known/web-tiles/worker.js', {
+  headers: {cookie: jar},
+})
+check(
+  `a Cookie of ${jar.length} bytes gets the same runtime`,
+  big.status === 200 &&
+    big.body === bare.body &&
+    big.headers.etag === bare.headers.etag,
+  `${big.status} ${big.headers.etag}`,
+)
+const bigDock = await request(
+  `load.${base}`,
+  `${dockPath}?tile=${encodeURIComponent(docked)}`,
+  {headers: {cookie: jar}},
+)
+check(
+  'and the same dock',
+  bigDock.status === 200 && bigDock.body === dockPage.body,
+  String(bigDock.status),
+)
+const sizeOf = list => list.reduce((n, c) => n + c.length, 0)
+const bigSet = [big.headers['set-cookie'] || []].flat()
+if (bigSet.length) {
+  const forBase = bigSet.filter(c =>
+    new RegExp(`; Domain=${domain.replace(/\./g, '\\.')}$`, 'i').test(c),
+  )
+  check(
+    'every name in it expired for the base host, within 16 kB',
+    forBase.length === 180 && sizeOf(bigSet) <= 16 * 1024,
+    `${forBase.length} of ${bigSet.length} Set-Cookie for the base host, ${sizeOf(bigSet)} bytes`,
+  )
+} else {
+  note(
+    'every name in it expired',
+    false,
+    'no Set-Cookie came back (see "cookies that arrive are expired")',
+  )
+}
+// Names cost more to expire than to send: as many short names as fit in
+// 12 kB would need some 200 kB of expiries. What fits goes, the base host
+// first, and the rest goes with the requests that follow.
+const names = Array.from({length: 1500}, (_, i) => `n${i}=1`).join('; ')
+const many = await request(origin, '/.well-known/web-tiles/', {
+  headers: {cookie: names},
+})
+const manySet = [many.headers['set-cookie'] || []].flat()
+check(
+  `${names.length} bytes of short names get the runtime`,
+  many.status === 200,
+  String(many.status),
+)
+if (manySet.length) {
+  check(
+    'with as many expiries as fit in 16 kB, for the base host first',
+    manySet.length > 150 &&
+      sizeOf(manySet) <= 16 * 1024 &&
+      manySet.every(c =>
+        new RegExp(`; Domain=${domain.replace(/\./g, '\\.')}$`, 'i').test(c),
+      ),
+    `${manySet.length} Set-Cookie, ${sizeOf(manySet)} bytes`,
+  )
+}
+
 // Wiping: a tile origin can be emptied, and nothing else can.
 const wipe = await request(origin, wipePath)
 check(
