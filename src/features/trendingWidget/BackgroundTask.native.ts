@@ -9,7 +9,7 @@ import {
   DEFAULT_FETCH_LIMIT,
   filterTrends,
 } from '#/state/queries/trending/useGetTrendsQuery'
-import {getPublicAppviewClient} from '#/state/session/clients'
+import {getPublicBlueskyAppviewClient} from '#/state/session/clients'
 import {
   type TrendingWidgetCopy,
   updateTrendingWidgetSnapshot,
@@ -41,7 +41,9 @@ TaskManager.defineTask(TASK_NAME, async () => {
     }
 
     const config: BackgroundConfig = JSON.parse(storedConfig)
-    const data = await getPublicAppviewClient().call(
+    // Only Bluesky's AppView serves trends (see useGetTrendsQuery), so the
+    // widget reads them there, not from the configured public AppView.
+    const data = await getPublicBlueskyAppviewClient().call(
       app.bsky.unspecced.getTrends,
       {limit: DEFAULT_FETCH_LIMIT},
       {

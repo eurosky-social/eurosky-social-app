@@ -7,7 +7,7 @@ import {
 import {getContentLanguages} from '#/state/preferences/languages'
 import {STALE} from '#/state/queries'
 import {usePreferencesQuery} from '#/state/queries/preferences'
-import {useAppviewClient} from '#/state/session'
+import {useBlueskyAppviewRequestTarget} from '#/state/session'
 import {app} from '#/lexicons'
 
 export const createSuggestedStarterPacksQueryKey = (interests?: string[]) => [
@@ -22,7 +22,9 @@ export function useSuggestedStarterPacksQuery({
   enabled?: boolean
   overrideInterests?: string[]
 }) {
-  const client = useAppviewClient()
+  // Starter-pack suggestions come from Bluesky's topics service, which other
+  // AppViews don't have, so this always asks Bluesky's AppView.
+  const {client, service} = useBlueskyAppviewRequestTarget()
   const {data: preferences} = usePreferencesQuery()
   const contentLangs = getContentLanguages().join(',')
 
@@ -43,6 +45,7 @@ export function useSuggestedStarterPacksQuery({
             ),
             'Accept-Language': contentLangs,
           },
+          service,
         },
       )
 
