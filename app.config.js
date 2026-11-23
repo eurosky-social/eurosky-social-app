@@ -2,14 +2,21 @@
 const pkg = require('./package.json')
 
 /**
- * FCM config for Android push. Gitignored (see .gitignore) and provisioned
- * out-of-band - present for credentialed local/EAS builds, absent otherwise.
- * When absent we omit the key entirely so prebuild doesn't fail trying to copy
- * a missing file; Android remote push just isn't configured on that build. We
- * probe with `require.resolve` (module-relative, like the requires above) to
- * avoid importing the `fs`/`path` builtins, which the lint config forbids here.
+ * FCM config for Android push (Firebase project mu-social-c7914, app
+ * social.mu.app; Courier sends with the same project's key). Gitignored (see
+ * .gitignore), so EAS never uploads a local copy: EAS builds get it from the
+ * GOOGLE_SERVICES_JSON file variable of their EAS environment, which holds the
+ * path of the file on the builder. Local builds can still use
+ * ./google-services.json. When neither exists we omit the key entirely so
+ * prebuild doesn't fail trying to copy a missing file; Android remote push
+ * just isn't configured on that build. We probe with `require.resolve`
+ * (module-relative, like the requires above) to avoid importing the
+ * `fs`/`path` builtins, which the lint config forbids here.
  */
 const GOOGLE_SERVICES_FILE = (() => {
+  if (process.env.GOOGLE_SERVICES_JSON) {
+    return process.env.GOOGLE_SERVICES_JSON
+  }
   try {
     require.resolve('./google-services.json')
     return './google-services.json'
