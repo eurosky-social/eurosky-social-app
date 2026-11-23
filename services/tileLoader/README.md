@@ -151,9 +151,12 @@ script takes tiles' CIDs with no further step. The move takes:
    `EXPO_PUBLIC_TILES_HOST_URL=https://<tiles domain>/.well-known/web-tiles/host/`
    in `.github/environments/common.env` and `.env.example`, and the same
    two as the built-in defaults in `src/features/tiles/constants.ts` and
-   `app.config.js` (which makes the iOS app-bound domains from them). Then
-   a web build, and new native builds: the host page's address and the
-   app-bound domains are built into each.
+   `app.config.js` (which makes the iOS app-bound domains from them). The
+   host page's built-in address is also written by hand in
+   `src/features/tiles/host.test.ts`, whose test of `tileHostUrl` with no
+   settings fails until it says the new one. Then a web build, and new
+   native builds: the host page's address and the app-bound domains are
+   built into each.
 5. **`t.mu.social`, until nothing uses it.** Native builds installed before
    the move have `https://t.mu.social/.well-known/web-tiles/host/` built in
    (older ones `https://t.mu.social/host/`), and `load.t.mu.social`; a web
