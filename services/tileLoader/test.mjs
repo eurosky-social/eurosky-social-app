@@ -7,9 +7,11 @@
  *   node services/tileLoader/test.mjs https://t.mu.social t.mu.social  # deployed
  *
  * First argument: scheme and port to reach it on (the host part is replaced
- * by load.<base> and tile origins); second: the base host. Requests go to
- * the address in the first argument with the Host header set, so no DNS for
- * the made-up names is needed locally.
+ * by load.<base> and tile origins); second: the base host. Locally (the
+ * first argument on localhost or 127.0.0.1, or a base host on localhost)
+ * requests go to this machine with the Host header set, so no DNS for the
+ * made-up names is needed, and a run with BASE_HOST=t.mu.social checks mu's
+ * own names without a request leaving it.
  */
 import {randomBytes} from 'node:crypto'
 import {readdirSync, readFileSync} from 'node:fs'
@@ -21,10 +23,19 @@ import {fileURLToPath} from 'node:url'
 const reach = new URL(process.argv[2] || 'http://localhost:8080')
 const base = process.argv[3] || 'localhost'
 const local = base.endsWith('localhost')
+const onThisMachine =
+  local || ['localhost', '127.0.0.1'].includes(reach.hostname)
 const here = dirname(fileURLToPath(import.meta.url))
 const modules = join(here, '..', '..', 'node_modules', '@dasl')
-const {runtimeHeaders, deadHeaders, dockCSP, dockPath, wipeHeaders, wipePath} =
-  await import(join(modules, 'tile-lexicon', 'dist', 'index.js'))
+const {
+  runtimeHeaders,
+  deadHeaders,
+  dockCSP,
+  dockPath,
+  wipeHeaders,
+  wipePath,
+  cidLabelDigest,
+} = await import(join(modules, 'tile-lexicon', 'dist', 'index.js'))
 const dockDir = join(modules, 'tile-server', 'dock')
 const publicDir = join(modules, 'tile-server', 'public')
 
@@ -35,7 +46,7 @@ function request(host, path, {method = 'GET', headers = {}} = {}) {
   return new Promise((resolve, reject) => {
     const req = lib.request(
       {
-        host: local ? '127.0.0.1' : host,
+        host: onThisMachine ? '127.0.0.1' : host,
         port: reach.port || (reach.protocol === 'https:' ? 443 : 80),
         servername: host,
         path,
@@ -458,8 +469,40 @@ if (manySet.length) {
   )
 }
 
-// Tiles' CIDs: no tile origins here (see the README), whatever the packages
-// the script is built from take.
+// Tiles' CIDs (`<the CID of a tile's manifest>.<base>`): tile origins where
+// the runtime served here holds such an origin to that one tile, and the
+// base host is not on the site of mu's own pages; nowhere else, and never a
+// name that only looks like one (see the README).
+const runtimeFile = name => readFileSync(join(publicDir, name), 'utf8')
+const binds =
+  runtimeFile('worker.js').includes('const NAMED_BY = cidLabelDigest(') &&
+  runtimeFile('shuttle.js').includes("CID_NAMED ? 'worker.js?cid'") &&
+  readFileSync(join(dockDir, 'dock.js'), 'utf8').includes(
+    'payload: { generation: GENERATION, cid: true }',
+  )
+// mu's own pages: on mu.social, and on the hosts in src/config/brand.json.
+// A base host on the site of one of them, or that is no host name, takes no
+// tile's CID for a tile origin.
+const {hosts} = JSON.parse(
+  readFileSync(join(here, '..', '..', 'src', 'config', 'brand.json'), 'utf8'),
+)
+const baseName = base.toLowerCase().replace(/:\d+$/, '').replace(/\.+$/, '')
+const onMuSite =
+  !/^[a-z0-9-]+(\.[a-z0-9-]+)*$/.test(baseName) ||
+  ['mu.social', ...hosts].some(host => {
+    const site = host.toLowerCase().split('.').slice(-2).join('.')
+    return baseName === site || baseName.endsWith(`.${site}`)
+  })
+const takesCids = binds && !onMuSite
+console.log(
+  `# tiles' CIDs are ${takesCids ? '' : 'not '}tile origins under ${base}: ${
+    !binds
+      ? 'the runtime served here holds none to its tile'
+      : onMuSite
+        ? "it is on the site of mu's own pages"
+        : 'it is on a site of its own'
+  }`,
+)
 const B32 = 'abcdefghijklmnopqrstuvwxyz234567'
 function b32(bytes) {
   let out = ''
@@ -476,24 +519,276 @@ function b32(bytes) {
   }
   return bits ? out + B32[(value << (5 - bits)) & 31] : out
 }
-const cidOf = codec =>
-  `b${b32([0x01, codec, 0x12, 0x20, ...randomBytes(32)])}`
-for (const [what, label] of [
-  ["a tile's CID", cidOf(0x71)],
-  ['a CID of raw bytes', cidOf(0x55)],
-]) {
-  const host = `${label}.${base}`
-  const res = await request(host, '/.well-known/web-tiles/worker.js')
-  check(
-    `${what} is not a tile origin`,
-    res.status === 404 && !res.headers['service-worker-allowed'],
-    String(res.status),
-  )
-  const asked = await request(
+const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+function b58(bytes) {
+  let n = BigInt(`0x${Buffer.from(bytes).toString('hex')}`)
+  let out = ''
+  while (n > 0n) {
+    out = B58[Number(n % 58n)] + out
+    n /= 58n
+  }
+  return out
+}
+const DIGEST = randomBytes(32)
+const HEAD = [0x01, 0x71, 0x12, 0x20]
+const cidOf = (codec = 0x71, hash = 0x12, digest = DIGEST, version = 0x01) =>
+  `b${b32([version, codec, hash, digest.length, ...digest])}`
+const CID = cidOf()
+// The same bytes written another way: the bits left over at the end set.
+const twin = (cid, bits) =>
+  cid.slice(0, -1) + B32[B32.indexOf(cid.at(-1)) | bits]
+const dockFor = host =>
+  request(
     `load.${base}`,
     `${dockPath}?tile=${encodeURIComponent(`${host}${portPart}`)}`,
   )
+// The runtime's worker on a name. Deployed, a name that DNS or TLS does not
+// take (one the wildcard does not cover, or no host name at all) gets no
+// runtime either.
+const workerOn = host =>
+  request(host, '/.well-known/web-tiles/worker.js').catch(e => ({
+    status: 404,
+    headers: {},
+    unreachable: e.code || e.message,
+  }))
+// Whether a name is the CID of a tile's manifest, said here, and held to
+// @dasl/tile-lexicon's rule where the lexicon has one (4.0 on).
+for (const [what, label, isCid] of [
+  ["a tile's CID", CID, true],
+  ['a CID of raw bytes', cidOf(0x55), false],
+  ['a CID of another codec (dag-pb)', cidOf(0x70), false],
+  ["a CID of BDASL's BLAKE3", cidOf(0x71, 0x1e), false],
+  [
+    'a CID of a hash of another length',
+    cidOf(0x71, 0x12, DIGEST.subarray(0, 31)),
+    false,
+  ],
+  ['a CIDv2', cidOf(0x71, 0x12, DIGEST, 0x02), false],
+  [
+    'a CIDv0, as a host has it',
+    b58([0x12, 0x20, ...DIGEST]).toLowerCase(),
+    false,
+  ],
+  ['another spelling of the same CID', twin(CID, 1), false],
+  ['another, of the same', twin(CID, 3), false],
+  [
+    'the same CID in base58btc',
+    `z${b58([...HEAD, ...DIGEST])}`.toLowerCase(),
+    false,
+  ],
+  [
+    'the same CID in base16',
+    `f${Buffer.from([...HEAD, ...DIGEST]).toString('hex')}`,
+    false,
+  ],
+  ["the same CID with base32hex's prefix", `v${CID.slice(1)}`, false],
+  ['the same CID with padding', `${CID}=`, false],
+  ['one character short', CID.slice(0, 58), false],
+  ['one character long', `${CID}a`, false],
+  ['with no multibase', CID.slice(1), false],
+  ['with a length byte that is not 32', `bafyreiz${CID.slice(8)}`, false],
+  ...Array.from({length: 20}, (_, i) => {
+    const cid = cidOf(0x71, 0x12, randomBytes(32))
+    return i % 2
+      ? [`a tile's CID (${cid})`, cid, true]
+      : [`another spelling of one (${twin(cid, 2)})`, twin(cid, 2), false]
+  }),
+]) {
+  if (cidLabelDigest) {
+    check(
+      `${what} is ${isCid ? '' : 'not '}a CID by @dasl/tile-lexicon's rule too`,
+      Boolean(cidLabelDigest(label)) === isCid,
+    )
+  }
+  const takes = takesCids && isCid
+  const host = `${label}.${base}`
+  const res = await workerOn(host)
+  check(
+    `${what} is ${takes ? '' : 'not '}a tile origin`,
+    takes
+      ? res.status === 200 &&
+          res.headers['service-worker-allowed'] === '/' &&
+          res.body === runtimeFile('worker.js')
+      : res.status === 404 && !res.headers['service-worker-allowed'],
+    res.unreachable || String(res.status),
+  )
+  const asked = await dockFor(host)
+  check(
+    `and is ${takes ? '' : 'not '}docked`,
+    takes
+      ? asked.status === 200 &&
+          asked.headers['content-security-policy'] ===
+            dockCSP(`${scheme}://${host}${portPart}`)
+      : asked.status === 400,
+    String(asked.status),
+  )
+}
+// One label directly under the base host, and nowhere else.
+for (const host of [
+  `x.${CID}.${base}`,
+  `${CID}.x.${base}`,
+  `${CID}.load.${base}`,
+  `${CID}.elsewhere.example`,
+  `${CID}.${base}.`,
+  CID,
+]) {
+  const res = await workerOn(host)
+  check(
+    `${host} is not a tile origin${res.unreachable ? ': unreachable' : ''}`,
+    res.status === 404 && !res.headers['service-worker-allowed'],
+    res.unreachable || String(res.status),
+  )
+  const asked = await dockFor(host)
   check('and is not docked', asked.status === 400, String(asked.status))
+}
+// A name in capitals is the same name: a browser writes it in lower case,
+// and a client of its own that does not gets the same answer.
+for (const host of [
+  `${CID}.${base}`.toUpperCase(),
+  `${CID.slice(0, 30).toUpperCase()}${CID.slice(30)}.${base}`,
+]) {
+  const res = await workerOn(host)
+  check(
+    `${host} is ${takesCids ? '' : 'not '}a tile origin, as in lower case`,
+    takesCids ? res.status === 200 : res.status === 404,
+    res.unreachable || String(res.status),
+  )
+  const asked = await dockFor(host)
+  check(
+    `and is ${takesCids ? '' : 'not '}docked`,
+    takesCids
+      ? asked.status === 200 &&
+          asked.headers['content-security-policy'] ===
+            dockCSP(`${scheme}://${CID}.${base}${portPart}`)
+      : asked.status === 400,
+    String(asked.status),
+  )
+}
+// Nothing else a request says makes a difference either.
+const cidHost = `${CID}.${base}`
+for (const header of ['x-forwarded-host', 'cdn-host']) {
+  const res = await request(cidHost, '/.well-known/web-tiles/worker.js', {
+    headers: {[header]: `${CID}.tiles.example`},
+  })
+  check(
+    `${header} from a client does not change what ${cidHost} is`,
+    takesCids ? res.status === 200 : res.status === 404,
+    String(res.status),
+  )
+}
+const twice = await request(
+  `load.${base}`,
+  `${dockPath}?tile=${encodeURIComponent(`${cidHost}${portPart}`)}&tile=${encodeURIComponent(docked)}`,
+)
+check('the dock asked for two origins docks neither', twice.status === 400)
+
+if (takesCids) {
+  // A tile's CID gets what every tile origin gets, through the same code:
+  // the runtime, whose worker holds it to that one tile (served too at the
+  // address its shuttle registers it at), dead ends everywhere else, the
+  // wipe for its own pages only, and the cookies that reach it expired.
+  const apart = await request(cidHost, '/.well-known/web-tiles/worker.js?cid')
+  check(
+    "its worker at worker.js?cid is @dasl/tile-server's, which reads its name for the CID",
+    apart.status === 200 &&
+      apart.body === runtimeFile('worker.js') &&
+      apart.headers['service-worker-allowed'] === '/' &&
+      hasAll(apart.headers, runtimeHeaders).length === 0,
+    String(apart.status),
+  )
+  for (const name of ['index.html', 'shuttle.js']) {
+    const res = await request(cidHost, `/.well-known/web-tiles/${name}`)
+    check(
+      `its ${name} is @dasl/tile-server's, with every runtime policy header`,
+      res.status === 200 &&
+        res.body === runtimeFile(name) &&
+        hasAll(res.headers, runtimeHeaders).length === 0,
+      String(res.status),
+    )
+  }
+  for (const path of [
+    '/',
+    '/index.html',
+    '/.well-known/web-tiles/nope.js',
+    '/.well-known/web-tiles/host/',
+    '/host/',
+  ]) {
+    const res = await request(cidHost, path)
+    const miss = hasAll(res.headers, deadHeaders)
+    check(
+      `${path} on it is a dead end`,
+      res.status === 404 && miss.length === 0,
+      `${res.status} ${miss.join(', ')}`,
+    )
+  }
+  const cidPost = await request(cidHost, '/.well-known/web-tiles/', {
+    method: 'POST',
+  })
+  check('POST to its runtime is refused', cidPost.status === 405)
+  await onlyFiles(cidHost, '/.well-known/web-tiles/')
+  const own = await request(cidHost, wipePath, {
+    headers: {'sec-fetch-site': 'same-origin'},
+  })
+  check(
+    'it answers the wipe with Clear-Site-Data, to a page of its own',
+    own.status === 200 &&
+      own.headers['clear-site-data'] === wipeHeaders['clear-site-data'],
+    `${own.status} ${own.headers['clear-site-data']}`,
+  )
+  for (const from of [undefined, 'same-site', 'cross-site', 'none']) {
+    const res = await request(cidHost, wipePath, {
+      headers: from ? {'sec-fetch-site': from} : {},
+    })
+    check(
+      `and to nothing else (Sec-Fetch-Site: ${from ?? 'not said'})`,
+      res.status === 403 && !res.headers['clear-site-data'],
+      `${res.status} ${res.headers['clear-site-data']}`,
+    )
+  }
+  const jarred = await request(cidHost, '/.well-known/web-tiles/', {
+    headers: {cookie: 'kept=1'},
+  })
+  const cidSet = [jarred.headers['set-cookie'] || []].flat()
+  if (cidSet.length) {
+    check(
+      'cookies that reach it are expired, for the base host and host-only',
+      cidSet.some(c => /; Domain=/i.test(c) && c.startsWith('kept=;')) &&
+        cidSet.some(c => !/Domain=/i.test(c) && c.startsWith('kept=;')) &&
+        cidSet.every(
+          c =>
+            !/Domain=/i.test(c) || c.toLowerCase().endsWith(`domain=${domain}`),
+        ),
+      `${cidSet.length} Set-Cookie`,
+    )
+  } else {
+    note(
+      'cookies that reach it are expired',
+      false,
+      'no Set-Cookie came back (see "cookies that arrive are expired")',
+    )
+  }
+} else {
+  // Where a tile's CID is no tile origin, nothing of one is served on it.
+  for (const path of [
+    '/.well-known/web-tiles/',
+    '/.well-known/web-tiles/shuttle.js',
+    '/.well-known/web-tiles/worker.js?cid',
+  ]) {
+    const res = await request(cidHost, path)
+    check(
+      `${path} on ${cidHost} is not served`,
+      res.status === 404 && !res.headers['service-worker-allowed'],
+      String(res.status),
+    )
+  }
+  const res = await request(cidHost, wipePath, {
+    headers: {'sec-fetch-site': 'same-origin'},
+  })
+  check(
+    `${cidHost} clears nothing`,
+    res.status === 404 && !res.headers['clear-site-data'],
+    `${res.status} ${res.headers['clear-site-data']}`,
+  )
 }
 
 // Wiping: a tile origin can be emptied, by a page of its own, and nothing

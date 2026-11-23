@@ -34,14 +34,25 @@ edge script, so mu no longer depends on `load.webtil.es`.
   `<BASE_HOST>/host/`, its address until it moved, which the native builds
   installed before then open: that one can go once no installed build uses
   it.
+- A tile's CID, `<the CID of its manifest>.<BASE_HOST>`, is a tile origin
+  too, as `@dasl/tile-server` takes it from 4.0 on, but only under a base
+  host on a site of its own. The name is decoded and checked as
+  `@dasl/tile-lexicon` does it (a CIDv1 of DRISL with a SHA-256, in
+  lowercase base32, written the one way it can be: not a pattern), and the
+  runtime there serves the one tile whose manifest that CID names, and no
+  other. Such an origin is kept, for the tile to find what it stored, so its
+  frame is a plain one, and a plain frame has the cookies of its origin's
+  site: under `t.mu.social`, which shares a site with mu.social, any tile
+  would read and set mu.social's cookies, and any link to the host page can
+  ask for such an origin (`&origin=cid`). So the script takes no tile's CID
+  under a base host on the site of mu's own pages (mu.social, and those of
+  the hosts in `src/config/brand.json`), whatever a request says; under a
+  base host on a domain of its own, it takes them with no further step.
+  Built from a `@dasl/tile-server` older than 4.0, whose runtime holds no
+  such origin to its tile, it takes none anywhere.
 - Any other name gets a 404. Only names of the shape it mints are tile
-  origins, so the runtime and its worker never land on another subdomain.
-  Not a tile's CID either (`<the CID of its manifest>.<BASE_HOST>`), which
-  `@dasl/tile-server` takes for a tile origin from 4.0 on: such an origin is
-  kept, so its frame is a plain one, and on `t.mu.social`, which shares a
-  site with mu.social, a plain frame gives a tile mu.social's cookies. Any
-  link to the host page can ask for one (`&origin=cid`). Give tile origins a
-  domain of their own before taking them.
+  origins, and tiles' CIDs where those are, so the runtime and its worker
+  never land on another subdomain.
 
 It never sees tile content: the page embedding the tile hands the resources
 to the worker (through the blob CDN, `services/tiles`).
@@ -54,12 +65,13 @@ to the worker (through the blob CDN, `services/tiles`).
 - `build.mjs`: `pnpm tiles:loader:build` regenerates the script;
   `pnpm tiles:loader:check` fails if it is stale, and runs in CI with the
   linters. Rerun after bumping `@dasl/tile-server`, `@dasl/tile-lexicon` or
-  `@dasl/tile-host`, **and paste the new script into Bunny**: CI keeps the
-  repository consistent, it does not deploy. The runtime served has to be
-  the one the app's `@dasl/tile-loader` expects.
+  `@dasl/tile-host`, or changing the hosts in `src/config/brand.json`, **and
+  paste the new script into Bunny**: CI keeps the repository consistent, it
+  does not deploy. The runtime served has to be the one the app's
+  `@dasl/tile-loader` expects.
 - `test.mjs`: checks a running instance against the packages (redirect,
-  byte-identical runtime, policy headers, dead ends, non-tile names, a
-  cookie jar of 12 kB).
+  byte-identical runtime, policy headers, dead ends, non-tile names, tiles'
+  CIDs under its base host, a cookie jar of 12 kB).
 
 ## Local run
 
@@ -71,7 +83,10 @@ node services/tileLoader/test.mjs http://localhost:8080 localhost
 A tile does not actually render through a plain-http `*.localhost` loader in
 a browser (the reference `tiles-loading-server` behaves the same), so the
 local check is parity with the reference; a real tile is checked once
-deployed.
+deployed. Run with `BASE_HOST=t.mu.social`, and `t.mu.social` as
+`test.mjs`'s second argument, the same check covers mu's own names, where
+tiles' CIDs are refused: `test.mjs` sends every request to this machine
+when its first argument is on `localhost`.
 
 ## Deploy
 
@@ -154,6 +169,30 @@ for tiles (`BASE_HOST`) rules it out entirely.
   isolate processes by site, not origin. The tile policy blocks a tile's
   network access either way. A separate registrable domain (as `webtil.es`
   is) is the stricter choice; `BASE_HOST` makes that a configuration change.
+  It is also what lets tiles' CIDs be tile origins (see "What it does").
+- **How the script knows mu's site.** It is part of the script, not of its
+  settings, so that nothing set in Bunny, and nothing in a request, can
+  make a tile's CID a tile origin there: mu.social always, and the sites of
+  the hosts in `src/config/brand.json`, which `build.mjs` reads. A site is
+  read as a host's last two labels. Two hosts on one site always end in the
+  same two, so this never takes one of mu's for another's; under a public
+  suffix of more than one label (`co.uk`) it can take two sites for one,
+  which only refuses more. A `BASE_HOST` that is not a plain host name
+  takes no CID either.
+- **The app asks for no CID origin.** mu web's mothership is made without
+  `cidOrigins`, and the native player's address for the host page has no
+  `&origin=cid`, so every tile still runs on a fresh origin for each load,
+  in a credentialless frame on the web. What asking would gain: a tile on
+  the same origin at every load, which keeps what it stores (notes, a
+  game's progress) from one load to the next, with no wipe when it is
+  closed. What it would cost: a plain frame, which in Chromium has the
+  cookies of the tiles' domain on every site that shows tiles (a channel
+  between tiles); any frame of a page that shows the tile, of whatever
+  site, can run it there with what it kept, feed it data and take its
+  messages; the host name tells DNS and the network which tile is shown;
+  and what it stored stays on the device until the browser clears it. Only
+  worth weighing once tile origins are on a domain of their own; it is a
+  change in `src/features/tiles`, not here.
 - **Native.** The iOS and Android apps run tiles in a WebView on the hosted
   page, `https://t.mu.social/.well-known/web-tiles/host/`
   (`EXPO_PUBLIC_TILES_HOST_URL`; this and the

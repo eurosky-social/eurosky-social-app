@@ -27,6 +27,12 @@
  *                         is a dead end (404, no scripts, no loads, opaque
  *                         origin), which is what a tile that unregisters its
  *                         worker and navigates to the network gets.
+ *   <a tile's CID>.<BASE_HOST>
+ *                         the same, for the one tile whose manifest that CID
+ *                         names, which the runtime holds it to: only where
+ *                         the runtime inlined below does (CID_ORIGINS), and
+ *                         never where BASE_HOST is on the site of mu's own
+ *                         pages (APP_SITES), as t.mu.social is.
  *   <BASE_HOST>/.well-known/web-tiles/host/
  *                         the page the native apps' WebView runs one tile in
  *                         (@dasl/tile-host, inlined too), beside the dock
@@ -51,6 +57,8 @@
  *
  * Config (Bunny dashboard -> script -> Env Configuration):
  *   BASE_HOST  the host tile origins are minted under (default t.mu.social).
+ *              Under a host of a site of its own, tiles' CIDs are tile
+ *              origins too; under one of mu.social's, they never are.
  */
 import * as BunnySDK from 'https://esm.sh/@bunny.net/edgescript-sdk@0.13.0'
 
@@ -95,6 +103,89 @@ const HOST_FILES: Record<string, {type: string; etag: string; body: string}> =
   __HOST_FILES__
 
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz'
+
+// Whether the runtime inlined above holds an origin named by a tile's CID to
+// that one tile, as @dasl/tile-server's does from 4.0 on: its worker reads
+// the CID from its own name and serves no other tile, its shuttle registers
+// that worker apart from any other, and its dock tells the loader so.
+// build.mjs reads it from the runtime. An edge built from an older one takes
+// no such name: there anyone could put any tile on it, and find what another
+// tile kept there.
+const CID_ORIGINS: boolean = __CID_ORIGINS__
+
+// The sites of mu's own pages: mu.social, whatever src/config/brand.json
+// says, and those of the hosts listed there, which build.mjs reads. A tile
+// on the origin its CID names gets a plain frame, so that it finds what it
+// kept there, and a plain frame has the cookies of the site its origin is
+// on: under a base host on one of these sites (t.mu.social), any tile could
+// read and set the cookies of mu's own pages. So under such a base host no
+// CID is a tile origin, whatever a request says; under a base host of a
+// site of its own, they are. It is part of the script, so nothing set at run
+// time (the base host included) can make a CID a tile origin on these sites.
+const APP_SITES: string[] = ['mu.social', ...__APP_HOSTS__].map(siteOf)
+
+/**
+ * The site a host name is on, as far as this server needs to know: its last
+ * two labels, in lower case, with no port and no dot at the end. A site is a
+ * public suffix and the one label before it, so two names on one site always
+ * end in the same two labels. Where a suffix has more labels than one
+ * (co.uk), names that end alike can be on two sites, and are taken for one:
+ * that only ever refuses more. Empty for what is not a host name.
+ */
+function siteOf(host: string): string {
+  const name = host
+    .trim()
+    .toLowerCase()
+    .replace(/:\d+$/, '')
+    .replace(/\.+$/, '')
+  if (!/^[a-z0-9-]+(\.[a-z0-9-]+)*$/.test(name)) return ''
+  return name.split('.').slice(-2).join('.')
+}
+
+/** Whether tiles' CIDs are tile origins under a base host. */
+function takesCids(base: string): boolean {
+  const site = siteOf(base)
+  return CID_ORIGINS && site !== '' && !APP_SITES.includes(site)
+}
+
+// Whether a label is the CID of a tile's manifest: a CIDv1 of DRISL with a
+// SHA-256, in lowercase base32 behind its `b`, written the one way it can be.
+// Decoded and checked, as cidLabelDigest() in @dasl/tile-lexicon does it,
+// which test.mjs holds this to: a pattern would take strings that decode to
+// something else, and other ways of writing the same bytes.
+const BASE32 = 'abcdefghijklmnopqrstuvwxyz234567'
+function isCidLabel(label: string): boolean {
+  if (label.length !== 59 || label[0] !== 'b') return false
+  const bytes: number[] = []
+  let bits = 0
+  let value = 0
+  for (const char of label.slice(1)) {
+    const digit = BASE32.indexOf(char)
+    if (digit < 0) return false
+    value = (value << 5) | digit
+    bits += 5
+    if (bits >= 8) {
+      bits -= 8
+      bytes.push((value >> bits) & 0xff)
+      value &= (1 << bits) - 1
+    }
+  }
+  // What is left over is part of no byte: it is zero, or this is another way
+  // of writing the same bytes.
+  return (
+    bytes.length === 36 &&
+    value === 0 &&
+    bytes[0] === 0x01 &&
+    bytes[1] === 0x71 &&
+    bytes[2] === 0x12 &&
+    bytes[3] === 0x20
+  )
+}
+
+/** Whether a label directly under the base host is a tile origin's. */
+function isTileLabel(label: string, base: string): boolean {
+  return /^[a-z]{20}$/.test(label) || (takesCids(base) && isCidLabel(label))
+}
 
 function baseHost(): string {
   return (Deno.env.get('BASE_HOST') || 't.mu.social')
@@ -274,11 +365,12 @@ function respond(req: Request): Response {
     })
   }
 
-  // Only names this server mints are tile origins.
+  // Only names this server mints are tile origins, and tiles' CIDs where
+  // those are.
   const label = name.endsWith(`.${base}`)
     ? name.slice(0, -(base.length + 1))
     : ''
-  if (!/^[a-z]{20}$/.test(label)) return dead(404, 'Not a tile origin.')
+  if (!isTileLabel(label, base)) return dead(404, 'Not a tile origin.')
 
   if (url.pathname === WIPE_PATH) {
     // A tile origin is emptied for a page of its own and no one else: the
@@ -325,7 +417,8 @@ function respond(req: Request): Response {
 /**
  * The dock: the page, for one tile origin named in `?tile=`, with a policy
  * made for that origin; and its script. Only an origin of the shape this
- * server mints, on this port, is docked.
+ * server mints, or a tile's CID where those are tile origins, on this port,
+ * is docked.
  */
 function dock(
   req: Request,
@@ -366,9 +459,9 @@ function dock(
     }
     const m =
       asked.length === 1
-        ? asked[0].toLowerCase().match(/^([a-z]{20})\.(.+?)(?::(\d+))?$/)
+        ? asked[0].toLowerCase().match(/^([a-z2-7]+)\.(.+?)(?::(\d+))?$/)
         : null
-    if (!m || m[2] !== base || m[3] !== port) {
+    if (!m || !isTileLabel(m[1], base) || m[2] !== base || m[3] !== port) {
       return dead(400, 'Not a tile origin.')
     }
     docked = `${m[1]}.${base}${port ? `:${port}` : ''}`
