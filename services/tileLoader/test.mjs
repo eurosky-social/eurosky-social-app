@@ -399,8 +399,10 @@ for (const bad of ['evil.example', base, `load.${base}`, `${docked.replace(/:\d+
 // 10.8 kB of 180 cookies, and every later tile on that page brings it: a jar
 // a little larger than that gets the runtime and the dock as without it, and
 // has every name expired for the base host, within what one answer takes
-// (16 kB). In other browsers, and in the native WebView, a tile can make the
-// jar much larger: see the README.
+// (16 kB). All 180 fit for a base host of up to 19 characters, as
+// t.mu.social is; for a longer one, as many as fit, the base host's first,
+// and the rest go with the answers that follow. In other browsers, and in
+// the native WebView, a tile can make the jar much larger: see the README.
 const jar = Array.from(
   {length: 180},
   (_, i) => `c${i}=${'x'.repeat(63 - String(i).length)}`,
@@ -432,9 +434,16 @@ if (bigSet.length) {
   const forBase = bigSet.filter(c =>
     new RegExp(`; Domain=${domain.replace(/\./g, '\\.')}$`, 'i').test(c),
   )
+  // What the base host's expiry of the jar's next name would have added.
+  const next = forBase.length
+    ? forBase[0].replace(/^[^=]*=/, `c${forBase.length}=`).length
+    : 0
   check(
-    'every name in it expired for the base host, within 16 kB',
-    forBase.length === 180 && sizeOf(bigSet) <= 16 * 1024,
+    'every name in it expired for the base host first, as far as 16 kB goes',
+    sizeOf(bigSet) <= 16 * 1024 &&
+      (forBase.length === 180 ||
+        (forBase.length === bigSet.length &&
+          sizeOf(bigSet) + next > 16 * 1024)),
     `${forBase.length} of ${bigSet.length} Set-Cookie for the base host, ${sizeOf(bigSet)} bytes`,
   )
 } else {
@@ -458,9 +467,12 @@ check(
   String(many.status),
 )
 if (manySet.length) {
+  // More than 150 under a base host as short as t.mu.social; under a long
+  // one, fewer fit: then as many as fit, the next name's expiry would not.
+  const next = manySet[0].replace(/^[^=]*=/, `n${manySet.length}=`).length
   check(
     'with as many expiries as fit in 16 kB, for the base host first',
-    manySet.length > 150 &&
+    (manySet.length > 150 || sizeOf(manySet) + next > 16 * 1024) &&
       sizeOf(manySet) <= 16 * 1024 &&
       manySet.every(c =>
         new RegExp(`; Domain=${domain.replace(/\./g, '\\.')}$`, 'i').test(c),
