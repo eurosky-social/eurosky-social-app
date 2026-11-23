@@ -20,10 +20,13 @@ export const TILES_LOAD_DOMAIN =
  * which is how tiles play on iOS and Android: the loader needs iframes and a
  * service worker, so native embeds a web page that runs it. Its domain has to
  * be an app-bound domain on iOS (see app.config.js). Served by the loading
- * server's script, next to the origins it loads tiles from.
+ * server's script, next to the origins it loads tiles from, at its place
+ * beside the dock and the runtime. (The script serves it at /host/ too, for
+ * the builds made before it moved.)
  */
 export const TILES_HOST_URL =
-  process.env.EXPO_PUBLIC_TILES_HOST_URL || 'https://t.mu.social/host/'
+  process.env.EXPO_PUBLIC_TILES_HOST_URL ||
+  'https://t.mu.social/.well-known/web-tiles/host/'
 
 /**
  * Base URL of the tile blob CDN (`services/tiles`), which serves a tile's

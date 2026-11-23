@@ -192,7 +192,9 @@ The loader needs iframes and a service worker, which React Native has no
 equivalent of, so iOS and Android run the tile in a WebView on a hosted page:
 [`@dasl/tile-host`](https://tangled.org/robin.berjon.com/dasl-tiles/tree/main/tile-host),
 `TILES_HOST_URL` (`EXPO_PUBLIC_TILES_HOST_URL`, default
-`https://t.mu.social/host/`, served by `services/tileLoader`). The page runs the same hardened loader against the
+`https://t.mu.social/.well-known/web-tiles/host/`, served by
+`services/tileLoader`, which serves the same page at `/host/` for the builds
+made before it moved). The page runs the same hardened loader against the
 same loading server; `TilePlayer` only talks to it over the WebView message
 bridge (manifest size, readiness, errors) and keeps anything but the page out
 of the top frame, sending links a tile opens through `useOpenLink`.

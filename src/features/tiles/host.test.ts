@@ -18,6 +18,12 @@ describe('tileHostUrl', () => {
     ).toBe(`https://webtil.es/host/?tile=${encodeURIComponent(TILE)}`)
   })
 
+  it('opens the host page at its place, beside the dock and the runtime', () => {
+    expect(tileHostUrl(TILE)).toBe(
+      `https://t.mu.social/.well-known/web-tiles/host/?tile=${encodeURIComponent(TILE)}`,
+    )
+  })
+
   it('passes the loading server when it is not the page default', () => {
     expect(
       tileHostUrl(TILE, {
