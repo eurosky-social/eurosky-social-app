@@ -47,9 +47,10 @@ edge script, so mu no longer depends on `load.webtil.es`.
   ask for such an origin (`&origin=cid`). So the script takes no tile's CID
   under a base host on the site of mu's own pages (mu.social, and those of
   the hosts in `src/config/brand.json`), whatever a request says; under a
-  base host on a domain of its own, it takes them with no further step.
-  Built from a `@dasl/tile-server` older than 4.0, whose runtime holds no
-  such origin to its tile, it takes none anywhere.
+  base host on a domain of its own, it takes them with no further step (see
+  "Moving tile origins to a domain of their own"). Built from a
+  `@dasl/tile-server` older than 4.0, whose runtime holds no such origin to
+  its tile, it takes none anywhere.
 - Any other name gets a 404. Only names of the shape it mints are tile
   origins, and tiles' CIDs where those are, so the runtime and its worker
   never land on another subdomain.
@@ -118,6 +119,54 @@ node services/tileLoader/test.mjs https://t.mu.social t.mu.social
    (the demo build takes `TILES_LOAD_DOMAIN`). Deployed and switched on
    2026-11-13; a real tile was played through it.
 
+## Moving tile origins to a domain of their own
+
+Under `t.mu.social` tile origins share a site with mu.social (see "Cookies
+and the rest of mu.social"), and the script takes no tile's CID for a tile
+origin there. On a registrable domain of their own (`<tiles domain>` below,
+which is yours to pick), no cookie a tile sets reaches mu's hosts, and the
+script takes tiles' CIDs with no further step. The move takes:
+
+1. **Bunny.** The same `bunny/index.ts`, pasted as a second standalone
+   script on a pull zone of its own, with `BASE_HOST=<tiles domain>` in its
+   Env Configuration and **Strip Response Cookies** off on that pull zone
+   (as in Deploy, step 1). The `t.mu.social` script stays as it is; if the
+   default in `template.ts` is changed to the new domain, it needs
+   `BASE_HOST=t.mu.social` set first.
+2. **DNS and the certificate.** On the new pull zone, three hostnames with
+   SSL on each: `load.<tiles domain>`, the wildcard `*.<tiles domain>` and
+   `<tiles domain>` itself (the host page), and records for the three
+   pointing at the pull zone. The wildcard certificate comes through Bunny
+   DNS, as mu.social's does, so the new domain's zone goes there too (or
+   Bunny is given a wildcard certificate of your own). The domain's apex
+   cannot be a CNAME: use what Bunny DNS offers there for a pull zone, or
+   make the base host a name under the domain (`t.<tiles domain>`, as
+   `t.mu.social` is under mu.social), with `load.t`, `*.t` and `t`.
+3. **Check it** before anything points at it:
+   `node services/tileLoader/test.mjs https://<tiles domain> <tiles domain>`
+   says `tiles' CIDs are tile origins under <tiles domain>`, and ends with
+   `all good`.
+4. **The app.** `EXPO_PUBLIC_TILES_LOAD_DOMAIN=load.<tiles domain>` and
+   `EXPO_PUBLIC_TILES_HOST_URL=https://<tiles domain>/.well-known/web-tiles/host/`
+   in `.github/environments/common.env` and `.env.example`, and the same
+   two as the built-in defaults in `src/features/tiles/constants.ts` and
+   `app.config.js` (which makes the iOS app-bound domains from them). Then
+   a web build, and new native builds: the host page's address and the
+   app-bound domains are built into each.
+5. **`t.mu.social`, until nothing uses it.** Native builds installed before
+   the move have `https://t.mu.social/.well-known/web-tiles/host/` built in
+   (older ones `https://t.mu.social/host/`), and `load.t.mu.social`; a web
+   page opened before the new web build is served keeps using
+   `load.t.mu.social` until it is reloaded. So the `t.mu.social` script
+   keeps serving, unchanged and taking no tile's CID, until no installed
+   build opens it: when that is, is yours to decide. Then its hostnames and
+   its DNS records under mu.social go, and `/host/` (`OLD_HOST_PATH` in
+   `template.ts`) with them.
+
+Nothing else moves: the blob CDN (`tiles.mu.social`) is no tile origin, and
+the web app's cookie scrub (`src/lib/cookies/scrub.ts`) still matters while
+tiles run under `t.mu.social`.
+
 ## Cookies and the rest of mu.social
 
 Tile origins are cross-origin from everything, but `<random>.t.mu.social`
@@ -159,7 +208,8 @@ What this cannot do: in Firefox and Safari a tile's script can still set a
 `Domain=mu.social` cookie, which rides along on requests to mu's hosts until
 the app's next scrub, at most a minute while the app is open. Nothing there
 reads cookies, so it is inert meanwhile; only a registrable domain of its own
-for tiles (`BASE_HOST`) rules it out entirely.
+for tiles (`BASE_HOST`) rules it out entirely (see "Moving tile origins to a
+domain of their own").
 
 ## Things to know
 
@@ -168,8 +218,9 @@ for tiles (`BASE_HOST`) rules it out entirely.
   service: a cookie set for `Domain=mu.social` would reach them, and browsers
   isolate processes by site, not origin. The tile policy blocks a tile's
   network access either way. A separate registrable domain (as `webtil.es`
-  is) is the stricter choice; `BASE_HOST` makes that a configuration change.
-  It is also what lets tiles' CIDs be tile origins (see "What it does").
+  is) is the stricter choice; `BASE_HOST` makes that a configuration change
+  of the script, and "Moving tile origins to a domain of their own" says
+  what else it takes. It is also what lets tiles' CIDs be tile origins.
 - **How the script knows mu's site.** It is part of the script, not of its
   settings, so that nothing set in Bunny, and nothing in a request, can
   make a tile's CID a tile origin there: mu.social always, and the sites of
