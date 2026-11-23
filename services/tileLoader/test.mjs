@@ -173,6 +173,10 @@ for (const path of [
   '/index.html',
   '/.well-known/web-tiles/nope.js',
   '/.well-known/web-tiles/../x',
+  // The host page's places: the page is the base host's alone.
+  '/.well-known/web-tiles/host/',
+  '/.well-known/web-tiles/host/host.js',
+  '/host/',
 ]) {
   const res = await request(origin, path)
   const miss = hasAll(res.headers, deadHeaders)
@@ -214,41 +218,48 @@ for (const host of [
   )
 }
 
-// The page native WebViews run a tile in, on the base host itself.
+// The page native WebViews run a tile in, on the base host itself: at its
+// place, beside the dock and the runtime, and at /host/, where the builds
+// installed before it moved open it.
 const hostDir = join(modules, 'tile-host', 'public')
-const page = await request(base, '/host/').catch(e => ({
+const HOST_PATH = '/.well-known/web-tiles/host/'
+const page = await request(base, HOST_PATH).catch(e => ({
   unreachable: e.code || e.message,
 }))
 if (page.unreachable) {
-  check(`https://${base}/host/ is reachable`, false, page.unreachable)
+  check(`https://${base}${HOST_PATH} is reachable`, false, page.unreachable)
 } else {
-  check(
-    'host page is served on the base host',
-    page.status === 200 &&
-      page.body === readFileSync(join(hostDir, 'index.html'), 'utf8'),
-    String(page.status),
-  )
-  const csp = page.headers['content-security-policy'] || ''
-  check(
-    "it may frame this server's dock, on the loading host, and nothing else",
-    new RegExp(
-      `frame-src https://load\\.${base.replace(/\./g, '\\.')} http://load\\.${base.replace(/\./g, '\\.')}:\\*(;|$)`,
-    ).test(csp) && /default-src 'none'/.test(csp),
-    csp.match(/frame-src[^;]*/)?.[0] ?? 'no frame-src',
-  )
-  const hostJs = await request(base, '/host/host.js')
-  check(
-    "host.js is byte-identical to @dasl/tile-host's",
-    hostJs.status === 200 &&
-      hostJs.body === readFileSync(join(hostDir, 'host.js'), 'utf8'),
-    String(hostJs.status),
-  )
-  const bare = await request(base, '/host?tile=x')
-  check(
-    '/host redirects to /host/, keeping the query',
-    bare.status === 308 && bare.headers.location === '/host/?tile=x',
-    `${bare.status} ${bare.headers.location}`,
-  )
+  for (const at of [HOST_PATH, '/host/']) {
+    const here = await request(base, at)
+    check(
+      `host page is served on the base host at ${at}`,
+      here.status === 200 &&
+        here.body === readFileSync(join(hostDir, 'index.html'), 'utf8'),
+      String(here.status),
+    )
+    const csp = here.headers['content-security-policy'] || ''
+    check(
+      "it may frame this server's dock, on the loading host, and nothing else",
+      new RegExp(
+        `frame-src https://load\\.${base.replace(/\./g, '\\.')} http://load\\.${base.replace(/\./g, '\\.')}:\\*(;|$)`,
+      ).test(csp) && /default-src 'none'/.test(csp),
+      csp.match(/frame-src[^;]*/)?.[0] ?? 'no frame-src',
+    )
+    const hostJs = await request(base, `${at}host.js`)
+    check(
+      `${at}host.js is byte-identical to @dasl/tile-host's`,
+      hostJs.status === 200 &&
+        hostJs.body === readFileSync(join(hostDir, 'host.js'), 'utf8'),
+      String(hostJs.status),
+    )
+    const bare = await request(base, `${at.slice(0, -1)}?tile=x`)
+    check(
+      `${at.slice(0, -1)} redirects to ${at}, keeping the query`,
+      bare.status === 308 && bare.headers.location === `${at}?tile=x`,
+      `${bare.status} ${bare.headers.location}`,
+    )
+    await onlyFiles(base, at)
+  }
   const root = await request(base, '/')
   const shuttleOnBase = await request(base, '/.well-known/web-tiles/')
   check(
@@ -256,7 +267,20 @@ if (page.unreachable) {
     root.status === 404 && shuttleOnBase.status === 404,
     `${root.status} ${shuttleOnBase.status}`,
   )
-  await onlyFiles(base, '/host/')
+  // Nor anything of the runtime's or the dock's through the page's place.
+  for (const path of [
+    `${HOST_PATH}../worker.js`,
+    `${HOST_PATH}worker.js`,
+    `${HOST_PATH}dock/dock.js`,
+    `${HOST_PATH}%2e%2e/worker.js`,
+  ]) {
+    const res = await request(base, path)
+    check(
+      `${path} on the base host is no file of the runtime's or the dock's`,
+      res.status === 404 && !res.headers['service-worker-allowed'],
+      String(res.status),
+    )
+  }
   // The name asked for is the one that counts: a client does not get another
   // believed by sending a forwarding header of its own.
   for (const header of ['x-forwarded-host', 'cdn-host']) {

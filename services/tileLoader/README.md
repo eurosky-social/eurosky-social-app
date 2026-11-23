@@ -24,9 +24,14 @@ edge script, so mu no longer depends on `load.webtil.es`.
   `Clear-Site-Data`. The runtime loads it when the app closes a tile, so that
   an origin made for one load does not stay in the browser, with its worker
   registered and whatever the tile stored, for good.
-- `<BASE_HOST>/host/` is the page the native apps' WebView runs one tile in
+- `<BASE_HOST>/.well-known/web-tiles/host/` is the page the native apps'
+  WebView runs one tile in
   ([`@dasl/tile-host`](https://www.npmjs.com/package/@dasl/tile-host), inlined
-  like the runtime). Its CSP lets it frame this server's tile origins only.
+  like the runtime), beside the dock and the runtime. Its CSP lets it frame
+  this server's tile origins only. The same page is served at
+  `<BASE_HOST>/host/`, its address until it moved, which the native builds
+  installed before then open: that one can go once no installed build uses
+  it.
 - Any other name gets a 404. Only names of the shape it mints are tile
   origins, so the runtime and its worker never land on another subdomain.
 
@@ -142,7 +147,8 @@ for tiles (`BASE_HOST`) rules it out entirely.
   network access either way. A separate registrable domain (as `webtil.es`
   is) is the stricter choice; `BASE_HOST` makes that a configuration change.
 - **Native.** The iOS and Android apps run tiles in a WebView on the hosted
-  page, `https://t.mu.social/host/` (`EXPO_PUBLIC_TILES_HOST_URL`; this and the
+  page, `https://t.mu.social/.well-known/web-tiles/host/`
+  (`EXPO_PUBLIC_TILES_HOST_URL`; this and the
   load domain are the app's built-in defaults, so a native build needs no
   setting). The page defaults its loading server to `load.<its own host>`,
   which is ours. `app.config.js` derives the iOS app-bound domain,

@@ -27,9 +27,13 @@
  *                         is a dead end (404, no scripts, no loads, opaque
  *                         origin), which is what a tile that unregisters its
  *                         worker and navigates to the network gets.
- *   <BASE_HOST>/host/     the page the native apps' WebView runs one tile in
- *                         (@dasl/tile-host, inlined too). It frames tiles
- *                         from the origins above and nothing else.
+ *   <BASE_HOST>/.well-known/web-tiles/host/
+ *                         the page the native apps' WebView runs one tile in
+ *                         (@dasl/tile-host, inlined too), beside the dock
+ *                         and the runtime. It frames tiles from the origins
+ *                         above and nothing else. The same page is served
+ *                         at <BASE_HOST>/host/, where the builds installed
+ *                         before it moved open it.
  *   anything else         404. The runtime, and the worker it registers at
  *                         scope /, is never served on any other name.
  *
@@ -164,7 +168,15 @@ const FILES: Record<string, {type: string; etag: string; body: string}> =
   }
 }
 
-const HOST_PATH = '/host/'
+// Where the host page is: beside the dock and the runtime, under the prefix
+// that is the loading server's.
+const HOST_PATH = '/.well-known/web-tiles/host/'
+
+// Where it was, which the native apps installed before the move have built
+// in: the same page, served there too, until no installed build opens it.
+// (Not a redirect: one would have to carry the query and the fragment, the
+// key in it, through every WebView, and none was measured doing so.)
+const OLD_HOST_PATH = '/host/'
 
 const HOST_HEADERS: Record<string, string> = {
   "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src https: http:; frame-src __FRAME_SRC__; base-uri 'none'; form-action 'none'; object-src 'none'",
@@ -337,19 +349,20 @@ function respond(req: Request): Response {
     })
   }
 
-  // The base host itself: the page native WebViews run a tile in.
+  // The base host itself: the page native WebViews run a tile in, at its
+  // place and at the one it had.
   if (name === base) {
-    if (url.pathname === HOST_PATH.slice(0, -1)) {
-      return new Response(null, {
-        status: 308,
-        headers: {location: `${HOST_PATH}${url.search}`},
-      })
+    for (const at of [HOST_PATH, OLD_HOST_PATH]) {
+      if (url.pathname === at.slice(0, -1)) {
+        return new Response(null, {
+          status: 308,
+          headers: {location: `${at}${url.search}`},
+        })
+      }
     }
-    const file = url.pathname.startsWith(HOST_PATH)
-      ? fileNamed(
-          HOST_FILES,
-          url.pathname.slice(HOST_PATH.length) || 'index.html',
-        )
+    const at = [HOST_PATH, OLD_HOST_PATH].find(p => url.pathname.startsWith(p))
+    const file = at
+      ? fileNamed(HOST_FILES, url.pathname.slice(at.length) || 'index.html')
       : undefined
     if (!file) return dead(404, 'Nothing here.')
     if (req.method !== 'GET' && req.method !== 'HEAD') {
