@@ -58,7 +58,8 @@
  * Config (Bunny dashboard -> script -> Env Configuration):
  *   BASE_HOST  the host tile origins are minted under (default t.mu.social).
  *              Under a host of a site of its own, tiles' CIDs are tile
- *              origins too; under one of mu.social's, they never are.
+ *              origins too; under one of mu.social's or mycopunk.it's,
+ *              they never are.
  */
 import * as BunnySDK from 'https://esm.sh/@bunny.net/edgescript-sdk@0.13.0'
 
@@ -113,16 +114,20 @@ const ALPHABET = 'abcdefghijklmnopqrstuvwxyz'
 // tile kept there.
 const CID_ORIGINS: boolean = __CID_ORIGINS__
 
-// The sites of mu's own pages: mu.social, whatever src/config/brand.json
-// says, and those of the hosts listed there, which build.mjs reads. A tile
-// on the origin its CID names gets a plain frame, so that it finds what it
-// kept there, and a plain frame has the cookies of the site its origin is
-// on: under a base host on one of these sites (t.mu.social), any tile could
-// read and set the cookies of mu's own pages. So under such a base host no
-// CID is a tile origin, whatever a request says; under a base host of a
-// site of its own, they are. It is part of the script, so nothing set at run
-// time (the base host included) can make a CID a tile origin on these sites.
-const APP_SITES: string[] = ['mu.social', ...__APP_HOSTS__].map(siteOf)
+// The sites of mu's own pages: mu.social, and mycopunk.it, where demo builds
+// of mu's web app run, whatever src/config/brand.json says; and those of the
+// hosts listed there, which build.mjs reads. A tile on the origin its CID
+// names gets a plain frame, so that it finds what it kept there, and a plain
+// frame has the cookies of the site its origin is on: under a base host on
+// one of these sites (t.mu.social), any tile could read and set the cookies
+// of mu's own pages, and of whatever else is on that site. So under such a
+// base host no CID is a tile origin, whatever a request says; under a base
+// host of a site of its own, they are. It is part of the script, so nothing
+// set at run time (the base host included) can make a CID a tile origin on
+// these sites.
+const APP_SITES: string[] = ['mu.social', 'mycopunk.it', ...__APP_HOSTS__].map(
+  siteOf,
+)
 
 /**
  * The site a host name is on, as far as this server needs to know: its last

@@ -74,7 +74,7 @@ const cidOrigins =
     'payload: { generation: GENERATION, cid: true }',
   )
 // The hosts of mu's own pages, whose sites take no CID for a tile origin
-// (the template adds mu.social whatever this says).
+// (the template adds mu.social and mycopunk.it whatever this says).
 const brand = JSON.parse(
   readFileSync(join(here, '..', '..', 'src', 'config', 'brand.json'), 'utf8'),
 )
@@ -127,7 +127,7 @@ if (process.argv.includes('--check')) {
 } else {
   writeFileSync(target, out)
   const cids = cidOrigins
-    ? `tiles' CIDs are tile origins, but not on the sites of ${[...new Set(['mu.social', ...appHosts])].join(', ')}`
+    ? `tiles' CIDs are tile origins, but not on the sites of ${[...new Set(['mu.social', 'mycopunk.it', ...appHosts])].join(', ')}`
     : "tiles' CIDs are not tile origins: the runtime holds none to its tile"
   console.log(
     `wrote ${target} (${Object.keys(files).join(', ')}; ${serverPkg.version}; ${cids})`,

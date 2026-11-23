@@ -45,12 +45,12 @@ edge script, so mu no longer depends on `load.webtil.es`.
   site: under `t.mu.social`, which shares a site with mu.social, any tile
   would read and set mu.social's cookies, and any link to the host page can
   ask for such an origin (`&origin=cid`). So the script takes no tile's CID
-  under a base host on the site of mu's own pages (mu.social, and those of
-  the hosts in `src/config/brand.json`), whatever a request says; under a
-  base host on a domain of its own, it takes them with no further step (see
-  "Moving tile origins to a domain of their own"). Built from a
-  `@dasl/tile-server` older than 4.0, whose runtime holds no such origin to
-  its tile, it takes none anywhere.
+  under a base host on the site of mu's own pages (mu.social, mycopunk.it,
+  and those of the hosts in `src/config/brand.json`), whatever a request
+  says; under a base host on a domain of its own, it takes them with no
+  further step (see "Moving tile origins to a domain of their own"). Built
+  from a `@dasl/tile-server` older than 4.0, whose runtime holds no such
+  origin to its tile, it takes none anywhere.
 - Any other name gets a 404. Only names of the shape it mints are tile
   origins, and tiles' CIDs where those are, so the runtime and its worker
   never land on another subdomain.
@@ -124,7 +124,8 @@ node services/tileLoader/test.mjs https://t.mu.social t.mu.social
 Under `t.mu.social` tile origins share a site with mu.social (see "Cookies
 and the rest of mu.social"), and the script takes no tile's CID for a tile
 origin there. On a registrable domain of their own (`<tiles domain>` below,
-which is yours to pick), no cookie a tile sets reaches mu's hosts, and the
+which is yours to pick, and not under mu.social or mycopunk.it, where the
+script takes none), no cookie a tile sets reaches mu's hosts, and the
 script takes tiles' CIDs with no further step. The move takes:
 
 1. **Bunny.** The same `bunny/index.ts`, pasted as a second standalone
@@ -223,16 +224,18 @@ domain of their own").
   what else it takes. It is also what lets tiles' CIDs be tile origins.
 - **How the script knows mu's site.** It is part of the script, not of its
   settings, so that nothing set in Bunny, and nothing in a request, can
-  make a tile's CID a tile origin there: mu.social always, and the sites of
-  the hosts in `src/config/brand.json`, which `build.mjs` reads. It refuses
-  to build when one of those is not written as a bare host name, in lower
-  case and in ASCII (with a scheme, a path or a port, in capitals, in
-  Unicode rather than its `xn--` form, with a dot at the end): the script
-  could read no site from it, and that site would take tiles' CIDs. A site
-  is read as a host's last two labels. Two hosts on one site always end in
-  the same two, so this never takes one of mu's for another's; under a
-  public suffix of more than one label (`co.uk`) it can take two sites for
-  one, which only refuses more. A `BASE_HOST` that is not a plain host name
+  make a tile's CID a tile origin there: mu.social and mycopunk.it always
+  (demo builds of mu's web app run on mycopunk.it, so a tiles domain there
+  would share their site), and the sites of the hosts in
+  `src/config/brand.json`, which `build.mjs` reads. It refuses to build
+  when one of those is not written as a bare host name, in lower case and
+  in ASCII (with a scheme, a path or a port, in capitals, in Unicode rather
+  than its `xn--` form, with a dot at the end): the script could read no
+  site from it, and that site would take tiles' CIDs. A site is read as a
+  host's last two labels. Two hosts on one site always end in the same
+  two, so this never takes one of mu's for another's; under a public
+  suffix of more than one label (`co.uk`) it can take two sites for one,
+  which only refuses more. A `BASE_HOST` that is not a plain host name
   takes no CID either.
 - **The app asks for no CID origin.** mu web's mothership is made without
   `cidOrigins`, and the native player's address for the host page has no

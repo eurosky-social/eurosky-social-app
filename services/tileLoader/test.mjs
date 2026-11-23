@@ -480,16 +480,17 @@ const binds =
   readFileSync(join(dockDir, 'dock.js'), 'utf8').includes(
     'payload: { generation: GENERATION, cid: true }',
   )
-// mu's own pages: on mu.social, and on the hosts in src/config/brand.json.
-// A base host on the site of one of them, or that is no host name, takes no
-// tile's CID for a tile origin.
+// mu's own pages: on mu.social, on mycopunk.it (demo builds of mu's web
+// app), and on the hosts in src/config/brand.json. A base host on the site
+// of one of them, or that is no host name, takes no tile's CID for a tile
+// origin.
 const {hosts} = JSON.parse(
   readFileSync(join(here, '..', '..', 'src', 'config', 'brand.json'), 'utf8'),
 )
 const baseName = base.toLowerCase().replace(/:\d+$/, '').replace(/\.+$/, '')
 const onMuSite =
   !/^[a-z0-9-]+(\.[a-z0-9-]+)*$/.test(baseName) ||
-  ['mu.social', ...hosts].some(host => {
+  ['mu.social', 'mycopunk.it', ...hosts].some(host => {
     const site = host.toLowerCase().split('.').slice(-2).join('.')
     return baseName === site || baseName.endsWith(`.${site}`)
   })
