@@ -79,11 +79,20 @@ const brand = JSON.parse(
   readFileSync(join(here, '..', '..', 'src', 'config', 'brand.json'), 'utf8'),
 )
 const appHosts = brand.hosts
-if (
-  !Array.isArray(appHosts) ||
-  !appHosts.every(host => typeof host === 'string')
-) {
+if (!Array.isArray(appHosts)) {
   throw new Error('src/config/brand.json has no list of hosts')
+}
+// Each one written as the template's siteOf() reads a host name: bare, in
+// lower case and in ASCII. Written otherwise (with a scheme, a path or a
+// port, in capitals, in Unicode, with a dot at the end), the edge could read
+// no site from it, and that site would then take tiles' CIDs as if it were
+// not mu's.
+for (const [i, host] of appHosts.entries()) {
+  if (typeof host !== 'string' || !/^[a-z0-9-]+(\.[a-z0-9-]+)*$/.test(host)) {
+    throw new Error(
+      `src/config/brand.json: hosts[${i}] is ${JSON.stringify(host)}, not a host name the tile loader can read a site from: write it bare (no scheme, path, port or dot at the end), in lower case and in ASCII (a Unicode name in its xn-- form)`,
+    )
+  }
 }
 
 const template = readFileSync(join(here, 'template.ts'), 'utf8')

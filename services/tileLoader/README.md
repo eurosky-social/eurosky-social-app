@@ -224,11 +224,15 @@ domain of their own").
 - **How the script knows mu's site.** It is part of the script, not of its
   settings, so that nothing set in Bunny, and nothing in a request, can
   make a tile's CID a tile origin there: mu.social always, and the sites of
-  the hosts in `src/config/brand.json`, which `build.mjs` reads. A site is
-  read as a host's last two labels. Two hosts on one site always end in the
-  same two, so this never takes one of mu's for another's; under a public
-  suffix of more than one label (`co.uk`) it can take two sites for one,
-  which only refuses more. A `BASE_HOST` that is not a plain host name
+  the hosts in `src/config/brand.json`, which `build.mjs` reads. It refuses
+  to build when one of those is not written as a bare host name, in lower
+  case and in ASCII (with a scheme, a path or a port, in capitals, in
+  Unicode rather than its `xn--` form, with a dot at the end): the script
+  could read no site from it, and that site would take tiles' CIDs. A site
+  is read as a host's last two labels. Two hosts on one site always end in
+  the same two, so this never takes one of mu's for another's; under a
+  public suffix of more than one label (`co.uk`) it can take two sites for
+  one, which only refuses more. A `BASE_HOST` that is not a plain host name
   takes no CID either.
 - **The app asks for no CID origin.** mu web's mothership is made without
   `cidOrigins`, and the native player's address for the host page has no
