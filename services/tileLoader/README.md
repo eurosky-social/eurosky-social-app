@@ -23,7 +23,9 @@ edge script, so mu no longer depends on `load.webtil.es`.
 - `/.well-known/web-tiles/wipe` on a tile origin answers with
   `Clear-Site-Data`. The runtime loads it when the app closes a tile, so that
   an origin made for one load does not stay in the browser, with its worker
-  registered and whatever the tile stored, for good.
+  registered and whatever the tile stored, for good. It answers a page of
+  that origin and no one else (`Sec-Fetch-Site: same-origin`, which the
+  browser sets): anything else gets a 403 that clears nothing.
 - `<BASE_HOST>/.well-known/web-tiles/host/` is the page the native apps'
   WebView runs one tile in
   ([`@dasl/tile-host`](https://www.npmjs.com/package/@dasl/tile-host), inlined
@@ -34,6 +36,12 @@ edge script, so mu no longer depends on `load.webtil.es`.
   it.
 - Any other name gets a 404. Only names of the shape it mints are tile
   origins, so the runtime and its worker never land on another subdomain.
+  Not a tile's CID either (`<the CID of its manifest>.<BASE_HOST>`), which
+  `@dasl/tile-server` takes for a tile origin from 4.0 on: such an origin is
+  kept, so its frame is a plain one, and on `t.mu.social`, which shares a
+  site with mu.social, a plain frame gives a tile mu.social's cookies. Any
+  link to the host page can ask for one (`&origin=cid`). Give tile origins a
+  domain of their own before taking them.
 
 It never sees tile content: the page embedding the tile hands the resources
 to the worker (through the blob CDN, `services/tiles`).

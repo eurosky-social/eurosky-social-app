@@ -281,6 +281,13 @@ function respond(req: Request): Response {
   if (!/^[a-z]{20}$/.test(label)) return dead(404, 'Not a tile origin.')
 
   if (url.pathname === WIPE_PATH) {
+    // A tile origin is emptied for a page of its own and no one else: the
+    // browser says where a request comes from, and no page can say
+    // otherwise. A link anyone can post would otherwise clear a tile
+    // origin; @dasl/tile-server refuses it the same way.
+    if (req.headers.get('sec-fetch-site') !== 'same-origin') {
+      return dead(403, 'A tile origin is wiped at its own request only.')
+    }
     return new Response('<!doctype html><title>Wiped</title>', {
       status: 200,
       headers: {...WIPE_HEADERS, 'content-type': 'text/html; charset=utf-8'},

@@ -11,6 +11,7 @@
  * the address in the first argument with the Host header set, so no DNS for
  * the made-up names is needed locally.
  */
+import {randomBytes} from 'node:crypto'
 import {readdirSync, readFileSync} from 'node:fs'
 import http from 'node:http'
 import https from 'node:https'
@@ -457,14 +458,65 @@ if (manySet.length) {
   )
 }
 
-// Wiping: a tile origin can be emptied, and nothing else can.
-const wipe = await request(origin, wipePath)
+// Tiles' CIDs: no tile origins here (see the README), whatever the packages
+// the script is built from take.
+const B32 = 'abcdefghijklmnopqrstuvwxyz234567'
+function b32(bytes) {
+  let out = ''
+  let bits = 0
+  let value = 0
+  for (const byte of bytes) {
+    value = (value << 8) | byte
+    bits += 8
+    while (bits >= 5) {
+      bits -= 5
+      out += B32[(value >> bits) & 31]
+    }
+    value &= (1 << bits) - 1
+  }
+  return bits ? out + B32[(value << (5 - bits)) & 31] : out
+}
+const cidOf = codec =>
+  `b${b32([0x01, codec, 0x12, 0x20, ...randomBytes(32)])}`
+for (const [what, label] of [
+  ["a tile's CID", cidOf(0x71)],
+  ['a CID of raw bytes', cidOf(0x55)],
+]) {
+  const host = `${label}.${base}`
+  const res = await request(host, '/.well-known/web-tiles/worker.js')
+  check(
+    `${what} is not a tile origin`,
+    res.status === 404 && !res.headers['service-worker-allowed'],
+    String(res.status),
+  )
+  const asked = await request(
+    `load.${base}`,
+    `${dockPath}?tile=${encodeURIComponent(`${host}${portPart}`)}`,
+  )
+  check('and is not docked', asked.status === 400, String(asked.status))
+}
+
+// Wiping: a tile origin can be emptied, by a page of its own, and nothing
+// else can.
+const wipe = await request(origin, wipePath, {
+  headers: {'sec-fetch-site': 'same-origin'},
+})
 check(
-  'a tile origin answers the wipe with Clear-Site-Data',
+  'a tile origin answers the wipe with Clear-Site-Data, to a page of its own',
   wipe.status === 200 &&
     wipe.headers['clear-site-data'] === wipeHeaders['clear-site-data'],
   `${wipe.status} ${wipe.headers['clear-site-data']}`,
 )
+for (const from of [undefined, 'same-site', 'cross-site', 'none']) {
+  const res = await request(origin, wipePath, {
+    headers: from ? {'sec-fetch-site': from} : {},
+  })
+  check(
+    `and to nothing else (Sec-Fetch-Site: ${from ?? 'not said'})`,
+    res.status === 403 && !res.headers['clear-site-data'],
+    `${res.status} ${res.headers['clear-site-data']}`,
+  )
+}
 for (const host of [base, `load.${base}`]) {
   const res = await request(host, wipePath)
   check(
