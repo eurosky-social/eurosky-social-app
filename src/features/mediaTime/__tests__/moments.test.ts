@@ -1,7 +1,12 @@
 import {describe, expect, it} from '@jest/globals'
 
 import {type ThreadItem} from '#/state/queries/usePostThread/types'
-import {collectTimedReplies, groupIntoMoments} from '../moments'
+import {
+  collectTimedReplies,
+  groupIntoMoments,
+  mergeMoments,
+  type Moment,
+} from '../moments'
 import {MEDIA_TIME_FIELD} from '../record'
 
 const VIDEO_POST = 'at://did:plc:alice/app.bsky.feed.post/3lvideo'
@@ -24,9 +29,7 @@ describe('groupIntoMoments', () => {
       comment(205),
       comment(400),
     ])
-    expect(
-      moments.map(m => [m.startSeconds, m.endSeconds, m.comments.length]),
-    ).toEqual([
+    expect(moments.map(m => [m.startSeconds, m.endSeconds, m.count])).toEqual([
       [10, 50, 3],
       [200, 205, 2],
       [400, 400, 1],
@@ -50,6 +53,63 @@ describe('groupIntoMoments', () => {
       comment(5, 'at://a'),
     ])
     expect(moment.comments.map(c => c.uri)).toEqual(['at://a', 'at://b'])
+  })
+})
+
+describe('mergeMoments', () => {
+  function moment(comments: {uri: string; seconds: number}[], count?: number) {
+    const seconds = comments.map(c => c.seconds)
+    return {
+      startSeconds: Math.min(...seconds),
+      endSeconds: Math.max(...seconds),
+      count: count ?? comments.length,
+      comments,
+    } satisfies Moment
+  }
+  const summary = (moments: Moment[]) =>
+    moments.map(m => [m.startSeconds, m.endSeconds, m.count])
+
+  it('keeps the server moments when it knows every local comment', () => {
+    const server = [moment([comment(10), comment(20)])]
+    expect(mergeMoments(server, [comment(20)])).toBe(server)
+  })
+
+  it('adds a comment the server does not know yet', () => {
+    const server = [moment([comment(10), comment(20)]), moment([comment(300)])]
+    expect(
+      summary(mergeMoments(server, [comment(45, 'at://new'), comment(10)])),
+    ).toEqual([
+      [10, 45, 3],
+      [300, 300, 1],
+    ])
+  })
+
+  it('starts a new moment for a comment far from the others', () => {
+    const server = [moment([comment(10)])]
+    expect(summary(mergeMoments(server, [comment(500, 'at://new')]))).toEqual([
+      [10, 10, 1],
+      [500, 500, 1],
+    ])
+  })
+
+  it('keeps the comments the server only counted', () => {
+    // 150 comments from 0:10 to 0:40; the server listed the first 100
+    const listed = Array.from({length: 100}, (_, i) =>
+      comment(10 + (i % 20), `at://listed/${i}`),
+    )
+    const server = [{...moment(listed, 150), endSeconds: 40}]
+    const merged = mergeMoments(server, [comment(65, 'at://new')])
+    expect(summary(merged)).toEqual([[10, 65, 151]])
+  })
+
+  it('joins moments that the unlisted comments bring together', () => {
+    const listed = Array.from({length: 100}, (_, i) =>
+      comment(10, `at://listed/${i}`),
+    )
+    const server = [{...moment(listed, 120), endSeconds: 90}]
+    expect(summary(mergeMoments(server, [comment(115, 'at://new')]))).toEqual([
+      [10, 115, 121],
+    ])
   })
 })
 

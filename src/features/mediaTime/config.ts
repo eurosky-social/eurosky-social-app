@@ -7,3 +7,14 @@
  */
 export const MEDIA_TIME_ENABLED =
   process.env.EXPO_PUBLIC_ENABLE_MEDIA_TIME === 'true'
+
+/**
+ * Where moments come from: an AppView that answers
+ * `network.eurosky.feed.getMoments` (Eurosky's does). It counts all of a
+ * video's linked replies; without it, or when it fails, the app groups the
+ * replies its thread loaded. Asked without signing in: the answer is public
+ * and the same for everyone.
+ */
+export const MOMENTS_SERVICE_URL =
+  process.env.EXPO_PUBLIC_MEDIA_TIME_MOMENTS_URL ||
+  'https://api.eurosky.network'

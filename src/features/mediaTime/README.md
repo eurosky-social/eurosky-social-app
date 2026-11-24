@@ -50,13 +50,22 @@ A thread opened with `?t=` (for example from another app) does the same
 
 ## Moments
 
-`moments.ts` groups a thread's linked direct replies: sorted by second, a
-reply more than 30 seconds after the previous one starts a new moment. The
-gap is a first guess. Grouping happens in the app from the thread's replies.
-The thread call (`getPostThreadV2`) currently returns all direct replies; its
-docs say they may be paged later, and then the app would see only part of
-them. Hidden and muted replies are not counted. A server-side index is a
-later step; it is also needed to show moments outside the thread (timeline
-card, insights for the video's publisher).
+A video's linked direct replies, sorted by second: a reply more than 30
+seconds after the previous one starts a new moment (`moments.ts`; the gap is
+a first guess).
+
+`useVideoMoments.ts` asks an AppView that answers
+`network.eurosky.feed.getMoments` (schema:
+`lexicons/network/eurosky/feed/getMoments.json`, the same file as in
+Eurosky's AppView fork). It is Eurosky's by default;
+`EXPO_PUBLIC_MEDIA_TIME_MOMENTS_URL` changes it. It counts all of a video's
+linked replies, whichever AppView the user reads through, and is asked
+without signing in. Linked replies the thread loaded that it doesn't know yet,
+such as one just posted, are added to its moments.
+
+Until it answers, or when it fails, the app groups only the replies its
+thread loaded. Eurosky's AppView returns at most 200 replies for a thread;
+Bluesky's currently returns all direct replies. Hidden and muted replies are
+not counted there.
 
 Tests: `pnpm test src/features/mediaTime src/lib/api/__tests__/post.test.ts`.

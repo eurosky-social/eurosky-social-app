@@ -35,10 +35,6 @@ import {RichText} from '#/components/RichText'
 import {Text} from '#/components/Typography'
 import {MomentChips} from '#/features/mediaTime/components/MomentChips'
 import {
-  collectTimedReplies,
-  groupIntoMoments,
-} from '#/features/mediaTime/moments'
-import {
   registerSeekTarget,
   reportPlaybackPosition,
 } from '#/features/mediaTime/playback'
@@ -47,6 +43,7 @@ import {
   getOwnVideoEmbed,
   parseMediaTimeParam,
 } from '#/features/mediaTime/record'
+import {useVideoMoments} from '#/features/mediaTime/useVideoMoments'
 import {type app} from '#/lexicons'
 
 type ThreadPostItem = Extract<ThreadItem, {type: 'threadPost'}>
@@ -162,7 +159,7 @@ function Player({
 
   const commentSeconds = Math.floor(currentTime)
   const commentTime = formatMediaTime(commentSeconds)
-  const moments = groupIntoMoments(collectTimedReplies(threadItems, post.uri))
+  const moments = useVideoMoments({videoPostUri: post.uri, threadItems})
   const richText = new RichTextAPI({
     text: post.record.text,
     facets: post.record.facets,

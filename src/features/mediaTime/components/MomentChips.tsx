@@ -36,7 +36,7 @@ export function MomentChips({
         contentContainerStyle={[a.gap_sm]}>
         {moments.map(moment => {
           const time = formatMediaTime(moment.startSeconds)
-          const count = moment.comments.length
+          const count = moment.count
           const countLabel = plural(count, {
             one: '# comment',
             other: '# comments',
