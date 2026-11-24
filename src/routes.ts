@@ -61,6 +61,8 @@ export const router = new Router<AllNavigatableRoutes>({
   PostLikedBy: '/profile/:name/post/:rkey/liked-by',
   PostRepostedBy: '/profile/:name/post/:rkey/reposted-by',
   PostQuotes: '/profile/:name/post/:rkey/quotes',
+  // Eurosky: full-screen player for a post's video (media time comments)
+  PostVideo: '/profile/:name/post/:rkey/video',
   CustomFeed: '/profile/:name/feed/:rkey',
   CustomFeedLikedBy: '/profile/:name/feed/:rkey/liked-by',
   ProfileLabelerLikedBy: '/profile/:name/labeler/liked-by',

@@ -107,6 +107,8 @@ import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {IS_ANDROID} from '#/env'
 import {usePostFeedQuery as useFollowingV2PostFeedQuery} from '#/features/followingV2/home/queries/postFeed'
+import {MEDIA_TIME_ENABLED} from '#/features/mediaTime/config'
+import {reportPlaybackPosition} from '#/features/mediaTime/playback'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {Scrubber, VIDEO_PLAYER_BOTTOM_INSET} from './components/Scrubber'
@@ -680,6 +682,10 @@ function VideoItemInner({
     durationTracker.observeProgress(evt.currentTime)
     if (IS_ANDROID && !isReady && evt.currentTime >= 0.05) {
       setIsReady(true)
+    }
+    // Eurosky: lets a reply be linked to the second being watched.
+    if (MEDIA_TIME_ENABLED && active && embed.presentation !== 'gif') {
+      reportPlaybackPosition(post.uri, evt.currentTime, player.duration)
     }
     /*
      * Players are pooled and reassigned as the user swipes. Only trust the item

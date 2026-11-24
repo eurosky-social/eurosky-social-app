@@ -13,6 +13,8 @@ import {
   RQKEY_LINK_ROOT,
 } from '#/state/queries/resolve-link'
 import * as Toast from '#/components/Toast'
+import {resolveComposerMediaTime} from '#/features/mediaTime/composer'
+import {getCommentableMediaTime} from '#/features/mediaTime/playback'
 import {type app} from '#/lexicons'
 
 export interface ComposerOptsPostRef {
@@ -58,6 +60,12 @@ export interface ComposerOpts {
   logContext?: ComposerLogContext
   // Set to edit an existing post instead of creating a new one. Text-only.
   editPost?: ComposerOptsEditPost
+  /**
+   * Eurosky: second of the replied-to post's video that the reply is about.
+   * When left out, it is filled in from the player if the video was watched
+   * just before replying.
+   */
+  mediaTime?: number
 }
 
 type StateContext = ComposerOpts | undefined
@@ -109,12 +117,17 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
         type: 'warning',
       })
     } else {
+      const mediaTime = resolveComposerMediaTime({
+        explicit: opts.mediaTime,
+        replyTo: opts.replyTo,
+        getWatchedSeconds: getCommentableMediaTime,
+      })
       setState(prevOpts => {
         if (prevOpts) {
           // Never replace an already open composer.
           return prevOpts
         }
-        return opts
+        return {...opts, mediaTime}
       })
     }
   })

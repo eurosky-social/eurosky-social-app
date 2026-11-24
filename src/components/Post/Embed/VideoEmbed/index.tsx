@@ -18,6 +18,8 @@ import {useThrottledValue} from '#/components/hooks/useThrottledValue'
 import {ConstrainedImage} from '#/components/images/AutoSizedImage'
 import {PlayButtonIcon} from '#/components/video/PlayButtonIcon'
 import {useAnalytics} from '#/analytics'
+import {MEDIA_TIME_ENABLED} from '#/features/mediaTime/config'
+import {reportPlaybackPosition} from '#/features/mediaTime/playback'
 import {type app} from '#/lexicons'
 import {GifPresentationControls} from './GifPresentationControls'
 import {VideoEmbedInnerNative} from './VideoEmbedInner/VideoEmbedInnerNative'
@@ -182,6 +184,10 @@ function InnerWrapper({embed, post}: Props) {
         }}
         onPlaybackProgress={progressSeconds => {
           durationTracker.observeProgress(progressSeconds)
+          // Eurosky: lets a reply be linked to the second being watched.
+          if (MEDIA_TIME_ENABLED && post && embed.presentation !== 'gif') {
+            reportPlaybackPosition(post.uri, progressSeconds)
+          }
         }}
         onError={error => {
           durationTracker.flush('error')

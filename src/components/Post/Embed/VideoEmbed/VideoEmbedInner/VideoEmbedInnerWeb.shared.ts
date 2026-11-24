@@ -1,3 +1,4 @@
+import {type MediaTimeSeekBridge} from '#/features/mediaTime/webPlayer'
 import {type app} from '#/lexicons'
 
 export type VideoEmbedInnerWebProps = {
@@ -10,6 +11,11 @@ export type VideoEmbedInnerWebProps = {
   onPlaybackProgress: (progressSeconds: number) => void
   onPlaybackStateChange: (state: 'playing' | 'paused' | 'buffering') => void
   onPlaybackEnd: () => void
+  /**
+   * Eurosky: lets the card make this player jump to a second (media time
+   * comments).
+   */
+  mediaTimeSeekBridge?: MediaTimeSeekBridge
 }
 
 export class HLSUnsupportedError extends Error {

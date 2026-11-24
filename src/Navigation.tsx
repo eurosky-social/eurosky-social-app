@@ -112,6 +112,7 @@ import {NotificationsActivityListScreen} from '#/screens/Notifications/ActivityL
 import {PostLikedByScreen} from '#/screens/Post/PostLikedBy'
 import {PostQuotesScreen} from '#/screens/Post/PostQuotes'
 import {PostRepostedByScreen} from '#/screens/Post/PostRepostedBy'
+import {PostVideoScreen} from '#/screens/PostVideo'
 import {ProfileKnownFollowersScreen} from '#/screens/Profile/KnownFollowers'
 import {ProfileFollowersScreen} from '#/screens/Profile/ProfileFollowers'
 import {ProfileFollowsScreen} from '#/screens/Profile/ProfileFollows'
@@ -387,6 +388,13 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         getComponent={() => PostThreadScreen}
         options={({route}) => ({
           title: title(msg`Post by @${route.params.name}`),
+        })}
+      />
+      <Stack.Screen
+        name="PostVideo"
+        getComponent={() => PostVideoScreen}
+        options={({route}) => ({
+          title: title(msg`Video by @${route.params.name}`),
         })}
       />
       <Stack.Screen
@@ -863,7 +871,8 @@ function NativeTabBar(props: BottomTabBarProps) {
     signupQueued: !!currentAccount?.signupQueued,
     showLoggedOut,
     onboardingActive: onboardingState.isActive,
-    isVideoFeed: currentRouteName === 'VideoFeed',
+    isVideoFeed:
+      currentRouteName === 'VideoFeed' || currentRouteName === 'PostVideo',
   })
 
   useEffect(() => {
