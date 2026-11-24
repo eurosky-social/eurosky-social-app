@@ -333,14 +333,14 @@ importers:
         specifier: 1.2.0
         version: 1.2.0(@atproto/lex@0.3.8)
       '@dasl/tile-host':
-        specifier: ^3.1.0
-        version: 3.1.0(supports-color@8.1.1)
+        specifier: ^3.2.0
+        version: 3.2.0(supports-color@8.1.1)
       '@dasl/tile-lexicon':
-        specifier: ^3.2.0
-        version: 3.2.0
+        specifier: ^3.3.0
+        version: 3.3.0
       '@dasl/tile-loader':
-        specifier: ^3.2.0
-        version: 3.2.0(@atcute/cbor@2.3.8(@atcute/cid@2.5.0))
+        specifier: ^4.0.0
+        version: 4.0.0(@atcute/cbor@2.3.8(@atcute/cid@2.5.0))
       '@emoji-mart/data':
         specifier: ^1.2.1
         version: 1.2.1
@@ -811,8 +811,8 @@ importers:
         specifier: ^4.14.1
         version: 4.14.2
       '@dasl/tile-server':
-        specifier: ^3.2.0
-        version: 3.2.0(supports-color@8.1.1)
+        specifier: ^4.0.0
+        version: 4.0.0(supports-color@8.1.1)
       '@eloqnt/cli':
         specifier: 0.6.26
         version: 0.6.26
@@ -2060,17 +2060,17 @@ packages:
     resolution: {integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==}
     engines: {node: '>=18'}
 
-  '@dasl/tile-host@3.1.0':
-    resolution: {integrity: sha512-UVxhFiIqm4BfKtwuFO8wzyojHqmr7DsU8hkOLYmI4ZUgjeYmGFSPp0/boMRBAApvk4bnqzOszFMvNIE6mLzLYg==}
+  '@dasl/tile-host@3.2.0':
+    resolution: {integrity: sha512-JLLcT+rhVWDIbX6uZWi1ryyWHLguY7wxKQlfO58Z67mTowx2K5oGXxmy7SegBQZRxRgHwoSeEB0ho+5iei2ukg==}
 
-  '@dasl/tile-lexicon@3.2.0':
-    resolution: {integrity: sha512-Phle6iu9Ms49wqyv6ItjMEN2YLnArI4cqa8Ugrg6fXhnMJPW0tiYBndbYoXCKmQeUHeRtxlhouFsucHGoWosSg==}
+  '@dasl/tile-lexicon@3.3.0':
+    resolution: {integrity: sha512-53/K7ztCazmC/ILdN1oU6PovEkezAHBEXHto4jHyYlaOebUX9D6c/EIEq9xChhhr6NlNoKXSNaFrRDsxS2g8Nw==}
 
-  '@dasl/tile-loader@3.2.0':
-    resolution: {integrity: sha512-M2CBC4Vk+blrCYkQvQzr0bZNv/4s3UiVAHjET5WcyxvzxYoeoATvUyiPzQnPZsgwhwJTTxA/+d8mCjtZllmCmw==}
+  '@dasl/tile-loader@4.0.0':
+    resolution: {integrity: sha512-MPdhj8fF6djDZ5Lu8TEb6H6ywKbYUZzTNGyx9OmBQhet1WByAYmTOCRT2G3FYNw73rLIHLqEdUWDTa5mc6W0ZA==}
 
-  '@dasl/tile-server@3.2.0':
-    resolution: {integrity: sha512-6c/MGA32qrcCr/ZKmh1GqVXZItYREJtrLYqgJ0RTEvkLwLmjyZ1XFX0LNBdPQz+q9IGIfXX5VDCJB3+mQr4maw==}
+  '@dasl/tile-server@4.0.0':
+    resolution: {integrity: sha512-l9vHmSYJUegYUpVJmN+LkK6mWAe4YmKelVIr87Wu19d+zs4EfyVSewoPS8dNvknvsciFas/KGFRkm7tdXEk+HA==}
     hasBin: true
 
   '@eloqnt/cli@0.6.26':
@@ -11754,29 +11754,29 @@ snapshots:
 
   '@csstools/css-tokenizer@3.0.4': {}
 
-  '@dasl/tile-host@3.1.0(supports-color@8.1.1)':
+  '@dasl/tile-host@3.2.0(supports-color@8.1.1)':
     dependencies:
-      '@dasl/tile-lexicon': 3.2.0
+      '@dasl/tile-lexicon': 3.3.0
       express: 5.3.0(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
-  '@dasl/tile-lexicon@3.2.0': {}
+  '@dasl/tile-lexicon@3.3.0': {}
 
-  '@dasl/tile-loader@3.2.0(@atcute/cbor@2.3.8(@atcute/cid@2.5.0))':
+  '@dasl/tile-loader@4.0.0(@atcute/cbor@2.3.8(@atcute/cid@2.5.0))':
     dependencies:
       '@atcute/car': 6.1.1(@atcute/cbor@2.3.8(@atcute/cid@2.5.0))(@atcute/cid@2.5.0)
       '@atcute/cid': 2.5.0
-      '@dasl/tile-lexicon': 3.2.0
+      '@dasl/tile-lexicon': 3.3.0
       jszip: 3.10.2
       mime: 4.1.2
       smol-toml: 1.9.1
     transitivePeerDependencies:
       - '@atcute/cbor'
 
-  '@dasl/tile-server@3.2.0(supports-color@8.1.1)':
+  '@dasl/tile-server@4.0.0(supports-color@8.1.1)':
     dependencies:
-      '@dasl/tile-lexicon': 3.2.0
+      '@dasl/tile-lexicon': 3.3.0
       express: 5.3.0(supports-color@8.1.1)
       nanoid: 5.1.11
     transitivePeerDependencies:
