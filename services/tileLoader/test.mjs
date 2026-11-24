@@ -307,24 +307,59 @@ if (page.unreachable) {
   }
 }
 
-// Cookies: none set unasked; any that arrive are expired, for our scopes only.
+// mu's own pages: on mu.social, on mycopunk.it (demo builds of mu's web
+// app), and on the hosts in src/config/brand.json. A base host on the site
+// of one of them, or that is no host name, is "on mu's site".
+const {hosts} = JSON.parse(
+  readFileSync(join(here, '..', '..', 'src', 'config', 'brand.json'), 'utf8'),
+)
+const baseName = base.toLowerCase().replace(/:\d+$/, '').replace(/\.+$/, '')
+const onMuSite =
+  !/^[a-z0-9-]+(\.[a-z0-9-]+)*$/.test(baseName) ||
+  ['mu.social', 'mycopunk.it', ...hosts].some(host => {
+    const site = host.toLowerCase().split('.').slice(-2).join('.')
+    return baseName === site || baseName.endsWith(`.${site}`)
+  })
+
+// Cookies: none set unasked; any that arrive are expired, for our scopes
+// only: host-only, the base host, and, under a base host on a site of its
+// own, every domain above it up to that site (its last two labels), the
+// widest first. On mu's site, never a domain above the base host.
+const domain = base.replace(/:\d+$/, '').toLowerCase()
+const baseLabels = baseName.split('.')
+const siteLabels = Math.min(2, baseLabels.length)
+const above = onMuSite
+  ? []
+  : Array.from({length: baseLabels.length - siteLabels}, (_, i) =>
+      baseLabels.slice(baseLabels.length - siteLabels - i).join('.'),
+    )
+const scopes = [...above, domain]
+console.log(
+  `# cookies that arrive are expired for ${[...scopes, 'host-only'].join(', ')}`,
+)
+// The domain an expiry is for: null for none (host-only); a browser takes
+// the last of several, so an expiry with more than one is no one's.
+const scopeOf = c => {
+  const all = [...c.matchAll(/;\s*Domain=([^;]*)/gi)].map(m =>
+    m[1].trim().toLowerCase(),
+  )
+  return all.length > 1 ? '(several)' : (all[0] ?? null)
+}
+const ours = c => scopeOf(c) === null || scopes.includes(scopeOf(c))
 const plain = [a, index, worker].some(r => r.headers['set-cookie'])
 check('no cookie is ever set unasked', !plain)
 const withCookie = await request(origin, '/.well-known/web-tiles/', {
   headers: {cookie: 'tossed=1; other=2'},
 })
 const set = withCookie.headers['set-cookie'] || []
-const domain = base.replace(/:\d+$/, '')
 const expires = name =>
-  set.some(
-    c =>
-      c.startsWith(`${name}=;`) && /Max-Age=0/i.test(c) && !/Domain=/i.test(c),
-  ) &&
-  set.some(
-    c =>
-      c.startsWith(`${name}=;`) &&
-      /Max-Age=0/i.test(c) &&
-      new RegExp(`Domain=${domain.replace(/\./g, '\\.')}$`, 'i').test(c),
+  [...scopes, null].every(scope =>
+    set.some(
+      c =>
+        c.startsWith(`${name}=;`) &&
+        /Max-Age=0/i.test(c) &&
+        scopeOf(c) === scope,
+    ),
   )
 const ran = withCookie.headers['x-tile-cookies-expired']
 if (set.length === 0 && ran) {
@@ -343,16 +378,18 @@ if (set.length === 0 && ran) {
   )
 } else {
   check(
-    'cookies that arrive are expired, host-only and for the base host',
+    above.length
+      ? 'cookies that arrive are expired, host-only, for the base host and for every domain above it up to its site'
+      : 'cookies that arrive are expired, host-only and for the base host',
     expires('tossed') && expires('other'),
     `${set.length} Set-Cookie`,
   )
 }
 check(
-  'and never for a domain above the base host',
-  set.every(
-    c => !/Domain=/i.test(c) || c.toLowerCase().endsWith(`domain=${domain}`),
-  ),
+  above.length
+    ? 'and for no other domain'
+    : 'and never for a domain above the base host',
+  set.every(ours),
 )
 
 // The dock: on the loading host, for one tile origin at a time.
@@ -401,7 +438,9 @@ for (const bad of ['evil.example', base, `load.${base}`, `${docked.replace(/:\d+
 // has every name expired for the base host, within what one answer takes
 // (16 kB). All 180 fit for a base host of up to 19 characters, as
 // t.mu.social is; for a longer one, as many as fit, the base host's first,
-// and the rest go with the answers that follow. In other browsers, and in
+// and the rest go with the answers that follow. Under a base host with
+// domains above it to expire, each name for each of them and the base host
+// in turn, the widest first, as far as 16 kB goes. In other browsers, and in
 // the native WebView, a tile can make the jar much larger: see the README.
 const jar = Array.from(
   {length: 180},
@@ -429,21 +468,47 @@ check(
   String(bigDock.status),
 )
 const sizeOf = list => list.reduce((n, c) => n + c.length, 0)
+/**
+ * Whether an answer to a request with these cookie names expires them as
+ * the server is to: each name for every domain in scopes, in that order,
+ * then each name host-only; within 16 kB, and either every one of them or
+ * as many as fit, the next one's expiry not fitting.
+ */
+function expiredInTurn(list, cookieNames) {
+  const want = [
+    ...cookieNames.flatMap(name => scopes.map(scope => [name, scope])),
+    ...cookieNames.map(name => [name, null]),
+  ]
+  const inTurn = list.every(
+    (c, i) =>
+      i < want.length &&
+      c.startsWith(`${want[i][0]}=;`) &&
+      /Max-Age=0/i.test(c) &&
+      scopeOf(c) === want[i][1],
+  )
+  if (!inTurn || !list.length || sizeOf(list) > 16 * 1024) return false
+  if (list.length === want.length) return true
+  // What the next one would have added: one for the same scope, renamed.
+  const [name, scope] = want[list.length]
+  const like = list.find(c => scopeOf(c) === scope)
+  const next = like
+    ? like.replace(/^[^=]*=/, `${name}=`).length
+    : `${list[0].replace(/^[^=]*=/, `${name}=`).replace(/;\s*Domain=[^;]*/i, '')}${scope ? `; Domain=${scope}` : ''}`
+        .length
+  return sizeOf(list) + next > 16 * 1024
+}
+const scopeWords = above.length
+  ? 'for the base host and the domains above it'
+  : 'for the base host'
 const bigSet = [big.headers['set-cookie'] || []].flat()
 if (bigSet.length) {
-  const forBase = bigSet.filter(c =>
-    new RegExp(`; Domain=${domain.replace(/\./g, '\\.')}$`, 'i').test(c),
-  )
-  // What the base host's expiry of the jar's next name would have added.
-  const next = forBase.length
-    ? forBase[0].replace(/^[^=]*=/, `c${forBase.length}=`).length
-    : 0
+  const forBase = bigSet.filter(c => scopeOf(c) === domain)
   check(
-    'every name in it expired for the base host first, as far as 16 kB goes',
-    sizeOf(bigSet) <= 16 * 1024 &&
-      (forBase.length === 180 ||
-        (forBase.length === bigSet.length &&
-          sizeOf(bigSet) + next > 16 * 1024)),
+    `every name in it expired ${scopeWords} first, as far as 16 kB goes`,
+    expiredInTurn(
+      bigSet,
+      Array.from({length: 180}, (_, i) => `c${i}`),
+    ),
     `${forBase.length} of ${bigSet.length} Set-Cookie for the base host, ${sizeOf(bigSet)} bytes`,
   )
 } else {
@@ -468,15 +533,14 @@ check(
 )
 if (manySet.length) {
   // More than 150 under a base host as short as t.mu.social; under a long
-  // one, fewer fit: then as many as fit, the next name's expiry would not.
-  const next = manySet[0].replace(/^[^=]*=/, `n${manySet.length}=`).length
+  // one, or one with domains above it to expire, fewer: as many as fit, the
+  // next one's expiry would not.
   check(
-    'with as many expiries as fit in 16 kB, for the base host first',
-    (manySet.length > 150 || sizeOf(manySet) + next > 16 * 1024) &&
-      sizeOf(manySet) <= 16 * 1024 &&
-      manySet.every(c =>
-        new RegExp(`; Domain=${domain.replace(/\./g, '\\.')}$`, 'i').test(c),
-      ),
+    `with as many expiries as fit in 16 kB, ${scopeWords} first`,
+    expiredInTurn(
+      manySet,
+      Array.from({length: 1500}, (_, i) => `n${i}`),
+    ),
     `${manySet.length} Set-Cookie, ${sizeOf(manySet)} bytes`,
   )
 }
@@ -492,20 +556,8 @@ const binds =
   readFileSync(join(dockDir, 'dock.js'), 'utf8').includes(
     'payload: { generation: GENERATION, cid: true }',
   )
-// mu's own pages: on mu.social, on mycopunk.it (demo builds of mu's web
-// app), and on the hosts in src/config/brand.json. A base host on the site
-// of one of them, or that is no host name, takes no tile's CID for a tile
-// origin.
-const {hosts} = JSON.parse(
-  readFileSync(join(here, '..', '..', 'src', 'config', 'brand.json'), 'utf8'),
-)
-const baseName = base.toLowerCase().replace(/:\d+$/, '').replace(/\.+$/, '')
-const onMuSite =
-  !/^[a-z0-9-]+(\.[a-z0-9-]+)*$/.test(baseName) ||
-  ['mu.social', 'mycopunk.it', ...hosts].some(host => {
-    const site = host.toLowerCase().split('.').slice(-2).join('.')
-    return baseName === site || baseName.endsWith(`.${site}`)
-  })
+// A base host on the site of mu's own pages (onMuSite, above) takes no
+// tile's CID for a tile origin.
 const takesCids = binds && !onMuSite
 console.log(
   `# tiles' CIDs are ${takesCids ? '' : 'not '}tile origins under ${base}: ${
@@ -764,13 +816,10 @@ if (takesCids) {
   const cidSet = [jarred.headers['set-cookie'] || []].flat()
   if (cidSet.length) {
     check(
-      'cookies that reach it are expired, for the base host and host-only',
-      cidSet.some(c => /; Domain=/i.test(c) && c.startsWith('kept=;')) &&
-        cidSet.some(c => !/Domain=/i.test(c) && c.startsWith('kept=;')) &&
-        cidSet.every(
-          c =>
-            !/Domain=/i.test(c) || c.toLowerCase().endsWith(`domain=${domain}`),
-        ),
+      above.length
+        ? 'cookies that reach it are expired, for the base host, the domains above it up to its site, and host-only'
+        : 'cookies that reach it are expired, for the base host and host-only',
+      expiredInTurn(cidSet, ['kept']),
       `${cidSet.length} Set-Cookie`,
     )
   } else {

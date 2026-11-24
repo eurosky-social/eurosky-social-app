@@ -126,7 +126,13 @@ and the rest of mu.social"), and the script takes no tile's CID for a tile
 origin there. On a registrable domain of their own (`<tiles domain>` below,
 which is yours to pick, and not under mu.social or mycopunk.it, where the
 script takes none), no cookie a tile sets reaches mu's hosts, and the
-script takes tiles' CIDs with no further step. The move takes:
+script takes tiles' CIDs with no further step. There it also expires the
+cookies that reach it for every domain above the base host up to that
+site, the site included, not only for the base host: a cookie a tile left
+on the site would otherwise ride every request to every tile origin until
+the browser drops it. So nothing else on that site is to keep a cookie:
+if something else runs there (a tile server of its own, say), it should
+set none either. The move takes:
 
 1. **Bunny.** The same `bunny/index.ts`, pasted as a second standalone
    script on a pull zone of its own, with `BASE_HOST=<tiles domain>` in its
@@ -201,10 +207,12 @@ set one. What keeps tiles and the rest of mu apart:
   `Set-Cookie`: all of a page's credentialless jar in Chromium, for
   `t.mu.social`, at once. What does not fit is expired in the answers to the
   requests that follow. That needs **Strip Response Cookies** off on the
-  pull zone (Deploy, step 1): with it on, Bunny removes every expiry. It
-  never names a domain above its own, so nothing of mu.social's is ever
-  reset. Tile origins are fresh per load, so their own storage never
-  outlives a load anyway.
+  pull zone (Deploy, step 1): with it on, Bunny removes every expiry. Under
+  `t.mu.social` it never names a domain above its own, so nothing of
+  mu.social's is ever reset (under a base host on a site of its own, it
+  names every domain up to that site: see "Moving tile origins to a domain
+  of their own"). Tile origins are fresh per load, so their own storage
+  never outlives a load anyway.
 - **Native** runs tiles in a WebView whose cookie store is the app's alone;
   the app sets none.
 

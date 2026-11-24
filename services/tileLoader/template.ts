@@ -45,10 +45,13 @@
  *
  * Cookies. Tile origins share a site with <BASE_HOST>'s parent, so a tile's
  * script could set a cookie for a parent domain. This server never sets one,
- * and any cookie that reaches it is expired on the spot for the two scopes
- * that are its own, Domain=<BASE_HOST> and the host itself, as many as fit in
- * one answer: never for a domain above, which would reach into the rest of
- * the site. (In Chromium the app also frames tiles credentialless, which
+ * and any cookie that reaches it is expired on the spot, as many as fit in
+ * one answer, for Domain=<BASE_HOST> and the host itself. Under a base host
+ * on the site of mu's own pages (APP_SITES), never for a domain above, which
+ * would reach into the rest of that site. Under one on a site of its own,
+ * for every domain above it up to that site too: such a site is for tiles,
+ * and a cookie a tile left on it would ride every request to every tile
+ * origin. (In Chromium the app also frames tiles credentialless, which
  * keeps their cookies in a jar of their own.)
  *
  * It never sees tile content: the page that embeds the tile hands the
@@ -58,8 +61,8 @@
  * Config (Bunny dashboard -> script -> Env Configuration):
  *   BASE_HOST  the host tile origins are minted under (default t.mu.social).
  *              Under a host of a site of its own, tiles' CIDs are tile
- *              origins too; under one of mu.social's or mycopunk.it's,
- *              they never are.
+ *              origins too, and cookies are expired up to that site; under
+ *              one of mu.social's or mycopunk.it's, neither is ever so.
  */
 import * as BunnySDK from 'https://esm.sh/@bunny.net/edgescript-sdk@0.13.0'
 
@@ -264,15 +267,42 @@ function dead(
 // than to send, so a jar can need far more than that. What does not fit goes
 // with the answers to the requests that follow, which no longer bring what
 // was expired. 16 kB is the base host's expiries for 180 short names: all of
-// a page's credentialless jar in Chromium, in one answer.
+// a page's credentialless jar in Chromium, in one answer. (Under a base host
+// with domains above it to expire, each name costs one more expiry for each,
+// and such a jar takes two answers or more.)
 const EXPIRIES = 16 * 1024
 
 /**
- * Expires every cookie the request carried, for the base host and host-only:
- * whatever a tile managed to leave behind under our own names goes. Nothing
- * above the base host is touched. The widest first (Domain=<BASE_HOST>
- * reaches every tile origin and the loading host), and only as many as fit
- * in EXPIRIES bytes.
+ * The domains above the base host that a cookie which reaches it may have
+ * been set for, and which are this server's to expire, the widest first:
+ * under a base host on a site of its own, every one up to that site, the
+ * site itself included; under one on the site of mu's own pages, or under
+ * what is no host name, none.
+ */
+function domainsAbove(base: string): string[] {
+  const site = siteOf(base)
+  if (site === '' || APP_SITES.includes(site)) return []
+  const labels = base
+    .trim()
+    .toLowerCase()
+    .replace(/:\d+$/, '')
+    .replace(/\.+$/, '')
+    .split('.')
+  const above: string[] = []
+  for (let i = labels.length - site.split('.').length; i > 0; i--) {
+    above.push(labels.slice(i).join('.'))
+  }
+  return above
+}
+
+/**
+ * Expires every cookie the request carried, for the base host, for the
+ * domains above it that are ours (domainsAbove), and host-only: whatever a
+ * tile managed to leave behind goes. Nothing on the site of mu's own pages
+ * above the base host is touched. Each name for every domain first, which
+ * reach every tile origin and the loading host, the widest first, so that
+ * an answer clears the names it gets to for whichever of them they were set
+ * for; then each name host-only; and only as many as fit in EXPIRIES bytes.
  */
 function scrubCookies(req: Request, res: Response, base: string): Response {
   const names = new Set(
@@ -284,12 +314,15 @@ function scrubCookies(req: Request, res: Response, base: string): Response {
   if (!names.size) return res
   const headers = new Headers(res.headers)
   const domain = base.replace(/:\d+$/, '')
+  const domains = [...domainsAbove(base), domain]
   const gone = (name: string) =>
     `${name}=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
   let room = EXPIRIES
   let sent = 0
   for (const expiry of [
-    ...[...names].map(name => `${gone(name)}; Domain=${domain}`),
+    ...[...names].flatMap(name =>
+      domains.map(scope => `${gone(name)}; Domain=${scope}`),
+    ),
     ...[...names].map(gone),
   ]) {
     room -= expiry.length
