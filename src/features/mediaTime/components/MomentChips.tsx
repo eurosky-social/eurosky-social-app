@@ -16,9 +16,12 @@ import {formatMediaTime} from '../record'
 export function MomentChips({
   moments,
   onPressMoment,
+  title,
 }: {
   moments: Moment[]
   onPressMoment: (moment: Moment) => void
+  /** Defaults to "Moments in this video". */
+  title?: string
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
@@ -28,7 +31,7 @@ export function MomentChips({
   return (
     <View testID="mediaTimeMoments" style={[a.gap_xs]}>
       <Text style={[a.text_xs, a.font_semi_bold, t.atoms.text_contrast_medium]}>
-        <Trans>Moments in this video</Trans>
+        {title ?? l`Moments in this video`}
       </Text>
       <ScrollView
         horizontal
@@ -43,7 +46,7 @@ export function MomentChips({
           })
           return (
             <Button
-              key={`${moment.startSeconds}-${moment.comments[0].uri}`}
+              key={`${moment.startSeconds}-${moment.endSeconds}`}
               testID={`mediaTimeMoment-${moment.startSeconds}`}
               label={l`Play from ${time}, ${countLabel}`}
               size="small"

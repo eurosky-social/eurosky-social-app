@@ -1,31 +1,24 @@
-import {type Client} from '@atproto/lex'
 import {type AtUriString} from '@atproto/syntax'
 import {useQuery} from '@tanstack/react-query'
 
-import {createServiceClient} from '#/lib/lexClient'
 import {STALE} from '#/state/queries'
 import {type ThreadItem} from '#/state/queries/usePostThread/types'
 import {network} from '#/lexicons'
-import {MEDIA_TIME_ENABLED, MOMENTS_SERVICE_URL} from './config'
+import {MEDIA_TIME_ENABLED} from './config'
 import {
   collectTimedReplies,
   groupIntoMoments,
   mergeMoments,
   type Moment,
 } from './moments'
+import {getMomentsClient} from './momentsClient'
 
 const RQKEY_ROOT = 'media-time-moments'
 export const RQKEY = (videoPostUri: string) => [RQKEY_ROOT, videoPostUri]
 
-let client: Client | undefined
-function getClient() {
-  client ??= createServiceClient(MOMENTS_SERVICE_URL)
-  return client
-}
-
 /** The moments of a video post, as the moments service groups them. */
 export async function fetchMoments(videoPostUri: string): Promise<Moment[]> {
-  const res = await getClient().call(network.eurosky.feed.getMoments, {
+  const res = await getMomentsClient().call(network.eurosky.feed.getMoments, {
     uri: videoPostUri as AtUriString,
   })
   return res.moments.map(moment => ({

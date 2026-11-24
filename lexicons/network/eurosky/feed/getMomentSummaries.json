@@ -1,0 +1,61 @@
+{
+  "lexicon": 1,
+  "id": "network.eurosky.feed.getMomentSummaries",
+  "description": "Moment counts for several video posts at once, for showing them in feeds. Grouped like network.eurosky.feed.getMoments, without the replies. Answers can be up to a minute old.",
+  "defs": {
+    "main": {
+      "type": "query",
+      "parameters": {
+        "type": "params",
+        "required": ["uris"],
+        "properties": {
+          "uris": {
+            "type": "array",
+            "items": { "type": "string", "format": "at-uri" },
+            "maxLength": 25,
+            "description": "The video posts."
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["summaries"],
+          "properties": {
+            "summaries": {
+              "type": "array",
+              "description": "One per requested post, in the order asked; a post without linked replies has no moments.",
+              "items": { "type": "ref", "ref": "#summary" }
+            }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["uri", "replyCount", "moments"],
+      "properties": {
+        "uri": { "type": "string", "format": "at-uri" },
+        "replyCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Linked replies counted across all moments."
+        },
+        "moments": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "#momentSummary" }
+        }
+      }
+    },
+    "momentSummary": {
+      "type": "object",
+      "required": ["startSeconds", "endSeconds", "replyCount"],
+      "properties": {
+        "startSeconds": { "type": "integer", "minimum": 0 },
+        "endSeconds": { "type": "integer", "minimum": 0 },
+        "replyCount": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

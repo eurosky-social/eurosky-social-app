@@ -68,4 +68,15 @@ thread loaded. Eurosky's AppView returns at most 200 replies for a thread;
 Bluesky's currently returns all direct replies. Hidden and muted replies are
 not counted there.
 
+## In feeds
+
+Under a video post with replies, feeds show its three most talked-about
+moments (`components/FeedMoments.tsx`, placed in `PostFeedItem`). Nothing
+shows while the post is hidden behind a content warning (`feed.ts`). The
+counts come from `network.eurosky.feed.getMomentSummaries` on the same
+AppView; requests made within 50 ms share one call of up to 25 posts
+(`momentSummaries.ts`), and the AppView keeps each answer for a minute. A
+failed request shows nothing. Tapping a moment plays the video from there, as
+the time links do.
+
 Tests: `pnpm test src/features/mediaTime src/lib/api/__tests__/post.test.ts`.
