@@ -57,6 +57,6 @@ The thread call (`getPostThreadV2`) currently returns all direct replies; its
 docs say they may be paged later, and then the app would see only part of
 them. Hidden and muted replies are not counted. A server-side index is a
 later step; it is also needed to show moments outside the thread (timeline
-card, funk's insights).
+card, insights for the video's publisher).
 
 Tests: `pnpm test src/features/mediaTime src/lib/api/__tests__/post.test.ts`.
