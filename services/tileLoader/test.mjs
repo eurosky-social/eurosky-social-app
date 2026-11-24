@@ -346,6 +346,10 @@ const scopeOf = c => {
   return all.length > 1 ? '(several)' : (all[0] ?? null)
 }
 const ours = c => scopeOf(c) === null || scopes.includes(scopeOf(c))
+// Whether a Set-Cookie expires a cookie at the root, where a cookie that
+// rides every request is: one for another path leaves that cookie be.
+const expiresAtRoot = c =>
+  /Max-Age=0/i.test(c) && /;\s*Path=\/\s*(;|$)/i.test(c)
 const plain = [a, index, worker].some(r => r.headers['set-cookie'])
 check('no cookie is ever set unasked', !plain)
 const withCookie = await request(origin, '/.well-known/web-tiles/', {
@@ -356,9 +360,7 @@ const expires = name =>
   [...scopes, null].every(scope =>
     set.some(
       c =>
-        c.startsWith(`${name}=;`) &&
-        /Max-Age=0/i.test(c) &&
-        scopeOf(c) === scope,
+        c.startsWith(`${name}=;`) && expiresAtRoot(c) && scopeOf(c) === scope,
     ),
   )
 const ran = withCookie.headers['x-tile-cookies-expired']
@@ -391,6 +393,20 @@ check(
     : 'and never for a domain above the base host',
   set.every(ours),
 )
+// Under a base host on a site of its own, tiles are framed in pages of
+// another site: there Chromium takes an expiry only with SameSite=None (and
+// so Secure), and Chromium and Firefox take none without Secure for a cookie
+// named __Secure-... On mu's site, this is not asked.
+if (!onMuSite && set.length) {
+  check(
+    'each with Secure and SameSite=None, as a frame on a page of another site needs',
+    set.every(
+      c =>
+        /;\s*Secure\s*(;|$)/i.test(c) && /;\s*SameSite=None\s*(;|$)/i.test(c),
+    ),
+    `${set.length} Set-Cookie`,
+  )
+}
 
 // The dock: on the loading host, for one tile origin at a time.
 const scheme = local ? 'http' : 'https'
@@ -483,7 +499,7 @@ function expiredInTurn(list, cookieNames) {
     (c, i) =>
       i < want.length &&
       c.startsWith(`${want[i][0]}=;`) &&
-      /Max-Age=0/i.test(c) &&
+      expiresAtRoot(c) &&
       scopeOf(c) === want[i][1],
   )
   if (!inTurn || !list.length || sizeOf(list) > 16 * 1024) return false

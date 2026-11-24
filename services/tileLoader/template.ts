@@ -51,8 +51,10 @@
  * would reach into the rest of that site. Under one on a site of its own,
  * for every domain above it up to that site too: such a site is for tiles,
  * and a cookie a tile left on it would ride every request to every tile
- * origin. (In Chromium the app also frames tiles credentialless, which
- * keeps their cookies in a jar of their own.)
+ * origin. There the expiries also say Secure and SameSite=None, without
+ * which a browser keeps some cookies they are for (see scrubCookies). (In
+ * Chromium the app also frames tiles credentialless, which keeps their
+ * cookies in a jar of their own, for as long as the page.)
  *
  * It never sees tile content: the page that embeds the tile hands the
  * resources to the worker. The app points EXPO_PUBLIC_TILES_LOAD_DOMAIN at
@@ -268,8 +270,9 @@ function dead(
 // with the answers to the requests that follow, which no longer bring what
 // was expired. 16 kB is the base host's expiries for 180 short names: all of
 // a page's credentialless jar in Chromium, in one answer. (Under a base host
-// with domains above it to expire, each name costs one more expiry for each,
-// and such a jar takes two answers or more.)
+// on a site of its own, each expiry is longer, and with domains above it to
+// expire, each name costs one more expiry for each: such a jar takes two
+// answers or more.)
 const EXPIRIES = 16 * 1024
 
 /**
@@ -315,8 +318,16 @@ function scrubCookies(req: Request, res: Response, base: string): Response {
   const headers = new Headers(res.headers)
   const domain = base.replace(/:\d+$/, '')
   const domains = [...domainsAbove(base), domain]
+  // Under a base host on a site of its own, tiles are framed in pages of
+  // another site (mu's): there Chromium refuses an expiry without
+  // SameSite=None, and Chromium and Firefox refuse one without Secure for a
+  // cookie named __Secure-..., which a tile can set for the whole site. On
+  // the site of mu's own pages, the expiries are as they were.
+  const site = siteOf(base)
+  const across =
+    site !== '' && !APP_SITES.includes(site) ? '; Secure; SameSite=None' : ''
   const gone = (name: string) =>
-    `${name}=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
+    `${name}=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT${across}`
   let room = EXPIRIES
   let sent = 0
   for (const expiry of [

@@ -132,7 +132,14 @@ site, the site included, not only for the base host: a cookie a tile left
 on the site would otherwise ride every request to every tile origin until
 the browser drops it. So nothing else on that site is to keep a cookie:
 if something else runs there (a tile server of its own, say), it should
-set none either. The move takes:
+set none either. There the expiries also carry `Secure` and
+`SameSite=None`: tiles are then framed in pages of another site, mu's,
+where Chromium takes no expiry without them, and Chromium and Firefox
+take none without `Secure` for a cookie named `__Secure-...`, as the rules
+for cookie prefixes ask. In Chrome, in a plain frame (the host page frames
+a tile on its CID's origin so), one a tile sets as `Partitioned` still
+stays: that would take a second expiry for each, one that says
+`Partitioned`. The move takes:
 
 1. **Bunny.** The same `bunny/index.ts`, pasted as a second standalone
    script on a pull zone of its own, with `BASE_HOST=<tiles domain>` in its
@@ -221,7 +228,15 @@ What this cannot do: in Firefox and Safari a tile's script can still set a
 the app's next scrub, at most a minute while the app is open. Nothing there
 reads cookies, so it is inert meanwhile; only a registrable domain of its own
 for tiles (`BASE_HOST`) rules it out entirely (see "Moving tile origins to a
-domain of their own").
+domain of their own"). Neither the app's scrub nor this server's expiries
+under `t.mu.social` carry `Secure`, and Chromium and Firefox take no expiry
+without it for a cookie named `__Secure-...`: one a tile sets with such a
+name, for `Domain=mu.social` or `Domain=t.mu.social`, stays until it runs
+out. And under any base host, this server expires cookies on `Path=/`
+only: one a tile sets for another path stays. On a path this server is
+asked for (`/.well-known/web-tiles/`), it rides those requests; on one it
+never is (one the tile's worker answers), the next tile that looks there
+finds it.
 
 ## Things to know
 
