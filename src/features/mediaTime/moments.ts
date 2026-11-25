@@ -50,11 +50,18 @@ export function groupIntoMoments(
   return moments
 }
 
+/** `comments` without repeats of the same comment, first one kept. */
+export function uniqueComments(comments: TimedComment[]): TimedComment[] {
+  const seen = new Set<string>()
+  return comments.filter(c => !seen.has(c.uri) && seen.add(c.uri))
+}
+
 /**
  * Adds comments the server did not know yet (a reply just posted, or one the
  * server's index missed) to the server's moments. The server lists at most
- * 100 comments per moment; the ones it only counted stay counted, with the
- * moment's start, so no comment is counted twice.
+ * 100 comments per moment, and feed counts list none; the ones it only
+ * counted stay counted, with the moment's span, so no comment is counted
+ * twice.
  */
 export function mergeMoments(
   server: Moment[],
@@ -62,7 +69,7 @@ export function mergeMoments(
   gapSeconds = MOMENT_GAP_SECONDS,
 ): Moment[] {
   const known = new Set(server.flatMap(m => m.comments.map(c => c.uri)))
-  const extra = local.filter(c => !known.has(c.uri))
+  const extra = uniqueComments(local).filter(c => !known.has(c.uri))
   if (extra.length === 0) return server
 
   const merged = groupIntoMoments(
@@ -77,10 +84,19 @@ export function mergeMoments(
         m.startSeconds <= moment.startSeconds &&
         moment.startSeconds <= m.endSeconds,
     )
-    if (!target) continue
-    target.count += unlisted
-    target.endSeconds = Math.max(target.endSeconds, moment.endSeconds)
+    if (target) {
+      target.count += unlisted
+      target.endSeconds = Math.max(target.endSeconds, moment.endSeconds)
+    } else {
+      merged.push({
+        startSeconds: moment.startSeconds,
+        endSeconds: moment.endSeconds,
+        count: unlisted,
+        comments: [],
+      })
+    }
   }
+  merged.sort((a, b) => a.startSeconds - b.startSeconds)
   // A moment that grew to its unlisted comments' end can now reach the next.
   const joined: Moment[] = []
   for (const moment of merged) {

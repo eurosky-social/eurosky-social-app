@@ -60,13 +60,24 @@ a first guess).
 Eurosky's AppView fork). It is Eurosky's by default;
 `EXPO_PUBLIC_MEDIA_TIME_MOMENTS_URL` changes it. It counts all of a video's
 linked replies, whichever AppView the user reads through, and is asked
-without signing in. Linked replies the thread loaded that it doesn't know yet,
-such as one just posted, are added to its moments.
+without signing in. Linked replies the thread loaded that it doesn't know yet
+are added to its moments.
 
 Until it answers, or when it fails, the app groups only the replies its
 thread loaded. Eurosky's AppView returns at most 200 replies for a thread;
 Bluesky's currently returns all direct replies. Hidden and muted replies are
 not counted there.
+
+### A comment just posted
+
+The AppView counts a new comment a few seconds after it is posted, and its
+answers can be 30 seconds (moments) or a minute (feed counts) old. So
+`post()` remembers each linked reply it writes for five minutes
+(`postedComments.ts`) and asks for that video's moments again. The thread
+adds the remembered comment to the AppView's moments; a feed card for that
+video reads the full moments, which list each comment, instead of the
+counts. Comments are matched by their address, so none is counted twice.
+Deleting the comment forgets it.
 
 ## In feeds
 

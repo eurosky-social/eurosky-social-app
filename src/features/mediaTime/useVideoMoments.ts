@@ -10,11 +10,13 @@ import {
   groupIntoMoments,
   mergeMoments,
   type Moment,
+  uniqueComments,
 } from './moments'
 import {getMomentsClient} from './momentsClient'
+import {usePostedComments} from './postedComments'
+import {momentsQueryKey} from './queryKeys'
 
-const RQKEY_ROOT = 'media-time-moments'
-export const RQKEY = (videoPostUri: string) => [RQKEY_ROOT, videoPostUri]
+export const RQKEY = momentsQueryKey
 
 /** The moments of a video post, as the moments service groups them. */
 export async function fetchMoments(videoPostUri: string): Promise<Moment[]> {
@@ -34,9 +36,9 @@ export async function fetchMoments(videoPostUri: string): Promise<Moment[]> {
 
 /**
  * The moments of a video post: from the moments service, which counts all of
- * the video's linked replies, plus linked replies in `threadItems` it does
- * not know yet. Until it answers, or if it fails, only the replies in
- * `threadItems`.
+ * the video's linked replies, plus linked replies it does not know yet: those
+ * in `threadItems` and those this app just posted. Until it answers, or if
+ * it fails, only those.
  */
 export function useVideoMoments({
   videoPostUri,
@@ -54,6 +56,10 @@ export function useVideoMoments({
     retry: 1,
     queryFn: () => fetchMoments(videoPostUri),
   })
-  const local = collectTimedReplies(threadItems, videoPostUri)
+  const posted = usePostedComments(videoPostUri)
+  const local = uniqueComments([
+    ...collectTimedReplies(threadItems, videoPostUri),
+    ...posted,
+  ])
   return data ? mergeMoments(data, local) : groupIntoMoments(local)
 }

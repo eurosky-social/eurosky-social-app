@@ -3,6 +3,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query'
 import {renderHook, waitFor} from '@testing-library/react-native'
 
 import {type ThreadItem} from '#/state/queries/usePostThread/types'
+import {forgetPostedComment, rememberPostedComment} from '../postedComments'
 import {MEDIA_TIME_FIELD} from '../record'
 import {fetchMoments, useVideoMoments} from '../useVideoMoments'
 
@@ -132,6 +133,67 @@ describe('useVideoMoments', () => {
       [41, 1],
       [205, 1],
     ])
+  })
+
+  describe('with a comment this app just posted', () => {
+    const mine = 'at://did:plc:me/app.bsky.feed.post/mine'
+    afterEach(() => forgetPostedComment(mine))
+
+    it('shows it before the service knows it', async () => {
+      mockCall.mockResolvedValue(serverAnswer)
+      rememberPostedComment(queryClient, {
+        uri: mine,
+        videoPostUri: VIDEO_POST,
+        seconds: 45,
+      })
+      const {result} = renderHook(
+        () => useVideoMoments({videoPostUri: VIDEO_POST, threadItems: []}),
+        {wrapper},
+      )
+      await waitFor(() =>
+        expect(result.current.map(m => [m.startSeconds, m.count])).toEqual([
+          [41, 3],
+          [200, 1],
+        ]),
+      )
+    })
+
+    it('counts it once when the service and the thread have it too', async () => {
+      mockCall.mockResolvedValue({
+        ...serverAnswer,
+        moments: [
+          {
+            ...serverAnswer.moments[0],
+            replyCount: 3,
+            replies: [
+              ...serverAnswer.moments[0].replies,
+              {uri: mine, seconds: 45},
+            ],
+          },
+          serverAnswer.moments[1],
+        ],
+      })
+      rememberPostedComment(queryClient, {
+        uri: mine,
+        videoPostUri: VIDEO_POST,
+        seconds: 45,
+      })
+      const {result} = renderHook(
+        () =>
+          useVideoMoments({
+            videoPostUri: VIDEO_POST,
+            threadItems: [reply(mine, 45)],
+          }),
+        {wrapper},
+      )
+      await waitFor(() => expect(mockCall).toHaveBeenCalled())
+      await waitFor(() =>
+        expect(result.current.map(m => [m.startSeconds, m.count])).toEqual([
+          [41, 3],
+          [200, 1],
+        ]),
+      )
+    })
   })
 
   it('does not ask the service when the feature is off', () => {

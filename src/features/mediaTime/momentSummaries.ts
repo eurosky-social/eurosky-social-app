@@ -4,8 +4,11 @@ import {useQuery} from '@tanstack/react-query'
 import {STALE} from '#/state/queries'
 import {network} from '#/lexicons'
 import {MEDIA_TIME_ENABLED} from './config'
-import {type Moment} from './moments'
+import {groupIntoMoments, mergeMoments, type Moment} from './moments'
 import {getMomentsClient} from './momentsClient'
+import {usePostedComments} from './postedComments'
+import {momentsQueryKey, momentSummaryQueryKey} from './queryKeys'
+import {fetchMoments} from './useVideoMoments'
 
 /** The service answers for at most this many posts per request. */
 export const MAX_SUMMARY_URIS = 25
@@ -64,24 +67,43 @@ async function flush() {
   }
 }
 
-const RQKEY_ROOT = 'media-time-moment-summary'
-export const RQKEY = (postUri: string) => [RQKEY_ROOT, postUri]
+export const RQKEY = momentSummaryQueryKey
 
-/** Moments of a video post for a feed card. See {@link loadMomentSummary}. */
+/**
+ * Moments of a video post for a feed card. See {@link loadMomentSummary}.
+ *
+ * After this app posted a comment on the video, the counts would not show it
+ * for up to a minute, and could not tell whether they include it. Then the
+ * card asks for the video's full moments instead, which list each comment,
+ * and adds the new one if they don't have it yet.
+ */
 export function useMomentSummary({
   postUri,
   enabled,
 }: {
   postUri: string
   enabled: boolean
-}) {
-  return useQuery({
+}): {data: Moment[] | undefined} {
+  const posted = usePostedComments(postUri)
+  const active = MEDIA_TIME_ENABLED && enabled
+  const summary = useQuery({
     queryKey: RQKEY(postUri),
-    enabled: MEDIA_TIME_ENABLED && enabled,
+    enabled: active && posted.length === 0,
     staleTime: STALE.MINUTES.ONE,
     retry: false,
     queryFn: () => loadMomentSummary(postUri),
   })
+  const full = useQuery({
+    queryKey: momentsQueryKey(postUri),
+    enabled: active && posted.length > 0,
+    staleTime: STALE.SECONDS.THIRTY,
+    retry: false,
+    queryFn: () => fetchMoments(postUri),
+  })
+  if (!active || posted.length === 0) return {data: summary.data}
+  // Counts fetched before the comment was posted cannot include it.
+  const base = full.data ?? summary.data
+  return {data: base ? mergeMoments(base, posted) : groupIntoMoments(posted)}
 }
 
 /**

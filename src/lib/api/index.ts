@@ -31,6 +31,7 @@ import {
   type PostDraft,
   type ThreadDraft,
 } from '#/view/com/composer/state/composer'
+import {rememberPostedComment} from '#/features/mediaTime/postedComments'
 import {
   appendMediaTimeLink,
   createMediaTimeValue,
@@ -224,6 +225,20 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
     } else {
       throw e
     }
+  }
+
+  // Eurosky: show the new comment in its video's moments straight away; the
+  // moments service can take up to a minute to count it.
+  if (
+    opts.mediaTime &&
+    isValidMediaTimeSeconds(opts.mediaTime.seconds) &&
+    uris[0]
+  ) {
+    rememberPostedComment(queryClient, {
+      uri: uris[0],
+      videoPostUri: opts.mediaTime.videoPostUri,
+      seconds: opts.mediaTime.seconds,
+    })
   }
 
   return {uris}

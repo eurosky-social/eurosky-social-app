@@ -21,6 +21,7 @@ import {useAppviewClient, usePdsClient, useSession} from '#/state/session'
 import * as userActionHistory from '#/state/userActionHistory'
 import {useAnalytics} from '#/analytics'
 import {type Metrics, toClout} from '#/analytics/metrics'
+import {forgetPostedComment} from '#/features/mediaTime/postedComments'
 import {app, com} from '#/lexicons'
 import {useIsThreadMuted, useSetThreadMute} from '../cache/thread-mutes'
 import {findProfileQueryData} from './profile'
@@ -372,6 +373,8 @@ export function usePostDeleteMutation() {
     },
     onSuccess(_, variables) {
       updatePostShadow(queryClient, variables.uri, {isDeleted: true})
+      // Eurosky: a deleted comment leaves its video's moments
+      forgetPostedComment(variables.uri)
     },
   })
 }

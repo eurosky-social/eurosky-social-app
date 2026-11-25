@@ -111,6 +111,31 @@ describe('mergeMoments', () => {
       [10, 115, 121],
     ])
   })
+
+  it('adds a comment to moments that are only counted, as in feeds', () => {
+    const counted = (start: number, end: number, count: number) => ({
+      startSeconds: start,
+      endSeconds: end,
+      count,
+      comments: [],
+    })
+    const server = [counted(40, 50, 3), counted(200, 200, 1)]
+    expect(summary(mergeMoments(server, [comment(45, 'at://new')]))).toEqual([
+      [40, 50, 4],
+      [200, 200, 1],
+    ])
+    expect(summary(mergeMoments(server, [comment(120, 'at://new')]))).toEqual([
+      [40, 50, 3],
+      [120, 120, 1],
+      [200, 200, 1],
+    ])
+  })
+
+  it('counts a comment it is given twice once', () => {
+    const server = [moment([comment(10)])]
+    const fresh = comment(20, 'at://new')
+    expect(summary(mergeMoments(server, [fresh, fresh]))).toEqual([[10, 20, 2]])
+  })
 })
 
 describe('collectTimedReplies', () => {
