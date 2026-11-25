@@ -8,6 +8,10 @@ import {i18n} from '@lingui/core'
 import {QueryClient} from '@tanstack/react-query'
 
 import {type PostDraft} from '#/view/com/composer/state/composer'
+import {
+  forgetPostedComment,
+  postedCommentsOn,
+} from '#/features/mediaTime/postedComments'
 import {com} from '#/lexicons'
 import {post} from '../index'
 
@@ -99,7 +103,7 @@ it('links only the first post to a second of the replied-to video', async () => 
     shortenedGraphemeLength: text.length,
   })
 
-  await post(new QueryClient(), {
+  const {uris} = await post(new QueryClient(), {
     thread: {
       posts: [createDraft('1', 'This part!'), createDraft('2', 'And more')],
       threadgate: [{type: 'everybody'}],
@@ -145,6 +149,12 @@ it('links only the first post to a second of the replied-to video', async () => 
   ])
   expect(second).not.toHaveProperty(['network.eurosky.mediaTime'])
   expect(second.text).toBe('And more')
+
+  // the video's moments show the new comment before the AppView counts it
+  expect(
+    postedCommentsOn('at://did:plc:bob/app.bsky.feed.post/3lvideo'),
+  ).toEqual([{uri: uris[0], seconds: 41}])
+  forgetPostedComment(uris[0])
 })
 
 it('ignores an invalid media time', async () => {
@@ -182,4 +192,7 @@ it('ignores an invalid media time', async () => {
   const value = (call.mock.calls[0][1].writes[0] as {value: object}).value
   expect(value).not.toHaveProperty(['network.eurosky.mediaTime'])
   expect(value).toHaveProperty('text', 'Hi')
+  expect(
+    postedCommentsOn('at://did:plc:bob/app.bsky.feed.post/3lvideo'),
+  ).toEqual([])
 })

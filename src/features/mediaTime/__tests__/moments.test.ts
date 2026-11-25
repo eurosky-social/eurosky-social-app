@@ -1,7 +1,12 @@
 import {describe, expect, it} from '@jest/globals'
 
 import {type ThreadItem} from '#/state/queries/usePostThread/types'
-import {collectTimedReplies, groupIntoMoments} from '../moments'
+import {
+  collectTimedReplies,
+  groupIntoMoments,
+  mergeMoments,
+  type Moment,
+} from '../moments'
 import {MEDIA_TIME_FIELD} from '../record'
 
 const VIDEO_POST = 'at://did:plc:alice/app.bsky.feed.post/3lvideo'
@@ -10,46 +15,170 @@ function comment(seconds: number, uri = `at://c/${seconds}`) {
   return {uri, seconds}
 }
 
+// The same cases and values as the AppView's tests
+// (blacksky-atproto packages/bsky/tests/eurosky/media-time-moments.test.ts).
 describe('groupIntoMoments', () => {
+  let n = 0
+  const spans = (seconds: number[]) =>
+    groupIntoMoments(seconds.map(s => comment(s, `at://c/${n++}`))).map(m => [
+      m.startSeconds,
+      m.endSeconds,
+      m.count,
+    ])
+  // two busy spots 38 seconds apart, with two comments between them
+  const twoSpots = [
+    60, 61, 62, 63, 64, 65, 66, 66, 80, 85, 98, 99, 100, 101, 102, 103, 104,
+    104,
+  ]
+
   it('returns no moments without comments', () => {
     expect(groupIntoMoments([])).toEqual([])
   })
 
-  it('groups comments that are close together', () => {
-    const moments = groupIntoMoments([
-      comment(200),
-      comment(10),
-      comment(50),
-      comment(25),
-      comment(205),
-      comment(400),
+  it("starts a comment's moment 5 seconds before it, and not before 0", () => {
+    expect(spans([41])).toEqual([[36, 41, 1]])
+    expect(spans([2])).toEqual([[0, 2, 1]])
+  })
+
+  it('keeps two busy spots apart when a few comments lie between them', () => {
+    // a 30-second gap between comments would have made this one moment
+    expect(spans(twoSpots)).toEqual([
+      [55, 80, 9],
+      [82, 104, 9],
     ])
+  })
+
+  it('keeps a long, even stretch of comments as one moment', () => {
+    const everyThreeSeconds = Array.from({length: 31}, (_, i) => 120 + 3 * i)
+    expect(spans(everyThreeSeconds)).toEqual([[119, 210, 31]])
+  })
+
+  it('starts where comments pile up, not at a stray earlier comment', () => {
     expect(
-      moments.map(m => [m.startSeconds, m.endSeconds, m.comments.length]),
-    ).toEqual([
-      [10, 50, 3],
-      [200, 205, 2],
-      [400, 400, 1],
+      spans([100, 125, 125, 126, 126, 126, 127, 127, 128, 128, 128]),
+    ).toEqual([[115, 128, 11]])
+  })
+
+  it('keeps comments far apart in separate moments', () => {
+    expect(spans([200, 0])).toEqual([
+      [0, 0, 1],
+      [195, 200, 1],
     ])
   })
 
-  it('measures the gap from the previous comment, not the first', () => {
-    const moments = groupIntoMoments([comment(0), comment(30), comment(60)])
-    expect(moments).toHaveLength(1)
-    expect(moments[0].endSeconds).toBe(60)
-  })
-
-  it('splits when the gap is larger than the limit', () => {
-    expect(groupIntoMoments([comment(0), comment(31)])).toHaveLength(2)
-    expect(groupIntoMoments([comment(0), comment(31)], 60)).toHaveLength(1)
-  })
-
-  it('orders comments at the same second by URI', () => {
-    const [moment] = groupIntoMoments([
+  it('lists every comment once, by second, then by URI', () => {
+    const moments = groupIntoMoments([
       comment(5, 'at://b'),
       comment(5, 'at://a'),
+      comment(300, 'at://c'),
     ])
-    expect(moment.comments.map(c => c.uri)).toEqual(['at://a', 'at://b'])
+    expect(moments.map(m => m.comments.map(c => c.uri))).toEqual([
+      ['at://a', 'at://b'],
+      ['at://c'],
+    ])
+  })
+})
+
+describe('mergeMoments', () => {
+  function moment(comments: {uri: string; seconds: number}[], count?: number) {
+    const seconds = comments.map(c => c.seconds)
+    return {
+      startSeconds: Math.min(...seconds),
+      endSeconds: Math.max(...seconds),
+      count: count ?? comments.length,
+      comments,
+    } satisfies Moment
+  }
+  const counted = (start: number, end: number, count: number) => ({
+    startSeconds: start,
+    endSeconds: end,
+    count,
+    comments: [],
+  })
+  const summary = (moments: Moment[]) =>
+    moments.map(m => [m.startSeconds, m.endSeconds, m.count])
+
+  it('keeps the server moments when it knows every local comment', () => {
+    const server = [moment([comment(10), comment(20)])]
+    expect(mergeMoments(server, [comment(20)])).toBe(server)
+  })
+
+  it('adds a comment the server does not know yet to the nearest moment', () => {
+    const server = [moment([comment(10), comment(20)]), moment([comment(300)])]
+    expect(
+      summary(mergeMoments(server, [comment(35, 'at://new'), comment(10)])),
+    ).toEqual([
+      [10, 35, 3],
+      [300, 300, 1],
+    ])
+  })
+
+  it("leaves the server's borders where they are", () => {
+    const server = [counted(36, 60, 9), counted(80, 104, 9)]
+    // 6 seconds after the first moment, 14 before the second
+    expect(summary(mergeMoments(server, [comment(66, 'at://new')]))).toEqual([
+      [36, 66, 10],
+      [80, 104, 9],
+    ])
+  })
+
+  it('moves a moment back for a comment just before it', () => {
+    const server = [counted(36, 41, 1)]
+    expect(summary(mergeMoments(server, [comment(30, 'at://new')]))).toEqual([
+      [25, 41, 2],
+    ])
+  })
+
+  it('starts moments of their own for comments far from the others', () => {
+    const server = [moment([comment(10)])]
+    expect(
+      summary(
+        mergeMoments(server, [
+          comment(500, 'at://new/1'),
+          comment(502, 'at://new/2'),
+        ]),
+      ),
+    ).toEqual([
+      [10, 10, 1],
+      [495, 502, 2],
+    ])
+  })
+
+  it('keeps the comments the server only counted', () => {
+    // 150 comments from 0:10 to 0:40; the server listed the first 100
+    const listed = Array.from({length: 100}, (_, i) =>
+      comment(10 + (i % 20), `at://listed/${i}`),
+    )
+    const server = [{...moment(listed, 150), endSeconds: 40}]
+    const merged = mergeMoments(server, [comment(55, 'at://new')])
+    expect(summary(merged)).toEqual([[10, 55, 151]])
+    expect(merged[0].comments).toHaveLength(101)
+  })
+
+  it('adds a comment to moments that are only counted, as in feeds', () => {
+    const server = [counted(40, 50, 3), counted(200, 200, 1)]
+    expect(summary(mergeMoments(server, [comment(45, 'at://new')]))).toEqual([
+      [40, 50, 4],
+      [200, 200, 1],
+    ])
+    expect(summary(mergeMoments(server, [comment(120, 'at://new')]))).toEqual([
+      [40, 50, 3],
+      [115, 120, 1],
+      [200, 200, 1],
+    ])
+  })
+
+  it('counts a comment it is given twice once', () => {
+    const server = [moment([comment(10)])]
+    const fresh = comment(20, 'at://new')
+    expect(summary(mergeMoments(server, [fresh, fresh]))).toEqual([[10, 20, 2]])
+  })
+
+  it('does not change the moments it was given', () => {
+    const server = [moment([comment(10)])]
+    mergeMoments(server, [comment(20, 'at://new')])
+    expect(summary(server)).toEqual([[10, 10, 1]])
+    expect(server[0].comments).toHaveLength(1)
   })
 })
 
