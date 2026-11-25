@@ -6,6 +6,7 @@ import {
   groupIntoMoments,
   mergeMoments,
   type Moment,
+  momentAt,
 } from '../moments'
 import {MEDIA_TIME_FIELD} from '../record'
 
@@ -179,6 +180,32 @@ describe('mergeMoments', () => {
     mergeMoments(server, [comment(20, 'at://new')])
     expect(summary(server)).toEqual([[10, 10, 1]])
     expect(server[0].comments).toHaveLength(1)
+  })
+})
+
+describe('momentAt', () => {
+  const at = (start: number, end: number) => ({
+    startSeconds: start,
+    endSeconds: end,
+    count: 1,
+    comments: [],
+  })
+  const moments = [at(36, 60), at(80, 104), at(300, 300)]
+
+  it('finds the moment that holds the second', () => {
+    expect(momentAt(moments, 36)).toBe(moments[0])
+    expect(momentAt(moments, 90)).toBe(moments[1])
+  })
+
+  it('or the nearest within 20 seconds, as moments shift a little', () => {
+    expect(momentAt(moments, 65)).toBe(moments[0])
+    expect(momentAt(moments, 75)).toBe(moments[1])
+    expect(momentAt(moments, 320)).toBe(moments[2])
+  })
+
+  it('finds none far from every moment', () => {
+    expect(momentAt(moments, 200)).toBeUndefined()
+    expect(momentAt([], 10)).toBeUndefined()
   })
 })
 

@@ -1,0 +1,115 @@
+import {ActivityIndicator, View} from 'react-native'
+import {Trans} from '@lingui/react/macro'
+import {type NativeStackScreenProps} from '@react-navigation/native-stack'
+
+import {type CommonNavigatorParams} from '#/lib/routes/types'
+import {sanitizeDisplayName} from '#/lib/strings/display-names'
+import {makeRecordUri} from '#/lib/strings/url-helpers'
+import {usePostThread} from '#/state/queries/usePostThread'
+import {type ThreadItem} from '#/state/queries/usePostThread/types'
+import {atoms as a} from '#/alf'
+import * as Layout from '#/components/Layout'
+import {ContentHider} from '#/components/moderation/ContentHider'
+import {Embed, PostEmbedViewContext} from '#/components/Post/Embed'
+import {Text} from '#/components/Typography'
+import {MomentRoom} from '#/features/mediaTime/components/MomentRoom'
+import {momentAt} from '#/features/mediaTime/moments'
+import {
+  getOwnVideoEmbed,
+  getVideoTitle,
+  parseMediaTimeParam,
+} from '#/features/mediaTime/record'
+import {useMediaTimeParam} from '#/features/mediaTime/useMediaTimeParam'
+import {useVideoMomentsWithStatus} from '#/features/mediaTime/useVideoMoments'
+
+type ThreadPostItem = Extract<ThreadItem, {type: 'threadPost'}>
+
+/**
+ * One moment of a post's video and its comments (web): the post's video,
+ * which jumps to second `t`, and the moment holding that second below it.
+ */
+export function PostMomentScreen({
+  route,
+}: NativeStackScreenProps<CommonNavigatorParams, 'PostMoment'>) {
+  const {name, rkey, t: tParam} = route.params
+  const uri = makeRecordUri(name, 'app.bsky.feed.post', rkey)
+  const seconds = parseMediaTimeParam(tParam) ?? 0
+
+  const thread = usePostThread({anchor: uri})
+  const anchor = thread.data.items.find(
+    (item): item is ThreadPostItem =>
+      item.type === 'threadPost' && item.depth === 0,
+  )
+  const post = anchor?.value.post
+  const embed = post?.embed
+  const hasVideo = !!getOwnVideoEmbed(embed)
+  // `uri` may name the account by its handle; moments and players use the
+  // post's own URI, which names it by its DID.
+  const postUri = post?.uri ?? uri
+  // the video below picks the jump up once its player mounts
+  useMediaTimeParam({postUri, name, rkey, t: post ? tParam : undefined})
+  const {moments, loading} = useVideoMomentsWithStatus({
+    videoPostUri: postUri,
+    threadItems: thread.data.items,
+    enabled: hasVideo,
+  })
+  const authorName = anchor
+    ? sanitizeDisplayName(
+        anchor.value.post.author.displayName || anchor.value.post.author.handle,
+        anchor.moderation.ui('displayName'),
+      )
+    : undefined
+  const title = (post && getVideoTitle(post.record.text)) ?? authorName
+
+  return (
+    <Layout.Screen testID="postMomentScreen">
+      <Layout.Header.Outer>
+        <Layout.Header.BackButton />
+        <Layout.Header.Content>
+          <Layout.Header.TitleText>{title}</Layout.Header.TitleText>
+          {authorName ? (
+            <Layout.Header.SubtitleText>
+              <Trans>Video by {authorName}</Trans>
+            </Layout.Header.SubtitleText>
+          ) : null}
+        </Layout.Header.Content>
+        <Layout.Header.Slot />
+      </Layout.Header.Outer>
+      {anchor && post && embed && hasVideo ? (
+        <MomentRoom
+          layout="page"
+          videoPost={post}
+          videoModeration={anchor.moderation}
+          threadgateRecord={thread.data.threadgate?.record}
+          moment={momentAt(moments, seconds)}
+          moments={moments}
+          seconds={seconds}
+          loading={loading}
+          header={
+            <ContentHider
+              modui={anchor.moderation.ui('contentView')}
+              ignoreMute
+              style={[a.px_lg, a.pt_md]}>
+              <Embed
+                embed={embed}
+                moderation={anchor.moderation}
+                viewContext={PostEmbedViewContext.ThreadHighlighted}
+                post={post}
+              />
+            </ContentHider>
+          }
+        />
+      ) : thread.state.isFetching ? (
+        <View style={[a.py_2xl, a.align_center]}>
+          <ActivityIndicator />
+        </View>
+      ) : (
+        <View style={[a.px_lg, a.py_2xl]}>
+          <Text style={[a.text_md, a.text_center, a.leading_snug]}>
+            <Trans>This video is not available.</Trans>
+          </Text>
+        </View>
+      )}
+    </Layout.Screen>
+  )
+}

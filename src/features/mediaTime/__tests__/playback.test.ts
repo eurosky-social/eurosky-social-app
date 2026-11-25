@@ -2,6 +2,7 @@ import {beforeEach, describe, expect, it, jest} from '@jest/globals'
 
 import {
   getCommentableMediaTime,
+  getPlaybackSecond,
   POSITION_MAX_AGE_MS,
   QUEUED_SEEK_MAX_AGE_MS,
   queueSeek,
@@ -9,6 +10,7 @@ import {
   reportPlaybackPosition,
   resetPlaybackRegister,
   seekIfVisible,
+  subscribePlaybackPositions,
 } from '../playback'
 
 const POST = 'at://did:plc:alice/app.bsky.feed.post/3lvideo'
@@ -113,5 +115,26 @@ describe('seek targets', () => {
     const player = target(true)
     registerSeekTarget(POST, player, NOW + QUEUED_SEEK_MAX_AGE_MS + 1)
     expect(player.seek).not.toHaveBeenCalled()
+  })
+})
+
+describe('getPlaybackSecond and subscribePlaybackPositions', () => {
+  it('gives the whole second last reported', () => {
+    expect(getPlaybackSecond(POST)).toBeUndefined()
+    reportPlaybackPosition(POST, 41.7, 300, NOW)
+    expect(getPlaybackSecond(POST)).toBe(41)
+  })
+
+  it('tells listeners when a video reaches another whole second', () => {
+    const listener = jest.fn()
+    const stop = subscribePlaybackPositions(listener)
+    reportPlaybackPosition(POST, 41.2, 300, NOW)
+    reportPlaybackPosition(POST, 41.7, 300, NOW)
+    expect(listener).toHaveBeenCalledTimes(1)
+    reportPlaybackPosition(POST, 42.1, 300, NOW)
+    expect(listener).toHaveBeenCalledTimes(2)
+    stop()
+    reportPlaybackPosition(POST, 50, 300, NOW)
+    expect(listener).toHaveBeenCalledTimes(2)
   })
 })

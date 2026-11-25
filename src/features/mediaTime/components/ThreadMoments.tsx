@@ -4,8 +4,8 @@ import {type ThreadItem} from '#/state/queries/usePostThread/types'
 import {atoms as a} from '#/alf'
 import {type app} from '#/lexicons'
 import {MEDIA_TIME_ENABLED} from '../config'
+import {openMoment} from '../openMoment'
 import {getOwnVideoEmbed} from '../record'
-import {useJumpToMediaTime} from '../useJumpToMediaTime'
 import {useVideoMoments} from '../useVideoMoments'
 import {MomentChips} from './MomentChips'
 
@@ -20,7 +20,6 @@ export function ThreadMoments({
   items: readonly ThreadItem[]
   videoPost: Pick<app.bsky.feed.defs.PostView, 'uri' | 'embed'>
 }) {
-  const jump = useJumpToMediaTime()
   const video = getOwnVideoEmbed(videoPost.embed)
   const hasVideo = !!video && video.presentation !== 'gif'
   const moments = useVideoMoments({
@@ -35,7 +34,7 @@ export function ThreadMoments({
     <View style={[a.px_lg, a.pb_md]}>
       <MomentChips
         moments={moments}
-        onPressMoment={moment => jump(videoPost.uri, moment.startSeconds)}
+        onPressMoment={moment => openMoment(videoPost.uri, moment.startSeconds)}
       />
     </View>
   )

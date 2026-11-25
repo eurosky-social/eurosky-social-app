@@ -11,7 +11,7 @@ import {formatMediaTime} from '../record'
 
 /**
  * A row of moments in a video: where comments bunch up, with how many there
- * are. Tapping one plays the video from there.
+ * are. Tapping one opens it (`onPressMoment`).
  */
 export function MomentChips({
   moments,
@@ -48,7 +48,7 @@ export function MomentChips({
             <Button
               key={`${moment.startSeconds}-${moment.endSeconds}`}
               testID={`mediaTimeMoment-${moment.startSeconds}`}
-              label={l`Play from ${time}, ${countLabel}`}
+              label={l`Moment at ${time}, ${countLabel}`}
               size="small"
               color="primary_subtle"
               onPress={() => onPressMoment(moment)}>

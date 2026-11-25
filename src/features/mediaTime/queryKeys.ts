@@ -9,3 +9,9 @@ export const momentSummaryQueryKey = (postUri: string) => [
   'media-time-moment-summary',
   postUri,
 ]
+
+/** The posts of a moment's comments, by their URIs in any order. */
+export const momentPostsQueryKey = (uris: readonly string[]) => [
+  'media-time-moment-posts',
+  ...[...uris].sort(),
+]

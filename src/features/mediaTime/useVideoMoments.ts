@@ -40,7 +40,19 @@ export async function fetchMoments(videoPostUri: string): Promise<Moment[]> {
  * in `threadItems` and those this app just posted. Until it answers, or if
  * it fails, only those.
  */
-export function useVideoMoments({
+export function useVideoMoments(options: {
+  videoPostUri: string
+  threadItems: readonly ThreadItem[]
+  enabled?: boolean
+}): Moment[] {
+  return useVideoMomentsWithStatus(options).moments
+}
+
+/**
+ * {@link useVideoMoments}, and whether the moments service is still being
+ * asked for the first time.
+ */
+export function useVideoMomentsWithStatus({
   videoPostUri,
   threadItems,
   enabled = true,
@@ -48,10 +60,11 @@ export function useVideoMoments({
   videoPostUri: string
   threadItems: readonly ThreadItem[]
   enabled?: boolean
-}): Moment[] {
-  const {data} = useQuery({
+}): {moments: Moment[]; loading: boolean} {
+  const active = MEDIA_TIME_ENABLED && enabled
+  const {data, isPending} = useQuery({
     queryKey: RQKEY(videoPostUri),
-    enabled: MEDIA_TIME_ENABLED && enabled,
+    enabled: active,
     staleTime: STALE.SECONDS.THIRTY,
     retry: 1,
     queryFn: () => fetchMoments(videoPostUri),
@@ -61,5 +74,8 @@ export function useVideoMoments({
     ...collectTimedReplies(threadItems, videoPostUri),
     ...posted,
   ])
-  return data ? mergeMoments(data, local) : groupIntoMoments(local)
+  return {
+    moments: data ? mergeMoments(data, local) : groupIntoMoments(local),
+    loading: active && isPending,
+  }
 }

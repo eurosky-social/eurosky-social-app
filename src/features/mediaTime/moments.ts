@@ -220,6 +220,18 @@ export function mergeMoments(
   )
 }
 
+/**
+ * The moment at `seconds`: the one whose span holds it, else the nearest
+ * within `MOMENT_JOIN_SECONDS`. Moments move a little as comments come in,
+ * so a link to a moment names a second, not the moment itself.
+ */
+export function momentAt(
+  moments: Moment[],
+  seconds: number,
+): Moment | undefined {
+  return nearestMoment(moments, seconds)
+}
+
 function nearestMoment(moments: Moment[], seconds: number): Moment | undefined {
   let nearest: Moment | undefined
   let nearestDistance = Infinity

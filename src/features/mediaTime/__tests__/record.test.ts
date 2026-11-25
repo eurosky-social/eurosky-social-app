@@ -8,9 +8,11 @@ import {
   getMediaTimeLinkGraphemes,
   getMediaTimeLinkText,
   getOwnVideoEmbed,
+  getVideoTitle,
   MEDIA_TIME_FIELD,
   parseMediaTimeLink,
   parseMediaTimeParam,
+  withoutMediaTimeLink,
 } from '../record'
 
 const VIDEO_POST = 'at://did:plc:alice/app.bsky.feed.post/3lvideo'
@@ -224,5 +226,68 @@ describe('getOwnVideoEmbed', () => {
       } as never),
     ).toBeUndefined()
     expect(getOwnVideoEmbed(undefined)).toBeUndefined()
+  })
+})
+
+describe('withoutMediaTimeLink', () => {
+  const VIDEO = 'at://did:plc:alice/app.bsky.feed.post/3lvideo'
+
+  it('drops the time link at the end, and the space before it', () => {
+    const {text, facets} = appendMediaTimeLink(
+      {text: 'so true'},
+      {videoPostUri: VIDEO, seconds: 41},
+    )
+    const stripped = withoutMediaTimeLink(new RichText({text, facets}))
+    expect(stripped.text).toBe('so true')
+    expect(stripped.facets ?? []).toEqual([])
+  })
+
+  it('keeps the other facets', () => {
+    const mention = {
+      index: {byteStart: 0, byteEnd: 4},
+      features: [
+        {
+          $type: 'app.bsky.richtext.facet#mention' as const,
+          did: 'did:plc:bob' as const,
+        },
+      ],
+    }
+    const {text, facets} = appendMediaTimeLink(
+      {text: '@bob look', facets: [mention]},
+      {videoPostUri: VIDEO, seconds: 41},
+    )
+    const stripped = withoutMediaTimeLink(new RichText({text, facets}))
+    expect(stripped.text).toBe('@bob look')
+    expect(stripped.facets).toEqual([mention])
+  })
+
+  it('leaves text alone that does not end with a time link', () => {
+    const plain = new RichText({text: 'no link here'})
+    expect(withoutMediaTimeLink(plain)).toBe(plain)
+    const other = new RichText({
+      text: 'see example.com',
+      facets: [
+        {
+          index: {byteStart: 4, byteEnd: 15},
+          features: [
+            {
+              $type: 'app.bsky.richtext.facet#link',
+              uri: 'https://example.com',
+            },
+          ],
+        },
+      ],
+    })
+    expect(withoutMediaTimeLink(other)).toBe(other)
+  })
+})
+
+describe('getVideoTitle', () => {
+  it("takes the first line of the post's text", () => {
+    expect(getVideoTitle('\n  Night shift  \nmore text')).toBe('Night shift')
+  })
+
+  it('has none for an empty text', () => {
+    expect(getVideoTitle(' \n ')).toBeUndefined()
   })
 })
