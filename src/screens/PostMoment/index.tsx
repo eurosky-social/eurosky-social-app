@@ -29,12 +29,18 @@ import * as Layout from '#/components/Layout'
 import {ContentHider} from '#/components/moderation/ContentHider'
 import {Text} from '#/components/Typography'
 import {MomentRoom} from '#/features/mediaTime/components/MomentRoom'
+import {MomentStrip} from '#/features/mediaTime/components/MomentStrip'
 import {momentAt} from '#/features/mediaTime/moments'
 import {
   getOwnVideoEmbed,
   getVideoTitle,
   parseMediaTimeParam,
 } from '#/features/mediaTime/record'
+import {useJumpToMediaTime} from '#/features/mediaTime/useJumpToMediaTime'
+import {
+  usePlaybackDuration,
+  usePlaybackSecond,
+} from '#/features/mediaTime/usePlaybackSecond'
 import {useVideoMomentsWithStatus} from '#/features/mediaTime/useVideoMoments'
 import {type app} from '#/lexicons'
 
@@ -50,6 +56,7 @@ const MAX_VIDEO_HEIGHT_SHARE = 0.4
  */
 export function PostMomentScreen({
   route,
+  navigation,
 }: NativeStackScreenProps<CommonNavigatorParams, 'PostMoment'>) {
   const {name, rkey, t: tParam} = route.params
   const uri = makeRecordUri(name, 'app.bsky.feed.post', rkey)
@@ -90,6 +97,7 @@ export function PostMomentScreen({
             seconds={seconds}
             threadItems={thread.data.items}
             threadgateRecord={thread.data.threadgate?.record}
+            onSelectSeconds={next => navigation.setParams({t: String(next)})}
           />
         ) : thread.state.isFetching ? (
           <View style={[a.flex_1, a.align_center, a.justify_center]}>
@@ -148,14 +156,20 @@ function MomentWithVideo({
   seconds,
   threadItems,
   threadgateRecord,
+  onSelectSeconds,
 }: {
   item: ThreadPostItem
   video: app.bsky.embed.video.View
   seconds: number
   threadItems: ThreadItem[]
   threadgateRecord?: app.bsky.feed.threadgate.Main
+  /** Shows the moment holding another second. */
+  onSelectSeconds: (seconds: number) => void
 }) {
   const post = item.value.post
+  const jump = useJumpToMediaTime()
+  const playing = usePlaybackSecond(post.uri)
+  const duration = usePlaybackDuration(post.uri)
   const themeName = useThemeName()
   const goBack = useGoBack()
   const {bottom} = useSafeAreaInsets()
@@ -169,6 +183,12 @@ function MomentWithVideo({
     videoPostUri: post.uri,
     threadItems,
   })
+  const moment = momentAt(moments, seconds)
+  const onPressSecond = (pressed: number) => {
+    const target = momentAt(moments, pressed)
+    jump(post.uri, target ? target.startSeconds : pressed)
+    if (target && target !== moment) onSelectSeconds(target.startSeconds)
+  }
 
   return (
     <ContentHider
@@ -184,14 +204,23 @@ function MomentWithVideo({
         style={{height: videoHeight}}
         playerRef={playerRef}
       />
-      <View style={[a.flex_1, a.pt_xs]}>
+      <View style={[a.px_lg, a.pt_md]}>
+        <MomentStrip
+          moments={moments}
+          current={moment}
+          duration={duration}
+          playing={playing}
+          onPressSecond={onPressSecond}
+        />
+      </View>
+      <View style={[a.flex_1, a.pt_md]}>
         <ThemeProvider theme={themeName}>
           <MomentRoom
             layout="sheet"
             videoPost={post}
             videoModeration={item.moderation}
             threadgateRecord={threadgateRecord}
-            moment={momentAt(moments, seconds)}
+            moment={moment}
             moments={moments}
             seconds={seconds}
             loading={loading}

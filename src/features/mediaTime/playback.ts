@@ -67,6 +67,11 @@ export function getPlaybackSecond(postUri: string): number | undefined {
   return position ? Math.floor(position.seconds) : undefined
 }
 
+/** The length of the video of `postUri` in seconds, once a player knows it. */
+export function getPlaybackDuration(postUri: string): number | undefined {
+  return positions.get(postUri)?.duration
+}
+
 /**
  * Calls `listener` whenever a video reaches another whole second. Returns
  * the function that stops it.

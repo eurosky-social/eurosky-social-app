@@ -221,6 +221,38 @@ export function mergeMoments(
 }
 
 /**
+ * The bar of `count` bars along a video of `duration` seconds that
+ * `seconds` falls in.
+ */
+export function barAt(seconds: number, duration: number, count: number) {
+  return Math.min(
+    count - 1,
+    Math.max(0, Math.floor((seconds / duration) * count)),
+  )
+}
+
+/**
+ * How many comments fall in each of `count` bars along a video of
+ * `duration` seconds: each moment's count is spread evenly over the bars
+ * its span covers. All zero while the length is unknown.
+ */
+export function momentBars(
+  moments: Moment[],
+  duration: number,
+  count: number,
+): number[] {
+  const bars: number[] = Array.from({length: count}, () => 0)
+  if (!(duration > 0)) return bars
+  for (const moment of moments) {
+    const first = barAt(moment.startSeconds, duration, count)
+    const last = barAt(moment.endSeconds, duration, count)
+    const share = moment.count / (last - first + 1)
+    for (let i = first; i <= last; i++) bars[i] += share
+  }
+  return bars
+}
+
+/**
  * The moment at `seconds`: the one whose span holds it, else the nearest
  * within `MOMENT_JOIN_SECONDS`. Moments move a little as comments come in,
  * so a link to a moment names a second, not the moment itself.

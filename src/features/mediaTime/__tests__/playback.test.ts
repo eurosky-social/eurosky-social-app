@@ -2,6 +2,7 @@ import {beforeEach, describe, expect, it, jest} from '@jest/globals'
 
 import {
   getCommentableMediaTime,
+  getPlaybackDuration,
   getPlaybackSecond,
   POSITION_MAX_AGE_MS,
   QUEUED_SEEK_MAX_AGE_MS,
@@ -119,10 +120,12 @@ describe('seek targets', () => {
 })
 
 describe('getPlaybackSecond and subscribePlaybackPositions', () => {
-  it('gives the whole second last reported', () => {
+  it('gives the whole second last reported, and the length', () => {
     expect(getPlaybackSecond(POST)).toBeUndefined()
+    expect(getPlaybackDuration(POST)).toBeUndefined()
     reportPlaybackPosition(POST, 41.7, 300, NOW)
     expect(getPlaybackSecond(POST)).toBe(41)
+    expect(getPlaybackDuration(POST)).toBe(300)
   })
 
   it('tells listeners when a video reaches another whole second', () => {

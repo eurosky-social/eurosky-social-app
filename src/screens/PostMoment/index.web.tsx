@@ -13,13 +13,19 @@ import {ContentHider} from '#/components/moderation/ContentHider'
 import {Embed, PostEmbedViewContext} from '#/components/Post/Embed'
 import {Text} from '#/components/Typography'
 import {MomentRoom} from '#/features/mediaTime/components/MomentRoom'
+import {MomentStrip} from '#/features/mediaTime/components/MomentStrip'
 import {momentAt} from '#/features/mediaTime/moments'
 import {
   getOwnVideoEmbed,
   getVideoTitle,
   parseMediaTimeParam,
 } from '#/features/mediaTime/record'
+import {useJumpToMediaTime} from '#/features/mediaTime/useJumpToMediaTime'
 import {useMediaTimeParam} from '#/features/mediaTime/useMediaTimeParam'
+import {
+  usePlaybackDuration,
+  usePlaybackSecond,
+} from '#/features/mediaTime/usePlaybackSecond'
 import {useVideoMomentsWithStatus} from '#/features/mediaTime/useVideoMoments'
 
 type ThreadPostItem = Extract<ThreadItem, {type: 'threadPost'}>
@@ -30,6 +36,7 @@ type ThreadPostItem = Extract<ThreadItem, {type: 'threadPost'}>
  */
 export function PostMomentScreen({
   route,
+  navigation,
 }: NativeStackScreenProps<CommonNavigatorParams, 'PostMoment'>) {
   const {name, rkey, t: tParam} = route.params
   const uri = makeRecordUri(name, 'app.bsky.feed.post', rkey)
@@ -53,6 +60,17 @@ export function PostMomentScreen({
     threadItems: thread.data.items,
     enabled: hasVideo,
   })
+  const moment = momentAt(moments, seconds)
+  const jump = useJumpToMediaTime()
+  const playing = usePlaybackSecond(postUri)
+  const duration = usePlaybackDuration(postUri)
+  const onPressSecond = (pressed: number) => {
+    const target = momentAt(moments, pressed)
+    jump(postUri, target ? target.startSeconds : pressed)
+    if (target && target !== moment) {
+      navigation.setParams({t: String(target.startSeconds)})
+    }
+  }
   const authorName = anchor
     ? sanitizeDisplayName(
         anchor.value.post.author.displayName || anchor.value.post.author.handle,
@@ -81,7 +99,7 @@ export function PostMomentScreen({
           videoPost={post}
           videoModeration={anchor.moderation}
           threadgateRecord={thread.data.threadgate?.record}
-          moment={momentAt(moments, seconds)}
+          moment={moment}
           moments={moments}
           seconds={seconds}
           loading={loading}
@@ -96,6 +114,15 @@ export function PostMomentScreen({
                 viewContext={PostEmbedViewContext.ThreadHighlighted}
                 post={post}
               />
+              <View style={[a.pt_md]}>
+                <MomentStrip
+                  moments={moments}
+                  current={moment}
+                  duration={duration}
+                  playing={playing}
+                  onPressSecond={onPressSecond}
+                />
+              </View>
             </ContentHider>
           }
         />

@@ -8,6 +8,7 @@ import {
   MISSING_POSTS_RETRIES,
   MISSING_POSTS_RETRY_MS,
   missingPostsRetryInterval,
+  pickCommentReplies,
   POSTS_PER_REQUEST,
   sortMomentPosts,
   visibleMomentPosts,
@@ -153,5 +154,25 @@ describe('visibleMomentPosts', () => {
       MODERATION_OPTS,
     )
     expect(visible.map(p => p.uri)).toEqual([uri(1)])
+  })
+})
+
+describe('pickCommentReplies', () => {
+  const host = 'did:plc:a9'
+  const byHost = {
+    ...post(9, {indexedAt: '2026-11-25T12:00:00.000Z'}),
+  }
+  const liked = post(1, {likes: 7})
+  const early = post(2, {indexedAt: '2026-11-25T08:00:00.000Z'})
+  const late = post(3, {indexedAt: '2026-11-25T11:00:00.000Z'})
+
+  it("puts the video author's reply first, then the most liked, then the oldest", () => {
+    expect(
+      pickCommentReplies([late, early, liked, byHost], host, 4).map(p => p.uri),
+    ).toEqual([byHost, liked, early, late].map(p => p.uri))
+  })
+
+  it('shows two by default', () => {
+    expect(pickCommentReplies([late, early, liked], host)).toHaveLength(2)
   })
 })
