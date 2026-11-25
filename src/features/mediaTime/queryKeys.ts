@@ -15,3 +15,9 @@ export const momentPostsQueryKey = (uris: readonly string[]) => [
   'media-time-moment-posts',
   ...[...uris].sort(),
 ]
+
+/** The direct replies to one comment on a moment's page. */
+export const commentRepliesQueryKey = (uri: string) => [
+  'media-time-comment-replies',
+  uri,
+]

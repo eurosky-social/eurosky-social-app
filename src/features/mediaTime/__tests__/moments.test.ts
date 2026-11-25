@@ -2,11 +2,13 @@ import {describe, expect, it} from '@jest/globals'
 
 import {type ThreadItem} from '#/state/queries/usePostThread/types'
 import {
+  barAt,
   collectTimedReplies,
   groupIntoMoments,
   mergeMoments,
   type Moment,
   momentAt,
+  momentBars,
 } from '../moments'
 import {MEDIA_TIME_FIELD} from '../record'
 
@@ -240,5 +242,30 @@ describe('collectTimedReplies', () => {
     expect(collectTimedReplies(items, VIDEO_POST)).toEqual([
       {uri: 'at://r/1', seconds: 41},
     ])
+  })
+})
+
+describe('momentBars', () => {
+  const at = (start: number, end: number, count: number) => ({
+    startSeconds: start,
+    endSeconds: end,
+    count,
+    comments: [],
+  })
+
+  it('finds the bar a second falls in, keeping the end inside', () => {
+    expect(barAt(0, 100, 10)).toBe(0)
+    expect(barAt(55, 100, 10)).toBe(5)
+    expect(barAt(100, 100, 10)).toBe(9)
+  })
+
+  it("spreads each moment's comments over the bars it covers", () => {
+    expect(momentBars([at(0, 5, 2), at(40, 59, 6)], 100, 10)).toEqual([
+      2, 0, 0, 0, 3, 3, 0, 0, 0, 0,
+    ])
+  })
+
+  it('is all zero while the length is unknown', () => {
+    expect(momentBars([at(0, 5, 2)], 0, 4)).toEqual([0, 0, 0, 0])
   })
 })

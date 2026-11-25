@@ -46,11 +46,13 @@ import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {
   type MomentSort,
+  pickCommentReplies,
   sortMomentPosts,
   visibleMomentPosts,
 } from '../momentPosts'
 import {type Moment} from '../moments'
 import {formatMediaTime, withoutMediaTimeLink} from '../record'
+import {useCommentReplies} from '../useCommentReplies'
 import {useJumpToMediaTime} from '../useJumpToMediaTime'
 import {useMomentPosts} from '../useMomentPosts'
 import {usePlaybackSecond} from '../usePlaybackSecond'
@@ -191,7 +193,9 @@ export function MomentRoom({
           post={item}
           seconds={secondsByUri.get(item.uri)}
           videoPostUri={videoPost.uri}
+          hostDid={videoPost.author.did}
           threadgateRecord={threadgateRecord}
+          hiddenUris={hiddenUris}
         />
       )}
       ListHeaderComponent={
@@ -423,15 +427,137 @@ function topQuote(
   return undefined
 }
 
-/** One comment: who wrote it and when, its second, its text, and replies. */
+/** One comment, with the first replies to it underneath. */
 function MomentComment({
   post: rawPost,
   seconds,
   videoPostUri,
+  hostDid,
   threadgateRecord,
+  hiddenUris,
 }: {
   post: PostView
   seconds: number | undefined
+  videoPostUri: string
+  hostDid: string
+  threadgateRecord?: app.bsky.feed.threadgate.Main
+  hiddenUris: ReadonlySet<string>
+}) {
+  const t = useTheme()
+  const moderationOpts = useModerationOpts()
+  const post = usePostShadow(rawPost)
+  const moderation = useMemo(
+    () => (moderationOpts ? moderatePost(rawPost, moderationOpts) : undefined),
+    [rawPost, moderationOpts],
+  )
+  if (post === POST_TOMBSTONE || !moderation) return null
+  if (!bsky.matches(app.bsky.feed.post, post.record)) return null
+  return (
+    <View
+      testID={`momentComment-${post.uri}`}
+      style={[
+        a.px_lg,
+        a.pt_md,
+        a.pb_xs,
+        a.border_b,
+        t.atoms.border_contrast_low,
+      ]}>
+      <ReportDialogMetadataContext.Provider>
+        <CommentRow
+          post={post}
+          record={post.record}
+          moderation={moderation}
+          seconds={seconds}
+          videoPostUri={videoPostUri}
+          isHost={post.author.did === hostDid}
+          threadgateRecord={threadgateRecord}
+        />
+      </ReportDialogMetadataContext.Provider>
+      <CommentReplies
+        comment={post}
+        hostDid={hostDid}
+        videoPostUri={videoPostUri}
+        threadgateRecord={threadgateRecord}
+        hiddenUris={hiddenUris}
+      />
+    </View>
+  )
+}
+
+/**
+ * Up to two replies to a comment, the video's author's first, and a link to
+ * the rest in the comment's thread.
+ */
+function CommentReplies({
+  comment,
+  hostDid,
+  videoPostUri,
+  threadgateRecord,
+  hiddenUris,
+}: {
+  comment: Shadow<PostView>
+  hostDid: string
+  videoPostUri: string
+  threadgateRecord?: app.bsky.feed.threadgate.Main
+  hiddenUris: ReadonlySet<string>
+}) {
+  const t = useTheme()
+  const {t: l} = useLingui()
+  const total = comment.replyCount ?? 0
+  const {data} = useCommentReplies(comment.uri, total > 0)
+  const moderationOpts = useModerationOpts()
+  const shown = useMemo(
+    () =>
+      data && moderationOpts
+        ? pickCommentReplies(
+            visibleMomentPosts(data, hiddenUris, moderationOpts),
+            hostDid,
+          )
+        : [],
+    [data, moderationOpts, hiddenUris, hostDid],
+  )
+  if (total === 0) return null
+  const href = makeProfileLink(
+    comment.author,
+    'post',
+    new AtUri(comment.uri).rkey,
+  )
+  const more = total - shown.length
+  return (
+    <View style={[a.gap_xs, {paddingLeft: 48}]}>
+      {shown.map(reply => (
+        <MomentReply
+          key={reply.uri}
+          post={reply}
+          isHost={reply.author.did === hostDid}
+          videoPostUri={videoPostUri}
+          threadgateRecord={threadgateRecord}
+        />
+      ))}
+      {more > 0 ? (
+        <View style={[a.pb_sm]}>
+          <InlineLinkText
+            to={href}
+            label={l`Open all replies to this comment`}
+            style={[a.text_sm, a.font_semi_bold, t.atoms.text_contrast_medium]}>
+            {shown.length === 0
+              ? plural(total, {one: '# reply', other: '# replies'})
+              : plural(more, {one: '# more reply', other: '# more replies'})}
+          </InlineLinkText>
+        </View>
+      ) : null}
+    </View>
+  )
+}
+
+function MomentReply({
+  post: rawPost,
+  isHost,
+  videoPostUri,
+  threadgateRecord,
+}: {
+  post: PostView
+  isHost: boolean
   videoPostUri: string
   threadgateRecord?: app.bsky.feed.threadgate.Main
 }) {
@@ -445,23 +571,31 @@ function MomentComment({
   if (!bsky.matches(app.bsky.feed.post, post.record)) return null
   return (
     <ReportDialogMetadataContext.Provider>
-      <MomentCommentInner
+      <CommentRow
+        nested
         post={post}
         record={post.record}
         moderation={moderation}
-        seconds={seconds}
+        seconds={undefined}
         videoPostUri={videoPostUri}
+        isHost={isHost}
         threadgateRecord={threadgateRecord}
       />
     </ReportDialogMetadataContext.Provider>
   )
 }
 
-function MomentCommentInner({
+/**
+ * Who wrote a comment or reply and when, a "Host" badge for the video's
+ * author, the comment's second, its text, and Reply, likes and the menu.
+ */
+function CommentRow({
   post,
   record,
   moderation,
   seconds,
+  nested,
+  isHost,
   videoPostUri,
   threadgateRecord,
 }: {
@@ -469,6 +603,8 @@ function MomentCommentInner({
   record: app.bsky.feed.post.Main
   moderation: ModerationDecision
   seconds: number | undefined
+  nested?: boolean
+  isHost: boolean
   videoPostUri: string
   threadgateRecord?: app.bsky.feed.threadgate.Main
 }) {
@@ -495,12 +631,6 @@ function MomentCommentInner({
   const liked = !!post.viewer?.like
   const likes = post.likeCount ?? 0
   const likesLabel = plural(likes, {one: '# like', other: '# likes'})
-  const replies = post.replyCount ?? 0
-  const threadHref = makeProfileLink(
-    post.author,
-    'post',
-    new AtUri(post.uri).rkey,
-  )
   const time = seconds !== undefined ? formatMediaTime(seconds) : undefined
 
   const onReply = () =>
@@ -527,130 +657,134 @@ function MomentCommentInner({
     })
 
   return (
-    <View
-      testID={`momentComment-${post.uri}`}
-      style={[a.px_lg, a.pt_md, a.border_b, t.atoms.border_contrast_low]}>
-      <View style={[a.flex_row, a.gap_md]}>
-        <PreviewableUserAvatar
-          size={36}
-          profile={post.author}
-          moderation={moderation.ui('avatar')}
-          type={post.author.associated?.labeler ? 'labeler' : 'user'}
-        />
-        <View style={[a.flex_1, a.gap_2xs]}>
-          <View style={[a.flex_row, a.align_center, a.gap_xs, a.flex_wrap]}>
-            <Text
-              emoji
-              style={[a.text_sm, a.font_bold, a.flex_shrink]}
-              numberOfLines={1}>
-              {name}
-            </Text>
-            <TimeElapsed timestamp={post.indexedAt}>
-              {({timeElapsed}) => (
-                <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
-                  · {timeElapsed}
-                </Text>
-              )}
-            </TimeElapsed>
-            {seconds !== undefined && time ? (
-              <TimeChip
-                small
-                label={l`Jump to ${time} in the video`}
-                onPress={() => jump(videoPostUri, seconds)}>
-                {time}
-              </TimeChip>
-            ) : null}
-          </View>
-          <ContentHider
-            modui={moderation.ui('contentView')}
-            childContainerStyle={[a.gap_xs]}>
-            <PostAlerts post={post} modui={moderation.ui('contentView')} />
-            {richText.text ? (
-              <RichText
-                enableTags
-                value={richText}
-                style={[a.text_md, a.leading_snug]}
-                authorHandle={post.author.handle}
-                shouldProxyLinks
-              />
-            ) : null}
-            {post.embed ? (
-              <Embed
-                embed={post.embed}
-                moderation={moderation}
-                viewContext={PostEmbedViewContext.Feed}
-                post={post}
-              />
-            ) : null}
-          </ContentHider>
-          <View style={[a.flex_row, a.align_center, a.gap_lg]}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={l`Reply`}
-              accessibilityHint=""
-              disabled={!!post.viewer?.replyDisabled}
-              onPress={onReply}
-              style={[a.py_sm]}>
+    <View style={[a.flex_row, nested ? a.gap_sm : a.gap_md]}>
+      <PreviewableUserAvatar
+        size={nested ? 28 : 36}
+        profile={post.author}
+        moderation={moderation.ui('avatar')}
+        type={post.author.associated?.labeler ? 'labeler' : 'user'}
+      />
+      <View style={[a.flex_1, a.gap_2xs]}>
+        <View style={[a.flex_row, a.align_center, a.gap_xs, a.flex_wrap]}>
+          <Text
+            emoji
+            style={[a.text_sm, a.font_bold, a.flex_shrink]}
+            numberOfLines={1}>
+            {name}
+          </Text>
+          {isHost ? (
+            <View
+              style={[
+                a.rounded_sm,
+                {
+                  paddingHorizontal: 6,
+                  paddingVertical: 1,
+                  backgroundColor: t.palette.primary_50,
+                },
+              ]}>
               <Text
                 style={[
-                  a.text_sm,
-                  a.font_semi_bold,
-                  t.atoms.text_contrast_medium,
+                  a.text_xs,
+                  a.font_bold,
+                  {color: t.palette.primary_600},
                 ]}>
-                <Trans>Reply</Trans>
+                <Trans comment="Badge next to a reply by the person who posted the video">
+                  Host
+                </Trans>
               </Text>
-            </Pressable>
-            <Pressable
-              testID="momentCommentLike"
-              accessibilityRole="button"
-              accessibilityLabel={
-                liked ? l`Unlike, ${likesLabel}` : l`Like, ${likesLabel}`
-              }
-              accessibilityHint=""
-              onPress={onLike}
-              style={[a.flex_row, a.align_center, a.gap_xs, a.py_sm]}>
-              {liked ? (
-                <HeartFilledIcon size="sm" fill={t.palette.pink} />
-              ) : (
-                <HeartIcon size="sm" style={t.atoms.text_contrast_medium} />
-              )}
-              <Text
-                style={[
-                  a.text_sm,
-                  a.font_semi_bold,
-                  liked
-                    ? {color: t.palette.pink}
-                    : t.atoms.text_contrast_medium,
-                ]}>
-                {likes}
+            </View>
+          ) : null}
+          <TimeElapsed timestamp={post.indexedAt}>
+            {({timeElapsed}) => (
+              <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+                · {timeElapsed}
               </Text>
-            </Pressable>
-            {replies > 0 ? (
-              <InlineLinkText
-                to={threadHref}
-                label={l`Open the replies`}
-                style={[
-                  a.text_sm,
-                  a.font_semi_bold,
-                  t.atoms.text_contrast_medium,
-                ]}>
-                {plural(replies, {one: '# reply', other: '# replies'})}
-              </InlineLinkText>
-            ) : null}
-            <View style={[a.flex_1]} />
-            <PostMenuButton
-              testID="momentCommentMenu"
-              post={post}
-              postFeedContext={undefined}
-              postReqId={undefined}
-              record={record}
-              richText={fullText}
-              timestamp={post.indexedAt}
-              threadgateRecord={threadgateRecord}
-              logContext="Post"
-              forceGoogleTranslate={false}
+            )}
+          </TimeElapsed>
+          {seconds !== undefined && time ? (
+            <TimeChip
+              small
+              label={l`Jump to ${time} in the video`}
+              onPress={() => jump(videoPostUri, seconds)}>
+              {time}
+            </TimeChip>
+          ) : null}
+        </View>
+        <ContentHider
+          modui={moderation.ui('contentView')}
+          childContainerStyle={[a.gap_xs]}>
+          <PostAlerts post={post} modui={moderation.ui('contentView')} />
+          {richText.text ? (
+            <RichText
+              enableTags
+              value={richText}
+              style={[nested ? a.text_sm : a.text_md, a.leading_snug]}
+              authorHandle={post.author.handle}
+              shouldProxyLinks
             />
-          </View>
+          ) : null}
+          {post.embed ? (
+            <Embed
+              embed={post.embed}
+              moderation={moderation}
+              viewContext={PostEmbedViewContext.Feed}
+              post={post}
+            />
+          ) : null}
+        </ContentHider>
+        <View style={[a.flex_row, a.align_center, a.gap_lg]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={l`Reply`}
+            accessibilityHint=""
+            disabled={!!post.viewer?.replyDisabled}
+            onPress={onReply}
+            style={[a.py_sm]}>
+            <Text
+              style={[
+                a.text_sm,
+                a.font_semi_bold,
+                t.atoms.text_contrast_medium,
+              ]}>
+              <Trans>Reply</Trans>
+            </Text>
+          </Pressable>
+          <Pressable
+            testID="momentCommentLike"
+            accessibilityRole="button"
+            accessibilityLabel={
+              liked ? l`Unlike, ${likesLabel}` : l`Like, ${likesLabel}`
+            }
+            accessibilityHint=""
+            onPress={onLike}
+            style={[a.flex_row, a.align_center, a.gap_xs, a.py_sm]}>
+            {liked ? (
+              <HeartFilledIcon size="sm" fill={t.palette.pink} />
+            ) : (
+              <HeartIcon size="sm" style={t.atoms.text_contrast_medium} />
+            )}
+            <Text
+              style={[
+                a.text_sm,
+                a.font_semi_bold,
+                liked ? {color: t.palette.pink} : t.atoms.text_contrast_medium,
+              ]}>
+              {likes}
+            </Text>
+          </Pressable>
+          <View style={[a.flex_1]} />
+          <PostMenuButton
+            testID="momentCommentMenu"
+            post={post}
+            postFeedContext={undefined}
+            postReqId={undefined}
+            record={record}
+            richText={fullText}
+            timestamp={post.indexedAt}
+            threadgateRecord={threadgateRecord}
+            logContext="Post"
+            forceGoogleTranslate={false}
+          />
         </View>
       </View>
     </View>

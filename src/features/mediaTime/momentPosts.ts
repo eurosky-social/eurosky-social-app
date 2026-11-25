@@ -82,3 +82,25 @@ export function visibleMomentPosts(
       !moderatePost(post, moderationOpts).ui('contentList').filter,
   )
 }
+
+/** Replies shown under a comment on a moment's page. */
+export const SHOWN_REPLIES = 2
+
+/**
+ * The replies to show under a comment: the video's author's first (they
+ * host the conversation), then the most liked, then the oldest.
+ */
+export function pickCommentReplies(
+  replies: readonly PostView[],
+  hostDid: string,
+  limit = SHOWN_REPLIES,
+): PostView[] {
+  return [...replies]
+    .sort(
+      (a, b) =>
+        Number(b.author.did === hostDid) - Number(a.author.did === hostDid) ||
+        (b.likeCount ?? 0) - (a.likeCount ?? 0) ||
+        a.indexedAt.localeCompare(b.indexedAt),
+    )
+    .slice(0, limit)
+}

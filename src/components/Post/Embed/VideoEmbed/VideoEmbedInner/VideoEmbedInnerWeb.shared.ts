@@ -8,7 +8,11 @@ export type VideoEmbedInnerWebProps = {
   onScreen: boolean
   lastKnownTime: React.RefObject<number | undefined>
   onPlaybackStart: (autoplay: boolean) => void
-  onPlaybackProgress: (progressSeconds: number) => void
+  /** Eurosky: `durationSeconds` lets moments be drawn along the video. */
+  onPlaybackProgress: (
+    progressSeconds: number,
+    durationSeconds?: number,
+  ) => void
   onPlaybackStateChange: (state: 'playing' | 'paused' | 'buffering') => void
   onPlaybackEnd: () => void
   /**

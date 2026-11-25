@@ -252,11 +252,15 @@ export function VideoEmbed({
                 autoplay,
               })
             }}
-            onPlaybackProgress={progressSeconds => {
+            onPlaybackProgress={(progressSeconds, durationSeconds) => {
               durationTracker.observeProgress(progressSeconds)
               // Eurosky: lets a reply be linked to the second being watched.
               if (MEDIA_TIME_ENABLED && post && !isGif) {
-                reportPlaybackPosition(post.uri, progressSeconds)
+                reportPlaybackPosition(
+                  post.uri,
+                  progressSeconds,
+                  durationSeconds,
+                )
               }
             }}
             mediaTimeSeekBridge={mediaTimeSeekBridge}

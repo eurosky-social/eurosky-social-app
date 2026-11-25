@@ -110,7 +110,11 @@ names a second, not a moment). Its comments read as one conversation
 - how many comments, and by how many people;
 - the comments sorted by Top (most liked) or Newest, each with its own second
   as a chip next to the name (the "▶ 0:41" link is left out of its text),
-  Reply, likes, how many replies (opens its thread) and the post menu;
+  Reply, likes and the post menu;
+- under each comment, up to two of its replies, the video author's first
+  with a "Host" badge, then the most liked (`pickCommentReplies`), and a
+  link to the rest in the comment's thread. They load per comment, while it
+  is on screen (`useCommentReplies.ts`), and are filtered like the comments;
 - "at 0:41 · Add to this moment…", which links a new comment to the second
   being watched.
 
@@ -120,6 +124,14 @@ moderation settings filter out are left out (`momentPosts.ts`). The AppView
 lists at most 100 comments per moment; the page says so when there are
 more. A comment just posted may take a few seconds to reach the AppView, so
 missing ones are asked for again a few times.
+
+Under the video, a strip shows where people commented
+(`components/MomentStrip.tsx`): one bar per stretch of the video, as high as
+its share of comments (`momentBars`), the open moment highlighted, the part
+already played tinted, and where the video is. Tapping it plays from there;
+when the tap is on or near another moment, the page switches to that moment.
+It needs the video's length, which the players report with their position,
+so it shows once the video has loaded.
 
 On iOS and Android the page is dark above, with the video's title and the
 player (`screens/PostMoment/index.tsx`, sharing
