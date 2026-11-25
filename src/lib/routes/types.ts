@@ -81,6 +81,8 @@ export type CommonNavigatorParams = {
   }
   /** Eurosky: full-screen player for a post's video, from second `t`. */
   PostVideo: {name: string; rkey: string; t?: string}
+  /** Eurosky: one moment of a post's video and its comments, at second `t`. */
+  PostMoment: {name: string; rkey: string; t: string}
   PostLikedBy: {name: string; rkey: string}
   PostRepostedBy: {name: string; rkey: string}
   PostQuotes: {name: string; rkey: string}

@@ -32,6 +32,7 @@ export type SeekTarget = {
 const positions = new Map<string, Position>()
 const targets = new Map<string, SeekTarget[]>()
 const queuedSeeks = new Map<string, {seconds: number; queuedAt: number}>()
+const positionListeners = new Set<() => void>()
 
 /** Records where the video of `postUri` currently is. */
 export function reportPlaybackPosition(
@@ -41,6 +42,7 @@ export function reportPlaybackPosition(
   now = Date.now(),
 ): void {
   if (!Number.isFinite(seconds) || seconds < 0) return
+  const previousSecond = getPlaybackSecond(postUri)
   positions.delete(postUri)
   positions.set(postUri, {
     seconds,
@@ -53,6 +55,26 @@ export function reportPlaybackPosition(
   if (positions.size > MAX_POSITIONS) {
     const oldest = positions.keys().next().value
     if (oldest !== undefined) positions.delete(oldest)
+  }
+  if (Math.floor(seconds) !== previousSecond) {
+    for (const listener of positionListeners) listener()
+  }
+}
+
+/** The whole second the video of `postUri` was last reported at. */
+export function getPlaybackSecond(postUri: string): number | undefined {
+  const position = positions.get(postUri)
+  return position ? Math.floor(position.seconds) : undefined
+}
+
+/**
+ * Calls `listener` whenever a video reaches another whole second. Returns
+ * the function that stops it.
+ */
+export function subscribePlaybackPositions(listener: () => void): () => void {
+  positionListeners.add(listener)
+  return () => {
+    positionListeners.delete(listener)
   }
 }
 

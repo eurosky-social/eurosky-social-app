@@ -155,6 +155,44 @@ export function parseMediaTimeLink(
   }
 }
 
+/** A video post's title for a header: the first line of its text. */
+export function getVideoTitle(text: string): string | undefined {
+  return (
+    text
+      .split('\n')
+      .map(line => line.trim())
+      .find(line => line.length > 0) || undefined
+  )
+}
+
+/**
+ * `richText` without the time link at its end, and the space before it.
+ * Used where the time shows next to the comment instead. Returns
+ * `richText` itself when it doesn't end with one.
+ */
+export function withoutMediaTimeLink(richText: RichText): RichText {
+  const end = richText.length
+  const facet = richText.facets?.find(
+    f =>
+      f.index.byteEnd === end &&
+      f.features.some(
+        feature =>
+          feature.$type === 'app.bsky.richtext.facet#link' &&
+          'uri' in feature &&
+          parseMediaTimeLink(
+            feature.uri,
+            richText.unicodeText.slice(f.index.byteStart, f.index.byteEnd),
+          ) !== undefined,
+      ),
+  )
+  if (!facet) return richText
+  const before = richText.unicodeText.slice(0, facet.index.byteStart)
+  const start = before.endsWith(' ')
+    ? facet.index.byteStart - 1
+    : facet.index.byteStart
+  return richText.clone().delete(start, end)
+}
+
 /**
  * Parses a `t` route or query parameter (whole seconds). Anything else, such
  * as `1m30s` or a negative number, yields `undefined`.

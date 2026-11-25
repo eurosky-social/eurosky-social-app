@@ -92,7 +92,39 @@ shows while the post is hidden behind a content warning (`feed.ts`). The
 counts come from `network.eurosky.feed.getMomentSummaries` on the same
 AppView; requests made within 50 ms share one call of up to 25 posts
 (`momentSummaries.ts`), and the AppView keeps each answer for a minute. A
-failed request shows nothing. Tapping a moment plays the video from there, as
-the time links do.
+failed request shows nothing. Tapping a moment opens its page.
+
+## A moment's page
+
+Tapping a moment, in a thread, a feed or the phone player, opens its page
+(`openMoment.ts`, route `PostMoment`, `/profile/<name>/post/<rkey>/moment/<t>`):
+the video on top, playing from `t`, and below it the moment that holds that
+second (`momentAt`; moments shift a little as comments come in, so the link
+names a second, not a moment). Its comments read as one conversation
+(`components/MomentRoom.tsx`, after the design canvas's "One moment's room"):
+
+- the moment's span, tap to play from its start, and "Most discussed" on the
+  video's busiest moment;
+- a title: until moments get names, the top comment quoted (from two
+  comments on, skipping comments with a warning), else "Moment at 0:41";
+- how many comments, and by how many people;
+- the comments sorted by Top (most liked) or Newest, each with its own second
+  as a chip next to the name (the "▶ 0:41" link is left out of its text),
+  Reply, likes, how many replies (opens its thread) and the post menu;
+- "at 0:41 · Add to this moment…", which links a new comment to the second
+  being watched.
+
+The comments are loaded from the viewer's AppView, 25 at a time
+(`useMomentPosts.ts`). Replies the video's author hid and posts the viewer's
+moderation settings filter out are left out (`momentPosts.ts`). The AppView
+lists at most 100 comments per moment; the page says so when there are
+more. A comment just posted may take a few seconds to reach the AppView, so
+missing ones are asked for again a few times.
+
+On iOS and Android the page is dark above, with the video's title and the
+player (`screens/PostMoment/index.tsx`, sharing
+`screens/PostVideo/VideoSurface.tsx`), and the moment is a sheet in the app's
+own theme with a close button. On the web it is a normal page with the
+post's own player, which jumps to `t` (`index.web.tsx`).
 
 Tests: `pnpm test src/features/mediaTime src/lib/api/__tests__/post.test.ts`.

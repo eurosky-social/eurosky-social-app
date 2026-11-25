@@ -7,7 +7,7 @@ import {type app} from '#/lexicons'
 import {MEDIA_TIME_ENABLED} from '../config'
 import {canShowFeedMoments} from '../feed'
 import {topMoments, useMomentSummary} from '../momentSummaries'
-import {useJumpToMediaTime} from '../useJumpToMediaTime'
+import {openMoment} from '../openMoment'
 import {MomentChips} from './MomentChips'
 
 /**
@@ -23,7 +23,6 @@ export function FeedMoments({
   moderation: ModerationDecision
 }) {
   const {t: l} = useLingui()
-  const jump = useJumpToMediaTime()
   const eligible = MEDIA_TIME_ENABLED && canShowFeedMoments(post, moderation)
   const {data: moments} = useMomentSummary({
     postUri: post.uri,
@@ -37,7 +36,7 @@ export function FeedMoments({
       <MomentChips
         title={l`Most talked-about moments`}
         moments={topMoments(moments)}
-        onPressMoment={moment => jump(post.uri, moment.startSeconds)}
+        onPressMoment={moment => openMoment(post.uri, moment.startSeconds)}
       />
     </View>
   )
