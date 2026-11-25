@@ -13,6 +13,9 @@ import {type CodePart, parseCodeParts} from '#/components/RichTextCode'
 import {RichTextTag} from '#/components/RichTextTag'
 import {Text, type TextProps} from '#/components/Typography'
 import {IS_NATIVE} from '#/env'
+import {MediaTimeLink} from '#/features/mediaTime/components/MediaTimeLink'
+import {MEDIA_TIME_ENABLED} from '#/features/mediaTime/config'
+import {parseMediaTimeLink} from '#/features/mediaTime/record'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 
@@ -220,6 +223,11 @@ export function RichText({
     const link = segment.link
     const mention = segment.mention
     const tag = segment.tag
+    // Eurosky: a comment's `▶ 0:41` link plays the video in the app.
+    const mediaTimeLink =
+      MEDIA_TIME_ENABLED && link
+        ? parseMediaTimeLink(link.uri, segment.text)
+        : undefined
 
     if (
       mention &&
@@ -242,6 +250,22 @@ export function RichText({
               {segment.text}
             </InlineLinkText>
           </ProfileHoverCard>
+        ),
+      })
+    } else if (
+      mediaTimeLink &&
+      bsky.matches(app.bsky.richtext.facet.link, link)
+    ) {
+      parts.push({
+        block: false,
+        node: (
+          <MediaTimeLink
+            key={key}
+            videoPostUri={mediaTimeLink.videoPostUri}
+            seconds={mediaTimeLink.seconds}
+            disabled={disableLinks}
+            style={disableLinks ? undefined : interactiveStyles}
+          />
         ),
       })
     } else if (link && bsky.matches(app.bsky.richtext.facet.link, link)) {

@@ -145,6 +145,8 @@ import {
   IS_WEB_SAFARI,
 } from '#/env'
 import {type Gif} from '#/features/gifPicker/types'
+import {ComposerMediaTime} from '#/features/mediaTime/components/ComposerMediaTime'
+import {useComposerMediaTime} from '#/features/mediaTime/composer'
 import {app, chat} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {
@@ -265,6 +267,7 @@ export const ComposePost = ({
   openGallery,
   logContext,
   editPost: initEditPost,
+  mediaTime: initMediaTime,
   cancelRef,
 }: Props & {
   cancelRef?: React.RefObject<CancelRef | null>
@@ -302,6 +305,10 @@ export const ComposePost = ({
   const [isPublishing, setIsPublishing] = useState(false)
   const [publishingStage, setPublishingStage] = useState('')
   const [error, setError] = useState('')
+  // Eurosky: optional link of the reply to a second of the replied-to video.
+  const mediaTime = useComposerMediaTime(
+    replyTo && !initEditPost ? initMediaTime : undefined,
+  )
 
   /**
    * Track when a draft was created so we can measure draft age in metrics.
@@ -987,9 +994,11 @@ export const ComposePost = ({
     !hasUnavailableChatInvite &&
     thread.posts.some(post => !isEmptyPost(post)) &&
     thread.posts.every(
-      post =>
+      (post, index) =>
         isEmptyPost(post) ||
-        (post.shortenedGraphemeLength <= MAX_GRAPHEME_LENGTH &&
+        (post.shortenedGraphemeLength +
+          (index === 0 ? mediaTime.reservedGraphemes : 0) <=
+          MAX_GRAPHEME_LENGTH &&
           !(
             post.embed.media?.type === 'video' &&
             post.embed.media.video.status === 'error'
@@ -1099,6 +1108,10 @@ export const ComposePost = ({
           appviewClient: client,
           chatClient,
           pdsClient,
+          mediaTime:
+            replyTo && mediaTime.value !== undefined
+              ? {videoPostUri: replyTo.uri, seconds: mediaTime.value}
+              : undefined,
         })
       ).uris[0]
 
@@ -1318,6 +1331,7 @@ export const ComposePost = ({
     initEditPost,
     thread,
     linkQueries,
+    mediaTime.value,
   ])
 
   const handleConfirmSkipEmpty = () => {
@@ -1441,6 +1455,11 @@ export const ComposePost = ({
       )}
       <ComposerFooter
         post={activePost}
+        reservedGraphemes={
+          activePost.id === thread.posts[0]?.id
+            ? mediaTime.reservedGraphemes
+            : 0
+        }
         dispatch={dispatch}
         isEditMode={isEditMode}
         showAddButton={
@@ -1529,6 +1548,7 @@ export const ComposePost = ({
             onContentSizeChange={onScrollViewContentSizeChange}
             onLayout={onScrollViewLayout}>
             {replyTo ? <ComposerReplyTo replyTo={replyTo} /> : undefined}
+            <ComposerMediaTime state={mediaTime} />
             {thread.posts.map((post, index) => (
               <Fragment key={post.id + (composerState.draftId ?? '')}>
                 <ComposerPost
@@ -2178,6 +2198,7 @@ function ComposerPills({
 
 function ComposerFooter({
   post,
+  reservedGraphemes = 0,
   dispatch,
   isEditMode,
   showAddButton,
@@ -2190,6 +2211,11 @@ function ComposerFooter({
   textInputRef,
 }: {
   post: PostDraft
+  /**
+   * Characters the app adds to this post on publish (Eurosky: the time link
+   * of a reply linked to a second of a video).
+   */
+  reservedGraphemes?: number
   dispatch: (action: PostAction) => void
   isEditMode: boolean
   showAddButton: boolean
@@ -2373,7 +2399,7 @@ function ComposerFooter({
           />
         )}
         <CharProgress
-          count={post.shortenedGraphemeLength}
+          count={post.shortenedGraphemeLength + reservedGraphemes}
           style={{width: 65}}
         />
       </View>

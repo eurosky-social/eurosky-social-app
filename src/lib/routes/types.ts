@@ -72,7 +72,15 @@ export type CommonNavigatorParams = {
   ProfileKnownFollowers: {name: string}
   ProfileSearch: {name: string} & SearchParams
   ProfileList: {name: string; rkey: string}
-  PostThread: {name: string; rkey: string; view?: 'reader'}
+  PostThread: {
+    name: string
+    rkey: string
+    view?: 'reader'
+    /** Eurosky: second to play the post's video from (`?t=` on the web). */
+    t?: string
+  }
+  /** Eurosky: full-screen player for a post's video, from second `t`. */
+  PostVideo: {name: string; rkey: string; t?: string}
   PostLikedBy: {name: string; rkey: string}
   PostRepostedBy: {name: string; rkey: string}
   PostQuotes: {name: string; rkey: string}

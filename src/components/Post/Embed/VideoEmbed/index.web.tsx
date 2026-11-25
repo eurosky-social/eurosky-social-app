@@ -26,6 +26,9 @@ import {
 } from '#/components/Post/Embed/VideoEmbed/VideoEmbedInner/VideoEmbedInnerWeb'
 import {useAnalytics} from '#/analytics'
 import {IS_WEB_FIREFOX} from '#/env'
+import {MEDIA_TIME_ENABLED} from '#/features/mediaTime/config'
+import {reportPlaybackPosition} from '#/features/mediaTime/playback'
+import {useMediaTimeWebCard} from '#/features/mediaTime/webPlayer'
 import {type app} from '#/lexicons'
 import {useActiveVideoWeb} from './ActiveVideoWebContext'
 import * as VideoFallback from './VideoEmbedInner/VideoFallback'
@@ -65,6 +68,11 @@ export function VideoEmbed({
   const isGif = embed.presentation === 'gif'
   // GIFs don't participate in the "one video at a time" system
   const active = isGif || activeFromContext
+  // Eurosky: a comment's time link can make this video jump to a second.
+  const mediaTimeSeekBridge = useMediaTimeWebCard({
+    postUri: isGif ? undefined : post?.uri,
+    containerRef: ref,
+  })
   const [durationTracker] = useState(() => {
     const tracker = createPlaybackDurationTracker({
       enabled: !isGif,
@@ -246,7 +254,12 @@ export function VideoEmbed({
             }}
             onPlaybackProgress={progressSeconds => {
               durationTracker.observeProgress(progressSeconds)
+              // Eurosky: lets a reply be linked to the second being watched.
+              if (MEDIA_TIME_ENABLED && post && !isGif) {
+                reportPlaybackPosition(post.uri, progressSeconds)
+              }
             }}
+            mediaTimeSeekBridge={mediaTimeSeekBridge}
             onPlaybackStateChange={state => {
               durationTracker.setBuffering(state === 'buffering')
               durationTracker.setPlaying(state === 'playing')

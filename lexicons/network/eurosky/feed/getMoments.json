@@ -1,0 +1,75 @@
+{
+  "lexicon": 1,
+  "id": "network.eurosky.feed.getMoments",
+  "description": "Moments of a video post: its direct replies that carry a 'network.eurosky.mediaTime' field (the second of the video a reply is about), grouped by that second. Every reply adds a bump about 10 seconds wide to a curve along the video, and the moments are the hills of that curve: two neighbouring hills are two moments where the curve between them dips at least 30% below the lower top. Replies that are taken down, by taken-down accounts or against the thread's reply rules are left out.",
+  "defs": {
+    "main": {
+      "type": "query",
+      "parameters": {
+        "type": "params",
+        "required": ["uri"],
+        "properties": {
+          "uri": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "The video post."
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["uri", "replyCount", "moments"],
+          "properties": {
+            "uri": { "type": "string", "format": "at-uri" },
+            "replyCount": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Linked replies counted across all moments."
+            },
+            "truncated": {
+              "type": "boolean",
+              "description": "True when the post has more linked replies than the AppView reads in one request (10,000); the moments then cover only part of them."
+            },
+            "moments": {
+              "type": "array",
+              "items": { "type": "ref", "ref": "#moment" }
+            }
+          }
+        }
+      }
+    },
+    "moment": {
+      "type": "object",
+      "required": ["startSeconds", "endSeconds", "replyCount", "replies"],
+      "properties": {
+        "startSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Where to start playing: where the moment's hill rises above half its height, at most 5 seconds before its first reply. Can be after a stray first reply."
+        },
+        "endSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The second of the moment's latest reply."
+        },
+        "replyCount": { "type": "integer", "minimum": 1 },
+        "replies": {
+          "type": "array",
+          "maxLength": 100,
+          "description": "Up to 100 of the moment's replies, by second.",
+          "items": { "type": "ref", "ref": "#reply" }
+        }
+      }
+    },
+    "reply": {
+      "type": "object",
+      "required": ["uri", "seconds"],
+      "properties": {
+        "uri": { "type": "string", "format": "at-uri" },
+        "seconds": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

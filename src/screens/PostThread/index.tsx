@@ -75,6 +75,7 @@ import {ListFooter} from '#/components/Lists'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {IS_NATIVE} from '#/env'
+import {ThreadMoments} from '#/features/mediaTime/components/ThreadMoments'
 
 const PARENT_CHUNK_SIZE = IS_NATIVE ? 5 : 20
 const CHILDREN_CHUNK_SIZE = 50
@@ -614,6 +615,11 @@ export function PostThread({
                 threadgateRecord={thread.data.threadgate?.record ?? undefined}
                 onPostSuccess={optimisticOnPostReply}
                 postSource={anchorPostSource}
+              />
+              {/* Eurosky: moments of the video its replies are linked to */}
+              <ThreadMoments
+                items={thread.data.items}
+                videoPost={item.value.post}
               />
             </View>
           )

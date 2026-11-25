@@ -1,0 +1,18 @@
+{
+  "lexicon": 1,
+  "id": "network.eurosky.mediaTime",
+  "defs": {
+    "main": {
+      "type": "object",
+      "description": "A moment in the video or audio of the post that a post replies to. Written as an extra field on app.bsky.feed.post records under the key 'network.eurosky.mediaTime'. Replies to a post that carries this field belong to the same moment and do not repeat it.",
+      "required": ["seconds"],
+      "properties": {
+        "seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Offset from the start of the media, in whole seconds."
+        }
+      }
+    }
+  }
+}

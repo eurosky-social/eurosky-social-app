@@ -54,6 +54,7 @@ import {RichText} from '#/components/RichText'
 import {SubtleHover} from '#/components/SubtleHover'
 import {Features, useAnalytics} from '#/analytics'
 import {useActorStatus} from '#/features/liveNow'
+import {FeedMoments} from '#/features/mediaTime/components/FeedMoments'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {PostFeedReason} from './PostFeedReason'
@@ -453,6 +454,8 @@ let FeedItemInner = ({
               additionalPostAlerts={additionalPostAlerts}
               feedDescriptor={feedDescriptor}
             />
+            {/* Eurosky: most talked-about moments of a video post */}
+            <FeedMoments post={post} moderation={moderation} />
             <PostControls
               post={post}
               record={record}

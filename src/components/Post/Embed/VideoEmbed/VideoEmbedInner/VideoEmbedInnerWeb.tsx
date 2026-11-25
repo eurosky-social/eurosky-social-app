@@ -16,6 +16,7 @@ import {atoms as a} from '#/alf'
 import {AltBadgeWithDialog} from '#/components/AltBadgeWithDialog'
 import {useFullscreen} from '#/components/hooks/useFullscreen'
 import {useReportDialogMetadataContext} from '#/components/moderation/ReportDialog/ReportDialogMetadataContext'
+import {useMediaTimeWebSeek} from '#/features/mediaTime/webPlayer'
 import * as BandwidthEstimate from './bandwidth-estimate'
 import {loadHls} from './loadHls'
 import {
@@ -42,6 +43,7 @@ export function VideoEmbedInnerWeb({
   onPlaybackProgress,
   onPlaybackStateChange,
   onPlaybackEnd,
+  mediaTimeSeekBridge,
 }: VideoEmbedInnerWebProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -74,6 +76,15 @@ export function VideoEmbedInnerWeb({
       videoRef.current.currentTime = lastKnownTime.current
     }
   }, [lastKnownTime])
+
+  // Eurosky: jumps requested by a comment's time link (media time comments).
+  useMediaTimeWebSeek({
+    bridge: isGif ? undefined : mediaTimeSeekBridge,
+    videoRef,
+    lastKnownTime,
+    setActive,
+    setFocused,
+  })
 
   return (
     <View

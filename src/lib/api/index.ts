@@ -31,6 +31,14 @@ import {
   type PostDraft,
   type ThreadDraft,
 } from '#/view/com/composer/state/composer'
+import {rememberPostedComment} from '#/features/mediaTime/postedComments'
+import {
+  appendMediaTimeLink,
+  createMediaTimeValue,
+  isValidMediaTimeSeconds,
+  MEDIA_TIME_FIELD,
+  type PostRecordWithMediaTime,
+} from '#/features/mediaTime/record'
 import {app, chat, com} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {createGIFDescription} from '../gif-alt-text'
@@ -61,6 +69,12 @@ interface PostOpts {
    * PDS, never the appview.
    */
   pdsClient: Client
+  /**
+   * Eurosky: links the first post (a reply to a video post) to a second of
+   * that video. Adds the `network.eurosky.mediaTime` field and a short time
+   * link at the end of the text, so other apps show the moment too.
+   */
+  mediaTime?: {videoPostUri: string; seconds: number}
 }
 
 export async function post(queryClient: QueryClient, opts: PostOpts) {
@@ -121,17 +135,29 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
     const rt = await rtPromise
     const embed = await embedPromise
     const reply = await replyPromise
-    const record: app.bsky.feed.post.Main = {
+    const mediaTime =
+      i === 0 &&
+      opts.mediaTime &&
+      isValidMediaTimeSeconds(opts.mediaTime.seconds)
+        ? opts.mediaTime
+        : undefined
+    const {text, facets} = mediaTime
+      ? appendMediaTimeLink(rt, mediaTime)
+      : {text: rt.text, facets: rt.facets}
+    const record: PostRecordWithMediaTime = {
       // IMPORTANT: $type has to exist, CID is calculated with the `$type` field
       // present and will produce the wrong CID if you omit it.
       $type: 'app.bsky.feed.post',
       createdAt: toDatetimeString(now),
-      text: rt.text,
-      facets: rt.facets,
+      text,
+      facets,
       reply,
       embed,
       langs,
       labels,
+      ...(mediaTime
+        ? {[MEDIA_TIME_FIELD]: createMediaTimeValue(mediaTime.seconds)}
+        : {}),
     }
     writes.push({
       $type: 'com.atproto.repo.applyWrites#create',
@@ -199,6 +225,20 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
     } else {
       throw e
     }
+  }
+
+  // Eurosky: show the new comment in its video's moments straight away; the
+  // moments service can take up to a minute to count it.
+  if (
+    opts.mediaTime &&
+    isValidMediaTimeSeconds(opts.mediaTime.seconds) &&
+    uris[0]
+  ) {
+    rememberPostedComment(queryClient, {
+      uri: uris[0],
+      videoPostUri: opts.mediaTime.videoPostUri,
+      seconds: opts.mediaTime.seconds,
+    })
   }
 
   return {uris}
