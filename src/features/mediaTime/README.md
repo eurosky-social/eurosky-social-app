@@ -50,9 +50,13 @@ A thread opened with `?t=` (for example from another app) does the same
 
 ## Moments
 
-A video's linked direct replies, sorted by second: a reply more than 30
-seconds after the previous one starts a new moment (`moments.ts`; the gap is
-a first guess).
+A video's linked direct replies, grouped by where they pile up
+(`moments.ts`). Every comment adds a bump about 10 seconds wide to a curve
+along the video, and the moments are the hills of that curve: two
+neighbouring hills are two moments where the curve between them dips at
+least 30% below the lower top. A moment plays from where its hill rises
+above half its height, at most 5 seconds before its first comment. The
+settings are first guesses, to be tuned with real comments.
 
 `useVideoMoments.ts` asks an AppView that answers
 `network.eurosky.feed.getMoments` (schema:
@@ -61,7 +65,8 @@ Eurosky's AppView fork). It is Eurosky's by default;
 `EXPO_PUBLIC_MEDIA_TIME_MOMENTS_URL` changes it. It counts all of a video's
 linked replies, whichever AppView the user reads through, and is asked
 without signing in. Linked replies the thread loaded that it doesn't know yet
-are added to its moments.
+are added to its moments: each joins the nearest moment within 20 seconds, or
+starts one of its own. The app never moves the AppView's borders.
 
 Until it answers, or when it fails, the app groups only the replies its
 thread loaded. Eurosky's AppView returns at most 200 replies for a thread;

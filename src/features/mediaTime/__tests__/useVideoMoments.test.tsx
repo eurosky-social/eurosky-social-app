@@ -129,9 +129,10 @@ describe('useVideoMoments', () => {
       {wrapper},
     )
     await waitFor(() => expect(mockCall).toHaveBeenCalled())
+    // each moment starts 5 seconds before its only comment
     expect(result.current.map(m => [m.startSeconds, m.count])).toEqual([
-      [41, 1],
-      [205, 1],
+      [36, 1],
+      [200, 1],
     ])
   })
 
