@@ -48,11 +48,15 @@ edge script, so mu no longer depends on `load.webtil.es`.
   `@dasl/tile-lexicon` does it (a CIDv1 of DRISL with a SHA-256, in
   lowercase base32, written the one way it can be: not a pattern), and the
   runtime there serves the one tile whose manifest that CID names, and no
-  other. Such an origin is kept, for the tile to find what it stored, so its
-  frame is a plain one, and a plain frame has the cookies of its origin's
-  site: under `t.mu.social`, which shares a site with mu.social, any tile
-  would read and set mu.social's cookies, and any link to the host page can
-  ask for such an origin (`&origin=cid`). So the script takes no tile's CID
+  other. The name is the same at every load. Since `@dasl/tile-loader`
+  5.0.0 the loader wipes such an origin before the tile starts there and
+  when it is closed, as an origin made for one load, and runs it in a
+  credentialless frame unless the host asks for a plain one; but only
+  Chromium has credentialless frames, and elsewhere, or in a plain frame, a
+  frame there has the cookies of its origin's site: under `t.mu.social`,
+  which shares a site with mu.social, a tile would read and set mu.social's
+  cookies, and any link to the host page can ask for such an origin
+  (`&origin=cid`). So the script takes no tile's CID
   under a base host on the site of mu's own pages (mu.social, mycopunk.it,
   and those of the hosts in `src/config/brand.json`), whatever a request
   says; under a base host on a domain of its own, it takes them with no
@@ -274,17 +278,17 @@ finds it.
 - **The app asks for no CID origin.** mu web's mothership is made without
   `cidOrigins`, and the native player's address for the host page has no
   `&origin=cid`, so every tile still runs on a fresh origin for each load,
-  in a credentialless frame on the web. What asking would gain: a tile on
-  the same origin at every load, which keeps what it stores (notes, a
-  game's progress) from one load to the next, with no wipe when it is
-  closed. What it would cost: a plain frame, which in Chromium has the
-  cookies of the tiles' domain on every site that shows tiles (a channel
-  between tiles); any frame of a page that shows the tile, of whatever
-  site, can run it there with what it kept, feed it data and take its
-  messages; the host name tells DNS and the network which tile is shown;
-  and what it stored stays on the device until the browser clears it. Only
-  worth weighing once tile origins are on a domain of their own; it is a
-  change in `src/features/tiles`, not here.
+  in a credentialless frame on the web. What asking would gain, since
+  `@dasl/tile-loader` 5.0.0: little. The origin is the same at every load,
+  but the loader wipes it before the tile starts there and when it is
+  closed, so a tile keeps nothing from one load to the next, as on a fresh
+  origin. What it would cost: the host name tells DNS and the network which
+  tile is shown; any frame of a page that shows the tile, of whatever site,
+  can run it there, feed it data and take its messages; and where its frame
+  is not credentialless (outside Chromium, or a host that asks for a plain
+  one), the cookies of the tiles' domain on every site that shows tiles (a
+  channel between tiles). Only worth weighing once tile origins are on a
+  domain of their own; it is a change in `src/features/tiles`, not here.
 - **Native.** The iOS and Android apps run tiles in a WebView on the hosted
   page, `https://t.mu.social/.well-known/web-tiles/host/`
   (`EXPO_PUBLIC_TILES_HOST_URL`; this and the
