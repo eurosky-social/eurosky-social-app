@@ -20,6 +20,7 @@ export function MomentChips({
   onPressAll,
   allLabel,
   title,
+  strip,
 }: {
   moments: Moment[]
   onPressMoment: (moment: Moment) => void
@@ -28,6 +29,8 @@ export function MomentChips({
   allLabel?: string
   /** Defaults to "Moments in this video". */
   title?: string
+  /** Shown between the title and the moments, e.g. a heat strip. */
+  strip?: React.ReactNode
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
@@ -60,6 +63,7 @@ export function MomentChips({
           </Pressable>
         ) : null}
       </View>
+      {strip}
       {moments.length > 0 ? (
         <ScrollView
           horizontal

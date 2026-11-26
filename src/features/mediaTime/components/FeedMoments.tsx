@@ -9,10 +9,14 @@ import {canShowFeedMoments} from '../feed'
 import {topMoments, useMomentSummary} from '../momentSummaries'
 import {openMoment} from '../openMoment'
 import {openWatching} from '../openWatching'
+import {getOwnVideoEmbed} from '../record'
+import {useVideoDuration} from '../videoDuration'
 import {MomentChips} from './MomentChips'
+import {MomentHeatStrip} from './MomentHeatStrip'
 
 /**
- * Under a video post in a feed: its most talked-about moments. Renders
+ * Under a video post in a feed: where people commented along it and its
+ * most talked-about moments. Renders
  * nothing for posts without a video, without replies, without a group of
  * comments big enough to be a moment, or whose content is hidden behind a
  * warning.
@@ -32,6 +36,11 @@ export function FeedMoments({
   })
 
   const top = moments ? topMoments(moments) : []
+  const duration = useVideoDuration({
+    postUri: post.uri,
+    playlist: getOwnVideoEmbed(post.embed)?.playlist,
+    enabled: eligible && top.length > 0,
+  })
 
   if (!eligible || top.length === 0) return null
 
@@ -40,6 +49,15 @@ export function FeedMoments({
       <MomentChips
         title={l`Most talked-about moments`}
         moments={top}
+        strip={
+          moments ? (
+            <MomentHeatStrip
+              moments={moments}
+              highlighted={top}
+              duration={duration}
+            />
+          ) : null
+        }
         onPressMoment={moment => openMoment(post.uri, moment.startSeconds)}
         onPressAll={() => openWatching(post.uri)}
       />

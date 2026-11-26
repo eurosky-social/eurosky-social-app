@@ -25,11 +25,9 @@ import {
   parseMediaTimeParam,
 } from '#/features/mediaTime/record'
 import {useJumpToMediaTime} from '#/features/mediaTime/useJumpToMediaTime'
-import {
-  usePlaybackDuration,
-  usePlaybackSecond,
-} from '#/features/mediaTime/usePlaybackSecond'
+import {usePlaybackSecond} from '#/features/mediaTime/usePlaybackSecond'
 import {useVideoMomentsWithStatus} from '#/features/mediaTime/useVideoMoments'
+import {useVideoDuration} from '#/features/mediaTime/videoDuration'
 import {playingMoment} from '#/features/mediaTime/watching'
 import {type app} from '#/lexicons'
 import {
@@ -125,7 +123,10 @@ function Player({
   const jump = useJumpToMediaTime()
   const playerRef = useRef<VideoPlayer | null>(null)
   const playing = usePlaybackSecond(post.uri)
-  const duration = usePlaybackDuration(post.uri)
+  const duration = useVideoDuration({
+    postUri: post.uri,
+    playlist: video.playlist,
+  })
   const {moments, loading} = useVideoMomentsWithStatus({
     videoPostUri: post.uri,
     threadItems,

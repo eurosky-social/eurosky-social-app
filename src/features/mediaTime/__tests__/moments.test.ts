@@ -6,6 +6,7 @@ import {
   collectTimedReplies,
   commentSecond,
   groupIntoMoments,
+  highlightedBars,
   mergeMoments,
   type Moment,
   momentAt,
@@ -304,5 +305,34 @@ describe('momentBars', () => {
 
   it('is all zero while the length is unknown', () => {
     expect(momentBars([at(0, 5, 2)], 0, 4)).toEqual([0, 0, 0, 0])
+  })
+})
+
+describe('highlightedBars', () => {
+  const span = (start: number, end: number) => ({
+    startSeconds: start,
+    endSeconds: end,
+    count: 3,
+    comments: [],
+  })
+
+  it('marks the bars a moment covers', () => {
+    // 10 bars of 10 seconds each
+    expect(highlightedBars([span(25, 41)], 100, 10)).toEqual([
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+    ])
+  })
+
+  it('marks nothing while the length is unknown', () => {
+    expect(highlightedBars([span(25, 41)], 0, 3)).toEqual([false, false, false])
   })
 })

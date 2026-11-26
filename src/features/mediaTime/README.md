@@ -112,6 +112,16 @@ AppView; requests made within 50 ms share one call of up to 25 posts
 failed request shows nothing. Tapping a moment opens its page; "All
 moments" opens the video with its moments.
 
+Above the moments, a strip shows where people commented along the video
+(`components/MomentHeatStrip.tsx`, after the design canvas's feed card): 48
+bars, as high as their share of comments, with the three moments shown
+below in colour. Bluesky's video views carry no length, so it is read from
+the video's HLS playlist (`videoDuration.ts`): the main playlist names one
+playlist per quality, and the first lists the segments with their lengths.
+That is two small requests per video post with moments, cached for an hour
+in the app and for 30 days by the video service. The strip shows once the
+length is known.
+
 ## Watching, with moments
 
 The full-screen video screen (route `PostVideo`,
@@ -182,8 +192,9 @@ Under the video, a strip shows where people commented
 its share of comments (`momentBars`), the open moment highlighted, the part
 already played tinted, and where the video is. Tapping it plays from there;
 when the tap is on or near another moment, the page switches to that moment.
-It needs the video's length, which the players report with their position,
-so it shows once the video has loaded.
+It needs the video's length: the players report it with their position, and
+until then it is read from the video's playlist (`useVideoDuration`), so the
+strip shows before the video loads.
 
 On iOS and Android the page is dark above, with the video's title and the
 player (`screens/PostMoment/index.tsx`, sharing the player and header bar in

@@ -24,11 +24,9 @@ import {
 } from '#/features/mediaTime/record'
 import {useJumpToMediaTime} from '#/features/mediaTime/useJumpToMediaTime'
 import {useMediaTimeParam} from '#/features/mediaTime/useMediaTimeParam'
-import {
-  usePlaybackDuration,
-  usePlaybackSecond,
-} from '#/features/mediaTime/usePlaybackSecond'
+import {usePlaybackSecond} from '#/features/mediaTime/usePlaybackSecond'
 import {useVideoMomentsWithStatus} from '#/features/mediaTime/useVideoMoments'
+import {useVideoDuration} from '#/features/mediaTime/videoDuration'
 import {playingMoment} from '#/features/mediaTime/watching'
 import {useWideVideoLayout, WideVideoMoments} from './WideVideoMoments'
 
@@ -78,7 +76,10 @@ function PostVideoPage({
   useMediaTimeParam({postUri, name, rkey, t: post ? tParam : undefined})
   const jump = useJumpToMediaTime()
   const playing = usePlaybackSecond(postUri)
-  const duration = usePlaybackDuration(postUri)
+  const duration = useVideoDuration({
+    postUri,
+    playlist: getOwnVideoEmbed(embed)?.playlist,
+  })
   const {moments, loading} = useVideoMomentsWithStatus({
     videoPostUri: postUri,
     threadItems: thread.data.items,
