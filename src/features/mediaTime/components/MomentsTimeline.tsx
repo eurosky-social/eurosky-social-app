@@ -6,32 +6,47 @@ import {
   View,
   type ViewStyle,
 } from 'react-native'
+import {moderatePost} from '@bsky/sdk/moderation'
 import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 
+import {sanitizeDisplayName} from '#/lib/strings/display-names'
+import {useModerationOpts} from '#/state/preferences/moderation-opts'
+import {useMergedThreadgateHiddenReplies} from '#/state/threadgate-hidden-replies'
 import {List, type ListMethods} from '#/view/com/util/List'
+import {TimeElapsed} from '#/view/com/util/TimeElapsed'
+import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
 import * as Toggle from '#/components/forms/Toggle'
 import {Text} from '#/components/Typography'
 import {IS_WEB} from '#/env'
 import {type app} from '#/lexicons'
-import {type Moment} from '../moments'
+import {commentText} from '../momentPosts'
+import {isMoment, type Moment} from '../moments'
 import {formatMediaTime} from '../record'
+import {useMomentPosts} from '../useMomentPosts'
 import {useMomentTitle} from '../useMomentTitle'
 import {
   busiestMoment,
   foldedMomentCount,
   type MomentStatus,
-  momentStatuses,
+  type TimelineRow,
+  timelineRows,
 } from '../watching'
 
-type Row = {moment: Moment; status: MomentStatus}
+type PostView = app.bsky.feed.defs.PostView
+type CommentRow = Extract<TimelineRow, {kind: 'comment'}>
 
 /**
  * A video's moments as a timeline that follows playback (design canvas
  * "Watching, with moments"): the moment playing is highlighted, older past
  * moments fold into one row, and moments ahead keep their comments hidden
  * until playback gets there, unless revealed. Tapping a moment opens it.
+ *
+ * Groups too small to be moments (`isMoment`) show as their comments, one
+ * row each (design canvas "Few comments yet"); tapping one plays the video
+ * from its second. Without any moment, the list is "Comments along the
+ * video".
  *
  * On phones, and in the desktop web panel, the list scrolls by itself, and
  * "Follow the video" keeps the moment playing in view (`canFollow`). On a
@@ -45,7 +60,9 @@ export function MomentsTimeline({
   header,
   canFollow = !IS_WEB,
   onOpenMoment,
+  onPlaySecond,
 }: {
+  /** All of the video's groups of comments, moments or not. */
   moments: Moment[]
   loading: boolean
   /** The second being watched, once the player has reported one. */
@@ -59,26 +76,61 @@ export function MomentsTimeline({
    */
   canFollow?: boolean
   onOpenMoment: (moment: Moment) => void
+  /** Plays the video from a single comment's second. */
+  onPlaySecond: (seconds: number) => void
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
   const listRef = useRef<ListMethods>(null)
   const [follow, setFollow] = useState(true)
   const [showEarlier, setShowEarlier] = useState(false)
-  const [revealed, setRevealed] = useState<ReadonlySet<number>>(new Set())
+  const [revealed, setRevealed] = useState<ReadonlySet<string>>(new Set())
 
-  const statuses = useMemo(
-    () => momentStatuses(moments, playing),
+  const allRows = useMemo(
+    () => timelineRows(moments, playing),
     [moments, playing],
   )
-  const folded = showEarlier ? 0 : foldedMomentCount(statuses)
-  const rows: Row[] = useMemo(
-    () =>
-      moments.map((moment, i) => ({moment, status: statuses[i]})).slice(folded),
-    [moments, statuses, folded],
+  const realMoments = useMemo(() => moments.filter(isMoment), [moments])
+  const busiest = busiestMoment(realMoments)
+
+  // Single comments show their post: load those on screen and not hidden.
+  const shownUris = allRows
+    .filter(
+      (row): row is CommentRow =>
+        row.kind === 'comment' &&
+        (row.status !== 'ahead' || revealed.has(row.key)),
+    )
+    .map(row => row.comment.uri)
+  const urisKey = shownUris.join(' ')
+  const commentUris = useMemo(
+    () => (urisKey ? urisKey.split(' ') : []),
+    [urisKey],
   )
-  const busiest = busiestMoment(moments)
-  const nowIndex = rows.findIndex(row => row.status === 'now')
+  const posts = useMomentPosts(commentUris)
+  const moderationOpts = useModerationOpts()
+  const hiddenUris = useMergedThreadgateHiddenReplies({threadgateRecord})
+  const postsByUri = useMemo(
+    () =>
+      new Map<string, PostView>(
+        posts.data?.map(post => [post.uri, post]) ?? [],
+      ),
+    [posts.data],
+  )
+  // Leave out comments the video's author hid or the viewer filters out,
+  // as on a moment's page.
+  const rows = allRows.filter(row => {
+    if (row.kind === 'moment') return true
+    const post = postsByUri.get(row.comment.uri)
+    if (!post || !moderationOpts) return true
+    return (
+      !hiddenUris.has(post.uri) &&
+      !moderatePost(post, moderationOpts).ui('contentList').filter
+    )
+  })
+
+  const foldCount = foldedMomentCount(rows.map(row => row.status))
+  const shown = rows.slice(showEarlier ? 0 : foldCount)
+  const nowIndex = shown.findIndex(row => row.status === 'now')
 
   useEffect(() => {
     if (!canFollow || !follow || nowIndex < 0) return
@@ -89,9 +141,28 @@ export function MomentsTimeline({
     })
   }, [canFollow, follow, nowIndex])
 
-  const earlierTimes = moments
-    .slice(0, foldedMomentCount(statuses))
-    .map(m => formatMediaTime(m.startSeconds))
+  const foldedRows = rows.slice(0, foldCount)
+  const foldedMoments = foldedRows.filter(row => row.kind === 'moment').length
+  const foldedComments = foldedRows.length - foldedMoments
+  const foldedLabel = [
+    foldedMoments > 0
+      ? plural(foldedMoments, {
+          one: '# earlier moment',
+          other: '# earlier moments',
+        })
+      : undefined,
+    foldedComments > 0
+      ? plural(foldedComments, {
+          one: '# earlier comment',
+          other: '# earlier comments',
+        })
+      : undefined,
+    ...foldedRows.map(row => formatMediaTime(row.seconds)),
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  const hideEarlierLabel =
+    foldedComments > 0 ? l`Hide earlier comments` : l`Hide earlier moments`
   const listHeader = (
     <>
       {header}
@@ -105,12 +176,16 @@ export function MomentsTimeline({
           header ? [a.border_t, t.atoms.border_contrast_low] : null,
         ]}>
         <Text style={[a.text_md, a.font_bold]}>
-          <Trans>Moments</Trans>
-          {moments.length > 0 ? (
-            <Text style={[a.text_md, t.atoms.text_contrast_medium]}>
-              {` · ${moments.length}`}
-            </Text>
-          ) : null}
+          {realMoments.length > 0 ? (
+            <>
+              <Trans>Moments</Trans>
+              <Text style={[a.text_md, t.atoms.text_contrast_medium]}>
+                {` · ${realMoments.length}`}
+              </Text>
+            </>
+          ) : (
+            <Trans>Comments along the video</Trans>
+          )}
         </Text>
         {!canFollow ? null : (
           <Toggle.Item
@@ -131,29 +206,29 @@ export function MomentsTimeline({
           </Toggle.Item>
         )}
       </View>
-      {earlierTimes.length > 0 || showEarlier ? (
+      {realMoments.length === 0 && rows.length > 0 ? (
+        <View style={[a.px_lg, a.pb_sm]}>
+          <NoMomentsYet />
+        </View>
+      ) : null}
+      {foldCount > 0 ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={
-            showEarlier ? l`Hide earlier moments` : l`Show earlier moments`
-          }
+          accessibilityLabel={showEarlier ? hideEarlierLabel : foldedLabel}
           accessibilityHint=""
           onPress={() => setShowEarlier(!showEarlier)}
           style={[a.flex_row, a.align_stretch]}>
           <Rail />
           <Text
             style={[
+              a.flex_1,
               a.py_sm,
+              a.pr_lg,
               a.text_sm,
               a.font_semi_bold,
               t.atoms.text_contrast_medium,
             ]}>
-            {showEarlier
-              ? l`Hide earlier moments`
-              : `${plural(earlierTimes.length, {
-                  one: '# earlier moment',
-                  other: '# earlier moments',
-                })} · ${earlierTimes.join(' · ')}`}
+            {showEarlier ? hideEarlierLabel : foldedLabel}
           </Text>
         </Pressable>
       ) : null}
@@ -163,21 +238,29 @@ export function MomentsTimeline({
   return (
     <List
       ref={listRef}
-      data={rows}
-      keyExtractor={(row: Row) => `${row.moment.startSeconds}`}
-      renderItem={({item}: {item: Row}) => (
-        <TimelineMoment
-          moment={item.moment}
-          status={item.status}
-          busiest={item.moment === busiest}
-          revealed={revealed.has(item.moment.startSeconds)}
-          onReveal={() =>
-            setRevealed(new Set([...revealed, item.moment.startSeconds]))
-          }
-          onOpen={() => onOpenMoment(item.moment)}
-          threadgateRecord={threadgateRecord}
-        />
-      )}
+      data={shown}
+      keyExtractor={(row: TimelineRow) => row.key}
+      renderItem={({item}: {item: TimelineRow}) =>
+        item.kind === 'moment' ? (
+          <TimelineMoment
+            moment={item.moment}
+            status={item.status}
+            busiest={item.moment === busiest}
+            revealed={revealed.has(item.key)}
+            onReveal={() => setRevealed(new Set([...revealed, item.key]))}
+            onOpen={() => onOpenMoment(item.moment)}
+            threadgateRecord={threadgateRecord}
+          />
+        ) : (
+          <TimelineComment
+            row={item}
+            post={postsByUri.get(item.comment.uri)}
+            revealed={revealed.has(item.key)}
+            onReveal={() => setRevealed(new Set([...revealed, item.key]))}
+            onPlay={() => onPlaySecond(item.seconds)}
+          />
+        )
+      }
       ListHeaderComponent={listHeader}
       ListEmptyComponent={
         loading ? (
@@ -186,13 +269,7 @@ export function MomentsTimeline({
           </View>
         ) : (
           <View style={[a.px_lg, a.py_lg]}>
-            <Text
-              style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
-              <Trans>
-                No moments yet. A moment forms where several people comment
-                close to the same second.
-              </Trans>
-            </Text>
+            <NoMomentsYet />
           </View>
         )
       }
@@ -205,6 +282,18 @@ export function MomentsTimeline({
       }}
       desktopFixedHeight={false}
     />
+  )
+}
+
+function NoMomentsYet() {
+  const t = useTheme()
+  return (
+    <Text style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
+      <Trans>
+        No moments yet. A moment forms where several people comment close to the
+        same second.
+      </Trans>
+    </Text>
   )
 }
 
@@ -392,6 +481,179 @@ function TimelineMoment({
           {content}
         </Pressable>
       )}
+    </View>
+  )
+}
+
+/**
+ * A single comment along the video, from a group too small to be a moment:
+ * its time on the line, who wrote it and what. Ahead of playback it stays
+ * hidden until revealed. Tapping it plays the video from its second.
+ */
+function TimelineComment({
+  row,
+  post,
+  revealed,
+  onReveal,
+  onPlay,
+}: {
+  row: CommentRow
+  /** The comment's post, once loaded. */
+  post: PostView | undefined
+  revealed: boolean
+  onReveal: () => void
+  onPlay: () => void
+}) {
+  const t = useTheme()
+  const {t: l} = useLingui()
+  const moderationOpts = useModerationOpts()
+  const {status, forming} = row
+  const hidden = status === 'ahead' && !revealed
+  const time = formatMediaTime(row.seconds)
+  const cardStyle: StyleProp<ViewStyle> = [
+    a.flex_1,
+    a.rounded_md,
+    a.border,
+    a.gap_xs,
+    {marginVertical: 4, marginRight: 16, padding: 12},
+    status === 'now'
+      ? {
+          backgroundColor: t.palette.primary_50,
+          borderColor: t.palette.primary_500,
+        }
+      : status === 'ahead'
+        ? [t.atoms.border_contrast_low, {borderStyle: 'dashed'}]
+        : [t.atoms.bg_contrast_25, {borderColor: 'transparent'}],
+  ]
+  const rail = (
+    <Rail>
+      <Text
+        style={[
+          a.absolute,
+          a.text_center,
+          a.text_xs,
+          a.font_bold,
+          t.atoms.bg,
+          {
+            top: 16,
+            left: 0,
+            right: 0,
+            fontVariant: ['tabular-nums'],
+            color:
+              status === 'ahead'
+                ? t.palette.contrast_500
+                : t.palette.primary_600,
+          },
+        ]}>
+        {time}
+      </Text>
+    </Rail>
+  )
+
+  if (hidden) {
+    return (
+      <View
+        testID={`timelineComment-${row.seconds}`}
+        style={[a.flex_row, a.align_stretch]}>
+        {rail}
+        <View style={cardStyle}>
+          <View style={[a.flex_row, a.align_center, a.gap_md, a.flex_wrap]}>
+            <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+              <Trans>1 comment here · shown when you get there</Trans>
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={l`Show this comment now`}
+              accessibilityHint=""
+              hitSlop={{top: 10, bottom: 10, left: 8, right: 8}}
+              onPress={onReveal}>
+              <Text
+                style={[
+                  a.text_sm,
+                  a.font_semi_bold,
+                  {color: t.palette.primary_600},
+                ]}>
+                <Trans>Show</Trans>
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    )
+  }
+
+  const moderation =
+    post && moderationOpts ? moderatePost(post, moderationOpts) : undefined
+  const inList = moderation?.ui('contentList')
+  const text = post ? commentText(post) : undefined
+  const name = post
+    ? sanitizeDisplayName(
+        post.author.displayName || post.author.handle,
+        moderation?.ui('displayName'),
+      )
+    : undefined
+  const warned = !!inList && (inList.blur || inList.alert)
+
+  return (
+    <View
+      testID={`timelineComment-${row.seconds}`}
+      style={[a.flex_row, a.align_stretch]}>
+      {rail}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={
+          name ? l`Comment by ${name} at ${time}` : l`Comment at ${time}`
+        }
+        accessibilityHint={l`Plays the video from there`}
+        onPress={onPlay}
+        style={cardStyle}>
+        {forming ? (
+          <Text
+            style={[a.text_xs, a.font_bold, {color: t.palette.primary_600}]}>
+            {l({
+              message: `Forming a moment · ${forming.count} comments around ${formatMediaTime(forming.aroundSeconds)} · one more makes it`,
+              comment:
+                'Above a comment on a video, when it and one other comment are close together; one more would make them a moment, e.g. Forming a moment · 2 comments around 3:00 · one more makes it',
+            })}
+          </Text>
+        ) : null}
+        {post ? (
+          <>
+            <View style={[a.flex_row, a.align_center, a.gap_sm]}>
+              <UserAvatar
+                size={24}
+                avatar={post.author.avatar}
+                moderation={moderation?.ui('avatar')}
+                type={post.author.associated?.labeler ? 'labeler' : 'user'}
+              />
+              <Text
+                emoji
+                style={[a.flex_shrink, a.text_sm, a.font_bold]}
+                numberOfLines={1}>
+                {name}
+              </Text>
+              <TimeElapsed timestamp={post.indexedAt}>
+                {({timeElapsed}) => (
+                  <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+                    {timeElapsed}
+                  </Text>
+                )}
+              </TimeElapsed>
+            </View>
+            {warned ? (
+              <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+                <Trans>Hidden by your moderation settings</Trans>
+              </Text>
+            ) : text ? (
+              <Text emoji style={[a.text_md, a.leading_snug]} numberOfLines={4}>
+                {text}
+              </Text>
+            ) : null}
+          </>
+        ) : (
+          <ActivityIndicator style={[a.self_start]} />
+        )}
+      </Pressable>
     </View>
   )
 }

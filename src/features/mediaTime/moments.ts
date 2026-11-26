@@ -28,6 +28,18 @@ export const MOMENT_JOIN_SECONDS = 2 * MOMENT_BUMP_SECONDS
 
 export type TimedComment = {uri: string; seconds: number}
 
+/**
+ * A group needs this many comments to be shown as a moment. Smaller groups
+ * (the AppView returns them too) are shown as single comments along the
+ * video, as in the design canvas's "Few comments yet".
+ */
+export const MIN_MOMENT_COMMENTS = 3
+
+/** Whether a group of comments is big enough to be shown as a moment. */
+export function isMoment(group: Pick<Moment, 'count'>): boolean {
+  return group.count >= MIN_MOMENT_COMMENTS
+}
+
 export type Moment = {
   /**
    * Where to start playing: just before the comments pile up. Can be after a

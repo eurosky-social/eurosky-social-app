@@ -18,6 +18,7 @@ import {ComposerField} from '#/features/mediaTime/components/ComposerField'
 import {MomentsTimeline} from '#/features/mediaTime/components/MomentsTimeline'
 import {MomentStrip} from '#/features/mediaTime/components/MomentStrip'
 import {VideoTitleBlock} from '#/features/mediaTime/components/VideoTitleBlock'
+import {isMoment} from '#/features/mediaTime/moments'
 import {openMoment} from '#/features/mediaTime/openMoment'
 import {
   getOwnVideoEmbed,
@@ -29,7 +30,7 @@ import {
   usePlaybackSecond,
 } from '#/features/mediaTime/usePlaybackSecond'
 import {useVideoMomentsWithStatus} from '#/features/mediaTime/useVideoMoments'
-import {momentStatuses} from '#/features/mediaTime/watching'
+import {playingMoment} from '#/features/mediaTime/watching'
 import {type app} from '#/lexicons'
 import {
   Unavailable,
@@ -129,7 +130,7 @@ function Player({
     videoPostUri: post.uri,
     threadItems,
   })
-  const now = moments[momentStatuses(moments, playing).indexOf('now')]
+  const now = playingMoment(moments, playing)
   const ratio = video.aspectRatio
     ? video.aspectRatio.width / video.aspectRatio.height
     : 16 / 9
@@ -172,6 +173,7 @@ function Player({
             />
           }
           onOpenMoment={moment => openMoment(post.uri, moment.startSeconds)}
+          onPlaySecond={seconds => jump(post.uri, seconds)}
         />
       </View>
       <View
@@ -186,7 +188,9 @@ function Player({
           videoPost={post}
           videoModeration={item.moderation}
           fallbackSeconds={startSeconds}
-          placeholder={l`Add a comment…`}
+          placeholder={
+            moments.some(isMoment) ? l`Add a comment…` : l`Be one of the first…`
+          }
           onBeforeCompose={() => playerRef.current?.pause()}
         />
       </View>

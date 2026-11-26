@@ -35,7 +35,7 @@ import {ComposerField} from '#/features/mediaTime/components/ComposerField'
 import {MomentRoom} from '#/features/mediaTime/components/MomentRoom'
 import {MomentsTimeline} from '#/features/mediaTime/components/MomentsTimeline'
 import {MomentStrip} from '#/features/mediaTime/components/MomentStrip'
-import {type Moment, momentAt} from '#/features/mediaTime/moments'
+import {isMoment, type Moment, momentAt} from '#/features/mediaTime/moments'
 import {
   getOwnVideoEmbed,
   getVideoTitle,
@@ -49,7 +49,7 @@ import {
   usePlaybackSecond,
 } from '#/features/mediaTime/usePlaybackSecond'
 import {useVideoMomentsWithStatus} from '#/features/mediaTime/useVideoMoments'
-import {momentStatuses} from '#/features/mediaTime/watching'
+import {playingMoment} from '#/features/mediaTime/watching'
 import {
   ExploreColumn,
   ExploreSpreadBorders,
@@ -191,7 +191,7 @@ function Loaded({
   const room =
     roomSeconds !== undefined ? momentAt(moments, roomSeconds) : undefined
   usePauseAtMomentEnd(post.uri, room)
-  const now = moments[momentStatuses(moments, playing).indexOf('now')]
+  const now = playingMoment(moments, playing)
 
   const openRoom = (moment: Moment) => {
     setRoomSeconds(moment.startSeconds)
@@ -291,6 +291,7 @@ function Loaded({
                   threadgateRecord={threadgateRecord}
                   canFollow
                   onOpenMoment={openRoom}
+                  onPlaySecond={seconds => jump(post.uri, seconds)}
                 />
               </View>
               <View
@@ -304,7 +305,11 @@ function Loaded({
                   videoPost={post}
                   videoModeration={item.moderation}
                   fallbackSeconds={startSeconds}
-                  placeholder={l`Add a comment…`}
+                  placeholder={
+                    moments.some(isMoment)
+                      ? l`Add a comment…`
+                      : l`Be one of the first…`
+                  }
                 />
               </View>
             </>

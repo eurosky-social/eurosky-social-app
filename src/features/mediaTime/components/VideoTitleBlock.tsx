@@ -8,7 +8,7 @@ import {TimeElapsed} from '#/view/com/util/TimeElapsed'
 import {atoms as a, useTheme} from '#/alf'
 import {Text} from '#/components/Typography'
 import {type app} from '#/lexicons'
-import {type Moment} from '../moments'
+import {isMoment, type Moment} from '../moments'
 import {getVideoTitle} from '../record'
 
 /**
@@ -32,14 +32,17 @@ export function VideoTitleBlock({
     moderation.ui('displayName'),
   )
   const total = moments.reduce((sum, m) => sum + m.count, 0)
+  const momentCount = moments.filter(isMoment).length
   const counts =
-    moments.length > 0
+    momentCount > 0
       ? l({
-          message: `${plural(total, {one: '# comment', other: '# comments'})} in ${plural(moments.length, {one: '# moment', other: '# moments'})}`,
+          message: `${plural(total, {one: '# comment', other: '# comments'})} in ${plural(momentCount, {one: '# moment', other: '# moments'})}`,
           comment:
             'Under a video: its comments linked to a second, and the moments they form, e.g. 412 comments in 6 moments',
         })
-      : undefined
+      : total > 0
+        ? plural(total, {one: '# comment', other: '# comments'})
+        : undefined
   return (
     <View style={[a.px_lg, a.pt_md, a.pb_md, a.gap_xs]}>
       {title ? (
