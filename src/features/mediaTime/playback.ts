@@ -22,6 +22,8 @@ type Position = {seconds: number; duration?: number; updatedAt: number}
 export type SeekTarget = {
   /** Jumps to `seconds` and starts playing. */
   seek: (seconds: number) => void
+  /** Pauses the video. */
+  pause: () => void
   /**
    * Whether the player is on the screen the user is looking at. Players on
    * screens further back in the navigation stack must not take the jump.
@@ -143,15 +145,27 @@ export function registerSeekTarget(
  * Returns `false` when no such player exists, so the caller can open one.
  */
 export function seekIfVisible(postUri: string, seconds: number): boolean {
-  const list = targets.get(postUri)
-  if (!list) return false
+  const target = activeTarget(postUri)
+  target?.seek(seconds)
+  return !!target
+}
+
+/**
+ * Asks the most recently registered active player of `postUri` to pause.
+ * Returns `false` when no such player exists.
+ */
+export function pauseIfVisible(postUri: string): boolean {
+  const target = activeTarget(postUri)
+  target?.pause()
+  return !!target
+}
+
+function activeTarget(postUri: string): SeekTarget | undefined {
+  const list = targets.get(postUri) ?? []
   for (let i = list.length - 1; i >= 0; i--) {
-    if (list[i].isActive()) {
-      list[i].seek(seconds)
-      return true
-    }
+    if (list[i].isActive()) return list[i]
   }
-  return false
+  return undefined
 }
 
 /**

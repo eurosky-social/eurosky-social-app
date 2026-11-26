@@ -92,7 +92,34 @@ shows while the post is hidden behind a content warning (`feed.ts`). The
 counts come from `network.eurosky.feed.getMomentSummaries` on the same
 AppView; requests made within 50 ms share one call of up to 25 posts
 (`momentSummaries.ts`), and the AppView keeps each answer for a minute. A
-failed request shows nothing. Tapping a moment opens its page.
+failed request shows nothing. Tapping a moment opens its page; "All
+moments" opens the video with its moments.
+
+## Watching, with moments
+
+The full-screen video screen (route `PostVideo`,
+`/profile/<name>/post/<rkey>/video?t=`) shows a video with its moments, after
+the design canvas's "Watching, with moments". Time links open it on phones,
+and "All moments" on the thread's and feed's moment rows opens it everywhere
+(`openWatching.ts`, from where the video was last watched in the app).
+
+- The video, the strip of where people commented, the video's title, who
+  posted it and when, and how many comments it has in how many moments
+  (`components/VideoTitleBlock.tsx`).
+- The moments as a timeline (`components/MomentsTimeline.tsx`), each with a
+  dot sized by its comments, its time, a tag ("Now playing", "Most
+  discussed", "From the comments"), a title and its count. The title and the
+  number of people come from its first 25 comments (`useMomentTitle.ts`).
+  Tapping a moment opens its page.
+- Where each moment is against the second being watched (`watching.ts`):
+  ahead, playing (from its start until 10 seconds after its last comment),
+  or past. Past moments except the last two fold into "N earlier moments".
+- Moments ahead keep their comments hidden ("N comments · shown when you get
+  there"); "Show" reveals one anyway. Decided 2026-11-26.
+- On phones the list scrolls by itself, and "Follow the video" keeps the
+  moment playing in view. On the web it scrolls with the page.
+- "at 0:41 · Add a comment…" links a new comment to the second being
+  watched.
 
 ## A moment's page
 
@@ -116,7 +143,13 @@ names a second, not a moment). Its comments read as one conversation
   link to the rest in the comment's thread. They load per comment, while it
   is on screen (`useCommentReplies.ts`), and are filtered like the comments;
 - "at 0:41 · Add to this moment…", which links a new comment to the second
-  being watched.
+  being watched, kept inside the moment's span (`commentSecond`), so it lands
+  in this moment. The ±5 s buttons in the composer can still move it out.
+
+The video pauses when it plays to the end of the moment, so people can read
+without it running on (`usePauseAtMomentEnd.ts`, through `pauseIfVisible`).
+Pressing play carries on past it, going back into the moment pauses it there
+again, and jumping past the end doesn't pause.
 
 The comments are loaded from the viewer's AppView, 25 at a time
 (`useMomentPosts.ts`). Replies the video's author hid and posts the viewer's
@@ -134,9 +167,9 @@ It needs the video's length, which the players report with their position,
 so it shows once the video has loaded.
 
 On iOS and Android the page is dark above, with the video's title and the
-player (`screens/PostMoment/index.tsx`, sharing
-`screens/PostVideo/VideoSurface.tsx`), and the moment is a sheet in the app's
-own theme with a close button. On the web it is a normal page with the
+player (`screens/PostMoment/index.tsx`, sharing the player and header bar in
+`screens/PostVideo/VideoSurface.tsx` with the watching screen), and the
+moment is a sheet in the app's own theme with a close button. On the web it is a normal page with the
 post's own player, which jumps to `t` (`index.web.tsx`).
 
 Tests: `pnpm test src/features/mediaTime src/lib/api/__tests__/post.test.ts`.

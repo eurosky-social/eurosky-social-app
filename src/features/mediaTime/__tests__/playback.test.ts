@@ -4,6 +4,7 @@ import {
   getCommentableMediaTime,
   getPlaybackDuration,
   getPlaybackSecond,
+  pauseIfVisible,
   POSITION_MAX_AGE_MS,
   QUEUED_SEEK_MAX_AGE_MS,
   queueSeek,
@@ -22,7 +23,11 @@ beforeEach(() => {
 })
 
 function target(active = true) {
-  return {seek: jest.fn<(seconds: number) => void>(), isActive: () => active}
+  return {
+    seek: jest.fn<(seconds: number) => void>(),
+    pause: jest.fn<() => void>(),
+    isActive: () => active,
+  }
 }
 
 describe('getCommentableMediaTime', () => {
@@ -98,6 +103,25 @@ describe('seek targets', () => {
     unregister()
     expect(seekIfVisible(POST, 41)).toBe(false)
     expect(player.seek).not.toHaveBeenCalled()
+  })
+
+  it('pauses the most recently registered active player', () => {
+    const behind = target(true)
+    const front = target(true)
+    const hidden = target(false)
+    registerSeekTarget(POST, behind)
+    registerSeekTarget(POST, front)
+    registerSeekTarget(POST, hidden)
+    expect(pauseIfVisible(POST)).toBe(true)
+    expect(front.pause).toHaveBeenCalledTimes(1)
+    expect(behind.pause).not.toHaveBeenCalled()
+    expect(hidden.pause).not.toHaveBeenCalled()
+  })
+
+  it('reports when no player can pause', () => {
+    expect(pauseIfVisible(POST)).toBe(false)
+    registerSeekTarget(POST, target(false))
+    expect(pauseIfVisible(POST)).toBe(false)
   })
 
   it('hands a queued jump to the next player that registers', () => {

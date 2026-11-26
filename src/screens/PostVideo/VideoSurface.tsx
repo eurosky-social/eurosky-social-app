@@ -18,6 +18,7 @@ import {atoms as a, useTheme} from '#/alf'
 import {setSystemUITheme} from '#/alf/util/systemUI'
 import {Button, ButtonIcon} from '#/components/Button'
 import {ArrowLeft_Stroke2_Corner0_Rounded as ArrowLeftIcon} from '#/components/icons/Arrow'
+import {ChevronLeft_Stroke2_Corner0_Rounded as BackIcon} from '#/components/icons/Chevron'
 import {ContentHider} from '#/components/moderation/ContentHider'
 import {Text} from '#/components/Typography'
 import {
@@ -47,8 +48,8 @@ export function useVideoScreenChrome() {
 
 /**
  * A post's video, playing from `startSeconds`. Reports where it is (for the
- * composer and "at 0:41" labels), takes jumps from time links and moment
- * buttons on its screen, and pauses when another screen covers it.
+ * composer and "at 0:41" labels), takes jumps and pauses from time links and
+ * moments on its screen, and pauses when another screen covers it.
  */
 export function VideoSurface({
   postUri,
@@ -100,6 +101,7 @@ export function VideoSurface({
         player.currentTime = seconds
         player.play()
       },
+      pause: () => player.pause(),
       isActive: () => navigation.isFocused(),
     })
   }, [player, postUri, navigation])
@@ -171,6 +173,47 @@ export function BackButton() {
         }}>
         <ButtonIcon icon={ArrowLeftIcon} />
       </Button>
+    </View>
+  )
+}
+
+/** Goes back, or home when there is nothing to go back to. */
+export function useGoBack() {
+  const navigation = useNavigation<NavigationProp>()
+  return () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack()
+    } else {
+      navigation.dispatch(
+        getHomeNavigationAction(navigation.getState(), 'navigate'),
+      )
+    }
+  }
+}
+
+/** A dark bar with a back button and the video's title. */
+export function VideoHeaderBar({title}: {title: string | undefined}) {
+  const {t: l} = useLingui()
+  const goBack = useGoBack()
+  return (
+    <View style={[a.flex_row, a.align_center, a.px_xs, {height: 48}]}>
+      <Button
+        testID="postMomentBack"
+        label={l`Go back`}
+        size="large"
+        variant="ghost"
+        color="secondary"
+        shape="round"
+        onPress={goBack}>
+        <ButtonIcon icon={BackIcon} size="lg" />
+      </Button>
+      <Text
+        emoji
+        style={[a.flex_1, a.text_center, a.text_sm, a.font_semi_bold]}
+        numberOfLines={1}>
+        {title}
+      </Text>
+      <View style={{width: 44}} />
     </View>
   )
 }

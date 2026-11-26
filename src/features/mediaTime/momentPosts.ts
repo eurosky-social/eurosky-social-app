@@ -1,7 +1,10 @@
 import {type AtUriString} from '@atproto/syntax'
 import {moderatePost, type ModerationOpts} from '@bsky/sdk/moderation'
+import {RichText} from '@bsky/sdk/richtext'
 
-import {type app} from '#/lexicons'
+import {app} from '#/lexicons'
+import * as bsky from '#/types/bsky'
+import {withoutMediaTimeLink} from './record'
 
 type PostView = app.bsky.feed.defs.PostView
 
@@ -103,4 +106,39 @@ export function pickCommentReplies(
         a.indexedAt.localeCompare(b.indexedAt),
     )
     .slice(0, limit)
+}
+
+/** A comment quoted as a moment's title is cut after this many characters. */
+export const TITLE_MAX_CHARS = 120
+
+/**
+ * A moment's title until moments get names: the text of its most liked
+ * comment that shows without a warning or filter (by a muted account, say),
+ * without its time link, cut to `TITLE_MAX_CHARS`. `postsByLikes` is sorted
+ * most liked first.
+ */
+export function momentTitleQuote(
+  postsByLikes: readonly PostView[],
+  moderationOpts: ModerationOpts,
+): string | undefined {
+  for (const post of postsByLikes) {
+    if (!bsky.matches(app.bsky.feed.post, post.record)) continue
+    // A title shows in lists as well as on the moment's page: skip a comment
+    // either one would hide or warn about.
+    const moderation = moderatePost(post, moderationOpts)
+    const inList = moderation.ui('contentList')
+    const onPage = moderation.ui('contentView')
+    if (inList.filter || inList.blur || inList.alert) continue
+    if (onPage.blur || onPage.alert) continue
+    const text = withoutMediaTimeLink(
+      new RichText({text: post.record.text, facets: post.record.facets}),
+    )
+      .text.replace(/\s+/g, ' ')
+      .trim()
+    if (!text) continue
+    return text.length > TITLE_MAX_CHARS
+      ? `${text.slice(0, TITLE_MAX_CHARS - 1).trimEnd()}…`
+      : text
+  }
+  return undefined
 }

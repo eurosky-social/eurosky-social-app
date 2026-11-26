@@ -8,6 +8,7 @@ import {MEDIA_TIME_ENABLED} from '../config'
 import {canShowFeedMoments} from '../feed'
 import {topMoments, useMomentSummary} from '../momentSummaries'
 import {openMoment} from '../openMoment'
+import {openWatching} from '../openWatching'
 import {MomentChips} from './MomentChips'
 
 /**
@@ -37,6 +38,7 @@ export function FeedMoments({
         title={l`Most talked-about moments`}
         moments={topMoments(moments)}
         onPressMoment={moment => openMoment(post.uri, moment.startSeconds)}
+        onPressAll={() => openWatching(post.uri)}
       />
     </View>
   )

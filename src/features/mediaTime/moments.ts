@@ -264,6 +264,27 @@ export function momentAt(
   return nearestMoment(moments, seconds)
 }
 
+/**
+ * The second a new comment links to: the second being watched, or
+ * `fallbackSeconds` before the video has played. Added to a moment
+ * (`within`), it stays inside the moment's span, so a comment written after
+ * the video played on still lands in that moment.
+ */
+export function commentSecond({
+  playing,
+  fallbackSeconds,
+  within,
+}: {
+  playing: number | undefined
+  fallbackSeconds: number
+  within?: Pick<Moment, 'startSeconds' | 'endSeconds'>
+}): number {
+  const watched =
+    playing !== undefined && playing > 0 ? playing : fallbackSeconds
+  if (!within) return watched
+  return Math.min(Math.max(watched, within.startSeconds), within.endSeconds)
+}
+
 function nearestMoment(moments: Moment[], seconds: number): Moment | undefined {
   let nearest: Moment | undefined
   let nearestDistance = Infinity

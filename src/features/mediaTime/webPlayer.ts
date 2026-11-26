@@ -11,13 +11,15 @@ import {registerSeekTarget} from './playback'
  */
 export type MediaTimeSeekBridge = React.RefObject<{
   seek: ((seconds: number) => void) | null
+  pause: (() => void) | null
   pending: number | undefined
 }>
 
 /**
  * Registers the web video card of `postUri` as a jump target. A jump scrolls
  * the card into view and is passed to the inner player, or kept until it
- * mounts. Returns the bridge to hand to the inner player.
+ * mounts; a pause is passed on if the player is mounted. Returns the bridge
+ * to hand to the inner player.
  */
 export function useMediaTimeWebCard({
   postUri,
@@ -26,7 +28,11 @@ export function useMediaTimeWebCard({
   postUri: string | undefined
   containerRef: React.RefObject<HTMLElement | null>
 }): MediaTimeSeekBridge {
-  const bridge: MediaTimeSeekBridge = useRef({seek: null, pending: undefined})
+  const bridge: MediaTimeSeekBridge = useRef({
+    seek: null,
+    pause: null,
+    pending: undefined,
+  })
   const navigation = useContext(NavigationContext)
 
   useEffect(() => {
@@ -43,6 +49,7 @@ export function useMediaTimeWebCard({
           bridge.current.pending = seconds
         }
       },
+      pause: () => bridge.current.pause?.(),
       isActive: () => navigation?.isFocused() ?? true,
     })
   }, [postUri, containerRef, navigation])
@@ -52,7 +59,7 @@ export function useMediaTimeWebCard({
 
 /**
  * Connects the inner web player to its card's bridge: jumps to a second,
- * makes this the active video with sound on, and plays.
+ * makes this the active video with sound on, and plays; or pauses.
  */
 export function useMediaTimeWebSeek({
   bridge,
@@ -79,7 +86,9 @@ export function useMediaTimeWebSeek({
       const playing = video.play() as Promise<void> | undefined
       playing?.catch(() => {})
     }
+    const pause = () => videoRef.current?.pause()
     bridge.current.seek = seek
+    bridge.current.pause = pause
     const pending = bridge.current.pending
     if (pending !== undefined) {
       bridge.current.pending = undefined
@@ -88,6 +97,9 @@ export function useMediaTimeWebSeek({
     return () => {
       if (bridge.current.seek === seek) {
         bridge.current.seek = null
+      }
+      if (bridge.current.pause === pause) {
+        bridge.current.pause = null
       }
     }
   }, [bridge, videoRef, lastKnownTime, setActive, setFocused])
