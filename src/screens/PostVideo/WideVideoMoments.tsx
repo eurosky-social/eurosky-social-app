@@ -44,11 +44,9 @@ import {
 import {useJumpToMediaTime} from '#/features/mediaTime/useJumpToMediaTime'
 import {useMediaTimeParam} from '#/features/mediaTime/useMediaTimeParam'
 import {usePauseAtMomentEnd} from '#/features/mediaTime/usePauseAtMomentEnd'
-import {
-  usePlaybackDuration,
-  usePlaybackSecond,
-} from '#/features/mediaTime/usePlaybackSecond'
+import {usePlaybackSecond} from '#/features/mediaTime/usePlaybackSecond'
 import {useVideoMomentsWithStatus} from '#/features/mediaTime/useVideoMoments'
+import {useVideoDuration} from '#/features/mediaTime/videoDuration'
 import {playingMoment} from '#/features/mediaTime/watching'
 import {
   ExploreColumn,
@@ -180,7 +178,10 @@ function Loaded({
   const {height} = useWindowDimensions()
   const jump = useJumpToMediaTime()
   const playing = usePlaybackSecond(post.uri)
-  const duration = usePlaybackDuration(post.uri)
+  const duration = useVideoDuration({
+    postUri: post.uri,
+    playlist: video.playlist,
+  })
   const {moments, loading} = useVideoMomentsWithStatus({
     videoPostUri: post.uri,
     threadItems,

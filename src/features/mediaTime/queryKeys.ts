@@ -21,3 +21,9 @@ export const commentRepliesQueryKey = (uri: string) => [
   'media-time-comment-replies',
   uri,
 ]
+
+/** A video's length, read from its playlist (`videoDuration.ts`). */
+export const videoDurationQueryKey = (playlist: string) => [
+  'media-time-video-duration',
+  playlist,
+]

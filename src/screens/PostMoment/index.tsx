@@ -31,11 +31,9 @@ import {
 } from '#/features/mediaTime/record'
 import {useJumpToMediaTime} from '#/features/mediaTime/useJumpToMediaTime'
 import {usePauseAtMomentEnd} from '#/features/mediaTime/usePauseAtMomentEnd'
-import {
-  usePlaybackDuration,
-  usePlaybackSecond,
-} from '#/features/mediaTime/usePlaybackSecond'
+import {usePlaybackSecond} from '#/features/mediaTime/usePlaybackSecond'
 import {useVideoMomentsWithStatus} from '#/features/mediaTime/useVideoMoments'
+import {useVideoDuration} from '#/features/mediaTime/videoDuration'
 import {type app} from '#/lexicons'
 
 type ThreadPostItem = Extract<ThreadItem, {type: 'threadPost'}>
@@ -124,7 +122,10 @@ function MomentWithVideo({
   const post = item.value.post
   const jump = useJumpToMediaTime()
   const playing = usePlaybackSecond(post.uri)
-  const duration = usePlaybackDuration(post.uri)
+  const duration = useVideoDuration({
+    postUri: post.uri,
+    playlist: video.playlist,
+  })
   const themeName = useThemeName()
   const goBack = useGoBack()
   const {bottom} = useSafeAreaInsets()

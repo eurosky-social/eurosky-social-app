@@ -265,6 +265,25 @@ export function momentBars(
 }
 
 /**
+ * Which of `count` bars along a video of `duration` seconds the
+ * `highlighted` moments cover. None while the length is unknown.
+ */
+export function highlightedBars(
+  highlighted: readonly Pick<Moment, 'startSeconds' | 'endSeconds'>[],
+  duration: number,
+  count: number,
+): boolean[] {
+  const bars: boolean[] = Array.from({length: count}, () => false)
+  if (!(duration > 0)) return bars
+  for (const moment of highlighted) {
+    const first = barAt(moment.startSeconds, duration, count)
+    const last = barAt(moment.endSeconds, duration, count)
+    for (let i = first; i <= last; i++) bars[i] = true
+  }
+  return bars
+}
+
+/**
  * The moment at `seconds`: the one whose span holds it, else the nearest
  * within `MOMENT_JOIN_SECONDS`. Moments move a little as comments come in,
  * so a link to a moment names a second, not the moment itself.

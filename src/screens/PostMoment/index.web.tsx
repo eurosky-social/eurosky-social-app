@@ -27,11 +27,9 @@ import {
 import {useJumpToMediaTime} from '#/features/mediaTime/useJumpToMediaTime'
 import {useMediaTimeParam} from '#/features/mediaTime/useMediaTimeParam'
 import {usePauseAtMomentEnd} from '#/features/mediaTime/usePauseAtMomentEnd'
-import {
-  usePlaybackDuration,
-  usePlaybackSecond,
-} from '#/features/mediaTime/usePlaybackSecond'
+import {usePlaybackSecond} from '#/features/mediaTime/usePlaybackSecond'
 import {useVideoMomentsWithStatus} from '#/features/mediaTime/useVideoMoments'
+import {useVideoDuration} from '#/features/mediaTime/videoDuration'
 
 type ThreadPostItem = Extract<ThreadItem, {type: 'threadPost'}>
 
@@ -90,7 +88,10 @@ function PostMomentPage({
   usePauseAtMomentEnd(postUri, moment)
   const jump = useJumpToMediaTime()
   const playing = usePlaybackSecond(postUri)
-  const duration = usePlaybackDuration(postUri)
+  const duration = useVideoDuration({
+    postUri,
+    playlist: getOwnVideoEmbed(embed)?.playlist,
+  })
   const onPressSecond = (pressed: number) => {
     const target = momentAt(moments, pressed)
     jump(postUri, target ? target.startSeconds : pressed)
