@@ -4,6 +4,7 @@ import {type ThreadItem} from '#/state/queries/usePostThread/types'
 import {
   barAt,
   collectTimedReplies,
+  commentSecond,
   groupIntoMoments,
   mergeMoments,
   type Moment,
@@ -208,6 +209,42 @@ describe('momentAt', () => {
   it('finds none far from every moment', () => {
     expect(momentAt(moments, 200)).toBeUndefined()
     expect(momentAt([], 10)).toBeUndefined()
+  })
+})
+
+describe('commentSecond', () => {
+  const moment: Moment = {
+    startSeconds: 12,
+    endSeconds: 18,
+    count: 3,
+    comments: [comment(14), comment(15), comment(18)],
+  }
+
+  it('uses the second being watched', () => {
+    expect(commentSecond({playing: 40, fallbackSeconds: 12})).toBe(40)
+  })
+
+  it('uses the fallback before the video has played', () => {
+    expect(commentSecond({playing: undefined, fallbackSeconds: 12})).toBe(12)
+    expect(commentSecond({playing: 0, fallbackSeconds: 12})).toBe(12)
+  })
+
+  it('keeps the second being watched inside the moment', () => {
+    expect(
+      commentSecond({playing: 15, fallbackSeconds: 12, within: moment}),
+    ).toBe(15)
+  })
+
+  it('stops at the end of the moment once the video has played past it', () => {
+    expect(
+      commentSecond({playing: 45, fallbackSeconds: 12, within: moment}),
+    ).toBe(18)
+  })
+
+  it('starts at the start of the moment when the video is before it', () => {
+    expect(
+      commentSecond({playing: 3, fallbackSeconds: 12, within: moment}),
+    ).toBe(12)
   })
 })
 

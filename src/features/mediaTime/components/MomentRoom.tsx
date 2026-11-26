@@ -1,11 +1,7 @@
 import {useMemo, useState} from 'react'
 import {ActivityIndicator, Pressable, View} from 'react-native'
 import {AtUri} from '@atproto/syntax'
-import {
-  moderatePost,
-  type ModerationDecision,
-  type ModerationOpts,
-} from '@bsky/sdk/moderation'
+import {moderatePost, type ModerationDecision} from '@bsky/sdk/moderation'
 import {RichText as RichTextAPI} from '@bsky/sdk/richtext'
 import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
@@ -20,12 +16,11 @@ import {
 } from '#/state/cache/post-shadow'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {usePostLikeMutationQueue} from '#/state/queries/post'
-import {useProfileQuery} from '#/state/queries/profile'
-import {useRequireAuth, useSession} from '#/state/session'
+import {useRequireAuth} from '#/state/session'
 import {useMergedThreadgateHiddenReplies} from '#/state/threadgate-hidden-replies'
 import {List} from '#/view/com/util/List'
 import {TimeElapsed} from '#/view/com/util/TimeElapsed'
-import {PreviewableUserAvatar, UserAvatar} from '#/view/com/util/UserAvatar'
+import {PreviewableUserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonIcon} from '#/components/Button'
 import {
@@ -46,6 +41,7 @@ import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {
   type MomentSort,
+  momentTitleQuote,
   pickCommentReplies,
   sortMomentPosts,
   visibleMomentPosts,
@@ -55,12 +51,9 @@ import {formatMediaTime, withoutMediaTimeLink} from '../record'
 import {useCommentReplies} from '../useCommentReplies'
 import {useJumpToMediaTime} from '../useJumpToMediaTime'
 import {useMomentPosts} from '../useMomentPosts'
-import {usePlaybackSecond} from '../usePlaybackSecond'
+import {ComposerField} from './ComposerField'
 
 type PostView = app.bsky.feed.defs.PostView
-
-/** A comment quoted as a moment's title is cut after this many characters. */
-const TITLE_MAX_CHARS = 120
 
 /**
  * One moment of a video and its comments, as one conversation (design canvas
@@ -144,6 +137,8 @@ export function MomentRoom({
       videoPost={videoPost}
       videoModeration={videoModeration}
       fallbackSeconds={moment?.startSeconds ?? seconds}
+      placeholder={l`Add to this moment…`}
+      within={moment}
       onBeforeCompose={onBeforeCompose}
     />
   )
@@ -300,7 +295,7 @@ function RoomTop({
   // design. A moment of one comment would only repeat it.
   const quote =
     moment && moment.count > 1 && moderationOpts
-      ? topQuote(sortMomentPosts(visible, 'top'), moderationOpts)
+      ? momentTitleQuote(sortMomentPosts(visible, 'top'), moderationOpts)
       : undefined
   const people = new Set(visible.map(p => p.author.did)).size
   const comments = moment
@@ -400,31 +395,6 @@ function RoomTop({
       ) : null}
     </View>
   )
-}
-
-/**
- * The text of the most liked comment that shows without a warning, without
- * its time link, cut to `TITLE_MAX_CHARS`.
- */
-function topQuote(
-  postsByLikes: PostView[],
-  moderationOpts: ModerationOpts,
-): string | undefined {
-  for (const post of postsByLikes) {
-    if (!bsky.matches(app.bsky.feed.post, post.record)) continue
-    const modui = moderatePost(post, moderationOpts).ui('contentView')
-    if (modui.blur || modui.alert) continue
-    const text = withoutMediaTimeLink(
-      new RichTextAPI({text: post.record.text, facets: post.record.facets}),
-    )
-      .text.replace(/\s+/g, ' ')
-      .trim()
-    if (!text) continue
-    return text.length > TITLE_MAX_CHARS
-      ? `${text.slice(0, TITLE_MAX_CHARS - 1).trimEnd()}…`
-      : text
-  }
-  return undefined
 }
 
 /** One comment, with the first replies to it underneath. */
@@ -787,107 +757,6 @@ function CommentRow({
           />
         </View>
       </View>
-    </View>
-  )
-}
-
-/**
- * "at 0:41 · Add to this moment…": opens the composer, linked to the second
- * being watched (or the moment's start before the video has played).
- */
-function ComposerField({
-  videoPost,
-  videoModeration,
-  fallbackSeconds,
-  onBeforeCompose,
-}: {
-  videoPost: PostView & {record: app.bsky.feed.post.Main}
-  videoModeration: ModerationDecision
-  fallbackSeconds: number
-  onBeforeCompose?: () => void
-}) {
-  const t = useTheme()
-  const {t: l} = useLingui()
-  const {openComposer} = useOpenComposer()
-  const requireAuth = useRequireAuth()
-  const {currentAccount} = useSession()
-  const {data: profile} = useProfileQuery({did: currentAccount?.did})
-  const playing = usePlaybackSecond(videoPost.uri)
-  const commentSeconds =
-    playing !== undefined && playing > 0 ? playing : fallbackSeconds
-  const time = formatMediaTime(commentSeconds)
-
-  const onPress = () =>
-    requireAuth(() => {
-      onBeforeCompose?.()
-      openComposer({
-        replyTo: {
-          uri: videoPost.uri,
-          cid: videoPost.cid,
-          text: videoPost.record.text,
-          author: videoPost.author,
-          embed: videoPost.embed,
-          langs: videoPost.record.langs,
-          moderation: videoModeration,
-        },
-        mediaTime: commentSeconds,
-        logContext: 'PostReply',
-      })
-    })
-
-  return (
-    <View style={[a.flex_row, a.align_center, a.gap_sm]}>
-      {profile ? (
-        <UserAvatar
-          size={36}
-          avatar={profile.avatar}
-          type={profile.associated?.labeler ? 'labeler' : 'user'}
-        />
-      ) : null}
-      <Pressable
-        testID="momentAddComment"
-        accessibilityRole="button"
-        accessibilityLabel={l`Add a comment at ${time}`}
-        accessibilityHint=""
-        onPress={onPress}
-        style={[
-          a.flex_1,
-          a.flex_row,
-          a.align_center,
-          a.gap_sm,
-          a.rounded_full,
-          a.border,
-          t.atoms.bg_contrast_25,
-          t.atoms.border_contrast_low,
-          {height: 44, paddingHorizontal: 6},
-        ]}>
-        <View
-          style={[
-            a.rounded_full,
-            a.justify_center,
-            {
-              height: 32,
-              paddingHorizontal: 10,
-              backgroundColor: t.palette.primary_50,
-            },
-          ]}>
-          <Text
-            style={[
-              a.text_xs,
-              a.font_bold,
-              {color: t.palette.primary_600, fontVariant: ['tabular-nums']},
-            ]}>
-            <Trans comment="Before a comment field: the second of the video the comment will be linked to, e.g. at 0:41">
-              at {time}
-            </Trans>
-          </Text>
-        </View>
-        <Text
-          style={[a.text_md, a.flex_shrink, t.atoms.text_contrast_medium]}
-          numberOfLines={1}>
-          <Trans>Add to this moment…</Trans>
-        </Text>
-      </Pressable>
     </View>
   )
 }

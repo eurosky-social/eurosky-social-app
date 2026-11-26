@@ -1,4 +1,4 @@
-import {ScrollView, View} from 'react-native'
+import {Pressable, ScrollView, View} from 'react-native'
 import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 
@@ -16,10 +16,13 @@ import {formatMediaTime} from '../record'
 export function MomentChips({
   moments,
   onPressMoment,
+  onPressAll,
   title,
 }: {
   moments: Moment[]
   onPressMoment: (moment: Moment) => void
+  /** Shows "All moments", which calls this. */
+  onPressAll?: () => void
   /** Defaults to "Moments in this video". */
   title?: string
 }) {
@@ -30,9 +33,30 @@ export function MomentChips({
 
   return (
     <View testID="mediaTimeMoments" style={[a.gap_xs]}>
-      <Text style={[a.text_xs, a.font_semi_bold, t.atoms.text_contrast_medium]}>
-        {title ?? l`Moments in this video`}
-      </Text>
+      <View style={[a.flex_row, a.align_center, a.justify_between]}>
+        <Text
+          style={[a.text_xs, a.font_semi_bold, t.atoms.text_contrast_medium]}>
+          {title ?? l`Moments in this video`}
+        </Text>
+        {onPressAll ? (
+          <Pressable
+            testID="mediaTimeAllMoments"
+            accessibilityRole="button"
+            accessibilityLabel={l`All moments`}
+            accessibilityHint={l`Opens the video with all its moments`}
+            hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+            onPress={onPressAll}>
+            <Text
+              style={[
+                a.text_xs,
+                a.font_semi_bold,
+                {color: t.palette.primary_600},
+              ]}>
+              <Trans>All moments</Trans>
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

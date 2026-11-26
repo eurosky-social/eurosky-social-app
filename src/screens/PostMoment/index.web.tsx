@@ -22,6 +22,7 @@ import {
 } from '#/features/mediaTime/record'
 import {useJumpToMediaTime} from '#/features/mediaTime/useJumpToMediaTime'
 import {useMediaTimeParam} from '#/features/mediaTime/useMediaTimeParam'
+import {usePauseAtMomentEnd} from '#/features/mediaTime/usePauseAtMomentEnd'
 import {
   usePlaybackDuration,
   usePlaybackSecond,
@@ -61,6 +62,7 @@ export function PostMomentScreen({
     enabled: hasVideo,
   })
   const moment = momentAt(moments, seconds)
+  usePauseAtMomentEnd(postUri, moment)
   const jump = useJumpToMediaTime()
   const playing = usePlaybackSecond(postUri)
   const duration = usePlaybackDuration(postUri)

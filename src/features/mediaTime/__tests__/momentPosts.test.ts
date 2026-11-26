@@ -8,6 +8,7 @@ import {
   MISSING_POSTS_RETRIES,
   MISSING_POSTS_RETRY_MS,
   missingPostsRetryInterval,
+  momentTitleQuote,
   pickCommentReplies,
   POSTS_PER_REQUEST,
   sortMomentPosts,
@@ -174,5 +175,42 @@ describe('pickCommentReplies', () => {
 
   it('shows two by default', () => {
     expect(pickCommentReplies([late, early, liked], host)).toHaveLength(2)
+  })
+})
+
+describe('momentTitleQuote', () => {
+  const withText = (n: number, text: string, muted = false) =>
+    ({
+      ...post(n, {muted}),
+      record: {
+        $type: 'app.bsky.feed.post',
+        text,
+        createdAt: '2026-11-25T12:00:00.000Z',
+      },
+    }) as unknown as PostView
+
+  it('quotes the first comment that shows without a warning', () => {
+    expect(
+      momentTitleQuote(
+        [
+          withText(1, 'by a muted account', true),
+          withText(2, '  so   true\n '),
+        ],
+        MODERATION_OPTS,
+      ),
+    ).toBe('so true')
+  })
+
+  it('cuts a long comment', () => {
+    const title = momentTitleQuote(
+      [withText(1, 'x'.repeat(290))],
+      MODERATION_OPTS,
+    )
+    expect(title).toHaveLength(120)
+    expect(title?.endsWith('…')).toBe(true)
+  })
+
+  it('has none when no comment has text', () => {
+    expect(momentTitleQuote([withText(1, '')], MODERATION_OPTS)).toBeUndefined()
   })
 })

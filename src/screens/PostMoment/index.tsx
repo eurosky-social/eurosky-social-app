@@ -2,32 +2,25 @@ import {useRef} from 'react'
 import {ActivityIndicator, useWindowDimensions, View} from 'react-native'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {type VideoPlayer} from 'expo-video'
-import {useLingui} from '@lingui/react/macro'
-import {useNavigation} from '@react-navigation/native'
 import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 
-import {getHomeNavigationAction} from '#/lib/routes/navigation'
-import {
-  type CommonNavigatorParams,
-  type NavigationProp,
-} from '#/lib/routes/types'
+import {type CommonNavigatorParams} from '#/lib/routes/types'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {makeRecordUri} from '#/lib/strings/url-helpers'
 import {usePostThread} from '#/state/queries/usePostThread'
 import {type ThreadItem} from '#/state/queries/usePostThread/types'
 import {
   Unavailable,
+  useGoBack,
   useVideoScreenChrome,
+  VideoHeaderBar,
   VideoSurface,
 } from '#/screens/PostVideo/VideoSurface'
 import {atoms as a, ThemeProvider} from '#/alf'
 import {useThemeName} from '#/alf/util/useColorModeTheme'
-import {Button, ButtonIcon} from '#/components/Button'
-import {ChevronLeft_Stroke2_Corner0_Rounded as BackIcon} from '#/components/icons/Chevron'
 import {KeepAwake} from '#/components/KeepAwake'
 import * as Layout from '#/components/Layout'
 import {ContentHider} from '#/components/moderation/ContentHider'
-import {Text} from '#/components/Typography'
 import {MomentRoom} from '#/features/mediaTime/components/MomentRoom'
 import {MomentStrip} from '#/features/mediaTime/components/MomentStrip'
 import {momentAt} from '#/features/mediaTime/moments'
@@ -37,6 +30,7 @@ import {
   parseMediaTimeParam,
 } from '#/features/mediaTime/record'
 import {useJumpToMediaTime} from '#/features/mediaTime/useJumpToMediaTime'
+import {usePauseAtMomentEnd} from '#/features/mediaTime/usePauseAtMomentEnd'
 import {
   usePlaybackDuration,
   usePlaybackSecond,
@@ -88,7 +82,7 @@ export function PostMomentScreen({
         style={{backgroundColor: 'black'}}>
         <KeepAwake />
         <View style={{paddingTop: top}}>
-          <HeaderBar title={title} />
+          <VideoHeaderBar title={title} />
         </View>
         {anchor && video ? (
           <MomentWithVideo
@@ -108,45 +102,6 @@ export function PostMomentScreen({
         )}
       </Layout.Screen>
     </ThemeProvider>
-  )
-}
-
-function useGoBack() {
-  const navigation = useNavigation<NavigationProp>()
-  return () => {
-    if (navigation.canGoBack()) {
-      navigation.goBack()
-    } else {
-      navigation.dispatch(
-        getHomeNavigationAction(navigation.getState(), 'navigate'),
-      )
-    }
-  }
-}
-
-function HeaderBar({title}: {title: string | undefined}) {
-  const {t: l} = useLingui()
-  const goBack = useGoBack()
-  return (
-    <View style={[a.flex_row, a.align_center, a.px_xs, {height: 48}]}>
-      <Button
-        testID="postMomentBack"
-        label={l`Go back`}
-        size="large"
-        variant="ghost"
-        color="secondary"
-        shape="round"
-        onPress={goBack}>
-        <ButtonIcon icon={BackIcon} size="lg" />
-      </Button>
-      <Text
-        emoji
-        style={[a.flex_1, a.text_center, a.text_sm, a.font_semi_bold]}
-        numberOfLines={1}>
-        {title}
-      </Text>
-      <View style={{width: 44}} />
-    </View>
   )
 }
 
@@ -184,6 +139,7 @@ function MomentWithVideo({
     threadItems,
   })
   const moment = momentAt(moments, seconds)
+  usePauseAtMomentEnd(post.uri, moment)
   const onPressSecond = (pressed: number) => {
     const target = momentAt(moments, pressed)
     jump(post.uri, target ? target.startSeconds : pressed)

@@ -5,6 +5,7 @@ import {atoms as a} from '#/alf'
 import {type app} from '#/lexicons'
 import {MEDIA_TIME_ENABLED} from '../config'
 import {openMoment} from '../openMoment'
+import {openWatching} from '../openWatching'
 import {getOwnVideoEmbed} from '../record'
 import {useVideoMoments} from '../useVideoMoments'
 import {MomentChips} from './MomentChips'
@@ -35,6 +36,7 @@ export function ThreadMoments({
       <MomentChips
         moments={moments}
         onPressMoment={moment => openMoment(videoPost.uri, moment.startSeconds)}
+        onPressAll={() => openWatching(videoPost.uri)}
       />
     </View>
   )

@@ -1,48 +1,53 @@
 import {useRef} from 'react'
-import {ActivityIndicator, View} from 'react-native'
+import {ActivityIndicator, useWindowDimensions, View} from 'react-native'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {type VideoPlayer} from 'expo-video'
-import {RichText as RichTextAPI} from '@bsky/sdk/richtext'
-import {Trans, useLingui} from '@lingui/react/macro'
+import {useLingui} from '@lingui/react/macro'
 import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 
-import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {type CommonNavigatorParams} from '#/lib/routes/types'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {makeRecordUri} from '#/lib/strings/url-helpers'
 import {usePostThread} from '#/state/queries/usePostThread'
 import {type ThreadItem} from '#/state/queries/usePostThread/types'
-import {atoms as a, ThemeProvider} from '#/alf'
-import {Button, ButtonIcon, ButtonText} from '#/components/Button'
-import {Bubble_Stroke2_Corner2_Rounded as CommentIcon} from '#/components/icons/Bubble'
+import {atoms as a, ThemeProvider, useTheme} from '#/alf'
 import {KeepAwake} from '#/components/KeepAwake'
 import * as Layout from '#/components/Layout'
 import {ContentHider} from '#/components/moderation/ContentHider'
-import {RichText} from '#/components/RichText'
-import {Text} from '#/components/Typography'
-import {MomentChips} from '#/features/mediaTime/components/MomentChips'
+import {ComposerField} from '#/features/mediaTime/components/ComposerField'
+import {MomentsTimeline} from '#/features/mediaTime/components/MomentsTimeline'
+import {MomentStrip} from '#/features/mediaTime/components/MomentStrip'
+import {VideoTitleBlock} from '#/features/mediaTime/components/VideoTitleBlock'
 import {openMoment} from '#/features/mediaTime/openMoment'
 import {
-  formatMediaTime,
   getOwnVideoEmbed,
   parseMediaTimeParam,
 } from '#/features/mediaTime/record'
-import {usePlaybackSecond} from '#/features/mediaTime/usePlaybackSecond'
-import {useVideoMoments} from '#/features/mediaTime/useVideoMoments'
+import {useJumpToMediaTime} from '#/features/mediaTime/useJumpToMediaTime'
+import {
+  usePlaybackDuration,
+  usePlaybackSecond,
+} from '#/features/mediaTime/usePlaybackSecond'
+import {useVideoMomentsWithStatus} from '#/features/mediaTime/useVideoMoments'
+import {momentStatuses} from '#/features/mediaTime/watching'
 import {type app} from '#/lexicons'
 import {
-  BackButton,
   Unavailable,
   useVideoScreenChrome,
+  VideoHeaderBar,
   VideoSurface,
 } from './VideoSurface'
 
 type ThreadPostItem = Extract<ThreadItem, {type: 'threadPost'}>
 
+/** The video takes at most this share of the screen's height. */
+const MAX_VIDEO_HEIGHT_SHARE = 0.4
+
 /**
- * Full-screen player for one post's video, opened at a given second (the
- * `t` parameter). Used on iOS and Android, where the inline player in feeds
- * and threads cannot jump to a time.
+ * A post's video with its moments (iOS and Android; design canvas
+ * "Watching, with moments"), playing from second `t`: the video, where
+ * people commented along it, and the moments as a timeline that follows
+ * playback. Opened by time links and by "All moments".
  */
 export function PostVideoScreen({
   route,
@@ -51,6 +56,7 @@ export function PostVideoScreen({
   const uri = makeRecordUri(name, 'app.bsky.feed.post', rkey)
   const startSeconds = parseMediaTimeParam(tParam) ?? 0
   useVideoScreenChrome()
+  const {top} = useSafeAreaInsets()
 
   const thread = usePostThread({anchor: uri})
   const anchor = thread.data.items.find(
@@ -58,6 +64,12 @@ export function PostVideoScreen({
       item.type === 'threadPost' && item.depth === 0,
   )
   const video = anchor ? getOwnVideoEmbed(anchor.value.post.embed) : undefined
+  const authorName = anchor
+    ? sanitizeDisplayName(
+        anchor.value.post.author.displayName || anchor.value.post.author.handle,
+        anchor.moderation.ui('displayName'),
+      )
+    : undefined
 
   return (
     <ThemeProvider theme="dark">
@@ -68,12 +80,16 @@ export function PostVideoScreen({
         noInsetTop
         style={{backgroundColor: 'black'}}>
         <KeepAwake />
+        <View style={{paddingTop: top}}>
+          <VideoHeaderBar title={authorName} />
+        </View>
         {anchor && video ? (
           <Player
             item={anchor}
             video={video}
             startSeconds={startSeconds}
             threadItems={thread.data.items}
+            threadgateRecord={thread.data.threadgate?.record}
           />
         ) : thread.state.isFetching ? (
           <View style={[a.flex_1, a.align_center, a.justify_center]}>
@@ -82,7 +98,6 @@ export function PostVideoScreen({
         ) : (
           <Unavailable />
         )}
-        <BackButton />
       </Layout.Screen>
     </ThemeProvider>
   )
@@ -93,46 +108,32 @@ function Player({
   video,
   startSeconds,
   threadItems,
+  threadgateRecord,
 }: {
   item: ThreadPostItem
   video: app.bsky.embed.video.View
   startSeconds: number
   threadItems: ThreadItem[]
+  threadgateRecord?: app.bsky.feed.threadgate.Main
 }) {
   const post = item.value.post
+  const t = useTheme()
   const {t: l} = useLingui()
   const {bottom} = useSafeAreaInsets()
-  const {openComposer} = useOpenComposer()
+  const {width, height} = useWindowDimensions()
+  const jump = useJumpToMediaTime()
   const playerRef = useRef<VideoPlayer | null>(null)
-
-  const commentSeconds = usePlaybackSecond(post.uri) ?? startSeconds
-  const commentTime = formatMediaTime(commentSeconds)
-  const moments = useVideoMoments({videoPostUri: post.uri, threadItems})
-  const richText = new RichTextAPI({
-    text: post.record.text,
-    facets: post.record.facets,
+  const playing = usePlaybackSecond(post.uri)
+  const duration = usePlaybackDuration(post.uri)
+  const {moments, loading} = useVideoMomentsWithStatus({
+    videoPostUri: post.uri,
+    threadItems,
   })
-  const authorName = sanitizeDisplayName(
-    post.author.displayName || post.author.handle,
-    item.moderation.ui('displayName'),
-  )
-
-  const onPressComment = () => {
-    playerRef.current?.pause()
-    openComposer({
-      replyTo: {
-        uri: post.uri,
-        cid: post.cid,
-        text: post.record.text,
-        author: post.author,
-        embed: post.embed,
-        langs: post.record.langs,
-        moderation: item.moderation,
-      },
-      mediaTime: commentSeconds,
-      logContext: 'PostReply',
-    })
-  }
+  const now = moments[momentStatuses(moments, playing).indexOf('now')]
+  const ratio = video.aspectRatio
+    ? video.aspectRatio.width / video.aspectRatio.height
+    : 16 / 9
+  const videoHeight = Math.min(width / ratio, height * MAX_VIDEO_HEIGHT_SHARE)
 
   return (
     <ContentHider
@@ -145,38 +146,49 @@ function Player({
         video={video}
         moderation={item.moderation}
         startSeconds={startSeconds}
-        style={[a.flex_1]}
+        style={{height: videoHeight}}
         playerRef={playerRef}
       />
-      <View style={[a.px_lg, a.pt_md, a.gap_md, {paddingBottom: bottom + 12}]}>
-        <View style={[a.gap_xs]}>
-          <Text emoji style={[a.text_md, a.font_semi_bold]} numberOfLines={1}>
-            {authorName}
-          </Text>
-          {richText.text ? (
-            <RichText
-              value={richText}
-              style={[a.text_sm, a.leading_snug]}
-              numberOfLines={3}
-              authorHandle={post.author.handle}
-            />
-          ) : null}
-        </View>
-        <MomentChips
+      <View style={[a.px_lg, a.pt_md]}>
+        <MomentStrip
           moments={moments}
-          onPressMoment={moment => openMoment(post.uri, moment.startSeconds)}
+          current={now}
+          duration={duration}
+          playing={playing}
+          onPressSecond={seconds => jump(post.uri, seconds)}
         />
-        <Button
-          testID="postVideoComment"
-          label={l`Comment at ${commentTime}`}
-          size="large"
-          color="primary"
-          onPress={onPressComment}>
-          <ButtonIcon icon={CommentIcon} />
-          <ButtonText>
-            <Trans>Comment at {commentTime}</Trans>
-          </ButtonText>
-        </Button>
+      </View>
+      <View style={[a.flex_1]}>
+        <MomentsTimeline
+          moments={moments}
+          loading={loading}
+          playing={playing}
+          threadgateRecord={threadgateRecord}
+          header={
+            <VideoTitleBlock
+              post={post}
+              moderation={item.moderation}
+              moments={moments}
+            />
+          }
+          onOpenMoment={moment => openMoment(post.uri, moment.startSeconds)}
+        />
+      </View>
+      <View
+        style={[
+          a.px_lg,
+          a.pt_sm,
+          a.border_t,
+          t.atoms.border_contrast_low,
+          {paddingBottom: bottom + 12},
+        ]}>
+        <ComposerField
+          videoPost={post}
+          videoModeration={item.moderation}
+          fallbackSeconds={startSeconds}
+          placeholder={l`Add a comment…`}
+          onBeforeCompose={() => playerRef.current?.pause()}
+        />
       </View>
     </ContentHider>
   )
