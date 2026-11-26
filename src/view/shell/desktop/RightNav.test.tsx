@@ -72,3 +72,11 @@ it('keeps the v2 contextual rail on its separate conversation view', () => {
   render(<DesktopRightNav routeName="Frontpage" />)
   expect(screen.getByText('V2 frontpage rail')).toBeTruthy()
 })
+
+it.each(['PostVideo', 'PostMoment'])(
+  'leaves the right column to the moments panel on %s',
+  routeName => {
+    const {toJSON} = render(<DesktopRightNav routeName={routeName} />)
+    expect(toJSON()).toBeNull()
+  },
+)

@@ -116,8 +116,10 @@ and "All moments" on the thread's and feed's moment rows opens it everywhere
   or past. Past moments except the last two fold into "N earlier moments".
 - Moments ahead keep their comments hidden ("N comments · shown when you get
   there"); "Show" reveals one anyway. Decided 2026-11-26.
-- On phones the list scrolls by itself, and "Follow the video" keeps the
-  moment playing in view. On the web it scrolls with the page.
+- On phones, and in the wide web panel below, the list scrolls by itself, and
+  "Follow the video" keeps the moment playing in view. On a narrower web
+  window it scrolls with the page. A moment hidden this way isn't pressable
+  until it's revealed, so "Show" isn't a button inside another button.
 - "at 0:41 · Add a comment…" links a new comment to the second being
   watched.
 
@@ -171,5 +173,23 @@ player (`screens/PostMoment/index.tsx`, sharing the player and header bar in
 `screens/PostVideo/VideoSurface.tsx` with the watching screen), and the
 moment is a sheet in the app's own theme with a close button. On the web it is a normal page with the
 post's own player, which jumps to `t` (`index.web.tsx`).
+
+## On a wide web window
+
+From the width where the shell shows its right column (1,100 px), both the
+video's screen and a moment's page use two columns instead, after the design
+canvas's "mu on the web" (`screens/PostVideo/WideVideoMoments.tsx`). The shell
+leaves its right column to them (`DesktopRightNav`), and they take the width
+the news pages take (`ExploreColumn`).
+
+- Left: the video, as large as fits the window, the strip, the video's title,
+  who posted it with a follow button, and the post's buttons.
+- Right, a panel: the moments (`MomentsTimeline`, following the video) with
+  "Add a comment…" at its foot. Opening a moment shows it in the panel
+  (`MomentRoom` with `layout="panel"`) and plays the video from it; "All
+  moments" goes back. The page itself doesn't scroll: the panel and the left
+  column do (the Messages split view's `SplitViewProvider` and `LockScroll`).
+- A moment's address opens the panel on that moment. Switching moments in the
+  panel doesn't change the address.
 
 Tests: `pnpm test src/features/mediaTime src/lib/api/__tests__/post.test.ts`.

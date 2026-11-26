@@ -29,15 +29,32 @@ import {
 } from '#/features/mediaTime/usePlaybackSecond'
 import {useVideoMomentsWithStatus} from '#/features/mediaTime/useVideoMoments'
 import {momentStatuses} from '#/features/mediaTime/watching'
+import {useWideVideoLayout, WideVideoMoments} from './WideVideoMoments'
 
 type ThreadPostItem = Extract<ThreadItem, {type: 'threadPost'}>
+
+/**
+ * The video's screen on the web: two columns on a wide window
+ * (`WideVideoMoments`), otherwise one page.
+ */
+export function PostVideoScreen(
+  props: NativeStackScreenProps<CommonNavigatorParams, 'PostVideo'>,
+) {
+  const wide = useWideVideoLayout()
+  const {name, rkey, t} = props.route.params
+  return wide ? (
+    <WideVideoMoments name={name} rkey={rkey} t={t} />
+  ) : (
+    <PostVideoPage {...props} />
+  )
+}
 
 /**
  * A post's video with its moments (web; design canvas "Watching, with
  * moments"): the post's own player, which jumps to second `t`, where people
  * commented along it, and the moments as a timeline.
  */
-export function PostVideoScreen({
+function PostVideoPage({
   route,
 }: NativeStackScreenProps<CommonNavigatorParams, 'PostVideo'>) {
   const {name, rkey, t: tParam} = route.params

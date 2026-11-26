@@ -61,11 +61,16 @@ export function DesktopRightNav({routeName}: {routeName: string}) {
       routeName === 'NewsFeed' ||
       routeName === 'NewsSettings')
 
+  // Eurosky: a video's moments take the right column for their panel
+  // (`WideVideoMoments`).
+  const isVideoMoments = routeName === 'PostVideo' || routeName === 'PostMoment'
+
   if (
     !rightNavVisible ||
     isMessagesRelatedScreen ||
     isNewsExplore ||
-    isPublicationSpread
+    isPublicationSpread ||
+    isVideoMoments
   ) {
     return null
   }
