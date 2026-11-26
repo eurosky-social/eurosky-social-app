@@ -26,6 +26,14 @@ edge script, so mu no longer depends on `load.webtil.es`.
   registered and whatever the tile stored, for good. It answers a page of
   that origin and no one else (`Sec-Fetch-Site: same-origin`, which the
   browser sets): anything else gets a 403 that clears nothing.
+- No shared worker runs on a tile origin. A request there for one
+  (`Sec-Fetch-Dest: sharedworker`, which the browser sets), whatever its
+  path, gets a 403 dead end that no cache keeps. A shared worker outlives the
+  wipe that ends a tile's run, with what it holds: into the next run on a
+  tile's CID, and past the close on an origin made for one load. The
+  runtime's worker (from `@dasl/tile-server` 4.2.0 on) refuses one while it
+  is registered; this is for what reaches the edge once a tile has
+  unregistered it, as `@dasl/tile-server`'s own router does.
 - `<BASE_HOST>/.well-known/web-tiles/host/` is the page the native apps'
   WebView runs one tile in
   ([`@dasl/tile-host`](https://www.npmjs.com/package/@dasl/tile-host), inlined

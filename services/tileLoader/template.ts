@@ -421,6 +421,18 @@ function respond(req: Request): Response {
     : ''
   if (!isTileLabel(label, base)) return dead(404, 'Not a tile origin.')
 
+  // No shared worker on a tile origin, of any kind, from any address there,
+  // the runtime's files and the wipe among them: one outlives the wipe that
+  // ends a tile's run, with what it holds, into the next run on a tile's
+  // CID and past the close on an origin made for one load. The worker
+  // refuses one while it is registered; this is what reaches the edge once a
+  // tile has unregistered it. The browser says what a request is for, and no
+  // page can say otherwise. @dasl/tile-server 4.2.0's router refuses the
+  // same; dead() says no-store, so no cache hands this to the shuttle.
+  if (req.headers.get('sec-fetch-dest') === 'sharedworker') {
+    return dead(403, 'No shared worker runs on a tile origin.')
+  }
+
   if (url.pathname === WIPE_PATH) {
     // A tile origin is emptied for a page of its own and no one else: the
     // browser says where a request comes from, and no page can say

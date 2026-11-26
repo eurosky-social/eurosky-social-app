@@ -413,7 +413,11 @@ const scheme = local ? 'http' : 'https'
 const portPart = reach.port ? `:${reach.port}` : ''
 const mint = await request(`load.${base}`, dockPath)
 const minted = new URL(mint.headers.location || 'http://invalid/')
-check('the dock, asked without a tile origin, answers 303', mint.status === 303, String(mint.status))
+check(
+  'the dock, asked without a tile origin, answers 303',
+  mint.status === 303,
+  String(mint.status),
+)
 check(
   'to itself, with a 20-letter tile origin',
   minted.hostname === `load.${base}` &&
@@ -424,7 +428,10 @@ check(
   mint.headers.location,
 )
 const docked = minted.searchParams.get('tile')
-const dockPage = await request(`load.${base}`, `${dockPath}?tile=${encodeURIComponent(docked)}`)
+const dockPage = await request(
+  `load.${base}`,
+  `${dockPath}?tile=${encodeURIComponent(docked)}`,
+)
 check(
   'the dock page is served for that origin',
   dockPage.status === 200 &&
@@ -432,8 +439,9 @@ check(
   String(dockPage.status),
 )
 check(
-  'with a policy that frames that origin\'s runtime and nothing else',
-  dockPage.headers['content-security-policy'] === dockCSP(`${scheme}://${docked}`),
+  "with a policy that frames that origin's runtime and nothing else",
+  dockPage.headers['content-security-policy'] ===
+    dockCSP(`${scheme}://${docked}`),
   dockPage.headers['content-security-policy'],
 )
 const dockJs = await request(`load.${base}`, `${dockPath}dock.js`)
@@ -444,8 +452,17 @@ check(
   String(dockJs.status),
 )
 await onlyFiles(`load.${base}`, dockPath)
-for (const bad of ['evil.example', base, `load.${base}`, `${docked.replace(/:\d+$/, '')}:1`, `x.${docked}`]) {
-  const res = await request(`load.${base}`, `${dockPath}?tile=${encodeURIComponent(bad)}`)
+for (const bad of [
+  'evil.example',
+  base,
+  `load.${base}`,
+  `${docked.replace(/:\d+$/, '')}:1`,
+  `x.${docked}`,
+]) {
+  const res = await request(
+    `load.${base}`,
+    `${dockPath}?tile=${encodeURIComponent(bad)}`,
+  )
   check(`does not dock ${bad}`, res.status === 400, String(res.status))
 }
 // A large jar. In Chromium a page's credentialless tiles share one, about
@@ -899,8 +916,54 @@ for (const host of [base, `load.${base}`]) {
   )
 }
 
+// No shared worker on a tile origin, whatever the path, the runtime's files
+// and the wipe among them: one would outlive the tile's run. The browser says
+// what a request is for (Sec-Fetch-Dest); @dasl/tile-server 4.2.0 refuses the
+// same.
+for (const host of [origin, ...(takesCids ? [cidHost] : [])]) {
+  const where = host === origin ? 'a tile origin' : "a tile's CID"
+  for (const path of [
+    '/.well-known/web-tiles/worker.js',
+    '/.well-known/web-tiles/worker.js?cid',
+    '/.well-known/web-tiles/shuttle.js',
+    wipePath,
+    '/app.js',
+    '/',
+  ]) {
+    const res = await request(host, path, {
+      headers: {
+        'sec-fetch-dest': 'sharedworker',
+        'sec-fetch-site': 'same-origin',
+      },
+    })
+    const miss = hasAll(res.headers, deadHeaders)
+    check(
+      `${path} on ${where}, asked for as a shared worker, is a dead end`,
+      res.status === 403 &&
+        miss.length === 0 &&
+        res.headers['cache-control'] === 'no-store' &&
+        !res.headers['clear-site-data'],
+      `${res.status} ${res.headers['cache-control']} ${miss.join(', ')}`,
+    )
+  }
+  for (const dest of ['serviceworker', 'worker', 'script']) {
+    const res = await request(host, '/.well-known/web-tiles/worker.js', {
+      headers: {'sec-fetch-dest': dest},
+    })
+    check(
+      `and its worker.js is served to anything else (${dest}) on ${where}`,
+      res.status === 200,
+      String(res.status),
+    )
+  }
+}
+
 const notOnTile = await request(origin, dockPath)
-check('a tile origin has no dock', notOnTile.status === 404, String(notOnTile.status))
+check(
+  'a tile origin has no dock',
+  notOnTile.status === 404,
+  String(notOnTile.status),
+)
 
 if (failures) {
   console.error(`\n${failures} failure(s)`)
