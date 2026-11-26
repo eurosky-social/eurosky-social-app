@@ -16,6 +16,7 @@ import {ComposerField} from '#/features/mediaTime/components/ComposerField'
 import {MomentsTimeline} from '#/features/mediaTime/components/MomentsTimeline'
 import {MomentStrip} from '#/features/mediaTime/components/MomentStrip'
 import {VideoTitleBlock} from '#/features/mediaTime/components/VideoTitleBlock'
+import {isMoment} from '#/features/mediaTime/moments'
 import {openMoment} from '#/features/mediaTime/openMoment'
 import {
   getOwnVideoEmbed,
@@ -28,7 +29,7 @@ import {
   usePlaybackSecond,
 } from '#/features/mediaTime/usePlaybackSecond'
 import {useVideoMomentsWithStatus} from '#/features/mediaTime/useVideoMoments'
-import {momentStatuses} from '#/features/mediaTime/watching'
+import {playingMoment} from '#/features/mediaTime/watching'
 import {useWideVideoLayout, WideVideoMoments} from './WideVideoMoments'
 
 type ThreadPostItem = Extract<ThreadItem, {type: 'threadPost'}>
@@ -83,7 +84,7 @@ function PostVideoPage({
     threadItems: thread.data.items,
     enabled: hasVideo,
   })
-  const now = moments[momentStatuses(moments, playing).indexOf('now')]
+  const now = playingMoment(moments, playing)
   const authorName = anchor
     ? sanitizeDisplayName(
         anchor.value.post.author.displayName || anchor.value.post.author.handle,
@@ -114,6 +115,7 @@ function PostVideoPage({
           playing={playing}
           threadgateRecord={thread.data.threadgate?.record}
           onOpenMoment={moment => openMoment(postUri, moment.startSeconds)}
+          onPlaySecond={seconds => jump(postUri, seconds)}
           header={
             <>
               <ContentHider
@@ -146,7 +148,11 @@ function PostVideoPage({
                   videoPost={post}
                   videoModeration={anchor.moderation}
                   fallbackSeconds={startSeconds}
-                  placeholder={l`Add a comment…`}
+                  placeholder={
+                    moments.some(isMoment)
+                      ? l`Add a comment…`
+                      : l`Be one of the first…`
+                  }
                 />
               </View>
             </>

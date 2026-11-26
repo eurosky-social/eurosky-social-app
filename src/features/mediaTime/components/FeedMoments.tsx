@@ -13,8 +13,9 @@ import {MomentChips} from './MomentChips'
 
 /**
  * Under a video post in a feed: its most talked-about moments. Renders
- * nothing for posts without a video, without replies, or whose content is
- * hidden behind a warning.
+ * nothing for posts without a video, without replies, without a group of
+ * comments big enough to be a moment, or whose content is hidden behind a
+ * warning.
  */
 export function FeedMoments({
   post,
@@ -30,13 +31,15 @@ export function FeedMoments({
     enabled: eligible,
   })
 
-  if (!eligible || !moments || moments.length === 0) return null
+  const top = moments ? topMoments(moments) : []
+
+  if (!eligible || top.length === 0) return null
 
   return (
     <View style={[a.pt_xs, a.pb_sm]}>
       <MomentChips
         title={l`Most talked-about moments`}
-        moments={topMoments(moments)}
+        moments={top}
         onPressMoment={moment => openMoment(post.uri, moment.startSeconds)}
         onPressAll={() => openWatching(post.uri)}
       />

@@ -4,7 +4,7 @@ import {useQuery} from '@tanstack/react-query'
 import {STALE} from '#/state/queries'
 import {network} from '#/lexicons'
 import {MEDIA_TIME_ENABLED} from './config'
-import {groupIntoMoments, mergeMoments, type Moment} from './moments'
+import {groupIntoMoments, isMoment, mergeMoments, type Moment} from './moments'
 import {getMomentsClient} from './momentsClient'
 import {usePostedComments} from './postedComments'
 import {momentsQueryKey, momentSummaryQueryKey} from './queryKeys'
@@ -111,7 +111,8 @@ export function useMomentSummary({
  * earlier one first.
  */
 export function topMoments(moments: Moment[], limit = 3): Moment[] {
-  return [...moments]
+  return moments
+    .filter(isMoment)
     .sort((a, b) => b.count - a.count || a.startSeconds - b.startSeconds)
     .slice(0, limit)
 }

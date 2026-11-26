@@ -110,9 +110,9 @@ describe('topMoments', () => {
   it('keeps the three with the most comments, most first', () => {
     expect(
       topMoments([
-        moment(10, 2),
+        moment(10, 3),
         moment(100, 9),
-        moment(200, 1),
+        moment(200, 4),
         moment(300, 5),
         moment(400, 9),
       ]).map(m => m.startSeconds),
@@ -120,7 +120,15 @@ describe('topMoments', () => {
   })
 
   it('returns fewer when there are fewer', () => {
-    expect(topMoments([moment(10, 2)])).toHaveLength(1)
+    expect(topMoments([moment(10, 3)])).toHaveLength(1)
     expect(topMoments([])).toEqual([])
+  })
+
+  it('leaves out groups too small to be a moment', () => {
+    expect(
+      topMoments([moment(10, 2), moment(20, 1), moment(30, 3)]).map(
+        m => m.startSeconds,
+      ),
+    ).toEqual([30])
   })
 })

@@ -86,6 +86,19 @@ export function visibleMomentPosts(
   )
 }
 
+/**
+ * A comment's text on one line, without the "▶ 0:41" link at its end, or
+ * `undefined` if the post isn't a post record.
+ */
+export function commentText(post: PostView): string | undefined {
+  if (!bsky.matches(app.bsky.feed.post, post.record)) return undefined
+  return withoutMediaTimeLink(
+    new RichText({text: post.record.text, facets: post.record.facets}),
+  )
+    .text.replace(/\s+/g, ' ')
+    .trim()
+}
+
 /** Replies shown under a comment on a moment's page. */
 export const SHOWN_REPLIES = 2
 
@@ -130,11 +143,7 @@ export function momentTitleQuote(
     const onPage = moderation.ui('contentView')
     if (inList.filter || inList.blur || inList.alert) continue
     if (onPage.blur || onPage.alert) continue
-    const text = withoutMediaTimeLink(
-      new RichText({text: post.record.text, facets: post.record.facets}),
-    )
-      .text.replace(/\s+/g, ' ')
-      .trim()
+    const text = commentText(post)
     if (!text) continue
     return text.length > TITLE_MAX_CHARS
       ? `${text.slice(0, TITLE_MAX_CHARS - 1).trimEnd()}…`

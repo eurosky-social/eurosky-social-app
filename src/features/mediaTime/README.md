@@ -73,6 +73,23 @@ thread loaded. Eurosky's AppView returns at most 200 replies for a thread;
 Bluesky's currently returns all direct replies. Hidden and muted replies are
 not counted there.
 
+### Few comments
+
+A group needs 3 comments to be shown as a moment (`MIN_MOMENT_COMMENTS`,
+`isMoment`), after the design canvas's "Few comments yet". The AppView
+returns smaller groups too, and the app shows their comments one by one:
+
+- in the timeline, each as a row at its second, with who wrote it and what;
+  tapping one plays the video from there. A group of 2 says "Forming a
+  moment · one more makes it". Without any moment the list is "Comments
+  along the video", and the field says "Be one of the first…";
+- in a thread, "Comments along the video" with a link to watch the video
+  with them, instead of moment chips;
+- in feeds, nothing.
+
+A moment's page still opens for a smaller group, so links to it keep
+working.
+
 ### A comment just posted
 
 The AppView counts a new comment a few seconds after it is posted, and its
@@ -87,7 +104,7 @@ Deleting the comment forgets it.
 ## In feeds
 
 Under a video post with replies, feeds show its three most talked-about
-moments (`components/FeedMoments.tsx`, placed in `PostFeedItem`). Nothing
+moments, from groups of at least 3 comments (`components/FeedMoments.tsx`, placed in `PostFeedItem`). Nothing
 shows while the post is hidden behind a content warning (`feed.ts`). The
 counts come from `network.eurosky.feed.getMomentSummaries` on the same
 AppView; requests made within 50 ms share one call of up to 25 posts
