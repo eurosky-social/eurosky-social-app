@@ -22,7 +22,8 @@ import {List} from '#/view/com/util/List'
 import {TimeElapsed} from '#/view/com/util/TimeElapsed'
 import {PreviewableUserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
-import {Button, ButtonIcon} from '#/components/Button'
+import {Button, ButtonIcon, ButtonText} from '#/components/Button'
+import {ChevronLeft_Stroke2_Corner0_Rounded as BackIcon} from '#/components/icons/Chevron'
 import {
   Heart2_Filled_Stroke2_Corner0_Rounded as HeartFilledIcon,
   Heart2_Stroke2_Corner0_Rounded as HeartIcon,
@@ -64,6 +65,8 @@ type PostView = app.bsky.feed.defs.PostView
  * `layout="sheet"` (phones) draws it as a sheet under the video: its top
  * stays put, the comments scroll, and the field sits at the bottom.
  * `layout="page"` (web) scrolls with the page, below `header`.
+ * `layout="panel"` (the desktop web panel beside the video) is like the sheet
+ * without its handle, and goes back to all moments with `onBack`.
  */
 export function MomentRoom({
   layout,
@@ -78,8 +81,9 @@ export function MomentRoom({
   bottomInset = 0,
   onBeforeCompose,
   onClose,
+  onBack,
 }: {
-  layout: 'sheet' | 'page'
+  layout: 'sheet' | 'page' | 'panel'
   videoPost: PostView & {record: app.bsky.feed.post.Main}
   videoModeration: ModerationDecision
   threadgateRecord?: app.bsky.feed.threadgate.Main
@@ -98,6 +102,8 @@ export function MomentRoom({
   onBeforeCompose?: () => void
   /** Shows a close button that calls this (`layout="sheet"`). */
   onClose?: () => void
+  /** Shows "All moments" above the room, which calls this (`layout="panel"`). */
+  onBack?: () => void
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
@@ -220,6 +226,42 @@ export function MomentRoom({
 
   if (layout === 'page') {
     return <View style={[a.flex_1]}>{list}</View>
+  }
+
+  if (layout === 'panel') {
+    return (
+      <View style={[a.flex_1, t.atoms.bg]}>
+        {onBack ? (
+          <View
+            style={[
+              a.flex_row,
+              a.px_sm,
+              a.py_xs,
+              a.border_b,
+              t.atoms.border_contrast_low,
+            ]}>
+            <Button
+              testID="momentPanelBack"
+              label={l`Back to all moments`}
+              size="small"
+              variant="ghost"
+              color="secondary"
+              onPress={onBack}>
+              <ButtonIcon icon={BackIcon} />
+              <ButtonText>
+                <Trans>All moments</Trans>
+              </ButtonText>
+            </Button>
+          </View>
+        ) : null}
+        {top}
+        <View style={[a.flex_1]}>{list}</View>
+        <View
+          style={[a.px_lg, a.py_md, a.border_t, t.atoms.border_contrast_low]}>
+          {composerField}
+        </View>
+      </View>
+    )
   }
 
   return (

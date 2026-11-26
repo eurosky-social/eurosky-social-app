@@ -7,6 +7,10 @@ import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {makeRecordUri} from '#/lib/strings/url-helpers'
 import {usePostThread} from '#/state/queries/usePostThread'
 import {type ThreadItem} from '#/state/queries/usePostThread/types'
+import {
+  useWideVideoLayout,
+  WideVideoMoments,
+} from '#/screens/PostVideo/WideVideoMoments'
 import {atoms as a} from '#/alf'
 import * as Layout from '#/components/Layout'
 import {ContentHider} from '#/components/moderation/ContentHider'
@@ -32,10 +36,31 @@ import {useVideoMomentsWithStatus} from '#/features/mediaTime/useVideoMoments'
 type ThreadPostItem = Extract<ThreadItem, {type: 'threadPost'}>
 
 /**
+ * A moment's screen on the web: on a wide window, the video's two columns
+ * with the moment open in the panel (`WideVideoMoments`), otherwise one page.
+ */
+export function PostMomentScreen(
+  props: NativeStackScreenProps<CommonNavigatorParams, 'PostMoment'>,
+) {
+  const wide = useWideVideoLayout()
+  const {name, rkey, t} = props.route.params
+  return wide ? (
+    <WideVideoMoments
+      name={name}
+      rkey={rkey}
+      t={t}
+      openSeconds={parseMediaTimeParam(t) ?? 0}
+    />
+  ) : (
+    <PostMomentPage {...props} />
+  )
+}
+
+/**
  * One moment of a post's video and its comments (web): the post's video,
  * which jumps to second `t`, and the moment holding that second below it.
  */
-export function PostMomentScreen({
+function PostMomentPage({
   route,
   navigation,
 }: NativeStackScreenProps<CommonNavigatorParams, 'PostMoment'>) {
