@@ -132,8 +132,9 @@ installed, since it would never run.
   tile whose record is gone shows as unavailable and can still be
   uninstalled from there.
 - **A tile's own page** (`/<author handle or DID>/app/<rkey>`, the `TileApp`
-  route) runs the tile with no post around it: under it, its author and two
-  buttons, icons alone: install or uninstall, and post. The page works for any tile,
+  route) runs the tile with no post around it, laid out like one all the same:
+  its author above it, and under it two buttons, icons alone: post, and
+  install or uninstall. The page works for any tile,
   installed or not, and applies the rules of a post's embed: nothing runs
   while tiles are paused, and the author's verification is asked afresh each
   time the page opens. The tile takes the column's width and the height its

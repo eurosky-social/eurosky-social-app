@@ -53,7 +53,7 @@ export const MAX_TILE_HEIGHT = 800
 export const TILE_POST_CHROME = 340
 /**
  * The same, for an installed tile running on a page of its own
- * (`screens/TileAppScreen.tsx`): the header that names it above, the row of
- * buttons below, and the app's bars.
+ * (`screens/TileAppScreen.tsx`): the header that names it and its author's
+ * row above, the row of buttons below, and the app's bars.
  */
-export const TILE_APP_CHROME = 200
+export const TILE_APP_CHROME = 270

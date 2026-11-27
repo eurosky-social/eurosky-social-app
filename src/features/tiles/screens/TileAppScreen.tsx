@@ -28,11 +28,15 @@ import {tileUriFromAppRoute} from '../links'
 import {useTilesPolicy} from '../policy'
 import {type TileRecord} from '../resolve'
 
+/** The author row's height: its 42px avatar and the padding around it. */
+const AUTHOR_HEIGHT = 42 + 2 * a.py_md.paddingTop
+
 /**
  * A tile running by itself, at `/<author>/app/<rkey>`: where an installed
- * tile opens from the Apps tab. There is no post here, so none of a post's
- * controls either: under the tile are its author and two buttons, icons
- * alone, to install or uninstall it and to write a post that embeds it. The page can be
+ * tile opens from the Apps tab. There is no post here, but the page is laid
+ * out like one: the tile's author above it, where a post's would be, and
+ * under it, where a post has its controls, two buttons, icons alone, to
+ * write a post that embeds the tile and to install or uninstall it. The page can be
  * reached for any tile, installed or not.
  *
  * The same rules decide whether the tile runs as in a post: not while tiles
@@ -111,6 +115,13 @@ function TileApp({record, title}: {record: TileRecord; title: string}) {
 
   return (
     <View>
+      {/*
+       * Above the tile, where a post names its author. The row keeps its
+       * height while the profile loads, so the tile does not jump.
+       */}
+      <View style={[a.flex_row, a.px_lg, a.py_md, {minHeight: AUTHOR_HEIGHT}]}>
+        {author && <TileAuthorRow author={author} />}
+      </View>
       {!policy.enabled ? (
         <Notice>
           <NoticeText>
@@ -162,41 +173,26 @@ function TileApp({record, title}: {record: TileRecord; title: string}) {
         />
       )}
 
-      <View
-        style={[
-          a.flex_row,
-          a.flex_wrap,
-          a.align_center,
-          a.justify_between,
-          a.gap_md,
-          a.px_lg,
-          a.py_md,
-        ]}>
-        {author ? (
-          <TileAuthorRow author={author} />
-        ) : (
-          <View style={[a.flex_1]} />
-        )}
-        <View style={[a.flex_row, a.gap_sm]}>
-          <Button
-            label={l`Post ${title}`}
-            size="large"
-            shape="round"
-            color="secondary"
-            onPress={() => void postTile(uri)}>
-            <ButtonIcon icon={PostIcon} />
-          </Button>
-          <Button
-            testID="tileAppInstallBtn"
-            label={installed ? l`Uninstall ${title}` : l`Install ${title}`}
-            size="large"
-            shape="round"
-            color={installed ? 'negative_subtle' : 'primary'}
-            disabled={pending}
-            onPress={toggle}>
-            <ButtonIcon icon={installed ? UninstallIcon : InstallIcon} />
-          </Button>
-        </View>
+      {/* Under the tile, where a post has its controls. */}
+      <View style={[a.flex_row, a.justify_end, a.gap_sm, a.px_lg, a.py_md]}>
+        <Button
+          label={l`Post ${title}`}
+          size="large"
+          shape="round"
+          color="secondary"
+          onPress={() => void postTile(uri)}>
+          <ButtonIcon icon={PostIcon} />
+        </Button>
+        <Button
+          testID="tileAppInstallBtn"
+          label={installed ? l`Uninstall ${title}` : l`Install ${title}`}
+          size="large"
+          shape="round"
+          color={installed ? 'negative_subtle' : 'primary'}
+          disabled={pending}
+          onPress={toggle}>
+          <ButtonIcon icon={installed ? UninstallIcon : InstallIcon} />
+        </Button>
       </View>
     </View>
   )
