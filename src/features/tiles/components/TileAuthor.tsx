@@ -7,9 +7,10 @@ import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useProfileShadow} from '#/state/cache/profile-shadow'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
-import {UserAvatar} from '#/view/com/util/UserAvatar'
+import {PreviewableUserAvatar, UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
 import {Link} from '#/components/Link'
+import {ProfileBadges} from '#/components/ProfileBadges'
 import {ProfileHoverCard} from '#/components/ProfileHoverCard'
 import {Text} from '#/components/Typography'
 import {VerificationCheck} from '#/components/verification/VerificationCheck'
@@ -92,77 +93,87 @@ export function TileAuthorLine({
 }
 
 /**
- * The author of a tile where there is room to say who they are: the avatar,
- * the name with the check when they are one of our verified accounts, and
- * the handle under it. Used where a tile is shown by itself (its info sheet,
- * its own page); the card of a tile post has the one-line `TileAuthorLine`.
- * The whole row links to the author's profile.
+ * The author of a tile where there is room to say who they are (its info
+ * sheet, its own page), laid out the way a post names its author at the top
+ * of a thread: the avatar, the name with the account's badges beside it,
+ * and the handle under it. The card of a tile post has the one-line
+ * `TileAuthorLine`. Avatar and name both lead to the author's profile.
+ *
+ * A name that moderation hides (an account that asks not to be shown to
+ * signed-out visitors, say) is replaced by the bare handle, so that the
+ * badge is never left hanging beside nothing.
  */
 export function TileAuthorRow({
   author,
   onPress,
 }: {
   author: TileAuthor
-  /** Runs as the link is followed, e.g. to close the dialog it is in. */
+  /**
+   * Runs as a link to the profile is followed: the sheet this row is in
+   * closes itself. Inside a sheet the badges are not buttons, since they
+   * would open a dialog over it.
+   */
   onPress?: () => void
 }) {
   const t = useTheme()
-  const {t: l} = useLingui()
   const profile = useProfileShadow(author.profile)
   const moderationOpts = useModerationOpts()
   const moderation = moderationOpts
     ? moderateProfile(profile, moderationOpts)
     : undefined
-  const name = sanitizeDisplayName(
-    profile.displayName || profile.handle,
-    moderation?.ui('displayName'),
-  )
-  const handle = sanitizeHandle(profile.handle, '@')
-  // A name that moderation hides leaves the handle to stand in for it.
-  const title = name || handle
+  const handle = sanitizeHandle(profile.handle)
+  const name =
+    sanitizeDisplayName(
+      profile.displayName || handle,
+      moderation?.ui('displayName'),
+    ) || handle
 
   return (
-    <Link
-      to={makeProfileLink(profile)}
-      label={l`View ${title}'s profile`}
-      onPress={() => onPress?.()}
-      style={[a.flex_1, a.flex_row, a.align_center, a.gap_sm]}>
-      <UserAvatar
-        type="user"
-        size={36}
-        avatar={profile.avatar}
-        moderation={moderation?.ui('avatar')}
-      />
-      <View style={[a.flex_1]}>
-        <View style={[a.flex_row, a.align_center, a.gap_xs]}>
-          <Text
-            emoji
-            numberOfLines={1}
-            style={[
-              a.flex_shrink,
-              a.text_md,
-              a.font_semi_bold,
-              a.leading_snug,
-            ]}>
-            {title}
-          </Text>
-          {author.trusted && (
-            <VerificationCheck
-              width={14}
-              fill={t.palette.primary_500}
-              verifier={false}
-            />
-          )}
-        </View>
-        {name ? (
-          <Text
-            emoji
-            numberOfLines={1}
-            style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
-            {handle}
-          </Text>
-        ) : null}
+    <View style={[a.flex_1, a.flex_row, a.align_center, a.gap_md]}>
+      <View collapsable={false}>
+        <PreviewableUserAvatar
+          size={42}
+          profile={profile}
+          moderation={moderation?.ui('avatar')}
+          type={profile.associated?.labeler ? 'labeler' : 'user'}
+          onBeforePress={onPress}
+        />
       </View>
-    </Link>
+      <Link
+        to={makeProfileLink(profile)}
+        style={[a.flex_1]}
+        label={name}
+        onPress={() => onPress?.()}>
+        <View style={[a.flex_1, a.align_start]}>
+          <ProfileHoverCard did={profile.did} style={[a.w_full]}>
+            <View style={[a.flex_row, a.align_center]}>
+              <Text
+                emoji
+                numberOfLines={1}
+                style={[
+                  a.flex_shrink,
+                  a.text_lg,
+                  a.font_semi_bold,
+                  a.leading_snug,
+                ]}>
+                {name}
+              </Text>
+              <View style={[a.pl_xs]}>
+                <ProfileBadges
+                  profile={profile}
+                  size="md"
+                  interactive={!onPress}
+                />
+              </View>
+            </View>
+            <Text
+              numberOfLines={1}
+              style={[a.text_md, a.leading_snug, t.atoms.text_contrast_medium]}>
+              {sanitizeHandle(profile.handle, '@')}
+            </Text>
+          </ProfileHoverCard>
+        </View>
+      </Link>
+    </View>
   )
 }
