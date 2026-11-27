@@ -13,24 +13,28 @@ const HEIGHT = 22
  * "funk episode in the timeline"): one bar per stretch of the video, as high
  * as its share of comments, with the `highlighted` moments (the ones shown
  * as buttons below) in colour. Shows nothing until the video's length is
- * known.
+ * known. The insights page draws it larger (`bars`, `height`).
  */
 export function MomentHeatStrip({
   moments,
   highlighted,
   duration,
+  bars = BARS,
+  height = HEIGHT,
 }: {
   moments: Moment[]
   highlighted: Moment[]
   duration: number | undefined
+  bars?: number
+  height?: number
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
   if (!duration) return null
-  const values = momentBars(moments, duration, BARS)
+  const values = momentBars(moments, duration, bars)
   const max = Math.max(...values)
   if (!(max > 0)) return null
-  const lit = highlightedBars(highlighted, duration, BARS)
+  const lit = highlightedBars(highlighted, duration, bars)
 
   return (
     <View
@@ -38,14 +42,14 @@ export function MomentHeatStrip({
       accessibilityRole="image"
       accessibilityLabel={l`Where people commented along the video`}
       accessibilityHint=""
-      style={[a.flex_row, a.align_end, {height: HEIGHT, gap: 2}]}>
+      style={[a.flex_row, a.align_end, {height, gap: 2}]}>
       {values.map((value, i) => (
         <View
           key={i}
           style={[
             a.flex_1,
             {
-              height: value > 0 ? Math.max(3, (value / max) * HEIGHT) : 2,
+              height: value > 0 ? Math.max(3, (value / max) * height) : 2,
               borderRadius: 1,
               backgroundColor: lit[i]
                 ? t.palette.primary_500

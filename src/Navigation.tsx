@@ -112,6 +112,7 @@ import {NotificationsActivityListScreen} from '#/screens/Notifications/ActivityL
 import {PostLikedByScreen} from '#/screens/Post/PostLikedBy'
 import {PostQuotesScreen} from '#/screens/Post/PostQuotes'
 import {PostRepostedByScreen} from '#/screens/Post/PostRepostedBy'
+import {PostInsightsScreen} from '#/screens/PostInsights'
 import {PostMomentScreen} from '#/screens/PostMoment'
 import {PostVideoScreen} from '#/screens/PostVideo'
 import {ProfileKnownFollowersScreen} from '#/screens/Profile/KnownFollowers'
@@ -404,6 +405,11 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         options={({route}) => ({
           title: title(msg`Moment in a video by @${route.params.name}`),
         })}
+      />
+      <Stack.Screen
+        name="PostInsights"
+        getComponent={() => PostInsightsScreen}
+        options={{title: title(msg`Video insights`)}}
       />
       <Stack.Screen
         name="PostLikedBy"

@@ -10,20 +10,22 @@ import {openMoment} from '../openMoment'
 import {openWatching} from '../openWatching'
 import {getOwnVideoEmbed} from '../record'
 import {useVideoMoments} from '../useVideoMoments'
+import {InsightsLink} from './InsightsLink'
 import {MomentChips} from './MomentChips'
 
 /**
  * Under a video post in its thread: the moments its replies are linked to.
  * With linked replies but no group big enough to be a moment, it offers to
- * watch the video with them instead. Renders nothing for posts without a
- * video or without linked replies.
+ * watch the video with them instead, and its author gets a link to the
+ * video's insights. Renders nothing for posts without a video or without
+ * linked replies.
  */
 export function ThreadMoments({
   items,
   videoPost,
 }: {
   items: readonly ThreadItem[]
-  videoPost: Pick<app.bsky.feed.defs.PostView, 'uri' | 'embed'>
+  videoPost: Pick<app.bsky.feed.defs.PostView, 'uri' | 'embed' | 'author'>
 }) {
   const video = getOwnVideoEmbed(videoPost.embed)
   const hasVideo = !!video && video.presentation !== 'gif'
@@ -47,6 +49,7 @@ export function ThreadMoments({
         onPressMoment={moment => openMoment(videoPost.uri, moment.startSeconds)}
         onPressAll={() => openWatching(videoPost.uri)}
       />
+      <InsightsLink post={videoPost} style={[a.pt_sm]} />
     </View>
   )
 }

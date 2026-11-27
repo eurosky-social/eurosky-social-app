@@ -55,6 +55,11 @@
           "description": "The second of the moment's latest reply."
         },
         "replyCount": { "type": "integer", "minimum": 1 },
+        "unansweredCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many of the moment's replies by other accounts the video post's author has not replied to directly. Counts all of the moment's replies, not only the listed ones."
+        },
         "replies": {
           "type": "array",
           "maxLength": 100,
@@ -68,7 +73,11 @@
       "required": ["uri", "seconds"],
       "properties": {
         "uri": { "type": "string", "format": "at-uri" },
-        "seconds": { "type": "integer", "minimum": 0 }
+        "seconds": { "type": "integer", "minimum": 0 },
+        "authorReplied": {
+          "type": "boolean",
+          "description": "True when the video post's author replied directly to this reply."
+        }
       }
     }
   }

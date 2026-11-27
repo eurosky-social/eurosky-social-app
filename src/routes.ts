@@ -65,6 +65,8 @@ export const router = new Router<AllNavigatableRoutes>({
   PostVideo: '/profile/:name/post/:rkey/video',
   // Eurosky: one moment of a post's video and its comments
   PostMoment: '/profile/:name/post/:rkey/moment/:t',
+  // Eurosky: a video's insights for its author
+  PostInsights: '/profile/:name/post/:rkey/insights',
   CustomFeed: '/profile/:name/feed/:rkey',
   CustomFeedLikedBy: '/profile/:name/feed/:rkey/liked-by',
   ProfileLabelerLikedBy: '/profile/:name/labeler/liked-by',
