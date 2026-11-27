@@ -85,3 +85,40 @@ export function tileScreenshotUrl(
   const cid = tileResourceCid(manifest, src)
   return cid ? tileBlobUrl(pds, did, cid, cdn) : undefined
 }
+
+/** The largest side a `sizes` value declares; `any` (a vector) beats them all. */
+function declaredIconSize(sizes: string | undefined): number {
+  if (!sizes) return 0
+  let best = 0
+  for (const size of sizes.toLowerCase().split(/\s+/)) {
+    if (size === 'any') return Infinity
+    const match = /^(\d+)x(\d+)$/.exec(size)
+    if (match) best = Math.max(best, Number(match[1]), Number(match[2]))
+  }
+  return best
+}
+
+/**
+ * The blob URL of a tile's icon: the biggest one its manifest declares, a
+ * monochrome mask only when there is nothing else (it is meant to be tinted,
+ * not shown). Undefined when the manifest has no icon among its resources.
+ */
+export function tileIconUrl(
+  manifest: TileManifest,
+  pds: string,
+  did: string,
+  cdn: string = TILES_BLOB_URL,
+): string | undefined {
+  const icons = [...(manifest.icons ?? [])]
+    .filter(icon => typeof icon?.src === 'string')
+    .sort((x, y) => {
+      const mono =
+        Number(x.purpose === 'monochrome') - Number(y.purpose === 'monochrome')
+      return mono || declaredIconSize(y.sizes) - declaredIconSize(x.sizes)
+    })
+  for (const icon of icons) {
+    const cid = tileResourceCid(manifest, icon.src)
+    if (cid) return tileBlobUrl(pds, did, cid, cdn)
+  }
+  return undefined
+}

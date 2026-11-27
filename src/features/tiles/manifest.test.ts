@@ -2,6 +2,7 @@ import {parseCid} from '@atproto/lex'
 
 import {
   tileBlobUrl,
+  tileIconUrl,
   type TileManifest,
   tileResourceCid,
   tileScreenshotUrl,
@@ -134,5 +135,63 @@ describe('tileScreenshotUrl', () => {
     ).toBe(
       `https://pds.test/xrpc/com.atproto.sync.getBlob?did=did%3Aplc%3Aa&cid=${SHOT_CID}`,
     )
+  })
+})
+
+describe('tileIconUrl', () => {
+  const blob = (cid: string) =>
+    `https://pds.test/xrpc/com.atproto.sync.getBlob?did=did%3Aplc%3Aa&cid=${cid}`
+  const withIcons = (icons: TileManifest['icons']) =>
+    ({
+      resources: {
+        '/small.png': {src: {$link: 'bafysmall'}},
+        '/big.png': {src: {$link: 'bafybig'}},
+        '/icon.svg': {src: {$link: 'bafysvg'}},
+        '/mask.svg': {src: {$link: 'bafymask'}},
+      },
+      icons,
+    }) as unknown as TileManifest
+  const url = (icons: TileManifest['icons']) =>
+    tileIconUrl(withIcons(icons), 'https://pds.test', 'did:plc:a', '')
+
+  it('is nothing for a manifest without icons', () => {
+    expect(url(undefined)).toBe(undefined)
+    expect(url([])).toBe(undefined)
+  })
+
+  it('takes the biggest icon declared, a vector above all', () => {
+    expect(
+      url([
+        {src: '/small.png', sizes: '48x48'},
+        {src: '/big.png', sizes: '192x192 512x512'},
+      ]),
+    ).toBe(blob('bafybig'))
+    expect(
+      url([
+        {src: '/big.png', sizes: '512x512'},
+        {src: '/icon.svg', sizes: 'any'},
+      ]),
+    ).toBe(blob('bafysvg'))
+  })
+
+  it('keeps a monochrome mask for when there is nothing else', () => {
+    expect(
+      url([
+        {src: '/mask.svg', sizes: 'any', purpose: 'monochrome'},
+        {src: '/small.png', sizes: '48x48'},
+      ]),
+    ).toBe(blob('bafysmall'))
+    expect(url([{src: '/mask.svg', purpose: 'monochrome'}])).toBe(
+      blob('bafymask'),
+    )
+  })
+
+  it('skips an icon that is not among the resources', () => {
+    expect(
+      url([
+        {src: '/missing.png', sizes: '512x512'},
+        {src: '/small.png', sizes: '48x48'},
+      ]),
+    ).toBe(blob('bafysmall'))
   })
 })

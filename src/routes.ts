@@ -16,6 +16,7 @@ export const router = new Router<AllNavigatableRoutes>({
   LegacyNotificationSettings: '/notifications/settings',
   Settings: '/settings',
   Lists: '/lists',
+  Apps: '/apps',
   NewsFeed: '/news',
   NewsSettings: '/news/settings',
   /*
@@ -110,4 +111,10 @@ export const router = new Router<AllNavigatableRoutes>({
   VideoFeed: '/video-feed',
   Bookmarks: '/saved',
   FindContactsFlow: '/find-contacts',
+  /*
+   * EUROSKY: a tile running by itself, by its author's handle (or DID) and
+   * its record key. Last, so that no route above, each of which starts with
+   * a word of its own, is ever read as an author.
+   */
+  TileApp: '/:name/app/:rkey',
 })

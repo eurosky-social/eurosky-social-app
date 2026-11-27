@@ -24,6 +24,7 @@ import {useFormatPostStatCount} from '#/components/PostControls/util'
 import * as Skele from '#/components/Skeleton'
 import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
+import {TileInstallButton} from '#/features/tiles/components/TileInstallButton'
 import {type app} from '#/lexicons'
 import {BookmarkButton} from './BookmarkButton'
 import {
@@ -309,6 +310,14 @@ let PostControls = ({
         <View />
       </View>
       <View style={[a.flex_row, a.justify_end, secondaryControlSpacingStyles]}>
+        {/* EUROSKY: a post that carries a tile can install it; renders nothing otherwise. */}
+        <TileInstallButton
+          post={post}
+          big={big}
+          hitSlop={{
+            right: secondaryControlSpacingStyles.gap / 2,
+          }}
+        />
         <BookmarkButton
           post={post}
           big={big}

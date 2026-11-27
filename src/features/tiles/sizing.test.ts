@@ -1,4 +1,9 @@
-import {MAX_TILE_HEIGHT, MIN_TILE_HEIGHT, TILE_POST_CHROME} from './constants'
+import {
+  MAX_TILE_HEIGHT,
+  MIN_TILE_HEIGHT,
+  TILE_APP_CHROME,
+  TILE_POST_CHROME,
+} from './constants'
 import {tileHeight, tileLimits} from './sizing'
 
 describe('tileLimits', () => {
@@ -13,6 +18,13 @@ describe('tileLimits', () => {
     expect(tileLimits(400, 900).maxHeight).toBe(900 - TILE_POST_CHROME)
     expect(tileLimits(400, 1440).maxHeight).toBe(1440 - TILE_POST_CHROME)
     expect(tileLimits(400, 667.5).maxHeight).toBe(327)
+  })
+
+  it('leaves less around a tile on a page of its own', () => {
+    expect(tileLimits(400, 900, TILE_APP_CHROME).maxHeight).toBe(
+      900 - TILE_APP_CHROME,
+    )
+    expect(TILE_APP_CHROME).toBeLessThan(TILE_POST_CHROME)
   })
 
   it('never leaves a tile less than its minimum, however short the screen', () => {

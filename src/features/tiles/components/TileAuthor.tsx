@@ -1,3 +1,4 @@
+import {View} from 'react-native'
 import {moderateProfile} from '@bsky/sdk/moderation'
 import {useLingui} from '@lingui/react/macro'
 
@@ -87,5 +88,76 @@ export function TileAuthorLine({
         </Text>
       </Link>
     </ProfileHoverCard>
+  )
+}
+
+/**
+ * The author of a tile where there is room to say who they are: the avatar,
+ * the name with the check when they are one of our verified accounts, and
+ * the handle under it. Used where a tile is shown by itself (its info sheet,
+ * its own page); the card of a tile post has the one-line `TileAuthorLine`.
+ * The whole row links to the author's profile.
+ */
+export function TileAuthorRow({
+  author,
+  onPress,
+}: {
+  author: TileAuthor
+  /** Runs as the link is followed, e.g. to close the dialog it is in. */
+  onPress?: () => void
+}) {
+  const t = useTheme()
+  const {t: l} = useLingui()
+  const profile = useProfileShadow(author.profile)
+  const moderationOpts = useModerationOpts()
+  const moderation = moderationOpts
+    ? moderateProfile(profile, moderationOpts)
+    : undefined
+  const name = sanitizeDisplayName(
+    profile.displayName || profile.handle,
+    moderation?.ui('displayName'),
+  )
+
+  return (
+    <Link
+      to={makeProfileLink(profile)}
+      label={l`View ${name}'s profile`}
+      onPress={() => onPress?.()}
+      style={[a.flex_1, a.flex_row, a.align_center, a.gap_sm]}>
+      <UserAvatar
+        type="user"
+        size={36}
+        avatar={profile.avatar}
+        moderation={moderation?.ui('avatar')}
+      />
+      <View style={[a.flex_1]}>
+        <View style={[a.flex_row, a.align_center, a.gap_xs]}>
+          <Text
+            emoji
+            numberOfLines={1}
+            style={[
+              a.flex_shrink,
+              a.text_md,
+              a.font_semi_bold,
+              a.leading_snug,
+            ]}>
+            {name}
+          </Text>
+          {author.trusted && (
+            <VerificationCheck
+              width={14}
+              fill={t.palette.primary_500}
+              verifier={false}
+            />
+          )}
+        </View>
+        <Text
+          emoji
+          numberOfLines={1}
+          style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
+          {sanitizeHandle(profile.handle, '@')}
+        </Text>
+      </View>
+    </Link>
   )
 }

@@ -1,0 +1,26 @@
+{
+  "lexicon": 1,
+  "id": "social.mu.tiles.install",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A tile the account has installed in mu, so that it shows among its apps and runs on a page of its own. It is the tile that is installed, not a post that carries it. Deleting the record uninstalls the tile.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["subject", "createdAt"],
+        "properties": {
+          "subject": {
+            "type": "ref",
+            "ref": "com.atproto.repo.strongRef",
+            "description": "The tile: its ing.dasl.masl record, with the repo as a DID, and the CID that record had when it was installed. The tile that runs is the record as it is now."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          }
+        }
+      }
+    }
+  }
+}

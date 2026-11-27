@@ -35,6 +35,10 @@ export type CommonNavigatorParams = {
   Lists: undefined
   NewsFeed: undefined
   NewsSettings: undefined
+  /** EUROSKY: the tiles the account has installed (`features/tiles`). */
+  Apps: undefined
+  /** EUROSKY: a tile running by itself; `name` is its author's handle or DID. */
+  TileApp: {name: string; rkey: string}
   Frontpage: {name?: string; view?: 'conversation'}
   NewsExplore: undefined
   NewsOutlets: undefined

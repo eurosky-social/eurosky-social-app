@@ -25,12 +25,18 @@ export type TileSizing = Partial<MaslSizing>
  * (`TILE_POST_CHROME`), so that a running tile never pushes the post it is in
  * off screen. `viewportHeight` is the height tiles have to share with that
  * chrome: the window's, less the safe areas on native. Without one the
- * ceiling is `MAX_TILE_HEIGHT`.
+ * ceiling is `MAX_TILE_HEIGHT`. A tile running on a page of its own rather
+ * than in a post has less around it, and passes its own `chrome`
+ * (`TILE_APP_CHROME`).
  */
-export function tileLimits(width: number, viewportHeight?: number): SizeLimits {
+export function tileLimits(
+  width: number,
+  viewportHeight?: number,
+  chrome: number = TILE_POST_CHROME,
+): SizeLimits {
   const maxHeight =
     viewportHeight && viewportHeight > 0
-      ? Math.max(MIN_TILE_HEIGHT, Math.floor(viewportHeight - TILE_POST_CHROME))
+      ? Math.max(MIN_TILE_HEIGHT, Math.floor(viewportHeight - chrome))
       : MAX_TILE_HEIGHT
   return {
     ...(width > 0 ? {minWidth: width, maxWidth: width} : {}),

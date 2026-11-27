@@ -7,8 +7,6 @@ import {
   type ViewStyle,
 } from 'react-native'
 import {type Tile} from '@dasl/tile-loader'
-import {tileLinks} from '@dasl/tile-loader/link'
-import {tileSize, type TileSizeControl} from '@dasl/tile-loader/size'
 import {useLingui} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
 
@@ -16,7 +14,6 @@ import {logger} from '#/logger'
 import {useAppviewClient} from '#/state/session'
 import {atoms as a} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
-import {useGlobalDialogsControlContext} from '#/components/dialogs/Context'
 import * as Toast from '#/components/Toast'
 import {type app} from '#/lexicons'
 import {fetchIsTrustedTile, useTileAuthor} from '../../author'
@@ -25,6 +22,7 @@ import {fetchTilesPaused, useTilesPolicy} from '../../policy'
 import {type TileRef} from '../../record'
 import {tileHeight, tileLimits, type TileSizing} from '../../sizing'
 import {TileCard} from '../TileCard'
+import {TileFrame} from '../TileFrame'
 
 type Status = 'card' | 'loading' | 'active'
 
@@ -104,11 +102,6 @@ export function TileEmbed({
   autoplay?: boolean
 }) {
   const {t: l} = useLingui()
-  const {linkWarningDialogControl} = useGlobalDialogsControlContext()
-  const openLinkDialogRef = useRef(linkWarningDialogControl.open)
-  useEffect(() => {
-    openLinkDialogRef.current = linkWarningDialogControl.open
-  })
   const queryClient = useQueryClient()
   const appviewClient = useAppviewClient()
   const author = useTileAuthor(tile)
@@ -123,14 +116,12 @@ export function TileEmbed({
   const [inset, setInset] = useState<Inset | undefined>()
   const busyRef = useRef(false)
   const rootRef = useRef<React.ComponentRef<typeof View>>(null)
-  const hostRef = useRef<HTMLDivElement>(null)
-  const loadedRef = useRef<Tile | null>(null)
+  // The loaded tile, while it runs: `TileFrame` puts it in the page.
+  const [loaded, setLoaded] = useState<Tile | null>(null)
   const title = link.title || l`Tile`
-  const sizerRef = useRef<TileSizeControl | null>(null)
   const {height: viewportHeight} = useWindowDimensions()
   const limits = tileLimits(width, viewportHeight)
   const height = tileHeight(sizing, width, asked, limits)
-  const {minWidth, maxWidth, minHeight, maxHeight} = limits
 
   const onLayout = (e: LayoutChangeEvent) => {
     setWidth(e.nativeEvent.layout.width)
@@ -155,10 +146,10 @@ export function TileEmbed({
         return
       }
       onOpen?.()
-      const loaded = await getTileMothership().loadTile(tile.uri)
-      if (!loaded) throw new Error(`No loader matched ${tile.uri}`)
-      loadedRef.current = loaded
-      setSizing(loaded.manifest.sizing)
+      const started = await getTileMothership().loadTile(tile.uri)
+      if (!started) throw new Error(`No loader matched ${tile.uri}`)
+      setLoaded(started)
+      setSizing(started.manifest.sizing)
       setInset(fullWidth ? measureInset(rootRef.current) : undefined)
       setStatus('active')
     } catch (e) {
@@ -192,7 +183,7 @@ export function TileEmbed({
 
   // Stopped: back to the card. Removing the frame tears the tile down.
   const deactivate = () => {
-    loadedRef.current = null
+    setLoaded(null)
     setSizing(undefined)
     setAsked(undefined)
     setInset(undefined)
@@ -202,84 +193,14 @@ export function TileEmbed({
   // Paused while running (the switch flipped under it): the tile comes down.
   useEffect(() => {
     if (policy.enabled || status !== 'active') return
-    loadedRef.current = null
+    setLoaded(null)
     setSizing(undefined)
     setAsked(undefined)
     setInset(undefined)
     setStatus('card')
   }, [policy.enabled, status])
 
-  /*
-   * The loader hands back a DOM iframe (the shuttle, on its own origin), so
-   * it is mounted into a plain div once the card has switched to its active
-   * layout. The frame fills that div, whose height React keeps in step with
-   * the width, so a resize never remounts (and so reloads) the tile.
-   * Closing the tile tears it down: its runtime gets a moment to unregister
-   * its worker and have its origin wiped, where the frame is still in the
-   * document to do it, and the loader lets go of the frame either way, so
-   * that nothing of a tile that was shown and put away is kept.
-   *
-   * The size protocol runs over the same frame. React owns the box, so the
-   * loader only passes on what the tile asks for (`apply: false`); the
-   * height that comes of it is `tileHeight`'s, and the loader tells the tile
-   * the size it really has whenever the box changes.
-   */
-  useEffect(() => {
-    const host = hostRef.current
-    const loaded = loadedRef.current
-    if (status !== 'active' || !host || !loaded) return
-    const frame = loaded.renderContent()
-    frame.style.height = '100%'
-    frame.title = title
-    /*
-     * A credentialless frame (Chromium) gets a cookie jar and storage of its
-     * own, emptied with the page: the tile sees none of the cookies of
-     * mu.social, whose site its origin shares, and any it sets, for whatever
-     * domain, stay in there. Other browsers ignore the attribute.
-     */
-    ;(frame as HTMLIFrameElement & {credentialless?: boolean}).credentialless =
-      true
-    host.replaceChildren(frame)
-    const sizer = tileSize(loaded, frame, {
-      apply: false,
-      onRequest: want => {
-        if (want.height) setAsked(want.height)
-      },
-    })
-    sizerRef.current = sizer
-    /*
-     * A tile opens no window and navigates nothing but itself. A link out of
-     * it is a request (https://dasl.ing/tp-link.html), and ours to open or
-     * not: the tile chose the address, so the user sees it first, in the
-     * dialog mu shows for any link it does not vouch for, and opens it from
-     * there. A request nobody clicked for is refused. The tile is not told
-     * what the user decided.
-     */
-    const links = tileLinks(loaded, {
-      open: (url, {activated}) => {
-        if (!activated) return false
-        openLinkDialogRef.current({displayText: '', href: url.href})
-      },
-    })
-    return () => {
-      sizerRef.current = null
-      sizer.stop()
-      links.stop()
-      void loaded.close()
-    }
-  }, [status, title])
-
-  /*
-   * The limits follow the column and the window, so the tile is told of them
-   * whenever either changes (and when it first runs): they are what its
-   * requests are answered with.
-   */
-  useEffect(() => {
-    if (status !== 'active') return
-    sizerRef.current?.setLimits({minWidth, maxWidth, minHeight, maxHeight})
-  }, [status, title, minWidth, maxWidth, minHeight, maxHeight])
-
-  if (status === 'active') {
+  if (status === 'active' && loaded) {
     const spread = inset && {
       marginLeft: -inset.left,
       marginRight: -inset.right,
@@ -294,7 +215,15 @@ export function TileEmbed({
           author={author}
           style={style}
           flush={!!spread}
-          media={<div ref={hostRef} style={{width: '100%', height}} />}
+          media={
+            <TileFrame
+              tile={loaded}
+              title={title}
+              height={height}
+              limits={limits}
+              onAsk={setAsked}
+            />
+          }
           action={
             <Button
               label={l`Stop this tile`}

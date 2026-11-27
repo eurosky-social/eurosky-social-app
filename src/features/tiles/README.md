@@ -48,6 +48,16 @@ running tile instead of following the link.
 | `components/TileAuthor.tsx` | the footer line: the author's avatar, name, check and handle |
 | `components/TileEmbed/` | web: card that runs the tile in the page; native: card that runs it in a WebView |
 | `components/TilePlayer.tsx` | native: the WebView on the hosted page, and the message bridge |
+| `components/TileFrame(.web).tsx` | web: a loaded tile's frame in the page, with the size and link protocols; shared by the embed and the tile's own page |
+| `installs.ts` | the install records of the signed-in account, installing and uninstalling, and the cached read of a tile's record |
+| `actions.ts` | the install toggle with its toasts, and "post this tile" (the composer with the tile attached) |
+| `links.ts` | the path of the page a tile runs on by itself |
+| `components/TileInstallButton.tsx` | the install button in a tile post's controls |
+| `components/TileIcon.tsx` | a tile's icon, from its manifest |
+| `components/TileInfoDialog.tsx` | the sheet about a tile: screenshot, description, author, open, post, install or uninstall |
+| `components/TileRunner/` | a tile running outside a post; web runs the loader, native the WebView |
+| `screens/AppsScreen.tsx` | the Apps tab: the installed tiles |
+| `screens/TileAppScreen.tsx` | the page a tile runs on by itself |
 
 Touchpoints in upstream code, each marked `EUROSKY`:
 
@@ -68,6 +78,13 @@ Touchpoints in upstream code, each marked `EUROSKY`:
   one, disabled while the post carries a link card or media (one tile per
   post, and the pipeline prefers media to a card) and back once it is removed.
 - `view/com/composer/ExternalEmbed.tsx`: a tile link previews as its card.
+- `components/PostControls/index.tsx`: the install button, before the bookmark.
+- `Navigation.tsx`, `routes.ts`, `lib/routes/types.ts`: the `Apps` and
+  `TileApp` screens. `view/shell/desktop/LeftNav.tsx` and
+  `view/shell/Drawer.tsx`: the Apps item, under News.
+  `analytics/metrics/types.ts`: `apps` among the nav items.
+- `bskyweb/cmd/bskyweb/server.go`: the two paths, so the web server answers
+  them with the app.
 
 ## Who may post, and whose tiles run
 
@@ -87,6 +104,47 @@ when they are verified and a link to their profile, and a tile by an
 unverified author says so there. The composer and the post pipeline apply the same check up front
 so nobody attaches a card that will never play. This is a client-side rule for
 now.
+
+## Installing, and the Apps tab
+
+A tile can be installed, which keeps it at hand outside the post it came in.
+It is the tile that is installed, not the post: an install is a
+`social.mu.tiles.install` record (`lexicons/social/mu/tiles/install.json`) in
+the account's own repo, whose `subject` is the strongRef of the tile's
+`ing.dasl.masl` record, repo by DID. Uninstalling deletes it. `installs.ts`
+lists the account's records once for the whole app and edits that list in
+place, so every button agrees. A tile whose author is not verified is not
+installed, since it would never run.
+
+- **On a post.** A post that carries a tile has one more control, before the
+  bookmark (`TileInstallButton`): an arrow into a tray, and a check in the
+  brand colour once the tile is installed, on every post of that tile.
+  Pressing it again uninstalls.
+- **The Apps tab** (`/apps`, under News in the left nav and the drawer) lists
+  the installed tiles as a grid of icons and names, the latest first. The
+  icon is the biggest one the manifest's `icons` declares (`tileIconUrl`),
+  the name its `short_name` or `name`. The info button on each opens
+  `TileInfoDialog`: the screenshot, the whole description, the author with
+  avatar, name and handle, and buttons to open the tile, to post it and to
+  uninstall it. A tile whose record is gone shows as unavailable and can
+  still be uninstalled from there.
+- **A tile's own page** (`/<author handle or DID>/app/<rkey>`, the `TileApp`
+  route) runs the tile with no post around it: under it, its author and two
+  buttons, install or uninstall and post. The page works for any tile,
+  installed or not, and applies the rules of a post's embed: nothing runs
+  while tiles are paused, and the author's verification is asked afresh each
+  time the page opens. The tile takes the column's width and the height its
+  manifest and its size requests come to, up to the viewport less
+  `TILE_APP_CHROME`, which is less than a post leaves.
+- **Posting** an installed tile opens the composer with the tile attached as
+  its card (`usePostTile`), after the same checks as attaching one by hand.
+
+The route is the last in `routes.ts`, so that every other path, each of
+which starts with a word of its own, is matched first; `links.test.ts` holds
+that. The Apps icon is Phosphor's `squares-four`, kept under
+`assets/icons/tmp/ui/` so that it changes no native font: move the two
+sources to `assets/icons/ui/` and regenerate before a native release
+(`scripts/icons/README.md`).
 
 ## Pausing every tile
 

@@ -37,6 +37,7 @@ import {atoms as a, tokens, useTheme, web} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {useDialogControl} from '#/components/Dialog'
 import {Divider} from '#/components/Divider'
+import {Apps_Stroke2_Corner0_Rounded as AppsIcon} from '#/components/icons/Apps'
 import {ArrowShareRight_Stroke2_Corner2_Rounded as ArrowShareRightIcon} from '#/components/icons/Arrow'
 import {
   Bell_Filled_Corner0_Rounded as BellFilledIcon,
@@ -343,6 +344,18 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
     setDrawerOpen(false)
   }, [navigation, setDrawerOpen, ax])
 
+  // EUROSKY: the tiles the account has installed.
+  const onPressApps = useCallback(() => {
+    ax.metric('nav:click', {item: 'apps', surface: 'drawer'})
+    navigation.dispatch(
+      getCommonNavigationAction(
+        {name: 'Apps', params: undefined},
+        navigation.getState(),
+      ),
+    )
+    setDrawerOpen(false)
+  }, [navigation, setDrawerOpen, ax])
+
   const onPressBookmarks = useCallback(() => {
     ax.metric('nav:click', {item: 'saved', surface: 'drawer'})
     if (IS_WEB) navigation.dispatch(getTabNavigationAction('Bookmarks'))
@@ -413,6 +426,7 @@ let DrawerContent = ({}: React.PropsWithoutRef<{}>): React.ReactNode => {
             <SearchMenuItem isActive={isAtSearch} onPress={onPressSearch} />
             <HomeMenuItem isActive={isAtHome} onPress={onPressHome} />
             <NewsMenuItem onPress={onPressNews} />
+            <AppsMenuItem onPress={onPressApps} />
             <ChatMenuItem isActive={isAtMessages} onPress={onPressMessages} />
             <NotificationsMenuItem
               isActive={isAtNotifications}
@@ -716,6 +730,23 @@ let NewsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
   )
 }
 NewsMenuItem = memo(NewsMenuItem)
+
+let AppsMenuItem = ({onPress}: {onPress: () => void}): React.ReactNode => {
+  const {t: l} = useLingui()
+  const t = useTheme()
+
+  return (
+    <MenuItem
+      icon={<AppsIcon style={[t.atoms.text]} width={iconWidth} />}
+      label={l({
+        message: 'Apps',
+        context: 'link to the screen of installed tiles',
+      })}
+      onPress={onPress}
+    />
+  )
+}
+AppsMenuItem = memo(AppsMenuItem)
 
 let BookmarksMenuItem = ({
   isActive,

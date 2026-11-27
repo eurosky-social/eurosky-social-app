@@ -173,6 +173,8 @@ import {NEWS_V2_ENABLED} from '#/features/newsFeed/config'
 import {NewsFeedScreen as LegacyNewsFeedScreen} from '#/features/newsFeed/legacy/NewsFeedScreen'
 import {NewsFeedScreen} from '#/features/newsFeed/NewsFeedScreen'
 import {NewsSettingsScreen} from '#/features/newsFeed/NewsSettingsScreen'
+import {AppsScreen} from '#/features/tiles/screens/AppsScreen'
+import {TileAppScreen} from '#/features/tiles/screens/TileAppScreen'
 import {router} from '#/routes'
 
 const navigationRef = createNavigationContainerRef<RootNavigatorParams>()
@@ -219,6 +221,16 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
           NEWS_V2_ENABLED ? NewsFeedScreen : LegacyNewsFeedScreen
         }
         options={{title: title(msg`News`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="Apps"
+        getComponent={() => AppsScreen}
+        options={{title: title(msg`Apps`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="TileApp"
+        getComponent={() => TileAppScreen}
+        options={{title: title(msg`App`)}}
       />
       <Stack.Screen
         name="NewsSettings"

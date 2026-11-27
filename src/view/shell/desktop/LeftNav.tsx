@@ -54,6 +54,10 @@ import {
 } from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {type DialogControlProps} from '#/components/Dialog'
+import {
+  Apps_Filled_Corner0_Rounded as AppsFilledIcon,
+  Apps_Stroke2_Corner0_Rounded as AppsIcon,
+} from '#/components/icons/Apps'
 import {ArrowBoxLeft_Stroke2_Corner0_Rounded as LeaveIcon} from '#/components/icons/Arrow'
 import {
   Bell_Filled_Corner0_Rounded as BellFilledIcon,
@@ -451,6 +455,9 @@ const NEWS_HUB_ROUTES = [
   'NewsArticle',
 ]
 
+/** The Apps tab and the page a tile opens on from it. */
+const APPS_ROUTES = ['Apps', 'TileApp']
+
 function NavItem({
   count,
   hasNew,
@@ -761,6 +768,21 @@ export function DesktopLeftNav({
             icons={{
               inactive: NewspaperIcon,
               active: NewspaperFilledIcon,
+            }}
+          />
+          {/* EUROSKY: the tiles the account has installed. */}
+          <NavItem
+            label={l({
+              message: 'Apps',
+              context: 'link to the screen of installed tiles',
+            })}
+            href="/apps"
+            navItem="apps"
+            relatedRoutes={APPS_ROUTES}
+            minimal={leftNavMinimal}
+            icons={{
+              inactive: AppsIcon,
+              active: AppsFilledIcon,
             }}
           />
           <NavItem

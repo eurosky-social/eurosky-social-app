@@ -401,6 +401,10 @@ func serve(cctx *cli.Context) error {
 	// bookmarks
 	e.GET("/saved", server.WebGenericNoindex)
 
+	// EUROSKY: installed tiles, and a tile running on a page of its own
+	e.GET("/apps", server.WebGenericNoindex)
+	e.GET("/:handleOrDID/app/:rkey", server.WebGenericNoindex)
+
 	// ipcc
 	e.GET("/ipcc", server.WebIpCC)
 

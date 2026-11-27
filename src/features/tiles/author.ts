@@ -57,7 +57,7 @@ export type TileAuthor = {
  * may run. Undefined until the profile has loaded. The embeds do not act on
  * `trusted`: they ask `fetchIsTrustedTile` when the tile is opened.
  */
-export function useTileAuthor(tile: TileRef): TileAuthor | undefined {
+export function useTileAuthor(tile: TileRef | string): TileAuthor | undefined {
   const actor = tileAuthorActor(tile)
   const {data: profile} = useProfileQuery({
     did: actor,
