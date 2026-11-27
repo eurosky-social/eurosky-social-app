@@ -121,16 +121,19 @@ installed, since it would never run.
   brand colour once the tile is installed, on every post of that tile.
   Pressing it again uninstalls.
 - **The Apps tab** (`/apps`, under News in the left nav and the drawer) lists
-  the installed tiles as a grid of icons and names, the latest first. The
-  icon is the biggest one the manifest's `icons` declares (`tileIconUrl`),
-  the name its `short_name` or `name`. The info button on each opens
-  `TileInfoDialog`: the screenshot, the whole description, the author with
-  avatar, name and handle, and buttons to open the tile, to post it and to
-  uninstall it. A tile whose record is gone shows as unavailable and can
-  still be uninstalled from there.
+  the installed tiles the way a phone lists its apps: a grid of icons, four
+  across (five where there is room), each with its name under it, the latest
+  first. The icon is the biggest one the manifest's `icons` declares
+  (`tileIconUrl`), or the author's avatar in the same shape when it declares
+  none; the name is its `short_name`, or else its `name`. The info button on
+  the icon's top right corner opens `TileInfoDialog`: the screenshot, the
+  whole description, the author with avatar, name and handle, and three
+  buttons, icons alone, to open the tile, to post it and to uninstall it. A
+  tile whose record is gone shows as unavailable and can still be
+  uninstalled from there.
 - **A tile's own page** (`/<author handle or DID>/app/<rkey>`, the `TileApp`
   route) runs the tile with no post around it: under it, its author and two
-  buttons, install or uninstall and post. The page works for any tile,
+  buttons, icons alone: install or uninstall, and post. The page works for any tile,
   installed or not, and applies the rules of a post's embed: nothing runs
   while tiles are paused, and the author's verification is asked afresh each
   time the page opens. The tile takes the column's width and the height its

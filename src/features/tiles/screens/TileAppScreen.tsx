@@ -31,8 +31,8 @@ import {type TileRecord} from '../resolve'
 /**
  * A tile running by itself, at `/<author>/app/<rkey>`: where an installed
  * tile opens from the Apps tab. There is no post here, so none of a post's
- * controls either: under the tile are its author and two buttons, to install
- * or uninstall it and to write a post that embeds it. The page can be
+ * controls either: under the tile are its author and two buttons, icons
+ * alone, to install or uninstall it and to write a post that embeds it. The page can be
  * reached for any tile, installed or not.
  *
  * The same rules decide whether the tile runs as in a post: not while tiles
@@ -180,27 +180,21 @@ function TileApp({record, title}: {record: TileRecord; title: string}) {
         <View style={[a.flex_row, a.gap_sm]}>
           <Button
             label={l`Post ${title}`}
-            size="small"
+            size="large"
+            shape="round"
             color="secondary"
             onPress={() => void postTile(uri)}>
             <ButtonIcon icon={PostIcon} />
-            <ButtonText>
-              <Trans context="verb: write a post that embeds this tile">
-                Post
-              </Trans>
-            </ButtonText>
           </Button>
           <Button
             testID="tileAppInstallBtn"
             label={installed ? l`Uninstall ${title}` : l`Install ${title}`}
-            size="small"
-            color={installed ? 'secondary' : 'primary'}
+            size="large"
+            shape="round"
+            color={installed ? 'negative_subtle' : 'primary'}
             disabled={pending}
             onPress={toggle}>
             <ButtonIcon icon={installed ? UninstallIcon : InstallIcon} />
-            <ButtonText>
-              {installed ? <Trans>Uninstall</Trans> : <Trans>Install</Trans>}
-            </ButtonText>
           </Button>
         </View>
       </View>

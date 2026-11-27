@@ -27,13 +27,18 @@ import {
 import {makeTileAppLink} from '../links'
 
 const ICON_SIZE = 64
+/** The width a cell's link and name get: the icon, and room either side for the name. */
+const LABEL_WIDTH = ICON_SIZE + 24
+/** How far the info button sits over the icon's top right corner. */
+const BADGE_OVERLAP = 10
 
 /**
- * The Apps tab: the tiles the account has installed, as a grid of icons and
- * names, the latest installed first. An icon opens the tile on a page of its
- * own (`TileAppScreen`); the little info button on it opens the sheet with
- * the rest of what there is to know, and the buttons to uninstall the tile
- * or to post it.
+ * The Apps tab: the tiles the account has installed, laid out like the apps
+ * on a phone: a grid of icons, each with its name under it (the manifest's
+ * `short_name` when it has one), the latest installed first. An icon opens
+ * the tile on a page of its own (`TileAppScreen`); the little info button on
+ * its top right corner opens the sheet with the rest of what there is to
+ * know, and the buttons to uninstall the tile or to post it.
  */
 export function AppsScreen(
   _props: NativeStackScreenProps<CommonNavigatorParams, 'Apps'>,
@@ -63,7 +68,8 @@ function InstalledTiles() {
   const {t: l} = useLingui()
   const {gtMobile} = useBreakpoints()
   const {data, isLoading, isError, refetch} = useTileInstallsQuery()
-  const columns = gtMobile ? 4 : 3
+  // Four across, like a phone's home screen; one more where there is room.
+  const columns = gtMobile ? 5 : 4
 
   if (isLoading) {
     return (
@@ -120,7 +126,7 @@ function InstalledTiles() {
   }
 
   return (
-    <View style={[a.flex_row, a.flex_wrap, a.px_sm, a.py_lg]}>
+    <View style={[a.flex_row, a.flex_wrap, a.px_sm, a.py_xl]}>
       {installs.map(install => (
         <InstalledTile
           key={install.tile.uri}
@@ -142,7 +148,11 @@ function InstalledTile({
   const t = useTheme()
   const {t: l} = useLingui()
   const control = Dialog.useDialogControl()
-  const {data: record, isError} = useTileRecordQuery(install.tile.uri)
+  const {
+    data: record,
+    isError,
+    isLoading,
+  } = useTileRecordQuery(install.tile.uri)
   const author = useTileAuthor(install.tile)
   // An install always names a tile by DID: `parseTileInstall` sees to it.
   const parsed = parseTileUri(install.tile.uri)!
@@ -151,18 +161,21 @@ function InstalledTile({
 
   return (
     <View style={[a.align_center, a.py_md, {width}]}>
-      <View style={[a.align_center, {width: ICON_SIZE + 40}]}>
+      <View style={[a.align_center, {width: LABEL_WIDTH, maxWidth: '100%'}]}>
         <Link
           to={makeTileAppLink(
             {did: parsed.repo, handle: author?.profile.handle},
             parsed.rkey,
           )}
           label={l`Open ${name}`}
-          style={[a.w_full, a.align_center, a.gap_sm]}>
+          style={[a.w_full]}>
           {({hovered, pressed}) => (
-            <>
+            // A link lays its children out in a row; the column is in here.
+            <View style={[a.w_full, a.align_center, a.gap_xs]}>
               <TileIcon
                 record={record}
+                author={author}
+                loading={isLoading}
                 size={ICON_SIZE}
                 style={[
                   (hovered || pressed) && t.atoms.border_contrast_high,
@@ -171,26 +184,39 @@ function InstalledTile({
               />
               <Text
                 emoji
-                numberOfLines={2}
+                numberOfLines={1}
                 style={[
-                  a.text_sm,
+                  a.text_xs,
                   a.leading_snug,
                   a.text_center,
                   isError && t.atoms.text_contrast_medium,
                 ]}>
                 {isError ? l`Unavailable` : name}
               </Text>
-            </>
+            </View>
           )}
         </Link>
-        {/* A sibling of the link, not inside it: it is a button of its own. */}
+        {/*
+         * A sibling of the link, not inside it: it is a button of its own.
+         * It sits on the icon's top right corner, the way a badge does, with
+         * a ring in the page's colour to set it off from the icon under it.
+         */}
         <Button
           label={l`About ${name}`}
           size="tiny"
           shape="round"
           color="secondary"
           onPress={() => control.open()}
-          style={[a.absolute, {top: -8, right: 4}]}>
+          style={[
+            a.absolute,
+            a.border,
+            {
+              top: -BADGE_OVERLAP,
+              right: (LABEL_WIDTH - ICON_SIZE) / 2 - BADGE_OVERLAP,
+              borderWidth: 2,
+              borderColor: t.atoms.bg.backgroundColor,
+            },
+          ]}>
           <ButtonIcon icon={InfoIcon} />
         </Button>
       </View>

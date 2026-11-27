@@ -5,7 +5,7 @@ import {useNavigation} from '@react-navigation/native'
 
 import {type NavigationProp} from '#/lib/routes/types'
 import {atoms as a, useTheme, web} from '#/alf'
-import {Button, ButtonIcon, ButtonText} from '#/components/Button'
+import {Button, ButtonIcon} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
 import {Download_Stroke2_Corner0_Rounded as InstallIcon} from '#/components/icons/Download'
 import {PaperPlane_Stroke2_Corner0_Rounded as PostIcon} from '#/components/icons/PaperPlane'
@@ -25,7 +25,7 @@ import {TileIcon} from './TileIcon'
  * Everything about a tile that the grid of apps has no room for: its icon
  * and name, a screenshot, the whole description, and who made it, with the
  * buttons to open it, to post it as a post's embed, and to install or
- * uninstall it. Opened from the info button of an installed tile, and from
+ * uninstall it: icons alone, each named for a screen reader. Opened from the info button of an installed tile, and from
  * the tile's own page.
  */
 export function TileInfoDialog({
@@ -83,7 +83,12 @@ function TileInfo({uri, canOpen}: {uri: string; canOpen: boolean}) {
       style={web({maxWidth: 500})}>
       <View style={[a.gap_lg, a.w_full]}>
         <View style={[a.flex_row, a.align_center, a.gap_md]}>
-          <TileIcon record={record} size={56} />
+          <TileIcon
+            record={record}
+            author={author}
+            loading={isLoading}
+            size={56}
+          />
           <View style={[a.flex_1]}>
             <Text emoji style={[a.text_2xl, a.font_bold, a.leading_snug]}>
               {name}
@@ -139,40 +144,32 @@ function TileInfo({uri, canOpen}: {uri: string; canOpen: boolean}) {
           {canOpen && record && (
             <Button
               label={l`Open ${name}`}
-              size="small"
+              size="large"
+              shape="round"
               color="primary"
               onPress={onOpen}>
               <ButtonIcon icon={OpenIcon} />
-              <ButtonText>
-                <Trans>Open</Trans>
-              </ButtonText>
             </Button>
           )}
           {record && (
             <Button
               label={l`Post ${name}`}
-              size="small"
+              size="large"
+              shape="round"
               color="secondary"
               onPress={onPost}>
               <ButtonIcon icon={PostIcon} />
-              <ButtonText>
-                <Trans context="verb: write a post that embeds this tile">
-                  Post
-                </Trans>
-              </ButtonText>
             </Button>
           )}
           {installed !== undefined && (installed || record) && (
             <Button
               label={installed ? l`Uninstall ${name}` : l`Install ${name}`}
-              size="small"
+              size="large"
+              shape="round"
               color={installed ? 'negative_subtle' : 'secondary'}
               disabled={pending}
               onPress={toggle}>
               <ButtonIcon icon={installed ? UninstallIcon : InstallIcon} />
-              <ButtonText>
-                {installed ? <Trans>Uninstall</Trans> : <Trans>Install</Trans>}
-              </ButtonText>
             </Button>
           )}
         </View>
