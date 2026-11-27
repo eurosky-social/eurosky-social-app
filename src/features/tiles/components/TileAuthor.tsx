@@ -117,11 +117,14 @@ export function TileAuthorRow({
     profile.displayName || profile.handle,
     moderation?.ui('displayName'),
   )
+  const handle = sanitizeHandle(profile.handle, '@')
+  // A name that moderation hides leaves the handle to stand in for it.
+  const title = name || handle
 
   return (
     <Link
       to={makeProfileLink(profile)}
-      label={l`View ${name}'s profile`}
+      label={l`View ${title}'s profile`}
       onPress={() => onPress?.()}
       style={[a.flex_1, a.flex_row, a.align_center, a.gap_sm]}>
       <UserAvatar
@@ -141,7 +144,7 @@ export function TileAuthorRow({
               a.font_semi_bold,
               a.leading_snug,
             ]}>
-            {name}
+            {title}
           </Text>
           {author.trusted && (
             <VerificationCheck
@@ -151,12 +154,14 @@ export function TileAuthorRow({
             />
           )}
         </View>
-        <Text
-          emoji
-          numberOfLines={1}
-          style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
-          {sanitizeHandle(profile.handle, '@')}
-        </Text>
+        {name ? (
+          <Text
+            emoji
+            numberOfLines={1}
+            style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
+            {handle}
+          </Text>
+        ) : null}
       </View>
     </Link>
   )
