@@ -30,7 +30,11 @@ export async function fetchMoments(videoPostUri: string): Promise<Moment[]> {
     comments: moment.replies.map(reply => ({
       uri: reply.uri,
       seconds: reply.seconds,
+      ...(reply.authorReplied ? {authorReplied: true} : {}),
     })),
+    ...(moment.unansweredCount !== undefined
+      ? {unansweredCount: moment.unansweredCount}
+      : {}),
   }))
 }
 

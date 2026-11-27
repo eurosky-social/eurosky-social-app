@@ -98,6 +98,41 @@ describe('fetchMoments', () => {
       [200, 200, 1],
     ])
   })
+
+  it("keeps which comments the video's author answered, when the service says", async () => {
+    const [first, second] = serverAnswer.moments
+    mockCall.mockResolvedValue({
+      ...serverAnswer,
+      moments: [
+        {
+          ...first,
+          unansweredCount: 1,
+          replies: [
+            {...first.replies[0], authorReplied: true},
+            first.replies[1],
+          ],
+        },
+        second,
+      ],
+    })
+    const [answered, older] = await fetchMoments(VIDEO_POST)
+    expect(answered).toEqual({
+      startSeconds: 41,
+      endSeconds: 50,
+      count: 2,
+      unansweredCount: 1,
+      comments: [
+        {
+          uri: 'at://did:plc:b/app.bsky.feed.post/1',
+          seconds: 41,
+          authorReplied: true,
+        },
+        {uri: 'at://did:plc:c/app.bsky.feed.post/2', seconds: 50},
+      ],
+    })
+    // a service that doesn't count them leaves them unknown
+    expect(older).not.toHaveProperty('unansweredCount')
+  })
 })
 
 describe('useVideoMoments', () => {

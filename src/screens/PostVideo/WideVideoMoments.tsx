@@ -32,6 +32,7 @@ import {Embed, PostEmbedViewContext} from '#/components/Post/Embed'
 import {Text} from '#/components/Typography'
 import {IS_WEB} from '#/env'
 import {ComposerField} from '#/features/mediaTime/components/ComposerField'
+import {InsightsLink} from '#/features/mediaTime/components/InsightsLink'
 import {MomentRoom} from '#/features/mediaTime/components/MomentRoom'
 import {MomentsTimeline} from '#/features/mediaTime/components/MomentsTimeline'
 import {MomentStrip} from '#/features/mediaTime/components/MomentStrip'
@@ -255,6 +256,7 @@ function Loaded({
           </Text>
         ) : null}
         <AuthorRow post={post} moderation={item.moderation} />
+        <InsightsLink post={post} style={[a.pb_sm]} />
         <ReaderSeamControls
           post={item}
           threadgateRecord={threadgateRecord}

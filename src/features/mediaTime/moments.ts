@@ -26,7 +26,12 @@ const BUMP_REACH_SECONDS = 4 * MOMENT_BUMP_SECONDS
 /** A comment the server doesn't know yet joins a moment this close to it. */
 export const MOMENT_JOIN_SECONDS = 2 * MOMENT_BUMP_SECONDS
 
-export type TimedComment = {uri: string; seconds: number}
+export type TimedComment = {
+  uri: string
+  seconds: number
+  /** The video's author replied directly to it (from the moments service). */
+  authorReplied?: boolean
+}
 
 /**
  * A group needs this many comments to be shown as a moment. Smaller groups
@@ -51,6 +56,12 @@ export type Moment = {
   /** How many comments the moment has; can be more than `comments` lists. */
   count: number
   comments: TimedComment[]
+  /**
+   * How many of its comments by others the video's author hasn't replied to,
+   * as the moments service counted them. Unknown for groups the app formed
+   * itself, and from services that don't count them.
+   */
+  unansweredCount?: number
 }
 
 type Count = {seconds: number; count: number}

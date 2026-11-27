@@ -83,6 +83,8 @@ export type CommonNavigatorParams = {
   PostVideo: {name: string; rkey: string; t?: string}
   /** Eurosky: one moment of a post's video and its comments, at second `t`. */
   PostMoment: {name: string; rkey: string; t: string}
+  /** Eurosky: a video's insights for its author. */
+  PostInsights: {name: string; rkey: string}
   PostLikedBy: {name: string; rkey: string}
   PostRepostedBy: {name: string; rkey: string}
   PostQuotes: {name: string; rkey: string}

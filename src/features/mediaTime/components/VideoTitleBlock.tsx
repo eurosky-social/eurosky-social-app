@@ -10,10 +10,12 @@ import {Text} from '#/components/Typography'
 import {type app} from '#/lexicons'
 import {isMoment, type Moment} from '../moments'
 import {getVideoTitle} from '../record'
+import {InsightsLink} from './InsightsLink'
 
 /**
  * Under a video: its title (the first line of the post), who posted it and
- * when, and how many comments it has in how many moments.
+ * when, and how many comments it has in how many moments. Its author also
+ * gets a link to the video's insights.
  */
 export function VideoTitleBlock({
   post,
@@ -63,6 +65,7 @@ export function VideoTitleBlock({
           </Text>
         )}
       </TimeElapsed>
+      <InsightsLink post={post} />
     </View>
   )
 }

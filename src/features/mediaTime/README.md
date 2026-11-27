@@ -220,4 +220,29 @@ the news pages take (`ExploreColumn`).
 - A moment's address opens the panel on that moment. Switching moments in the
   panel doesn't change the address.
 
+## Insights for the video's author
+
+A video's author gets "Insights for your video" (`components/InsightsLink.tsx`)
+under the title on the watching screen, in the wide layout, and under the
+moments in the thread. It opens `/profile/<name>/post/<rkey>/insights` (route
+`PostInsights`, `screens/PostInsights/index.tsx`), after the design canvas's
+"funk's view of the episode". Anyone else who opens the address is told it's
+only for the author.
+
+- How many comments the video has: all direct replies (the post's
+  `replyCount`), those along the video, and those on the whole video
+  (`insightCounts` in `insights.ts`).
+- "Where viewers commented": the strip, larger (64 bars), with the start of
+  the three biggest moments written under it (`stripLabels`, leaving out a
+  label that would overlap one of a bigger moment).
+- "Waiting for your answer": every moment, or comment at a second, with
+  comments by others the author hasn't replied to directly, in order of time
+  (`waitingForAnswer`). "Answer" opens its page. The AppView counts these
+  (`unansweredCount` per moment, `authorReplied` per comment in
+  `getMoments`); without them, from an older AppView, the section is left
+  out. A reply further down a comment's thread doesn't count as an answer.
+
+Chapters and highlighted comments, also in the design, need records of their
+own and aren't built.
+
 Tests: `pnpm test src/features/mediaTime src/lib/api/__tests__/post.test.ts`.
